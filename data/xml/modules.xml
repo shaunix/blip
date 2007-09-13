@@ -1,0 +1,1663 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<group>
+
+<defaults>
+  <module>
+    <name>%(id)</name>
+    <bug_server>http://bugzilla.gnome.org/</bug_server>
+    <bug_product>%(id)</bug_product>
+    <bug_component>general</bug_component>
+    <rcs_server idref="gnome-cvs"/>
+    <rcs_module>%(id)</rcs_module>
+    <rcs_web>http://cvs.gnome.org/viewcvs/%(rcs_module)/</rcs_web>
+    <download>http://ftp.gnome.org/pub/gnome/sources/%(id)/</download>
+  </module>
+  <branch>
+    <bug_server>%(module/bug_server)</bug_server>
+    <bug_product>%(module/bug_product)</bug_product>
+    <bug_component>%(module/bug_component)</bug_component>
+    <rcs_server idref="%(module/rcs_server)"/>
+    <rcs_module>%(module/rcs_module)</rcs_module>
+    <rcs_branch>%(id)</rcs_branch>
+    <rcs_web>http://cvs.gnome.org/viewcvs/%(rcs_module)/?only_with_tag=%(rcs_branch)</rcs_web>
+  </branch>
+  <domain>
+    <bug_server>%(branch/bug_server)</bug_server>
+    <bug_product>l10n</bug_product>
+    <rcs_server idref="%(branch/rcs_server)"/>
+    <rcs_module>%(branch/rcs_module)</rcs_module>
+    <rcs_branch>%(branch/rcs_branch)</rcs_branch>
+    <rcs_dir>%(id)</rcs_dir>
+    <rcs_web>http://cvs.gnome.org/viewcvs/%(rcs_module)/%(rcs_dir)/?only_with_tag=%(rcs_branch)</rcs_web>
+  </domain>
+  <document>
+    <bug_server>%(branch/bug_server)</bug_server>
+    <bug_product>%(branch/bug_product)</bug_product>
+    <bug_component>docs</bug_component>
+    <rcs_server idref="%(branch/rcs_server)"/>
+    <rcs_module>%(branch/rcs_module)</rcs_module>
+    <rcs_branch>%(branch/rcs_branch)</rcs_branch>
+    <rcs_web>http://cvs.gnome.org/viewcvs/%(rcs_module)/%(rcs_dir)/?only_with_tag=%(rcs_branch)</rcs_web>
+  </document>
+</defaults>
+
+<server id="gnome-cvs">
+  <rcs_type>cvs</rcs_type>
+  <rcs_root>:pserver:anonymous@anoncvs.gnome.org:/cvs/gnome</rcs_root>
+</server>
+
+<module id="atk">
+  <name>Accessibility Toolkit (ATK)</name>
+  <mail_list idref="gnome-accessibility-list"/>
+  <mail_list idref="gnome-accessibility-devel"/>
+  <maintainer idref="billh"/>
+  <defaults>
+    <branch>
+      <domain id="po">
+        <name>UI Translations</name>
+      </domain>
+    </branch>
+  </defaults>
+  <branch id="gnome-2-12"/>
+  <branch id="HEAD"/>
+</module>
+
+<module id="at-spi">
+  <name>AT-SPI</name>
+  <mail_list idref="gnome-accessibility-list"/>
+  <mail_list idref="gnome-accessibility-devel"/>
+  <maintainer idref="billh"/>
+  <defaults>
+    <branch>
+      <domain id="po">
+        <name>UI Translations</name>
+      </domain>
+    </branch>
+  </defaults>
+  <branch id="HEAD"/>
+</module>
+
+<module id="bug-buddy">
+  <name>Bug Report Tool</name>
+  <maintainer idref="fherrera"/>
+  <defaults>
+    <branch>
+      <domain id="po">
+        <name>UI Translations</name>
+      </domain>
+    </branch>
+    <document id="bug-buddy">
+      <name>Bug Report Tool</name>
+      <rcs_dir>docs</rcs_dir>
+    </document>
+  </defaults>
+  <branch id="gnome-2-12"/>
+  <branch id="HEAD"/>
+</module>
+
+<module id="dasher">
+  <name>Dasher</name>
+  <maintainer idref="pcowans"/>
+  <defaults>
+    <branch>
+      <domain id="po">
+        <name>UI Translations</name>
+      </domain>
+    </branch>
+    <document id="dasher">
+      <name>Dasher Manual</name>
+      <rcs_dir>Data/Help/Gnome</rcs_dir>
+    </document>
+  </defaults>
+  <branch id="gnome-2-12"/>
+  <branch id="gnome-2-14"/>
+  <branch id="HEAD"/>
+</module>
+
+<module id="deskbar-applet">
+  <name>Deskbar Applet</name>
+  <mail_list idref="deskbar-applet-list"/>
+  <webpage>http://raphael.slinckx.net/deskbar/</webpage>
+  <maintainer idref="rslinckx"/>
+  <defaults>
+    <branch>
+      <domain id="po">
+        <name>UI Translations</name>
+      </domain>
+    </branch>
+  </defaults>
+  <branch id="gnome-2-14"/>
+  <branch id="HEAD"/>
+</module>
+
+<module id="eel">
+  <name>eel</name>
+  <maintainer idref="alexl"/>
+  <maintainer idref="campd"/>
+  <defaults>
+    <branch>
+      <domain id="po">
+        <name>Core Translations</name>
+      </domain>
+    </branch>
+  </defaults>
+  <branch id="gnome-2-12"/>
+  <branch id="HEAD"/>
+</module>
+
+<module id="ekiga">
+  <name>Ekiga</name>
+  <maintainer idref="dsandras"/>
+  <defaults>
+    <branch>
+      <domain id="po">
+        <name>UI Translations</name>
+      </domain>
+      <document id="ekiga">
+        <name>Ekiga Manual</name>
+        <rcs_dir>help</rcs_dir>
+      </document>
+    </branch>
+  </defaults>
+  <branch id="gnome-2-12"/>
+  <branch id="HEAD"/>
+</module>
+
+<module id="eog">
+  <name>Image Viewer</name>
+  <maintainer idref="lucasr"/>
+  <maintainer idref="timg"/>
+  <defaults>
+    <branch>
+      <domain id="po">
+        <name>UI Translations</name>
+      </domain>
+      <document id="eog">
+        <name>Image Viewer Manual</name>
+        <rcs_dir>help</rcs_dir>
+      </document>
+    </branch>
+  </defaults>
+  <branch id="gnome-2-12"/>
+  <branch id="gnome-2-14"/>
+  <branch id="HEAD"/>
+</module>
+
+<module id="epiphany">
+  <name>Epiphany Web Browser</name>
+  <webpage>http://gnome.org/projects/epiphany/</webpage>
+  <mail_list idref="epiphany-list"/>
+  <mainteiner id="chpe"/>
+  <mainteiner id="marco"/>
+  <defaults>
+    <branch>
+      <domain id="po">
+        <name>UI Translations</name>
+      </domain>
+    </branch>
+    <document id="epiphany">
+      <name>Epiphany Manual</name>
+      <rcs_dir>help</rcs_dir>
+    </document>
+  </defaults>
+  <branch id="gnome-2-12"/>
+  <branch id="gnome-2-14"/>
+  <branch id="HEAD" stringfrozen="true"/>
+</module>
+
+<module id="evince">
+  <name>Evince Document Viewer</name>
+  <mail_list idref="evince-list"/>
+  <webpage>http://gnome.org/projects/evince/</webpage>
+  <maintainer idref="jrb"/>
+  <defaults>
+    <branch>
+      <domain id="po">
+        <name>UI Translations</name>
+      </domain>
+    </branch>
+    <document id="evince">
+      <name>Evince Document Viewer Manual</name>
+      <rcs_dir>help</rcs_dir>
+    </document>
+  </defaults>
+  <branch id="gnome-2-12"/>
+  <branch id="gnome-2-14"/>
+  <branch id="HEAD" stringfrozen="true"/>
+</module>
+
+<module id="evolution-data-server">
+  <name>evolution-data-server</name>
+  <mail_list idref="evolution-list"/>
+  <mail_list idref="evolution-hackers"/>
+  <maintainer idref="hansp"/>
+  <mainteiner id="kharish"/>
+  <maintainer idref="pchen"/>
+  <maintainer idref="rodrigo"/>
+  <maintainer idref="siva"/>
+  <defaults>
+    <branch>
+      <domain id="po">
+        <name>Core Translations</name>
+      </domain>
+    </branch>
+  </defaults>
+  <branch id="gnome-2-12"/>
+  <branch id="gnome-2-14"/>
+  <branch id="HEAD" stringfrozen="true"/>
+</module>
+
+<module id="evolution">
+  <name>Evolution</name>
+  <mail_list idref="evolution-list"/>
+  <mail_list idref="evolution-hackers"/>
+  <maintainer idref="hansp"/>
+  <mainteiner id="kharish"/>
+  <maintainer idref="pchen"/>
+  <maintainer idref="rodrigo"/>
+<!-- FIXME: these are maintainers too:
+Parthasarathi Susarla <sparthasarathi@novell.com>
+Shreyas S <sshreyas@novell.com>
+Sushma Rai <rsushma@novell.com>
+Radek Doulik <rodo@novell.com>
+Srinivasa Ragavan <sragavan@novell.com>
+Michael Zucchi <notzed@novell.com>
+Mark Moulder <mmoulder@novell.com>
+-->
+  <defaults>
+    <branch>
+      <domain id="po">
+        <name>Core Translations</name>
+      </domain>
+      <document id="evolution">
+        <name>Evolution User Guide</name>
+        <rcs_dir>help</rcs_dir>
+      </document>
+    </branch>
+  </defaults>
+  <branch id="gnome-2-12"/>
+  <branch id="gnome-2-14"/>
+  <branch id="HEAD" stringfrozen="true"/>
+</module>
+
+<module id="evolution-exchange">
+  <name>Evolution Exchange Connector</name>
+  <mail_list idref="evolution-list"/>
+  <mail_list idref="evolution-hackers"/>
+  <maintainer idref="jpr"/>
+<!-- FIXME: these are maintainers too:
+Sushma Rai <rsushma@novell.com>
+Sarfraaz Ahmed <asarfraaz@novell.com>
+-->
+  <defaults>
+    <branch>
+      <domain id="po">
+        <name>Core Translations</name>
+      </domain>
+    </branch>
+  </defaults>
+  <branch id="gnome-2-12"/>
+  <branch id="gnome-2-14"/>
+  <branch id="HEAD" stringfrozen="true"/>
+</module>
+
+<module id="evolution-webcal">
+  <name>Evolution Webcal</name>
+  <mail_list idref="evolution-list"/>
+  <mail_list idref="evolution-hackers"/>
+  <maintainer idref="dobey"/>
+  <defaults>
+    <branch>
+      <domain id="po">
+        <name>Core Translations</name>
+      </domain>
+    </branch>
+  </defaults>
+  <branch id="gnome-2-12"/>
+  <branch id="HEAD" stringfrozen="true"/>
+</module>
+
+<module id="fast-user-switch-applet">
+  <name>User Switcher</name>
+  <maintainer idref="jcape"/>
+  <defaults>
+    <branch>
+      <domain id="po">
+        <name>UI Translations</name>
+      </domain>
+    </branch>
+    <document id="fast-user-switch-applet">
+      <name>User Switcher Manual</name>
+      <rcs_dir>help</rcs_dir>
+    </document>
+  </defaults>
+  <branch id="gnome-2-14"/>
+  <branch id="HEAD"/>
+</module>
+
+<module id="file-roller">
+  <name>Archive Manager</name>
+  <maintainer idref="poabac"/>
+  <defaults>
+    <branch>
+      <domain id="po">
+        <name>UI Translations</name>
+      </domain>
+    </branch>
+    <document id="file-rooler">
+      <name>File Roller Manual</name>
+      <rcs_dir>help</rcs_dir>
+    </document>
+  </defaults>
+  <branch id="gnome-2-12"/>
+  <branch id="HEAD"/>
+</module>
+
+<module id="gail">
+  <name>gail</name>
+  <mail_list idref="gnome-accessibility-list"/>
+  <mail_list idref="gnome-accessibility-devel"/>
+  <maintainer idref="billh"/>
+  <defaults>
+    <branch>
+      <domain id="po">
+        <name>UI Translations</name>
+      </domain>
+    </branch>
+  </defaults>
+  <branch id="HEAD"/>
+</module>
+
+<module id="gcalctool">
+  <name>Calculator</name>
+  <maintainer idref="richb"/>
+  <defaults>
+    <branch>
+      <domain id="po">
+        <name>UI Translations</name>
+      </domain>
+    </branch>
+    <document id="gcalctool">
+      <name>Calculator Manual</name>
+      <rcs_dir>help</rcs_dir>
+    </document>
+  </defaults>
+  <branch id="gnome-2-12"/>
+  <branch id="gnome-2-14"/>
+  <branch id="HEAD"/>
+</module>
+
+<module id="gconf-editor">
+  <name>Configuration Editor</name>
+  <maintainer idref="fherrera"/>
+  <defaults>
+    <branch>
+      <domain id="po">
+        <name>UI Translations</name>
+      </domain>
+    </branch>
+    <document id="gcalctool">
+      <name>Configuration Editor Manual</name>
+      <rcs_dir>docs</rcs_dir>
+    </document>
+  </defaults>
+  <branch id="gnome-2-12"/>
+  <branch id="HEAD"/>
+</module>
+
+<module id="gconf">
+  <name>GConf</name>
+  <mail_list idref="gconf-list"/>
+  <maintainer idref="hp"/>
+  <maintainer idref="markmc"/>
+  <defaults>
+    <branch>
+      <domain id="po">
+        <name>UI Translations</name>
+      </domain>
+    </branch>
+  </defaults>
+  <branch id="gnome-2-12"/>
+  <branch id="HEAD"/>
+</module>
+
+<module id="gdm2">
+  <name>GNOME Display Manager</name>
+  <mail_list idref="gdm-list"/>
+  <maintainer idref="bcameron"/>
+  <download>http://ftp.gnome.org/pub/gnome/sources/gdm/</download>
+  <defaults>
+    <branch>
+      <domain id="po">
+        <name>UI Translations</name>
+      </domain>
+    </branch>
+    <document id="gdm">
+      <name>Gnome Display Manager Reference Manual</name>
+      <rcs_dir>docs</rcs_dir>
+    </document>
+  </defaults>
+  <branch id="gnome-2-12"/>
+  <branch id="HEAD"/>
+</module>
+
+<module id="gedit">
+  <name>Text Editor</name>
+  <mail_list idref="gedit-list"/>
+  <maintainer idref="paolo"/>
+  <defaults>
+    <branch>
+      <domain id="po">
+        <name>UI Translations</name>
+      </domain>
+    </branch>
+    <document id="help">
+      <name>gedit Manual</name>
+      <rcs_dir>help</rcs_dir>
+    </document>
+  </defaults>
+  <branch id="gnome-2-12"/>
+  <branch id="gnome-2-14"/>
+  <branch id="HEAD"/>
+</module>
+
+<module id="glib">
+  <name>GLib</name>
+  <webpage>http://gtk.org/</webpage>
+  <maintainer idref="matthiasc"/>
+  <maintainer idref="owen"/>
+  <maintainer idref="timj"/>
+  <maintainer idref="yosh"/>
+  <defaults>
+    <branch>
+      <domain id="po">
+        <name>UI Translations</name>
+      </domain>
+    </branch>
+  </defaults>
+  <branch id="glib-2-10"/>
+  <branch id="HEAD"/>
+</module>
+
+<module id="gnome-applets">
+  <name>Gnome Applets</name>
+  <maintainer idref="davyd"/>
+  <maintainer idref="ryanl"/>
+<!-- FIXME: also maintainers:
+CPUFreq Maintainer:
+  Carlos Garcia Campos  <carlosgc@gnome.org>
+
+GSwitchIt Maintainer:
+  Sergey Udaltsov <svu@gnome.org>
+
+Mixer Maintainer:
+  Ronald S. Bultje  <rbultje@ronald.bitfreak.net>
+-->
+  <defaults>
+    <branch>
+      <domain id="po">
+        <name>UI Translations</name>
+      </domain>
+      <domain id="po-locations">
+        <name>Weather Applet Locations</name>
+      </domain>
+      <document id="accessx-status">
+        <name>Keyboard Accessibility Monitor Manual</name>
+        <rcs_dir>accessx-status/docs</rcs_dir>
+      </document>
+      <document id="battstat">
+        <name>Battery Charge Monitor Manual</name>
+        <rcs_dir>battstat/docs</rcs_dir>
+      </document>
+      <document id="char-palette">
+        <name>Character Palette Manual</name>
+        <rcs_dir>charpick/help</rcs_dir>
+      </document>
+      <document id="cpufreq-applet">
+        <name>CPU Frequency Scaling Monitor Manual</name>
+        <rcs_dir>cpufreq/help</rcs_dir>
+      </document>
+      <document id="drivemount">
+        <name>Disk Mounter Manual</name>
+        <rcs_dir>drivemount/help</rcs_dir>
+      </document>
+      <document id="geyes">
+        <name>Geyes Manual</name>
+        <rcs_dir>geyes/docs</rcs_dir>
+      </document>
+      <document id="gswitchit">
+        <name>Keyboard Indicator Manual</name>
+        <rcs_dir>gswitchit/help</rcs_dir>
+      </document>
+      <document id="gtik2_applet2">
+        <name>Stock Ticker Manual</name>
+        <rcs_dir>gtik/help</rcs_dir>
+      </document>
+      <document id="gweather">
+        <name>Weather Report Manual</name>
+        <rcs_dir>gweather/docs</rcs_dir>
+      </document>
+      <document id="command-line">
+        <name>Command Line Manual</name>
+        <rcs_dir>mini-commander/help</rcs_dir>
+      </document>
+      <document id="mixer_applet2">
+        <name>Volume Control Manual</name>
+        <rcs_dir>mixer/docs</rcs_dir>
+      </document>
+      <document id="multiload">
+        <name>System Monitor Manual</name>
+        <rcs_dir>multiload/docs</rcs_dir>
+      </document>
+      <document id="stickynotes_applet">
+        <name>Sticky Notes Manual</name>
+        <rcs_dir>stickynotes/docs</rcs_dir>
+      </document>
+      <document id="trashapplet">
+        <name>Panel Trash Manual</name>
+        <rcs_dir>trashapplet/docs</rcs_dir>
+      </document>
+    </branch>
+  </defaults>
+  <branch id="gnome-2-12"/>
+  <branch id="gnome-2-14"/>
+  <branch id="HEAD"/>
+</module>
+
+<module id="gnome-backgrounds">
+  <name>Gnome Backgrounds</name>
+  <maintainer idref="thos"/>
+  <defaults>
+    <branch>
+      <domain id="po">
+        <name>UI Translations</name>
+      </domain>
+    </branch>
+  </defaults>
+  <branch id="gnome-backgrounds-2-12"/>
+  <branch id="HEAD"/>
+</module>
+
+<module id="gnome-control-center">
+  <name>Control Center</name>
+  <download>http://ftp.gnome.org/pub/gnome/sources/control-center/</download>
+  <maintainer idref="dobey"/>
+  <maintainer idref="clahey"/>
+  <maintainer idref="rodrigo"/>
+  <maintainer idref="seb128"/>
+  <defaults>
+    <branch>
+      <domain id="po">
+        <name>UI Translations</name>
+      </domain>
+      <document id="control-center">
+        <name>Control Center</name>
+        <rcs_dir>help</rcs_dir>
+      </document>
+    </branch>
+  </defaults>
+  <branch id="gnome-2-12"/>
+  <branch id="HEAD"/>
+</module>
+
+<module id="gnome-desktop">
+  <name>Gnome Desktop</name>
+  <maintainer idref="markmc"/>
+  <maintainer idref="jirka"/>
+  <defaults>
+    <branch>
+      <domain id="po">
+        <name>UI Translations</name>
+      </domain>
+      <document id="fdl">
+        <name>GNU Free Documentation License</name>
+        <rcs_dir>desktop-docs/fdl</rcs_dir>
+      </document>
+      <document id="gpl">
+        <name>GNU General License</name>
+        <rcs_dir>desktop-docs/gpl</rcs_dir>
+      </document>
+      <document id="gnome-feedback">
+        <name>Reporting GNOME Bugs and Other Feedback</name>
+        <rcs_dir>desktop-docs/gnome-feedback</rcs_dir>
+      </document>
+      <document id="lgpl">
+        <name>GNU Lesser General License</name>
+        <rcs_dir>desktop-docs/lgpl</rcs_dir>
+      </document>
+    </branch>
+  </defaults>
+  <branch id="gnome-2-12"/>
+  <branch id="gnome-2-14"/>
+  <branch id="HEAD"/>
+</module>
+
+<module id="gnome-doc-utils">
+  <name>GNOME Documentation Utilities</name>
+  <mail_list idref="gnome-doc-devel-list"/>
+  <maintainer idref="shaunm"/>
+  <maintainer idref="danilo"/>
+  <defaults>
+   <branch>
+     <domain id="po">
+       <name>Document Formatting Translations</name>
+     </domain>
+     <document id="gnome-doc-make">
+       <name>GNOME Documentation Build Utilities</name>
+       <rcs_dir>doc/gnome-doc-make</rcs_dir>
+     </document>
+     <document id="gnome-doc-xslt">
+       <name>GNOME Documentation XSLT Manual</name>
+       <rcs_dir>doc/xslt</rcs_dir>
+     </document>
+   </branch>
+  </defaults>
+  <branch id="gnome-2-12"/>
+  <branch id="HEAD"/>
+</module>
+
+<module id="gnome-games">
+  <name>GNOME Games</name>
+  <mail_list idref="games-list"/>
+  <maintainer idref="callum"/>
+  <maintainer idref="mccann"/>
+  <defaults>
+    <document>
+      <rcs_dir>%(id)/help</rcs_dir>
+    </document>
+    <branch>
+     <domain id="po">
+       <name>UI Translations</name>
+     </domain>
+     <document id="aisleriot">
+       <name>AisleRiot Manual</name>
+     </document>
+     <document id="blackjack">
+       <name>Blackjack Manaul</name>
+     </document>
+     <document id="gnometris">
+       <name>Gnometris Manual</name>
+     </document>
+     <document id="gnect">
+       <name>Four-in-a-row Manual</name>
+     </document>
+     <document id="gnomine">
+       <name>Mines Manual</name>
+     </document>
+     <document id="same-gnome">
+       <name>Same GNOME Manual</name>
+     </document>
+     <document id="mahjongg">
+       <name>Mahjongg Manual</name>
+     </document>
+     <document id="gtali">
+       <name>GNOME Tali Manual</name>
+     </document>
+     <document id="gataxx">
+       <name>Ataxx Manual</name>
+     </document>
+     <document id="gnotravex">
+       <name>GNOME Tetravex Manual</name>
+     </document>
+     <document id="gnotski">
+       <name>GNOME Klotski Manual</name>
+     </document>
+     <document id="glines">
+       <name>Five or More Manual</name>
+     </document>
+     <document id="iagno">
+       <name>Iagno Manual</name>
+     </document>
+     <document id="gnobots2">
+       <name>GNOME Robots Manual</name>
+     </document>
+     <document id="gnibbles">
+       <name>Nibbles Manual</name>
+     </document>
+    </branch>
+  </defaults>
+  <branch id="gnome-2-12"/>
+  <branch id="gnome-2-14"/>
+  <branch id="HEAD"/>
+</module>
+
+<module id="gnome-icon-theme">
+  <name>GNOME Icon Theme</name>
+  <maintainer idref="dobey"/>
+  <maintainer idref="jimmac"/>
+  <defaults>
+    <branch>
+      <domain id="po">
+        <name>Icon Name Translations</name>
+      </domain>
+    </branch>
+  </defaults>
+  <branch id="gnome-2-12"/>
+  <branch id="gnome-2-14"/>
+  <branch id="HEAD"/>
+</module>
+
+<module id="gnome-keyring">
+  <name>GNOME Keyring</name>
+  <maintainer idref="alexl"/>
+  <defaults>
+    <branch>
+      <domain id="po">
+        <name>Core Translations</name>
+      </domain>
+    </branch>
+  </defaults>
+  <branch id="gnome-2-12"/>
+  <branch id="HEAD"/>
+</module>
+
+<module id="gnome-keyring-manager">
+  <name>GNOME Keyring Manager</name>
+  <maintainer idref="jbowes"/>
+  <defaults>
+    <branch>
+      <domain id="po">
+        <name>Core Translations</name>
+      </domain>
+      <document id="gnome-keyring-manager">
+        <name>GNOME Keyring Manager Manual</name>
+        <rcs_dir>docs</rcs_dir>
+      </document>
+    </branch>
+  </defaults>
+  <branch id="gnome-2-12"/>
+  <branch id="HEAD"/>
+</module>
+
+<module id="gnome-mag">
+  <name>Magnifier</name>
+  <maintainer idref="billh"/>
+  <defaults>
+    <branch>
+      <domain id="po">
+        <name>UI Translations</name>
+      </domain>
+    </branch>
+  </defaults>
+  <branch id="HEAD"/>
+</module>
+
+<module id="gnome-media">
+  <name>GNOME Media</name>
+  <mail_list idref="gnome-multimedia"/>
+  <maintainer idref="thomasvs"/>
+  <maintainer idref="rbultje"/>
+  <defaults>
+    <branch>
+      <domain id="po">
+        <name>UI Translations</name>
+      </domain>
+      <document id="gnome-cd">
+        <name>CD Player Manual</name>
+        <rcs_dir>gnome-cd/doc</rcs_dir>
+      </document>
+      <document id="gnome-sound-recorder">
+        <name>Sound Recorder Manual</name>
+        <rcs_dir>grecord/doc</rcs_dir>
+      </document>
+      <document id="gnome-volume-control">
+        <name>GNOME Volume Control Manual</name>
+        <rcs_dir>gst-mixer/doc</rcs_dir>
+      </document>
+    </branch>
+  </defaults>
+  <branch id="gnome-2-12"/>
+  <branch id="HEAD"/>
+</module>
+
+<module id="gnome-menus">
+  <name>GNOME Menus</name>
+  <maintainer idref="markmc"/>
+  <defaults>
+    <branch>
+      <domain id="po">
+        <name>UI Translations</name>
+      </domain>
+    </branch>
+  </defaults>
+  <branch id="gnome-2-12"/>
+  <branch id="HEAD"/>
+</module>
+
+<module id="gnome-mime-data">
+  <name>GNOME MIME Data</name>
+  <maintainer idref="hadess"/>
+  <defaults>
+    <branch>
+      <domain id="po">
+        <name>UI Translations</name>
+      </domain>
+    </branch>
+  </defaults>
+  <branch id="HEAD"/>
+</module>
+
+<module id="gnome-panel">
+  <name>GNOME Panel</name>
+  <maintainer idref="jirka"/>
+  <maintainer idref="markmc"/>
+  <maintainer idref="vuntz"/>
+  <maintainer idref="arvind"/>
+  <defaults>
+    <branch>
+      <domain id="po">
+        <name>UI Translations</name>
+      </domain>
+      <document id="clock">
+        <name>Clock Manual</name>
+        <rcs_dir>help/clock</rcs_dir>
+      </document>
+      <document id="fish">
+        <name>Fish Manual</name>
+        <rcs_dir>help/fish</rcs_dir>
+      </document>
+      <document id="window-list">
+        <name>Window List Manual</name>
+        <rcs_dir>help/window-list</rcs_dir>
+      </document>
+      <document id="workspace-switcher">
+        <name>Workspace Switcher Manual</name>
+        <rcs_dir>help/workspace-switcher</rcs_dir>
+      </document>
+    </branch>
+  </defaults>
+  <branch id="gnome-2-12"/>
+  <branch id="HEAD"/>
+</module>
+
+<module id="gnome-netstatus">
+  <name>Network Monitor</name>
+  <maintainer idref="markmc"/>
+  <defaults>
+    <branch>
+      <domain id="po">
+        <name>UI Translations</name>
+      </domain>
+      <document id="gnome-netstatus">
+        <name>Network Monitor Manual</name>
+        <rcs_dir>help</rcs_dir>
+      </document>
+    </branch>
+  </defaults>
+  <branch id="HEAD"/>
+</module>
+
+<module id="gnome-nettool">
+  <name>GNOME Nettool</name>
+  <maintainer idref="gpoo"/>
+  <maintainer idref="rodrigo"/>
+  <defaults>
+    <branch>
+      <domain id="po">
+        <name>UI Translations</name>
+      </domain>
+      <document id="gnome-netstatus">
+        <name>GNOME Nettool Manual</name>
+        <rcs_dir>help</rcs_dir>
+      </document>
+    </branch>
+  </defaults>
+  <branch id="gnome-2-12"/>
+  <branch id="HEAD"/>
+</module>
+
+<module id="gnome-power-manager">
+  <name>GNOME Power Manager</name>
+  <mail_list idref="gnome-power-manager-list"/>
+  <maintainer idref="rhughes"/>
+  <defaults>
+    <branch>
+      <domain id="po">
+        <name>UI Translations</name>
+      </domain>
+    </branch>
+    <document id="gnome-power-manager">
+      <name>GNOME Power Manager Manual</name>
+      <rcs_dir>help</rcs_dir>
+    </document>
+  </defaults>
+  <branch id="gnome-2-14"/>
+  <branch id="HEAD"/>
+</module>
+
+<module id="gnome-session">
+  <name>GNOME Session</name>
+  <maintainer idref="markmc"/>
+  <maintainer idref="jberkman"/>
+  <defaults>
+    <branch>
+      <domain id="po">
+        <name>UI Translations</name>
+      </domain>
+    </branch>
+  </defaults>
+  <branch id="gnome-2-12"/>
+  <branch id="HEAD"/>
+</module>
+
+<module id="gnome-speech">
+  <name>GNOME Speech</name>
+  <maintainer idref="billh"/>
+  <maintainer idref="wwalker"/>
+  <branch id="gnome-2-14"/>
+  <branch id="HEAD"/>
+</module>
+
+<module id="gnome-system-monitor">
+  <name>System Monitor</name>
+  <maintainer idref="bdejean"/>
+  <defaults>
+    <branch>
+      <domain id="po">
+        <name>UI Translations</name>
+      </domain>
+      <document id="gnome-system-monitor">
+        <name>System Monitor Manual</name>
+        <rcs_dir>help</rcs_dir>
+      </document>
+    </branch>
+  </defaults>
+  <branch id="gnome-2-12"/>
+  <branch id="HEAD"/>
+</module>
+
+<module id="gnome-screensaver">
+  <name>GNOME Screensaver</name>
+  <maintainer idref="mccann"/>
+  <defaults>
+    <branch>
+      <domain id="po">
+        <name>UI Translations</name>
+      </domain>
+    </branch>
+  </defaults>
+  <branch id="HEAD"/>
+</module>
+
+<module id="gnome-system-tools">
+  <name>GNOME System Tools</name>
+  <mail_list idref="system-tools-list"/>
+  <maintainer idref="carlogs"/>
+  <defaults>
+    <branch>
+      <domain id="po">
+        <name>UI Translations</name>
+      </domain>
+      <document id="boot-admin">
+        <name>Bootloader Administration Tool Manual</name>
+        <rcs_dir>doc/boot</rcs_dir>
+      </document>
+      <document id="network-admin">
+        <name>Network Administration Tool Manual</name>
+        <rcs_dir>doc/network</rcs_dir>
+      </document>
+      <document id="services-admin">
+        <name>Services Administration Tool Manual</name>
+        <rcs_dir>doc/services</rcs_dir>
+      </document>
+      <document id="users-admin">
+        <name>Users Administration Tool Manual</name>
+        <rcs_dir>doc/users</rcs_dir>
+      </document>
+    </branch>
+  </defaults>
+  <branch id="gnome-2-12"/>
+  <branch id="HEAD"/>
+</module>
+
+<module id="gnome-terminal">
+  <name>Terminal</name>
+  <maintainer idref="gpastore"/>
+  <defaults>
+    <branch>
+      <domain id="po">
+        <name>UI Translations</name>
+      </domain>
+      <document id="gnome-terminal">
+        <name>GNOME Terminal Manual</name>
+        <rcs_dir>help</rcs_dir>
+      </document>
+    </branch>
+  </defaults>
+  <branch id="gnome-2-12"/>
+  <branch id="gnome-2-14"/>
+  <branch id="HEAD"/>
+</module>
+
+<module id="gnome-themes">
+  <name>GNOME Themes</name>
+  <maintainer idref="billh"/>
+  <maintainer idref="calum"/>
+  <maintainer idref="campd"/>
+  <maintainer idref="seth"/>
+  <maintainer idref="thos"/>
+  <defaults>
+    <branch>
+      <domain id="po">
+        <name>UI Translations</name>
+      </domain>
+    </branch>
+  </defaults>
+  <branch id="gnome-2-12"/>
+  <branch id="gnome-2-14"/>
+  <branch id="HEAD"/>
+</module>
+
+<module id="gnome-user-docs">
+  <name>GNOME User Documentation</name>
+  <mail_list idref="gnome-doc-list"/>
+  <maintainer idref="shaunm"/>
+  <defaults>
+    <branch>
+      <document id="gnome-access-guide">
+        <name>Desktop Accessibility Guide</name>
+        <rcs_dir>gnome2-accessibility-guide</rcs_dir>
+      </document>
+      <document id="system-admin-guide">
+        <name>Desktop System Administration Guide</name>
+        <rcs_dir>gnome2-system-admin-guide</rcs_dir>
+      </document>
+      <document id="user-guide">
+        <name>Desktop User Guide</name>
+        <rcs_dir>gnome2-user-guide</rcs_dir>
+      </document>
+    </branch>
+  </defaults>
+  <branch id="gnome-2-14"/>
+  <branch id="HEAD"/>
+</module>
+
+<module id="gnome-utils">
+  <name>GNOME Utilities</name>
+  <mail_list idref="gnome-utils-list"/>
+  <maintainer idref="dcransto"/>
+  <maintainer idref="ebassi"/>
+  <maintainer idref="jrb"/>
+  <maintainer idref="vnoel"/>
+  <defaults>
+    <branch>
+      <domain id="po">
+        <name>UI Translations</name>
+      </domain>
+      <document id="gfloppy">
+        <name>GFloppy Manual</name>
+        <rcs_dir>gfloppy/doc</rcs_dir>
+      </document>
+      <document id="gnome-dictionary">
+        <name>Dictionary Manual</name>
+        <rcs_dir>gnome-dictionary/help</rcs_dir>
+      </document>
+      <document id="gnome-search-tool">
+        <name>Search for Files Manual</name>
+        <rcs_dir>gsearchtool/help</rcs_dir>
+      </document>
+      <document id="gnome-system-log">
+        <name>System Log Viewer Manual</name>
+        <rcs_dir>logview/help</rcs_dir>
+      </document>
+    </branch>
+  </defaults>
+  <branch id="gnome-2-12"/>
+  <branch id="gnome-2-14"/>
+  <branch id="HEAD"/>
+</module>
+
+<module id="gnome-vfs">
+  <name>GNOME-VFS</name>
+  <mail_list idref="gnome-vfs-list"/>
+  <maintainer idref="alexl"/>
+  <maintainer idref="federico"/>
+  <maintainer idref="gicmo"/>
+  <defaults>
+    <branch>
+      <domain id="po">
+        <name>UI Translations</name>
+      </domain>
+    </branch>
+  </defaults>
+  <branch id="gnome-2-12"/>
+  <branch id="HEAD"/>
+</module>
+
+<module id="gnome-volume-manager">
+  <name>GNOME Volume Manager</name>
+  <maintainer idref="fejj"/>
+  <maintainer idref="rml"/>
+  <defaults>
+    <branch>
+      <domain id="po">
+        <name>UI Translations</name>
+      </domain>
+    </branch>
+  </defaults>
+  <branch id="gnome-2-12"/>
+  <branch id="HEAD"/>
+</module>
+
+<module id="gnopernicus">
+  <name>Gnopernicus</name>
+  <maintainer idref="adascal"/>
+  <maintainer idref="dsarb"/>
+  <maintainer idref="rdraica"/>
+<!-- FIXME : need IDs
+<person>
+  <name>Draghi Puterity</name>
+  <email>mp@baum.de</email>
+</person>
+<person>
+  <name>Ada Telescu</name>
+  <email>at@baum.ro</email>
+</person>
+<person>
+  <name>Oana Serb</name>
+  <email>os@baum.ro</email>
+</person>
+-->
+  <defaults>
+    <branch>
+      <domain id="po">
+        <name>UI Translations</name>
+      </domain>
+      <document id="brlmonitor">
+        <name>Braille Monitor Manual</name>
+        <rcs_dir>help/braille_monitor</rcs_dir>
+      </document>
+      <document id="gnopernicus">
+        <name>Gnopernicus Manual</name>
+        <rcs_dir>help/gnopernicus</rcs_dir>
+      </document>
+    </branch>
+  </defaults>
+  <branch id="gnome-2-12"/>
+  <branch id="HEAD"/>
+</module>
+
+<module id="gok">
+  <name>GNOME Onscreen Keyboard</name>
+  <maintainer idref="billh"/>
+  <maintainer idref="dtb"/>
+  <defaults>
+    <branch>
+      <domain id="po">
+        <name>UI Translations</name>
+      </domain>
+      <document id="gok">
+        <name>GOK Manual</name>
+        <rcs_dir>help/gok</rcs_dir>
+      </document>
+    </branch>
+  </defaults>
+  <branch id="HEAD"/>
+</module>
+
+<!-- FIXME: add gstreamer, gst-plugins -->
+
+<module id="gtk+">
+  <name>GTK+</name>
+  <mail_list idref="gtk-list"/>
+  <mail_list idref="gtk-devel-list"/>
+  <maintainer idref="matthiasc"/>
+  <maintainer idref="owen"/>
+  <maintainer idref="timj"/>
+  <maintainer idref="yosh"/>
+  <webpage>http://www.gtk.org/</webpage>
+  <defaults>
+    <branch>
+      <domain id="po">
+        <name>Core</name>
+      </domain>
+      <domain id="po-properties">
+        <name>Property Nicks</name>
+      </domain>
+    </branch>
+  </defaults>
+  <branch id="gtk-2-8" stringfrozen="true"/>
+  <branch id="HEAD"/>
+</module>
+
+<module id="gtk-doc">
+  <mail_list idref="gtk-doc-list"/>
+  <!-- FIXME: I'll bet there's stuff to add here -->
+  <branch id="HEAD"/>
+</module>
+
+<module id="gtk-engines">
+  <name>GTK+ Engines</name>
+  <maintainer idref="thos"/>
+  <branch id="HEAD"/>
+</module>
+
+<module id="gtkhtml">
+  <name>GtkHTML</name>
+  <maintainer idref="kaushal"/>
+  <maintainer idref="rodo"/>
+  <defaults>
+    <branch>
+      <domain id="po">
+        <name>Core Translations</name>
+      </domain>
+    </branch>
+  </defaults>
+  <branch id="gnome-2-12"/>
+  <branch id="gnome-2-14"/>
+  <branch id="HEAD"/>
+</module>
+
+<module id="gtksourceview">
+  <name>GtkSourceView</name>
+  <maintainer idref="paolo"/>
+  <maintainer idref="gustavo"/>
+  <defaults>
+    <branch>
+      <domain id="po">
+        <name>Core Translations</name>
+      </domain>
+    </branch>
+  </defaults>
+  <branch id="gnome-2-12"/>
+  <branch id="HEAD"/>
+</module>
+
+<module id="gucharmap">
+  <name>Character Map</name>
+  <maintainer idref="behdad"/>
+  <maintainer idref="nlevitt"/>
+  <defaults>
+    <branch>
+      <domain id="po">
+        <name>UI Translations</name>
+      </domain>
+      <document id="gucharmap">
+        <name>Character Map Manual</name>
+        <rcs_dir>help</rcs_dir>
+      </document>
+    </branch>
+  </defaults>
+  <branch id="gnome-2-12"/>
+  <branch id="gnome-2-14"/>
+  <branch id="HEAD"/>
+</module>
+
+<module id="intltool">
+  <name>intltool</name>
+  <mail_list idref="gnome-i18n-tools"/>
+  <maintainer idref="danilo"/>
+  <maintainer idref="dobey"/>
+  <branch id="HEAD"/>
+</module>
+
+<module id="libbonobo">
+  <name>libbonobo</name>
+  <maintainer idref="gjc"/>
+  <maintainer idref="michael"/>
+  <defaults>
+    <branch>
+      <domain id="po">
+        <name>Core Translations</name>
+      </domain>
+    </branch>
+  </defaults>
+  <branch id="gnome-2-12"/>
+  <branch id="HEAD"/>
+</module>
+
+<module id="libbonoboui">
+  <name>libbonoboui</name>
+  <maintainer idref="michael"/>
+  <defaults>
+    <branch>
+      <domain id="po">
+        <name>Core Translations</name>
+      </domain>
+    </branch>
+  </defaults>
+  <branch id="HEAD"/>
+</module>
+
+<module id="libgail-gnome">
+  <name>libgail-gnome</name>
+  <mail_list idref="gnome-accessibility-list"/>
+  <mail_list idref="gnome-accessibility-devel"/>
+  <maintainer idref="billh"/>
+  <branch id="HEAD"/>
+</module>
+
+<module id="libgnome">
+  <name>libgnome</name>
+  <maintainer idref="kmarass"/>
+  <defaults>
+    <branch>
+      <domain id="po">
+        <name>Core Translations</name>
+      </domain>
+    </branch>
+  </defaults>
+  <branch id="gnome-2-12"/>
+  <branch id="HEAD"/>
+</module>
+
+<module id="libgnomecanvas">
+  <name>libgnomecanvas</name>
+  <maintainer idref="federico"/>
+  <defaults>
+    <branch>
+      <domain id="po">
+        <name>Core Translations</name>
+      </domain>
+    </branch>
+  </defaults>
+  <branch id="gnome-2-12"/>
+  <branch id="HEAD"/>
+</module>
+
+<module id="libgnomeprint">
+  <name>libgnomeprint</name>
+  <maintainer idref="jody"/>
+  <maintainer idref="guelzow"/>
+  <defaults>
+    <branch>
+      <domain id="po">
+        <name>Core Translations</name>
+      </domain>
+    </branch>
+  </defaults>
+  <branch id="HEAD"/>
+</module>
+
+<module id="libgnomeprintui">
+  <name>libgnomeprintui</name>
+  <maintainer idref="jody"/>
+  <maintainer idref="guelzow"/>
+  <defaults>
+    <branch>
+      <domain id="po">
+        <name>Core Translations</name>
+      </domain>
+    </branch>
+  </defaults>
+  <branch id="gnome-2-12"/>
+  <branch id="HEAD"/>
+</module>
+
+<module id="libgnomeui">
+  <name>libgnomeui</name>
+  <maintainer idref="kmarass"/>
+  <defaults>
+    <branch>
+      <domain id="po">
+        <name>Core Translations</name>
+      </domain>
+    </branch>
+  </defaults>
+  <branch id="gnome-2-12"/>
+  <branch id="HEAD"/>
+</module>
+
+<module id="libglade">
+  <name>libglade</name>
+  <maintainer idref="jamesh"/>
+  <defaults>
+    <branch>
+      <domain id="po">
+        <name>Core Translations</name>
+      </domain>
+    </branch>
+  </defaults>
+  <branch id="HEAD"/>
+</module>
+
+<module id="libgtop">
+  <name>libgtop</name>
+  <maintainer idref="bdejean"/>
+  <defaults>
+    <branch>
+      <domain id="po">
+        <name>Core Translations</name>
+      </domain>
+    </branch>
+  </defaults>
+  <branch id="gnome-2-12"/>
+  <branch id="HEAD"/>
+</module>
+
+<module id="librsvg">
+  <name>librsvg</name>
+  <maintainer idref="cmoore"/>
+  <maintainer idref="doml"/>
+  <branch id="gnome-2-12-branch"/>
+  <branch id="gnome-2-14"/>
+  <branch id="HEAD"/>
+</module>
+
+<module id="libsoup">
+  <name>libsoup</name>
+  <mail_list idref="libsoup-list"/>
+  <maintainer idref="danw"/>
+  <defaults>
+    <branch>
+      <domain id="po">
+        <name>Core Translations</name>
+      </domain>
+    </branch>
+  </defaults>
+  <branch id="gnome-2-12"/>
+  <branch id="HEAD"/>
+</module>
+
+<module id="libwnck">
+  <name>libwnck</name>
+  <maintainer idref="hp"/>
+  <maintainer idref="markmc"/>
+  <maintainer idref="newren"/>
+  <maintainer idref="vuntz"/>
+  <defaults>
+    <branch>
+      <domain id="po">
+        <name>Core Translations</name>
+      </domain>
+    </branch>
+  </defaults>
+  <branch id="gnome-2-12"/>
+  <branch id="HEAD"/>
+</module>
+
+<module id="libxml2">
+  <name>libxml2</name>
+  <mail_list idref="xml"/>
+  <maintainer idref="veillard"/>
+  <branch id="HEAD"/>
+</module>
+
+<module id="libxslt">
+  <name>libxslt</name>
+  <mail_list idref="xslt"/>
+  <maintainer idref="veillard"/>
+  <branch id="HEAD"/>
+</module>
+
+<module id="metacity">
+  <name>metacity</name>
+  <mail_list idref="metacity-devel-list"/>
+  <maintainer idref="hp"/>
+  <maintainer idref="newren"/>
+  <maintainer idref="ssp"/>
+  <defaults>
+    <branch>
+      <domain id="po">
+        <name>UI Translations</name>
+      </domain>
+    </branch>
+  </defaults>
+  <branch id="gnome-2-12"/>
+  <branch id="gnome-2-14"/>
+  <branch id="HEAD"/>
+</module>
+
+<module id="nautilus">
+  <name>Nautilus</name>
+  <mail_list idref="nautilus-list"/>
+  <maintainer idref="alexl"/>
+  <maintainer idref="campd"/>
+  <maintainer idref="mwehner"/>
+  <defaults>
+    <branch>
+      <domain id="po">
+        <name>UI Translations</name>
+      </domain>
+    </branch>
+  </defaults>
+  <branch id="gnome-2-12"/>
+  <branch id="HEAD"/>
+</module>
+
+<module id="nautilus-cd-burner">
+  <name>Nautilus CD Burner</name>
+  <maintainer idref="mccann"/>
+  <defaults>
+    <branch>
+      <domain id="po">
+        <name>UI Translations</name>
+      </domain>
+    </branch>
+  </defaults>
+  <branch id="gnome-2-12"/>
+  <branch id="HEAD"/>
+</module>
+
+<module id="ORBit2">
+  <name>ORBit2</name>
+  <maintainer idref="markmc"/>
+  <maintainer idref="michael"/>
+  <maintainer idref="frehberg"/>
+  <branch id="HEAD"/>
+</module>
+
+<module id="orca">
+  <name>Orca</name>
+  <mail_list idref="orca-list"/>
+  <maintainer idref="richb"/>
+  <maintainer idref="wwalker"/>
+<!-- FIXME:
+Mike Pedersen <michael.pedersen@sun.com>
+-->
+  <defaults>
+    <branch>
+      <domain id="po">
+        <name>UI Translations</name>
+      </domain>
+    </branch>
+  </defaults>
+  <branch id="HEAD"/>
+</module>
+
+<module id="pango">
+  <name>Pango</name>
+  <maintainer idref="behdad"/>
+  <maintainer idref="owen"/>
+  <branch id="pango-1-12"/>
+  <branch id="HEAD"/>
+</module>
+
+<module id="pkgconfig">
+  <name>pkgconfig</name>
+  <!-- FIXME: add stuff here -->
+</module>
+
+<module id="rhythmbox">
+  <name>Rhythmbox Music Player</name>
+  <mail_list idref="rhythmbox-devel"/>
+  <webpage>http://www.rhythmbox.org/</webpage>
+  <maintainer idref="jrl"/>
+</module>
+
+<module id="sabayon">
+  <name>Sabayon</name>
+  <mail_list idref="sabayon-list"/>
+  <maintainer idref="veillard"/>
+</module>
+
+<!-- FIXME: scrollkeeper -->
+
+<module id="sound-juicer">
+  <name>Sound Juicer</name>
+  <maintainer idref="rburton"/>
+  <defaults>
+    <branch>
+      <domain id="po">
+        <name>UI Translations</name>
+      </domain>
+      <document id="sound-juicer">
+        <name>Sound Juicer Manual</name>
+        <rcs_dir>help/sound-juicer</rcs_dir>
+      </document>
+    </branch>
+  </defaults>
+  <branch id="gnome-2-12"/>
+  <branch id="HEAD"/>
+</module>
+
+<!-- FIXME: startup-notification -->
+
+<module id="totem">
+  <name>Totem Movie Player</name>
+  <maintainer idref="hadess"/>
+  <maintainer idref="rbultje"/>
+  <defaults>
+    <branch>
+      <domain id="po">
+        <name>UI Translations</name>
+      </domain>
+      <document id="totem">
+        <name>Totem Movie Player Manual</name>
+        <rcs_dir>help</rcs_dir>
+      </document>
+    </branch>
+  </defaults>
+  <branch id="gnome-2-12"/>
+  <branch id="HEAD"/>
+</module>
+
+<!-- FIXME
+<module id="xkeyboard-config">
+  <name>XKeyboard-Config</name>
+  <webpage>http://freedesktop.org/wiki/Software/XKeyboardConfig</webpage>
+  <maintainer idref="svu"/>
+  <maintainer idref="xdg-ivan"/>
+  <bug_server>https://bugs.freedesktop.org/</bug_server>
+  <bug_product>xkeyboard-config</bug_product>
+  <bug_component>General</bug_component>
+  <rcs_root>:pserver:anoncvs@cvs.freedesktop.org:/cvs/xlibs</rcs_root>
+  <rcs_module>xkbdesc</rcs_module>
+  <rcs_web>http://cvs.freedesktop.org/xlibs/xkbdesc/?only_with_id=%(branch)</rcs_web>
+  <branch id="HEAD" >
+    <domain id="po">
+      <name>Layout Names</name>
+    </domain>
+  </branch>
+</module>
+-->
+
+<module id="yelp">
+  <name>Yelp</name>
+  <mail_list idref="gnome-doc-devel-list"/>
+  <maintainer idref="bmsmith"/>
+  <maintainer idref="dscorgie"/>
+  <maintainer idref="shaunm"/>
+  <defaults>
+    <branch>
+      <domain id="po">
+        <name>UI Translations</name>
+      </domain>
+    </branch>
+  </defaults>
+  <branch id="gnome-2-12"/>
+  <branch id="gnome-2-14"/>
+  <branch id="HEAD"/>
+</module>
+
+</group>

@@ -1,0 +1,27 @@
+<group>
+  <defaults>
+    <eggs>
+      <test1>WRONG</test1>
+      <test2>WRONG1</test2>
+      <this>eggs</this>
+    </eggs>
+    <fum>
+      <test3>WRONG</test3>
+    </fum>
+  </defaults>
+  <spam id="spam">
+    <defaults>
+      <eggs>
+        <test1>RIGHT</test1>
+        <test2>WRONG2</test2>
+        <that>%(eggs/this)</that>
+        <fum id="fum">
+          <test3>RIGHT</test3>
+        </fum>
+      </eggs>
+    </defaults>
+    <eggs id="eggs">
+      <test2>RIGHT</test2>
+    </eggs>
+  </spam>
+</group>

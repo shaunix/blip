@@ -1,0 +1,142 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<group>
+
+<release id="gnome-2-14">
+  <name>Gnome 2.14</name>
+
+  <defaults>
+    <module><branch>gnome-2-14</branch></module>
+  </defaults>
+
+  <category id="external">
+    <name>External Dependencies</name>
+    <module id="gstreamer"/>
+    <module id="gst-plugins"/>
+    <module id="iso_codes"/>
+    <module id="scrollkeeper"/>
+    <module id="xkeyboard-config"/>
+  </category>
+
+  <category id="platform">
+    <name>Development Platform</name>
+    <module id="at-spi"/>
+    <module id="atk"/>
+    <module id="gail"/>
+    <module id="gconf"/>
+    <module id="glib"/>
+    <module id="gnome-vfs"/>
+    <module id="gtk+"><branch>gtk-2-8</branch></module>
+    <module id="libbonobo"/>
+    <module id="libbonoboui"/>
+    <module id="libgnome"/>
+    <module id="libgnomecanvas"/>
+    <module id="libgnomeui"/>
+  </category>
+
+  <category id="desktop">
+    <name>Desktop Applications</name>
+    <module id="bug-buddy"/>
+    <module id="dasher"/>
+    <module id="deskbar-applet"/>
+    <module id="eel"><branch>HEAD</branch></module>
+    <module id="ekiga"><branch>HEAD</branch></module>
+    <module id="eog"/>
+    <module id="epiphany"/>
+    <module id="evince"/>
+    <module id="evolution"/>
+    <module id="evolution-data-server"/>
+    <module id="evolution-exchange"/>
+    <module id="evolution-webcal"/>
+    <module id="fast-user-switch-applet"/>
+    <module id="file-roller"/>
+    <module id="gcalctool"/>
+    <module id="gconf-editor"/>
+    <module id="gdm2"/>
+    <module id="gedit"/>
+    <module id="gnome-applets"/>
+    <module id="gnome-backgrounds"/>
+    <module id="gnome-control-center"/>
+    <module id="gnome-desktop"/>
+    <module id="gnome-doc-utils"/>
+    <module id="gnome-games"/>
+    <module id="gnome-icon-theme" branch="gnome-2-14"/>
+    <module id="gnome-keyring"/>
+    <module id="gnome-keyring-manager"/>
+    <module id="gnome-mag"/>
+    <module id="gnome-media"/>
+    <module id="gnome-menus"/>
+    <module id="gnome-netstatus"/>
+    <module id="gnome-nettool"/>
+    <module id="gnome-panel"/>
+    <module id="gnome-screensaver"/>
+    <module id="gnome-session"/>
+    <module id="gnome-system-monitor"/>
+    <module id="gnome-system-tools"/>
+    <module id="gnome-terminal"/>
+    <module id="gnome-themes"/>
+    <module id="gnome-utils" branch="gnome-2-14"/>
+    <module id="gnome-volume-manager"/>
+    <module id="gnopernicus"/>
+    <module id="gok"/>
+    <module id="gucharmap" branch="gnome-2-14"/>
+    <module id="metacity" branch="gnome-2-14"/>
+    <module id="nautilus"/>
+    <module id="nautilus-cd-burner"/>
+    <module id="sound-juicer"/>
+    <module id="totem"/>
+    <module id="vino"/>
+    <module id="yelp" branch="gnome-2-14" />
+    <module id="zenity" branch="gnome-2-14"/>
+  </category>
+
+  <category id="desktop-libs">
+    <name>Desktop Libraris</name>
+    <module id="gtkhtml" branch="gnome-2-14"/>
+    <module id="gtksourceview"/>
+    <module id="libgnomeprint"/>
+    <module id="libgnomeprintui"/>
+    <module id="libgtop"/>
+    <module id="libwnck"/>
+    <module id="vte"/>
+  </category>
+  
+  <category id="admin">
+    <name>System Administration</name>
+    <module id="sabayon"/>
+    <module id="pesselus"/>
+  </category>
+</release>
+
+<release id="gnome-2-12">
+  <name>Gnome 2.12</name>
+
+  <defaults>
+    <module><branch>gnome-2-14</branch></module>
+  </defaults>
+
+  <category id="platform">
+    <name>Development Platform</name>
+    <module id="gtk+"><branch>gtk-2-8</branch></module>
+    <module id="glib"><branch>glib-2-8"</branch></module>
+  </category>
+
+  <category id="desktop">
+    <name>Desktop Applications</name>
+    <module id="epiphany"/>
+  </category>
+</release>
+
+<release id="gnome-office">
+  <name>Gnome-Office Productivity Applications</name>
+  <module id="abiword"/>
+  <module id="criawips"/>
+  <module id="dia"/>
+  <module id="gnumeric"/>
+</release>
+
+<release id="gnome-extras">
+  <name>Extra Gnome Applications</name>
+  <module id="rhythmbox"/>
+</release>
+
+</group>

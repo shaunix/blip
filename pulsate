@@ -1,0 +1,77 @@
+#!/usr/bin/env python
+# Copyright (c) 2006  Shaun McCance  <shaunm@gnome.org>
+#
+# This file is part of Pulse, a program for displaying various statistics
+# of questionable relevance about software and the people who make it.
+#
+# Pulse is free software; you can redistribute it and/or modify it under the
+# terms of the GNU General Public License as published by the Free Software
+# Foundation; either version 2 of the License, or (at your option) any later
+# version.
+#
+# Pulse is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with Pulse; if not, write to the Free Software Foundation, 59 Temple Place,
+# Suite 330, Boston, MA  0211-1307  USA.
+#
+
+import sys
+from getopt import getopt
+
+import pulse.utils
+
+args = pulse.utils.odict()
+args['log-file=']  = ('FILE', 'Log updates to the file FILE.')
+args['frob'] = (None, 'Frobnicate something or other.')
+
+def usage (fd=sys.stderr, verbose=False):
+    print >>fd, 'Usage: %s [common-options] tool [tool-options]' % sys.argv[0]
+    print >>fd, '  where tool is one of the following:'
+    import pulse.pulsate
+    d = 0
+    for tool in pulse.pulsate.__all__:
+        d = max (d, len (tool))
+    s = '    %%-%ds - %%s' % d
+    for tool in pulse.pulsate.__all__:
+        mod = pulse.utils.import_ ('pulse.pulsate.' + tool)
+        print >>fd, (s % (tool, mod.synop))
+    print >>fd, '\nFor help on a specific tool, type'
+    print >>fd, '  %s --help tool' % sys.argv[0]
+
+    if not verbose: return
+    print >>fd, '\nThe following common options affect all tools:'
+    argmax = 15
+    for arg in args.keys():
+        k = arg + (args[arg][0] or '')
+        if len(k) > argmax:
+            print >>fd, '  %s' % k
+            s = ('   %%-%ds%%%%s' % argmax) % ' '
+            print >>fd, s % args[arg][1]
+        else:
+            s = ('  %%-%ds %%s' % argmax)
+            print >>fd, s % (k, args[arg][1])
+
+
+if __name__ == "__main__":
+    try:
+        opts, argv = getopt (sys.argv[1:], '', args)
+    except:
+        usage (sys.stderr)
+        sys.exit (1)
+    if len (sys.argv) < 2 or sys.argv[1] == '--usage':
+        usage (sys.stderr)
+        sys.exit (1)
+    elif sys.argv[1] == '--help':
+        if len (sys.argv) < 3:
+            usage (sys.stderr, verbose=True)
+        else:
+            mod = pulse.utils.import_ ('pulse.pulsate.' + sys.argv[2])
+            mod.usage (sys.stderr)
+        sys.exit (1)
+
+    mod = pulse.utils.import_ ('pulse.pulsate.' + argv[0])
+    sys.exit (mod.main (sys.argv))

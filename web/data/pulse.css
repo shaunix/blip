@@ -1,0 +1,155 @@
+html { margin: 0px; padding: 0px; }
+body {
+  margin: 0; padding: 0;
+  color: #2e3436;
+}
+
+h1 { font-size: 1.44em; color: #555753; }
+a { color: #204a87; text-decoration: none; }
+a:visited { color: #a40000; }
+a:hover { text-decoration: underline; }
+a img { border: none; }
+td { vertical-align: top; }
+ul {
+  margin: 0; padding: 0;
+  margin-top: 0.2em;
+  list-style-type: none;
+}
+ul li { margin-left: 1.44em; }
+
+#head {
+  background: #000000;
+  padding: 2px;
+}
+#body {
+  padding: 2.4em;
+}
+
+div.synopsis {
+  margin-top: 2.4em;
+  border-top: solid 1px #666a65;
+}
+table.synopsis {
+  width: 100%;
+  border-collapse: collapse;
+}
+table.synopsis td {
+  padding: 8px;
+  background-color: #ffffff;
+}
+table.synopsis td.icon {
+  width: 80px;
+  text-align: center;
+}
+table.synopsis td.icon img { max-width: 80px; }
+table.synopsis td.graphs {
+  width: 200px;
+}
+
+div.name {
+  font-size: 1.2em;
+}
+div.sublinks {
+  margin-top: 0.2em;
+  margin-left: 1.44em;
+}
+
+div.mail { margin-top: 0.2em; }
+div.web { margin-top: 0.2em; }
+div.mail_list { margin-top: 1em; }
+
+div.affiliation {
+  margin-top: 1em;
+}
+
+div.graph + div.graph {
+  margin-top: 1.44em;
+}
+div.graph div.title {
+  margin-bottom: 0.2em;
+  font-weight: bold;
+  color: #666a65;
+}
+
+table.tabbed-tabs {
+  border-collapse: collapse;
+}
+td.tabbed-tab-expanded {
+  padding: 0;
+  border-top: solid 1px #666a65;
+  border-left: solid 1px #666a65;
+  border-right: solid 1px #666a65;
+  border-bottom: none;
+}
+td.tabbed-tab-expanded div {
+  padding-top: 6px;
+  padding-bottom: 4px;
+  padding-left: 1em;
+  padding-right: 1em;
+}
+td.tabbed-tab-expanded a {
+  color: #2e3436;
+}
+td.tabbed-tab-collapsed {
+  padding: 0;
+  border-top: solid 1px #666a65;
+  border-left: solid 1px #666a65;
+  border-right: solid 1px #666a65;
+  border-bottom: none;
+  background-color: #eeeeec;
+}
+td.tabbed-tab-collapsed div {
+  padding-top: 6px;
+  padding-bottom: 4px;
+  padding-left: 1em;
+  padding-right: 1em;
+  border-bottom: solid 1px #666a65;
+}
+td.tabbed-tab-fin {
+  width: 100%;
+  border-bottom: solid 1px #666a65;
+}
+.tabbed-expanded {
+  margin-top: 0;
+  border-left: solid 1px #666a65;
+  border-right: solid 1px #666a65;
+  border-bottom: solid 1px #666a65;
+  padding: 1.44em;
+}
+.tabbed-collapsed {
+  display: none;
+}
+
+div.summary {
+  margin-bottom: 1.2em;
+}
+div.summary div.title {
+  margin-left: 0;
+  font-size: 1.2em;
+}
+div.summary div {
+  margin-left: 1em;
+  margin-top: 0.2em;
+}
+
+img.admonition {
+  vertical-align: middle;
+}
+
+
+div.notfound {
+  border: solid 2px #aaaaaa;
+  padding: 8px 8px 8px 72px;
+  background: #ffffff url('error-48.png') 12px 8px no-repeat;
+  font-size: 1.44em;
+}
+div.notfound div.title {
+  font-weight: bold;
+}
+div.notfound div.message {
+  margin-top: 0.88em;
+}
+div.notfound div.pages {
+  margin-top: 0.88em;
+}
+
