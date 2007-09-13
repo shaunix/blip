@@ -1,0 +1,52 @@
+* Many modules have multiple programs and libraries.  It would
+be nice to track these: who works on them, what documentation
+covers them, etc.
+
+* We want to see all posts to all mailing lists in our database.
+This will be used to construct the activity pulse for the mailing
+lists, as well as the mailing list pulse for modules, translation
+teams, people, etc.
+
+* It would be nice to track releases, possibly by getting a beat
+from the install-module script.  It would be really nice to get
+the part of the NEWS file relevant to that release, and to be
+able to pin each release to a branch.
+
+* We want to see all commits to every module in our database.
+This will give us the activity for each module/branch/etc, as
+well as the commit activity for each person.  It would be nice
+to see the documentation commit activity and translation commit
+activity for each person separately from the whole.
+
+* We should be able to get the default assignee and QA contact
+for each bugzilla product/component mentioned in the database,
+so that we can display that information here.  If it's a person
+(rather than a -maint alias), we should also tag that to the
+person's affiliations.  Also, we should be able to see if each
+person has administrative rights over a bugzilla product.
+
+* We should be able to get the list admins for each mailing
+list.  That's an affiliation for lists and for people.
+
+* Luis says, while graphs are good, it would be more useful
+to see activity deltas.  This can provide a good way to see
+when and where there are sudden bursts of activity.
+
+* Track foundation members.
+
+* Make xmldata able to return a dict of values for nodes
+with xml:lang, and make the xml-source updater able to
+handle these.
+
+* Internationalize everything using the Accept-Language
+HTTP header.
+
+* We should write some TODO notes about what we want to see
+for our documentation listings.
+
+* We should write some TODO notes about what we want to see
+for our translation listings.
+
+* In general, we always want less data in xmldata.  Try to
+figure out ways to reduce the amount of information we need
+to put in the XML.
