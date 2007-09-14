@@ -18,17 +18,21 @@
 # Suite 330, Boston, MA  0211-1307  USA.
 #
 
-import os
+import sys
 
-datadir = '/shaunm/projects/pulse/data/'
-vardir = '/shaunm/projects/pulse/var/'
+import pulse.db
+import pulse.scm
 
-potdir = os.path.join (vardir, 'pot')
-scmdir = os.path.join (vardir, 'scm')
+synop = 'update information from Gnome\'s jhbuild module'
+def usage (fd=sys.stderr):
+    print >>fd, ('Usage: %s' % sys.argv[0])
 
-webdir = '/shaunm/projects/pulse/web/'
-webroot = 'file:///shaunm/projects/pulse/web/'
+def main (argv):
+    update = True
+    like = None
 
-# need dir2url to make this use vardir
-dbroot = 'sqlite:/shaunm/projects/pulse/var/pulse.db'
-#dbroot = _url( 'mysql://user:pass@localhost/pulse')
+    checkout = pulse.scm.Checkout (ident='jhbuild',
+                                   scm_type='svn',
+                                   scm_server='http://svn.gnome.org/svn/',
+                                   scm_module='jhbuild',
+                                   scm_branch='trunk')

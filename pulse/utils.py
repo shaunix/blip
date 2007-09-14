@@ -21,6 +21,10 @@
 from datetime import datetime
 import sys
 
+# Just a dummy until we hook up gettext
+def gettext (str):
+    return str
+
 def isorted (list):
     return sorted (list, lambda x, y: cmp (x.lower(), y.lower()))
 
