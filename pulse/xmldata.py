@@ -23,11 +23,11 @@ import xml.dom.minidom
 
 import pulse.utils as utils
 
-def getData (file):
+def get_data (file):
     dom = xml.dom.minidom.parse (file)
-    return getGroupData (dom.firstChild)
+    return get_group_data (dom.firstChild)
 
-def getGroupData (node, **kw):
+def get_group_data (node, **kw):
     if kw.has_key ('data'):
         data = kw['data']
         del (kw['data'])
@@ -37,18 +37,18 @@ def getGroupData (node, **kw):
     for el in node.childNodes:
         if el.nodeType == el.ELEMENT_NODE:
             if el.nodeName == 'defaults':
-                kw['defaults'] = (getDefaultsData (el, **kw),) + defaults
+                kw['defaults'] = (get_defaults_data (el, **kw),) + defaults
             elif el.nodeName == 'group':
-                getGroupData (el, data=data, **kw)
+                get_group_data (el, data=data, **kw)
             elif el.getAttribute ('id'):
-                ndata = getNodeData (el, **kw)
+                ndata = get_node_data (el, **kw)
                 data[ndata['id']] = ndata
             else:
                 utils.warn ('A node (%s) without an id was encountered while getting group data.'
                       %el.nodeName)
     return data
 
-def getDefaultsData (node, **kw):
+def get_defaults_data (node, **kw):
     defs = {}
     for obj in node.childNodes:
         if obj.nodeType == obj.ELEMENT_NODE:
@@ -58,16 +58,16 @@ def getDefaultsData (node, **kw):
                     key = el.nodeName
                     if el.getAttribute ('id'):
                         data.setdefault (key, {})
-                        ndata = getNodeData (el, applyDefaults=False, **kw)
+                        ndata = get_node_data (el, applyDefaults=False, **kw)
                         data[key][ndata['id']] = ndata
                     elif el.getAttribute ('idref'):
                         data.setdefault (key, [])
                         data[key].append (el.getAttribute ('idref'))
                     else:
-                        data[key] = getString (el)
+                        data[key] = strvalue (el)
     return defs
 
-def getNodeData (node, **kw):
+def get_node_data (node, **kw):
     if kw.has_key ('data'):
         data = kw['data']
         del (kw['data'])
@@ -86,7 +86,7 @@ def getNodeData (node, **kw):
         if el.nodeType == el.ELEMENT_NODE:
             key = el.nodeName
             if key == 'defaults':
-                kw['defaults'] = (getDefaultsData (el, **kw),) + defaults
+                kw['defaults'] = (get_defaults_data (el, **kw),) + defaults
             elif key == 'group':
                 # FIXME: they probably should be
                 utils.warn ('Groups are not allowed in element nodes.')
@@ -99,10 +99,10 @@ def getNodeData (node, **kw):
                 data.setdefault (key, [])
                 data[key].append (el.getAttribute ('idref'))
             else:
-                data[key] = getString (el)
+                data[key] = strvalue (el)
 
     if kw.get ('applyDefaults', True):
-        applyDefaultsList (data, **kw)
+        apply_defaults_list (data, **kw)
 
     for key in data.keys():
         if not key.startswith ('__') and isinstance (data[key], dict):
@@ -110,12 +110,12 @@ def getNodeData (node, **kw):
                 ndata = data[key][id]
                 if ndata.has_key ('__node__'):
                     ndata['__parent__'] = data
-                    getNodeData (ndata['__node__'], data=ndata, **kw)
+                    get_node_data (ndata['__node__'], data=ndata, **kw)
                     del (ndata['__node__'])
 
     return data
 
-def applyDefaultsList (data, **kw):
+def apply_defaults_list (data, **kw):
     ndatas = []
     data.setdefault ('__defaults__', {})
     for defs in kw.get ('defaults', ()):
@@ -123,14 +123,14 @@ def applyDefaultsList (data, **kw):
             # String and list values are merged into data['__defaults__'],
             # which we then handle with the big block below.  Subthings
             # are inserted, but they don't have the default list applied
-            # to them yet.  Instead, mergeDefaultsData appends them to
+            # to them yet.  Instead, merge_defaults_data appends them to
             # ndatas, and we take care of them further below.
-            mergeDefaultsData (data, defs[data['__type__']], ndatas, **kw)
+            merge_defaults_data (data, defs[data['__type__']], ndatas, **kw)
 
     # This is a little complicated, but less so than it looks.
     # The defaults properties (simple string and idref/list)
     # are placed temporarily into data['__defaults__'] by
-    # mergeDefaultsData, and we now have to move them into
+    # merge_defaults_data, and we now have to move them into
     # data, resolving cross references.  Rather than try to
     # construct a graph of cross reference dependencies, we
     # just iterate over data['__defaults__'] as many times as
@@ -182,9 +182,9 @@ def applyDefaultsList (data, **kw):
     del (data['__defaults__'])
 
     for ndata in ndatas:
-        applyDefaultsList (ndata, **kw)
+        apply_defaults_list (ndata, **kw)
 
-def mergeDefaultsData (data, defs, ndatas, **kw):
+def merge_defaults_data (data, defs, ndatas, **kw):
     data.setdefault ('__defaults__', {})
     for key in defs.keys():
         val = defs[key]
@@ -197,8 +197,8 @@ def mergeDefaultsData (data, defs, ndatas, **kw):
                 # The values set here are merged into ndata['__defaults__'],
                 # but additional defaults from other definitions aren't yet
                 # merged.  Instead, we append ndata to ndatas, which was
-                # handed to us by applyDefaultsList.  It will then iterate
-                # over ndatas with applyDefaultsList.  This way, the cross
+                # handed to us by apply_defaults_list.  It will then iterate
+                # over ndatas with apply_defaults_list.  This way, the cross
                 # references are not resolved until after all the parents
                 # have had all their defaults applied.
 
@@ -210,7 +210,7 @@ def mergeDefaultsData (data, defs, ndatas, **kw):
 
                 ndata['__type__'] = key
                 ndata['__parent__'] = data
-                mergeDefaultsData (ndata, ndefs, ndatas, **kw)
+                merge_defaults_data (ndata, ndefs, ndatas, **kw)
                 ndatas.append (ndata)
         elif isinstance (val, list):
             data['__defaults__'].setdefault (key, [])
@@ -219,7 +219,7 @@ def mergeDefaultsData (data, defs, ndatas, **kw):
             #FIXME: be stricter
             pass
 
-def getString(node):
+def strvalue(node):
     s = []
     for child in node.childNodes:
         if child.nodeType == child.TEXT_NODE:

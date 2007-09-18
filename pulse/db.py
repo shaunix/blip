@@ -44,22 +44,22 @@ class Resource (sql.SQLObject):
     # Person       /person/<server>/<person>
     # List         /list/<server>/<list>
     ident = sql.StringCol (alternateID=True)
-    resourceType = sql.StringCol ()
+    type = sql.StringCol ()
 
-    name = sql.PickleCol ()
-    desc = sql.PickleCol ()
+    name = sql.PickleCol (default={})
+    desc = sql.PickleCol (default={})
 
-    icon = sql.StringCol ()
-    nick = sql.StringCol ()
+    icon = sql.StringCol (default=None)
+    nick = sql.StringCol (default=None)
 
-    email = sql.StringCol ()
-    web = sql.StringCol ()
+    email = sql.StringCol (default=None)
+    web = sql.StringCol (default=None)
 
 class ResourceData (sql.SQLObject):
     class sqlmeta:
         tabe = 'ResourceData'
     resource = sql.ForeignKey ('Resource', dbName='resource')
-    data = sql.PickleCol ()
+    data = sql.PickleCol (default={})
 
 class Relation (sql.SQLObject):
     class sqlmeta:
@@ -67,7 +67,17 @@ class Relation (sql.SQLObject):
     subj = sql.ForeignKey ('Resource', dbName='subj')
     pred = sql.ForeignKey ('Resource', dbName='pred')
     verb = sql.StringCol ()
-    superlative = sql.BoolCol ()
+    superlative = sql.BoolCol (default=False)
+
+def set_relation (subj, verb, pred, superlative=False):
+    # FIXME: pulse.utils.log
+    rel = Relation.selectBy (subj=subj, pred=pred, verb=verb)
+    if rel.count() > 0:
+        if superlative:
+            rel[0].superlative = True
+            return rel[0]
+    else:
+        return Relation (subj=subj, pred=pred, verb=verb, superlative=superlative)
 
 def create_tables ():
     for table in inspect.getmembers (sys.modules[__name__]):

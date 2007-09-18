@@ -18,21 +18,51 @@
 # Suite 330, Boston, MA  0211-1307  USA.
 #
 
+import os
 import sys
 
 import pulse.db
 import pulse.scm
+import pulse.utils
+import pulse.xmldata
 
 synop = 'update information from Gnome\'s jhbuild module'
 def usage (fd=sys.stderr):
     print >>fd, ('Usage: %s' % sys.argv[0])
 
+checkouts = {}
+
+def update_set (data):
+    ident = 'set/' + data['id']
+    res = pulse.db.Resource.selectBy (ident=ident)
+    if res.count() > 0:
+        res = res[0]
+    else:
+        pulse.utils.log ('Creating resource %s' % ident)
+        res = pulse.db.Resource (ident=ident, type='Set')
+
+    if data.has_key ('set'):
+        for key in data['set'].keys():
+            subres = update_set (data['set'][key])
+            pulse.db.set_relation (res, 'subset', subres)
+
+    # if ['jhbuild_metamodule'], add ->contains-> each branch
+
+    return res
+
 def main (argv):
     update = True
     like = None
+
+    data = pulse.xmldata.get_data (os.path.join (pulse.config.datadir, 'xml', 'sets.xml'))
+
+    for key in data.keys():
+        if data[key]['__type__'] == 'set':
+            update_set (data[key])
 
     checkout = pulse.scm.Checkout (ident='jhbuild',
                                    scm_type='svn',
                                    scm_server='http://svn.gnome.org/svn/',
                                    scm_module='jhbuild',
-                                   scm_branch='trunk')
+                                   scm_branch='trunk',
+                                   update=True)
