@@ -46,7 +46,30 @@ def update_set (data):
             subres = update_set (data['set'][key])
             pulse.db.set_relation (res, 'subset', subres)
 
-    # if ['jhbuild_metamodule'], add ->contains-> each branch
+    if (data.has_key ('jhbuild_scm_type')   and
+        data.has_key ('jhbuild_scm_server') and
+        data.has_key ('jhbuild_scm_module') and
+        data.has_key ('jhbuild_scm_branch') and
+        data.has_key ('jhbuild_scm_dir')    and
+        data.has_key ('jhbuild_scm_file')   and
+        data.has_key ('jhbuild_metamodule') ):
+
+        ident = '/' + '/'.join (['jhbuild',
+                                 data['jhbuild_scm_type'],
+                                 data['jhbuild_scm_server'],
+                                 data['jhbuild_scm_module'],
+                                 data['jhbuild_scm_branch']])
+        if checkouts.has_key (ident):
+            checkout = checkouts[ident]
+        else:
+            checkout = pulse.scm.Checkout (ident=ident,
+                                           scm_type=data['jhbuild_scm_type'],
+                                           scm_server=data['jhbuild_scm_server'],
+                                           scm_module=data['jhbuild_scm_module'],
+                                           scm_branch=data['jhbuild_scm_branch'],
+                                           update=True)
+            checkouts[ident] = checkout
+        # if ['jhbuild_metamodule'], add ->contains-> each branch
 
     return res
 
@@ -59,10 +82,3 @@ def main (argv):
     for key in data.keys():
         if data[key]['__type__'] == 'set':
             update_set (data[key])
-
-    checkout = pulse.scm.Checkout (ident='jhbuild',
-                                   scm_type='svn',
-                                   scm_server='http://svn.gnome.org/svn/',
-                                   scm_module='jhbuild',
-                                   scm_branch='trunk',
-                                   update=True)
