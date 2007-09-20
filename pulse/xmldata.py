@@ -58,13 +58,13 @@ def get_defaults_data (node, **kw):
                     key = el.nodeName
                     if el.getAttribute ('id'):
                         data.setdefault (key, {})
-                        ndata = get_node_data (el, applyDefaults=False, **kw)
+                        ndata = get_node_data (el, apply_defaults=False, **kw)
                         data[key][ndata['id']] = ndata
                     elif el.getAttribute ('idref'):
                         data.setdefault (key, [])
                         data[key].append (el.getAttribute ('idref'))
                     else:
-                        data[key] = strvalue (el)
+                        data[key] = keyvalue (el)
     return defs
 
 def get_node_data (node, **kw):
@@ -99,9 +99,9 @@ def get_node_data (node, **kw):
                 data.setdefault (key, [])
                 data[key].append (el.getAttribute ('idref'))
             else:
-                data[key] = strvalue (el)
+                data[key] = keyvalue (el)
 
-    if kw.get ('applyDefaults', True):
+    if kw.get ('apply_defaults', True):
         apply_defaults_list (data, **kw)
 
     for key in data.keys():
@@ -219,12 +219,18 @@ def merge_defaults_data (data, defs, ndatas, **kw):
             #FIXME: be stricter
             pass
 
-def strvalue(node):
+def keyvalue(node, allow_item=True):
     s = []
+    l = []
     for child in node.childNodes:
         if child.nodeType == child.TEXT_NODE:
             s.append (child.data)
-    return ''.join (s)
+        elif allow_item and child.nodeType == child.ELEMENT_NODE and child.tagName == 'item':
+            l.append (keyvalue (child, allow_item=False))
+    if len(l) > 0:
+        return l
+    else:
+        return ''.join (s)
 
 class CrossReferenceError (utils.PulseException):
     def __init__ (self, str):

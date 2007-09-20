@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<group>
+
+<defaults>
+  <set>
+    <jhbuild_scm_type>svn</jhbuild_scm_type>
+    <jhbuild_scm_server>http://svn.gnome.org/svn/</jhbuild_scm_server>
+    <jhbuild_scm_module>jhbuild</jhbuild_scm_module>
+    <jhbuild_scm_branch>trunk</jhbuild_scm_branch>
+    <jhbuild_scm_dir>modulesets</jhbuild_scm_dir>
+  </set>
+</defaults>
+
+<set id="gnome-2-20">
+  <name>Gnome 2.20</name>
+
+  <defaults>
+    <set>
+      <jhbuild_scm_file>gnome-suites-2.20.modules</jhbuild_scm_file>
+    </set>
+  </defaults>
+
+  <set id="gnome-2-20-platform">
+    <name>Gnome 2.20 Platform</name>
+    <jhbuild_metamodule>
+      <item>meta-gnome-devel-platform</item>
+      <item>meta-gnome-devel-platform-upcoming-deprecations</item>
+    </jhbuild_metamodule>
+  </set>
+  <set id="gnome-2-20-desktop">
+    <name>Gnome 2.20 Desktop</name>
+    <jhbuild_metamodule>
+      <item>meta-gnome-desktop-suite</item>
+      <item>meta-gnome-desktop-upcoming-deprecations</item>
+    </jhbuild_metamodule>
+  </set>
+  <set id="gnome-2-20-bindings-c++">
+    <name>Gnome 2.20 C++ Bindings</name>
+    <jhbuild_metamodule>meta-gnome-bindings-c++</jhbuild_metamodule>
+  </set>
+  <set id="gnome-2-20-bindings-python">
+    <name>Gnome 2.20 Python Bindings</name>
+    <jhbuild_metamodule>meta-gnome-bindings-python</jhbuild_metamodule>
+  </set>
+  <set id="gnome-2-20-devtools">
+    <name>Gnome 2.20 Developer Tools</name>
+    <jhbuild_metamodule>meta-gnome-devtools-suite</jhbuild_metamodule>
+  </set>
+  <set id="gnome-2-20-proposed">
+    <name>Gnome 2.20 Proposed Modules</name>
+    <jhbuild_metamodule>meta-gnome-proposed</jhbuild_metamodule>
+  </set>
+</set>
+</group>
