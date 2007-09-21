@@ -70,15 +70,22 @@ class Relation (sql.SQLObject):
     verb = sql.StringCol ()
     superlative = sql.BoolCol (default=False)
 
-def set_relation (subj, verb, pred, superlative=False):
-    # FIXME: pulse.utils.log
-    rel = Relation.selectBy (subj=subj, pred=pred, verb=verb)
-    if rel.count() > 0:
-        if superlative:
-            rel[0].superlative = True
-            return rel[0]
-    else:
-        return Relation (subj=subj, pred=pred, verb=verb, superlative=superlative)
+    # Relations, so that we don't have typos
+    set_subset = 'set_subset'       # Set -> Set
+    set_branch = 'set_branch'       # Set -> Branch
+    module_branch = 'module_branch' # Module -> Branch
+
+    @classmethod
+    def set_relation (cls, subj, verb, pred, superlative=False):
+        # FIXME: pulse.utils.log
+        rel = Relation.selectBy (subj=subj, pred=pred, verb=verb)
+        if rel.count() > 0:
+            if superlative:
+                rel[0].superlative = True
+                return rel[0]
+        else:
+            return Relation (subj=subj, pred=pred, verb=verb, superlative=superlative)
+
 
 def create_tables ():
     for table in inspect.getmembers (sys.modules[__name__]):

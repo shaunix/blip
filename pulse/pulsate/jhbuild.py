@@ -25,7 +25,6 @@ import xml.dom.minidom
 
 import pulse.db
 import pulse.scm
-import pulse.utils
 import pulse.xmldata
 
 synop = 'update information from Gnome\'s jhbuild module'
@@ -57,11 +56,15 @@ def get_moduleset (file):
 
 def update_branch (moduleset, key):
     node = moduleset[key]
+    if node.tagName != 'autotools':
+        return None
     for branch in node.childNodes:
         if branch.nodeType == branch.ELEMENT_NODE and branch.tagName == 'branch':
             break
+    if branch.nodeType != branch.ELEMENT_NODE or branch.tagName != 'branch':
+        return None
     if branch.hasAttribute ('repo'):
-        repo = moduleset['__repos__'][branch_node.getAttribute ('repo')]
+        repo = moduleset['__repos__'][branch.getAttribute ('repo')]
     else:
         repo = moduleset['__repos__']['__default__']
 
@@ -75,29 +78,49 @@ def update_branch (moduleset, key):
     if branch.hasAttribute ('revision'):
         scm_data['scm_branch'] = branch.getAttribute ('revision')
 
-    checkout = pulse.scm.Checkout(update=False, **scm_data)
+    checkout = pulse.scm.Checkout(checkout=False, update=False, **scm_data)
 
     m_ident = '/mod/' + repo.getAttribute ('name') + '/' + key
-    b_ident = m_ident + '/' + checkout.scm_branch
+    m_res = pulse.db.Resource.selectBy (ident=m_ident)
+    if m_res.count() > 0:
+        m_res = m_res[0]
+    else:
+        m_res = pulse.db.Resource (ident=m_ident, type='Module')
 
-    m_res = None
-    b_res = None
+    b_ident = m_ident + '/' + checkout.scm_branch
+    b_res = pulse.db.Resource.selectBy (ident=b_ident)
+    if b_res.count() > 0:
+        b_res = b_res[0]
+    else:
+        b_res = pulse.db.Resource (ident=b_ident, type='Branch')
+
+    m_data = m_res.data
+    b_data = b_res.data
+
+    for key in ('scm_type', 'scm_server', 'scm_module'):
+        m_data[key] = b_data[key] = scm_data[key]
+    b_data['scm_branch'] = checkout.scm_branch
+
+    m_res.data = m_data
+    b_res.data = b_data
+
+    # FIXME: set relation
+    pulse.db.Relation.set_relation (m_res, pulse.db.Relation.module_branch, b_res)
 
     return b_res
 
 def update_set (data):
-    ident = 'set/' + data['id']
+    ident = '/set/' + data['id']
     res = pulse.db.Resource.selectBy (ident=ident)
     if res.count() > 0:
         res = res[0]
     else:
-        pulse.utils.log ('Creating resource %s' % ident)
         res = pulse.db.Resource (ident=ident, type='Set')
 
     if data.has_key ('set'):
         for subset in data['set'].keys():
             subres = update_set (data['set'][subset])
-            pulse.db.set_relation (res, 'subset', subres)
+            pulse.db.Relation.set_relation (res, pulse.db.Relation.set_subset, subres)
 
     if (data.has_key ('jhbuild_scm_type')   and
         data.has_key ('jhbuild_scm_server') and
@@ -150,7 +173,8 @@ def update_set (data):
                         packages.append (pkg)
         for pkg in packages:
             branch = update_branch (moduleset, pkg)
-        # if ['jhbuild_metamodule'], add ->contains-> each branch
+            if branch != None:
+                pulse.db.Relation.set_relation (res, pulse.db.Relation.set_branch, branch)
 
     return res
 
