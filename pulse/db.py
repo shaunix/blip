@@ -35,8 +35,8 @@ class Resource (sql.SQLObject):
     class sqlmeta:
         table = 'Resource'
     # Set          /set/<set>
-    # Module       /scm/<server>/<module>
-    # Branch       /scm/<server>/<module>/<branch>
+    # Module       /mod/<server>/<module>
+    # Branch       /mod/<server>/<module>/<branch>
     # Document     /doc/<server>/<module>/<branch>/<document>
     # Domain       /pot/<server>/<module>/<branch>/<domain>
     # Translation  /po/<server>/<module>/<branch>/[doc|pot]/<doc|pot>/<lang>
