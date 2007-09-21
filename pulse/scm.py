@@ -24,7 +24,6 @@ import os
 import pulse.config
 import pulse.utils
 
-
 class CheckoutError (pulse.utils.PulseException):
     def __init__ (self, str):
         pulse.utils.PulseException.__init__ (self, str)
@@ -33,15 +32,9 @@ class Checkout (object):
     def __init__ (self, **kw):
         updateQ = kw.get ('update', False)
 
-        # Some sanity checks
-        if not kw.has_key ('ident'):
-            raise CheckoutError(
-                'Checkout did not receive an identifier')
-        self.ident = kw['ident']
-        
         if not kw.has_key ('scm_type'):
             raise CheckoutError (
-                'Checkout could not determine the type of SCM server to use for ' % self.ident)
+                'Checkout could not determine the type of SCM server to use')
 
         for key in kw.keys ():
             if key[:4] == 'scm_':
@@ -51,7 +44,7 @@ class Checkout (object):
             getattr (Checkout, '_init_' + self.scm_type) (self)
         else:
             raise CheckoutError (
-                'Checkout got unknown SCM type "%s" for ' % (self.scmType, self.ident))
+                'Checkout got unknown SCM type "%s"' % self.scm_type)
 
         if os.path.exists (os.path.join (self._topdir, self._codir)):
             if updateQ:
@@ -60,10 +53,10 @@ class Checkout (object):
             self.checkout ()
 
     def _init_cvs (self):
-        if not hasattr (self, 'scm_server'):
-            raise CheckoutError ('Checkout did not receive a server for ' % self.ident)
         if not hasattr (self, 'scm_module'):
-            raise CheckoutError ('Checkout did not receive a module for ' % self.ident)
+            raise CheckoutError ('Checkout did not receive a module')
+        if not hasattr (self, 'scm_server'):
+            raise CheckoutError ('Checkout did not receive a server for ' % self.scm_module)
 
         if not hasattr(self, 'scm_branch'):
             self.scm_branch = 'HEAD'
@@ -82,10 +75,10 @@ class Checkout (object):
         self._up = 'cvs -z3 up -Pd'
 
     def _init_svn (self):
-        if not hasattr (self, 'scm_server'):
-            raise CheckoutError ('Checkout did not receive a server for ' % self.ident)
         if not hasattr (self, 'scm_module'):
-            raise CheckoutError ('Checkout did not receive a module for ' % self.ident)
+            raise CheckoutError ('Checkout did not receive a module')
+        if not hasattr (self, 'scm_server'):
+            raise CheckoutError ('Checkout did not receive a server for ' % self.scm_module)
 
         if self.scm_server[-1] != '/':
             self.scm_server = self.scm_server + '/'
@@ -98,26 +91,14 @@ class Checkout (object):
                                      self._server,
                                      self.scm_module)
         self._codir = self.scm_branch
-        self._co = 'svn co %s%s/%s' %(
-            self.scm_server,
-            self.scm_module,
-            self.scm_branch
-            )
+        if self.scm_branch == 'trunk':
+            url = self.scm_server + self.scm_module + '/trunk'
+        else:
+            url = self.scm_server + self.scm_module + '/branches/' + self.scm_branch
+        self._co = 'svn co ' + url
         self._up = 'svn up'
         
-
-    directory = property (lambda self: os.path.join (self._topdir,
-                                                     self._codir,
-                                                     self._subdir))
-    def _get_file (self):
-        if self._file:
-            return os.path.join (self._topdir,
-                                 self._codir,
-                                 self._subdir,
-                                 self._file)
-        else:
-            return None
-    file = property (lambda self: self._get_file())
+    directory = property (lambda self: os.path.join (self._topdir, self._codir))
 
     def checkout (self):
         pulse.utils.log ('Checking out %s from %s' % (self._name, self._server))
