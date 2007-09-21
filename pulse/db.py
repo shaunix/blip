@@ -23,10 +23,10 @@ import sys
 
 import sqlobject as sql
 
-import pulse.config as config
-import pulse.utils as utils
+import pulse.config
+import pulse.utils
 
-conn = sql.connectionForURI (config.dbroot)
+conn = sql.connectionForURI (pulse.config.dbroot)
 sql.sqlhub.processConnection = conn
 sql.setDeprecationLevel (None)
 
@@ -34,6 +34,11 @@ sql.setDeprecationLevel (None)
 class Resource (sql.SQLObject):
     class sqlmeta:
         table = 'Resource'
+
+    def _create (self, *args, **kw):
+        pulse.utils.log ('Creating resource %s' % kw['ident'])
+        sql.SQLObject._create (self, *args, **kw)
+
     # Set          /set/<set>
     # Module       /mod/<server>/<module>
     # Branch       /mod/<server>/<module>/<branch>
@@ -55,10 +60,6 @@ class Resource (sql.SQLObject):
     email = sql.StringCol (default=None)
     web = sql.StringCol (default=None)
 
-class ResourceData (sql.SQLObject):
-    class sqlmeta:
-        tabe = 'ResourceData'
-    resource = sql.ForeignKey ('Resource', dbName='resource')
     data = sql.PickleCol (default={})
 
 class Relation (sql.SQLObject):
