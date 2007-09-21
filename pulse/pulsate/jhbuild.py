@@ -21,6 +21,8 @@
 import os
 import sys
 
+import xml.dom.minidom
+
 import pulse.db
 import pulse.scm
 import pulse.utils
@@ -30,7 +32,58 @@ synop = 'update information from Gnome\'s jhbuild module'
 def usage (fd=sys.stderr):
     print >>fd, ('Usage: %s' % sys.argv[0])
 
+modulesets = {}
 checkouts = {}
+
+def get_moduleset (file):
+    if modulesets.has_key (file):
+        return modulesets[file]
+    modulesets[file] = {'__dom__' : xml.dom.minidom.parse (file)}
+    def proc_element (node):
+        if node.tagName == 'repository':
+            modulesets[file].setdefault ('__repos__', {})
+            if node.hasAttribute ('name'):
+                modulesets[file]['__repos__'][node.getAttribute ('name')] = node
+            if node.getAttribute ('default') == 'yes':
+                modulesets[file]['__repos__']['__default__'] = node
+        else:
+            if node.hasAttribute ('id'):
+                modulesets[file][node.getAttribute ('id')] = node
+            for child in node.childNodes:
+                if child.nodeType == child.ELEMENT_NODE:
+                    proc_element (child)
+    proc_element (modulesets[file]['__dom__'].documentElement)
+    return modulesets[file]
+
+def update_branch (moduleset, key):
+    node = moduleset[key]
+    for branch in node.childNodes:
+        if branch.nodeType == branch.ELEMENT_NODE and branch.tagName == 'branch':
+            break
+    if branch.hasAttribute ('repo'):
+        repo = moduleset['__repos__'][branch_node.getAttribute ('repo')]
+    else:
+        repo = moduleset['__repos__']['__default__']
+
+    scm_data = {}
+    scm_data['scm_type'] = repo.getAttribute ('type')
+    if scm_data['scm_type'] == 'cvs':
+        scm_data['scm_server'] = repo.getAttribute ('cvsroot')
+    else:
+        scm_data['scm_server'] = repo.getAttribute ('href')
+    scm_data['scm_module'] = key
+    if branch.hasAttribute ('revision'):
+        scm_data['scm_branch'] = branch.getAttribute ('revision')
+
+    checkout = pulse.scm.Checkout(update=False, **scm_data)
+
+    m_ident = '/mod/' + repo.getAttribute ('name') + '/' + key
+    b_ident = m_ident + '/' + checkout.scm_branch
+
+    m_res = None
+    b_res = None
+
+    return b_res
 
 def update_set (data):
     ident = 'set/' + data['id']
@@ -42,8 +95,8 @@ def update_set (data):
         res = pulse.db.Resource (ident=ident, type='Set')
 
     if data.has_key ('set'):
-        for key in data['set'].keys():
-            subres = update_set (data['set'][key])
+        for subset in data['set'].keys():
+            subres = update_set (data['set'][subset])
             pulse.db.set_relation (res, 'subset', subres)
 
     if (data.has_key ('jhbuild_scm_type')   and
@@ -62,13 +115,41 @@ def update_set (data):
         if checkouts.has_key (ident):
             checkout = checkouts[ident]
         else:
-            checkout = pulse.scm.Checkout (ident=ident,
-                                           scm_type=data['jhbuild_scm_type'],
+            checkout = pulse.scm.Checkout (scm_type=data['jhbuild_scm_type'],
                                            scm_server=data['jhbuild_scm_server'],
                                            scm_module=data['jhbuild_scm_module'],
                                            scm_branch=data['jhbuild_scm_branch'],
                                            update=True)
             checkouts[ident] = checkout
+        file = os.path.join (checkout.directory,
+                             data['jhbuild_scm_dir'],
+                             data['jhbuild_scm_file'])
+        moduleset = get_moduleset (file)
+
+        modules = data['jhbuild_metamodule']
+        if isinstance (modules, basestring):
+            modules = [modules]
+
+        packages = []
+
+        for module in modules:
+            if not moduleset.has_key (module):
+                continue
+            node = moduleset[module]
+            if node.tagName != 'metamodule':
+                continue
+            for deps in node.childNodes:
+                if deps.nodeType == deps.ELEMENT_NODE and deps.tagName == 'dependencies':
+                    break
+            for child in deps.childNodes:
+                if child.nodeType == child.ELEMENT_NODE and child.tagName == 'dep':
+                    if not child.hasAttribute ('package'):
+                        continue
+                    pkg = child.getAttribute ('package')
+                    if moduleset.has_key (pkg) and moduleset[pkg].tagName != 'metamodule':
+                        packages.append (pkg)
+        for pkg in packages:
+            branch = update_branch (moduleset, pkg)
         # if ['jhbuild_metamodule'], add ->contains-> each branch
 
     return res
