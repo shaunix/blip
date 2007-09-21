@@ -30,7 +30,9 @@ class CheckoutError (pulse.utils.PulseException):
 
 class Checkout (object):
     def __init__ (self, **kw):
+        
         updateQ = kw.get ('update', False)
+        checkoutQ = kw.get ('checkout', True)
 
         if not kw.has_key ('scm_type'):
             raise CheckoutError (
@@ -50,7 +52,8 @@ class Checkout (object):
             if updateQ:
                 self.update ()
         else:
-            self.checkout ()
+            if checkoutQ:
+                self.checkout ()
 
     def _init_cvs (self):
         if not hasattr (self, 'scm_module'):
@@ -62,7 +65,9 @@ class Checkout (object):
             self.scm_branch = 'HEAD'
                 
         self._name = '%s (%s)' % (self.scm_module, self.scm_branch)
-        self._server = self.scm_server.split(':')[2],
+        self._server = self.scm_server.split(':')[2]
+        if self._server.find ('@') >= 0:
+            self._server = self._server.split('@')[-1]
         self._topdir = os.path.join (pulse.config.scmdir,
                                      self._server,
                                      self.scm_module)
