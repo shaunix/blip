@@ -104,8 +104,7 @@ def update_branch (moduleset, key):
     m_res.data = m_data
     b_res.data = b_data
 
-    # FIXME: set relation
-    pulse.db.Relation.set_relation (m_res, pulse.db.Relation.module_branch, b_res)
+    b_res.parent = m_res
 
     return b_res
 

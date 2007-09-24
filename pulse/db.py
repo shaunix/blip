@@ -50,6 +50,7 @@ class Resource (sql.SQLObject):
     # List         /list/<server>/<list>
     ident = sql.StringCol (alternateID=True)
     type = sql.StringCol ()
+    parent = sql.ForeignKey ('Resource', dbName='parent', default=None)
 
     name = sql.PickleCol (default={})
     desc = sql.PickleCol (default={})
@@ -71,9 +72,10 @@ class Relation (sql.SQLObject):
     superlative = sql.BoolCol (default=False)
 
     # Relations, so that we don't have typos
-    set_subset = 'set_subset'       # Set -> Set
-    set_branch = 'set_branch'       # Set -> Branch
-    module_branch = 'module_branch' # Module -> Branch
+    set_subset = 'set_subset'             # Set -> Set
+    set_branch = 'set_branch'             # Set -> Branch
+    module_branch = 'module_branch'       # Module -> Branch
+    module_developer = 'module_developer' # Module -> Person/Team
 
     @classmethod
     def set_relation (cls, subj, verb, pred, superlative=False):
