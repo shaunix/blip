@@ -79,6 +79,7 @@ def update_branch (moduleset, key):
         scm_data['scm_branch'] = branch.getAttribute ('revision')
 
     checkout = pulse.scm.Checkout(checkout=False, update=False, **scm_data)
+    scm_data['scm_branch'] = checkout.scm_branch
 
     m_ident = '/mod/' + repo.getAttribute ('name') + '/' + key
     m_res = pulse.db.Resource.selectBy (ident=m_ident)
@@ -87,22 +88,21 @@ def update_branch (moduleset, key):
     else:
         m_res = pulse.db.Resource (ident=m_ident, type='Module')
 
-    b_ident = m_ident + '/' + checkout.scm_branch
+    b_ident = m_ident + '/' + scm_data['scm_branch']
     b_res = pulse.db.Resource.selectBy (ident=b_ident)
     if b_res.count() > 0:
         b_res = b_res[0]
     else:
         b_res = pulse.db.Resource (ident=b_ident, type='Branch')
 
-    m_data = m_res.data
-    b_data = b_res.data
+    m_data = b_data = {}
 
     for key in ('scm_type', 'scm_server', 'scm_module'):
         m_data[key] = b_data[key] = scm_data[key]
-    b_data['scm_branch'] = checkout.scm_branch
+    b_data['scm_branch'] = scm_data['scm_branch']
 
-    m_res.data = m_data
-    b_res.data = b_data
+    m_res.update_data (m_data)
+    b_res.update_data (b_data)
 
     b_res.parent = m_res
 

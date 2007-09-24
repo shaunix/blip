@@ -63,6 +63,24 @@ class Resource (sql.SQLObject):
 
     data = sql.PickleCol (default={})
 
+    def update_name (self, d):
+        name = self.name
+        for k in d:
+            name[k] = d[k]
+        self.name = name
+
+    def update_desc (self, d):
+        desc = self.desc
+        for k in d:
+            desc[k] = d[k]
+        self.desc = desc
+
+    def update_data (self, d):
+        data = self.data
+        for k in d:
+            data[k] = d[k]
+        self.data = data
+
 class Relation (sql.SQLObject):
     class sqlmeta:
         table = 'Relation'
