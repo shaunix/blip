@@ -61,6 +61,8 @@ class Checkout (object):
         if not hasattr (self, 'scm_server'):
             raise CheckoutError ('Checkout did not receive a server for ' % self.scm_module)
 
+        self.ignoredir = 'CVS'
+
         if not hasattr(self, 'scm_branch'):
             self.scm_branch = 'HEAD'
                 
@@ -84,6 +86,8 @@ class Checkout (object):
             raise CheckoutError ('Checkout did not receive a module')
         if not hasattr (self, 'scm_server'):
             raise CheckoutError ('Checkout did not receive a server for ' % self.scm_module)
+
+        self.ignoredir = '.svn'
 
         if self.scm_server[-1] != '/':
             self.scm_server = self.scm_server + '/'
