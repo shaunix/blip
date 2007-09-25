@@ -82,18 +82,10 @@ def update_branch (moduleset, key):
     scm_data['scm_branch'] = checkout.scm_branch
 
     m_ident = '/mod/' + repo.getAttribute ('name') + '/' + key
-    m_res = pulse.db.Resource.selectBy (ident=m_ident)
-    if m_res.count() > 0:
-        m_res = m_res[0]
-    else:
-        m_res = pulse.db.Resource (ident=m_ident, type='Module')
-
     b_ident = m_ident + '/' + scm_data['scm_branch']
-    b_res = pulse.db.Resource.selectBy (ident=b_ident)
-    if b_res.count() > 0:
-        b_res = b_res[0]
-    else:
-        b_res = pulse.db.Resource (ident=b_ident, type='Branch')
+
+    m_res = pulse.db.Resource.make (ident=m_ident, type='Module')
+    b_res = pulse.db.Resource.make (ident=b_ident, type='Branch')
 
     m_data = b_data = {}
 
@@ -119,7 +111,7 @@ def update_set (data):
     if data.has_key ('set'):
         for subset in data['set'].keys():
             subres = update_set (data['set'][subset])
-            pulse.db.Relation.set_relation (res, pulse.db.Relation.set_subset, subres)
+            pulse.db.Relation.make (res, pulse.db.Relation.set_subset, subres)
 
     if (data.has_key ('jhbuild_scm_type')   and
         data.has_key ('jhbuild_scm_server') and
@@ -173,7 +165,7 @@ def update_set (data):
         for pkg in packages:
             branch = update_branch (moduleset, pkg)
             if branch != None:
-                pulse.db.Relation.set_relation (res, pulse.db.Relation.set_branch, branch)
+                pulse.db.Relation.make (res, pulse.db.Relation.set_branch, branch)
 
     return res
 

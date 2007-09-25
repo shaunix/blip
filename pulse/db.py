@@ -63,6 +63,14 @@ class Resource (sql.SQLObject):
 
     data = sql.PickleCol (default={})
 
+    @ classmethod
+    def make (cls, ident, type):
+        res = cls.selectBy (ident=ident, type=type)
+        if res.count() > 0:
+            return res[0]
+        else:
+            return cls (ident=ident, type=type)
+
     def update_name (self, d):
         name = self.name
         for k in d:
@@ -96,7 +104,7 @@ class Relation (sql.SQLObject):
     module_developer = 'module_developer' # Module -> Person/Team
 
     @classmethod
-    def set_relation (cls, subj, verb, pred, superlative=False):
+    def make (cls, subj, verb, pred, superlative=False):
         # FIXME: pulse.utils.log
         rel = Relation.selectBy (subj=subj, pred=pred, verb=verb)
         if rel.count() > 0:
