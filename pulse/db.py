@@ -43,8 +43,10 @@ class Resource (sql.SQLObject):
     # Module       /mod/<server>/<module>
     # Branch       /mod/<server>/<module>/<branch>
     # Document     /doc/<server>/<module>/<branch>/<document>
-    # Domain       /pot/<server>/<module>/<branch>/<domain>
-    # Translation  /po/<server>/<module>/<branch>/[doc|pot]/<doc|pot>/<lang>
+    # Application  /app/<server>/<module>/<branch>/<app>
+    # Domain       /i18n/<server>/<module>/<branch>/<domain>
+    # Translation  /i18n/<server>/<module>/<branch>/po/<domain>/<lang>
+    #              /i18n/<server>/<module>/<branch>/doc/<doc>/<lang>
     # Team         /team/<server>/<team>
     # Person       /person/<server>/<person>
     # List         /list/<server>/<list>
