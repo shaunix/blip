@@ -21,6 +21,8 @@
 from datetime import datetime
 import sys
 
+import ConfigParser
+
 # Just a dummy until we hook up gettext
 def gettext (str):
     return str
@@ -102,6 +104,42 @@ class attrdict (dict):
         self.objs.insert (0, obj)
     def remove (self, obj):
         self.objs.remove (obj)
+
+class keyfile (object):
+    def __init__ (self, fp):
+        cfg = ConfigParser.ConfigParser()
+        cfg.optionxform = str
+        cfg.readfp (fp)
+        self._data = {}
+        for group in cfg.sections ():
+            self._data[group] = {}
+            for key, value in cfg.items (group):
+                lb = key.find ('[')
+                rb = key.find (']')
+                if lb >= 0 and rb > lb:
+                    keybase = key[0:lb]
+                    keylang = key[lb+1:rb]
+                    self._data[group].setdefault (keybase, {})
+                    if isinstance (self._data[group][keybase], basestring):
+                        self._data[group][keybase] = {'C' : self._data[group][keybase]}
+                    self._data[group][keybase][keylang] = value
+                else:
+                    self._data[group][key] = value
+
+    def get_groups (self):
+        return self._data.keys()
+
+    def has_group (self, group):
+        return self._data.has_key (group)
+
+    def get_keys (self, group):
+        return self._data[group].keys()
+
+    def has_key (self, group, key):
+        return self._data[group].has_key (key)
+
+    def get_value (self, group, key):
+        return self._data[group][key]
 
 class PulseException (Exception):
     def __init__ (self, str):
