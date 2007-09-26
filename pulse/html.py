@@ -21,82 +21,82 @@
 
 import sys
 
-import pulse.config as config
-import pulse.utils as utils
+import pulse.config
+import pulse.utils
 
 class Block:
     def __init__ (self, **kw):
-        self._head = []
-        self._foot = []
-    def add (self, text):
-        self._head.append (text)
-    def foot (self, text):
-        self._foot.insert (0, text)
+        self._start = []
+        self._end = []
+    def pack_start (self, text):
+        self._start.append (text)
+    def pack_end (self, text):
+        self._end.insert (0, text)
     def output (self, fd=sys.stdout):
-        for s in self._head:
+        for s in self._start:
             if isinstance (s, Block):
                 s.output(fd)
             else:
                 print >>fd, unicode(s).encode('utf-8')
-        for s in self._foot:
+        for s in self._end:
             if isinstance (s, Block):
                 s.output(fd)
             else:
                 print >>fd, unicode(s).encode('utf-8')
             
 class Page (Block):
-    headText = ('<html><head>\n' +
-                '<title>%(title)s</title>\n'
-                '<link rel="stylesheet" href="%(webroot)sdata/pulse.css" />\n' +
-                '<script language="javascript" type="text/javascript"' +
-                ' src="%(webroot)sdata/pulse.js" />\n' +
-                '</head><body>\n' +
-                '<div id="head"><a href="http://www.gnome.org">' +
-                '<img src="%(webroot)sdata/gnome-logo.png"' +
-                ' width="110" height="20" class="logo" alt="GNOME" /></a></div>\n' +
-                '<div id="body"><h1>%(title)s</h1>')
-    footText = '</div></body></html>'
+    _head_text = ('<html><head>\n' +
+                  '<title>%(title)s</title>\n'
+                  '<link rel="stylesheet" href="%(webroot)sdata/pulse.css" />\n' +
+                  '<script language="javascript" type="text/javascript"' +
+                  ' src="%(webroot)sdata/pulse.js" />\n' +
+                  '</head><body>\n' +
+                  '<div id="body"><h1>%(title)s</h1>')
+    _foot_text = '</div></body></html>'
     def __init__ (self, **kw):
         Block.__init__ (self, **kw)
         self.http = kw.get ('http')
         self.status = kw.get ('status')
         self.title = kw.get ('title')
-        self.webroot = config.webroot
+        self.webroot = pulse.config.webroot
         if self.http == True:
             if self.status == 404:
-                self.add ('Status: 404 Not found\n')
-            self.add ('Content-type: text/html; charset=utf-8\n\n')
-        self.add (self.headText % self.__dict__ )
-        self.foot (self.footText)
+                self.pack_start ('Status: 404 Not found\n')
+            self.pack_start ('Content-type: text/html; charset=utf-8\n\n')
+        self.pack_start (self._head_text % self.__dict__ )
+        self.pack_end (self._foot_text)
 
 class PageNotFound (Page):
     def __init__ (self, message, **kw):
         http = kw.get ('http', True)
         pages = kw.get ('pages', [])
-        title = kw.get ('title', 'Page Not Found')
-        d = utils.attrdict ([config])
+        title = kw.get ('title', pulse.utils.gettext('Page Not Found'))
+        d = pulse.utils.attrdict ([pulse.config])
         d['title'] = title
         d['message'] = message
         Page.__init__ (self,
                        http=http,
                        status=404,
                        title=title)
-        self.add ('<div class="notfound">\n')
-        self.add ('<div class="title">%(title)s</div>\n' %d)
-        self.add ('<div class="message">%(message)s</div>' %d)
+        self.pack_start ('<div class="notfound">\n')
+        self.pack_start ('<div class="title">%(title)s</div>\n' %d)
+        self.pack_start ('<div class="message">%(message)s</div>' %d)
         if len(pages) > 0:
-            self.add ('<div class="pages">These pages might interest you:<ul>\n')
+            self.pack_start ('<div class="pages">' +
+                             pulse.utils.gettext ('The following pages might interest you:') +
+                             '<ul>\n')
             for page in pages:
                 d['href'] = page[0]
                 d['name'] = page[1]
-                self.add ('<li><a href="%(webroot)s%(href)s">%(name)s</a></li>\n' %d)
-            self.add ('</ul></div>\n')
-        self.add ('</div>\n')
+                self.pack_start ('<li><a href="%(webroot)s%(href)s">%(name)s</a></li>\n' %d)
+            self.pack_start ('</ul></div>\n')
+        self.pack_start ('</div>\n')
 
+# FIXME below
 class InformationPage (Page):
     def __init__ (self, thing, **kw):
         Page.__init__ (self, **kw)
-        self.add (SynopsisDiv (thing))
+        self.pack_start (SynopsisDiv (thing))
 
 class SynopsisDiv (Block):
     def __init__ (self, resource, **kw):
@@ -128,7 +128,7 @@ class SynopsisDiv (Block):
             else:
                 # FIXME: we need to escape all incoming text
                 print >>fd, s.encode('utf-8')
-        d = utils.attrdict ([self._resource, config])
+        d = pulse.utils.attrdict ([self._resource, pulse.config])
 
         # A few keys we assume are always there
         if not d.has_val ('name'):
@@ -232,7 +232,7 @@ class SummaryDiv (Block):
                 # FIXME: we need to escape all incoming text
                 print >>fd, s.encode('utf-8')
         p ('<div class="summary">')
-        p ('<div class="title"><a href="%s%s">%s</a></div>' % (config.webroot,
+        p ('<div class="title"><a href="%s%s">%s</a></div>' % (pulse.config.webroot,
                                                                self._resource.ident,
                                                                self._resource.name))
         for block in self._blocks:
@@ -301,5 +301,5 @@ class Admonition (Block):
                 print >>fd, s.encode('utf-8')
         p ('<div class="admonition %s">' % self._type)
         p ('<img src="%sdata/admon-%s-16.png" class="admonition"/>'
-           % (config.webroot, self._type))
+           % (pulse.config.webroot, self._type))
         p ('%s</div>' % self._text)

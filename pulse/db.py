@@ -73,6 +73,14 @@ class Resource (sql.SQLObject):
         else:
             return cls (ident=ident, type=type)
 
+    def get_localized_name (self, langs):
+        # FIXME: i18n
+        return self.name['C']
+
+    def get_localized_desc (self, langs):
+        # FIXME: i18n
+        return self.desc['C']
+
     def update_name (self, d):
         name = self.name
         for k in d:

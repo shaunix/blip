@@ -21,11 +21,11 @@ def main ():
     for (opt, arg) in opts:
         if opt in ('-o', '--output'):
             fd = file (arg, 'w')
-    if len(args) > 1:
+    if len(args) > 0:
         http = False
-        pathInfo = args[1]
-        if len(args) > 2:
-            queryString = args[2]
+        pathInfo = args[0]
+        if len(args) > 1:
+            queryString = args[1]
         else:
             queryString = os.getenv ('QUERY_STRING')
     else:
