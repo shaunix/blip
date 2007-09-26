@@ -26,7 +26,7 @@ import xml.dom.minidom
 import pulse.db
 import pulse.scm
 
-synop = 'update information module and branch checkouts'
+synop = 'update information from module and branch checkouts'
 def usage (fd=sys.stderr):
     print >>fd, ('Usage: %s [PREFIX]' % sys.argv[0])
 
@@ -58,9 +58,9 @@ def update_branch (resource, update):
     for keyfile in keyfiles:
         process_keyfile (resource, checkout, keyfile)
 
-    for res in (res, res.parent):
+    for res in (resource, resource.parent):
         if res.name == {}:
-            res.name = {'C', res.ident.split('/')[3]}
+            res.name = {'C' : res.ident.split('/')[3]}
 
 def process_podir (resource, checkout, dir):
     ident = '/' + '/'.join (['i18n'] +
@@ -95,6 +95,7 @@ def process_keyfile (resource, checkout, file):
     desc = keyfile.get_value ('Desktop Entry', 'Comment')
     data = {'keyfile' : relfile}
     app = pulse.db.Resource.make (ident=ident, type='Application')
+    app.parent = resource
     app.update_name (name)
     app.update_desc (desc)
     app.update_data (data)
