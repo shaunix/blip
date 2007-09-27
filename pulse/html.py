@@ -42,24 +42,28 @@ class Block:
 ################################################################################
 ## Components
 
-class Sublinkable (Block):
+class SublinksComponent (Block):
     def __init__ (self):
         self._sublinks = []
 
     def add_sublink (self, href, title):
         self._sublinks.append ((href, title))
 
-    def output (self, fd=sys.stdout):
-        if len(self._sublinks) > 0:
+    @classmethod
+    def output_sublinks (cls, sublinks, fd):
+        if len(sublinks) > 0:
             p (fd, '<div class="sublinks">')
-            for i in range(len(self._sublinks)):
+            for i in range(len(sublinks)):
                 str = (i != 0 and u' • ' or '')
-                if self._sublinks[i][0] != None:
-                    str += ('<a href="%s">%s</a>' %self._sublinks[i])
+                if sublinks[i][0] != None:
+                    str += ('<a href="%s">%s</a>' %sublinks[i])
                 else:
-                    str += ('%s' %self._sublinks[i][1])
+                    str += ('%s' %sublinks[i][1])
                 p (fd, str)
             p (fd, '</div>\n')
+
+    def output (self, fd=sys.stdout):
+        SublinksComponent.output_sublinks (self._sublinks, fd)
 
 
 ################################################################################
@@ -103,7 +107,7 @@ class Page (Block):
     def output_bottom (self, fd=sys.stdout):
         p (fd, self._foot_text % self.__dict__)
 
-class ResourcePage (Page, Sublinkable):
+class ResourcePage (Page, SublinksComponent):
     def __init__ (self, resource, **kw):
         Page.__init__ (self, **kw)
         # FIXME: i18n
@@ -113,7 +117,7 @@ class ResourcePage (Page, Sublinkable):
         self._graphs = []
 
     def output_middle (self, fd=sys.stdout):
-        Sublinkable.output (self, fd=fd)
+        SublinksComponent.output (self, fd=fd)
         Page.output_middle (self, fd=fd)
 
 class PageNotFound (Page):
