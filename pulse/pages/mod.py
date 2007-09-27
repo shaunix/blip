@@ -76,11 +76,19 @@ def output_module (module, path=[], query={}, http=True, fd=None):
     return 0
 
 def output_branch (branch, path=[], query=[], http=True, fd=None):
-    kw = {'http' : http}
-    # FIXME: i18n
-    kw['title'] = pulse.utils.gettext('%s (%s)') % (branch.get_localized_name (['C']), path[-1])
 
-    page = pulse.html.Page (**kw)
+    page = pulse.html.ResourcePage (branch, http=http)
+    # FIXME: i18n
+    page.set_title (pulse.utils.gettext('%s (%s)') % (branch.get_localized_name (['C']), path[-1]))
+
+    branches = pulse.db.Resource.selectBy (parent=branch.parent)
+    # FIXME: sort
+    for b in branches:
+        if b.ident != branch.ident:
+            # FIXME: url, not ident
+            page.add_sublink (b.ident, b.ident.split('/')[-1])
+        else:
+            page.add_sublink (None, b.ident.split('/')[-1])
 
     apps = pulse.db.Resource.selectBy (type='Application', parent=branch)
 
