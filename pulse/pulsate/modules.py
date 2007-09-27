@@ -46,13 +46,13 @@ def update_branch (resource, update):
     def visit (arg, dirname, names):
         names.remove (checkout.ignoredir)
         for name in names:
-            file = os.path.join (dirname, name)
-            if not os.path.isfile (file):
+            filename = os.path.join (dirname, name)
+            if not os.path.isfile (filename):
                 continue
             if name == 'POTFILES.in':
                 process_podir (resource, checkout, dirname)
             if name.endswith ('.desktop.in.in'):
-                keyfiles.append (file)
+                keyfiles.append (filename)
     os.path.walk (checkout.directory, visit, None)
 
     for keyfile in keyfiles:
@@ -73,9 +73,9 @@ def process_podir (resource, checkout, dir):
     data['directory'] = dir[len(checkout.directory)+1:]
     domain.update_data (data)
 
-def process_keyfile (resource, checkout, file):
-    basename = os.path.basename(file)[0:-14]
-    relfile = file[len(checkout.directory)+1:]
+def process_keyfile (resource, checkout, filename):
+    basename = os.path.basename(filename)[0:-14]
+    relfile = filename[len(checkout.directory)+1:]
     owd = os.getcwd ()
     try:
         os.chdir (checkout.directory)
@@ -92,18 +92,23 @@ def process_keyfile (resource, checkout, file):
                             resource.ident.split('/')[2:] +
                             [basename])
     name = keyfile.get_value ('Desktop Entry', 'Name')
-    desc = keyfile.get_value ('Desktop Entry', 'Comment')
+    if keyfile.has_key ('Desktop Entry', 'Comment'):
+        desc = keyfile.get_value ('Desktop Entry', 'Comment')
+    else:
+        desc = None
     data = {'keyfile' : relfile}
     app = pulse.db.Resource.make (ident=ident, type='Application')
     app.parent = resource
     app.update_name (name)
-    app.update_desc (desc)
+    if desc != None:
+        app.update_desc (desc)
     app.update_data (data)
     # FIXME: icon, bugzilla stuff
 
     if basename == resource.ident.split('/')[3]:
         resource.update_name (name)
-        resource.update_desc (desc)
+        if desc != None:
+            resource.update_desc (desc)
         resource.update_data (data)
 
 def main (argv):
