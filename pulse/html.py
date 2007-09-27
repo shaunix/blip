@@ -26,45 +26,95 @@ import pulse.utils
 
 class Block:
     def __init__ (self, **kw):
-        self._start = []
-        self._end = []
-    def pack_start (self, text):
-        self._start.append (text)
-    def pack_end (self, text):
-        self._end.insert (0, text)
+        pass
+    def output_top (self, fd=sys.stdout):
+        pass
+    def output_middle (self, fd=sys.stdout):
+        pass
+    def output_bottom (self, fd=sys.stdout):
+        pass
     def output (self, fd=sys.stdout):
-        for s in self._start:
-            if isinstance (s, Block):
-                s.output(fd)
-            else:
-                print >>fd, unicode(s).encode('utf-8')
-        for s in self._end:
-            if isinstance (s, Block):
-                s.output(fd)
-            else:
-                print >>fd, unicode(s).encode('utf-8')
-            
+        self.output_top (fd=fd)
+        self.output_middle (fd=fd)
+        self.output_bottom (fd=fd)
+
+
+################################################################################
+## Components
+
+class Sublinkable (Block):
+    def __init__ (self):
+        self._sublinks = []
+
+    def add_sublink (self, href, title):
+        self._sublinks.append ((href, title))
+
+    def output (self, fd=sys.stdout):
+        if len(self._sublinks) > 0:
+            p (fd, '<div class="sublinks">')
+            for i in range(len(self._sublinks)):
+                str = (i != 0 and u' • ' or '')
+                if self._sublinks[i][0] != None:
+                    str += ('<a href="%s">%s</a>' %self._sublinks[i])
+                else:
+                    str += ('%s' %self._sublinks[i][1])
+                p (fd, str)
+            p (fd, '</div>\n')
+
+
+################################################################################
+## Pages
+
 class Page (Block):
     _head_text = ('<html><head>\n' +
-                  '<title>%(title)s</title>\n'
-                  '<link rel="stylesheet" href="%(webroot)sdata/pulse.css" />\n' +
+                  '<title>%(_title)s</title>\n'
+                  '<link rel="stylesheet" href="%(_webroot)sdata/pulse.css" />\n' +
                   '<script language="javascript" type="text/javascript"' +
-                  ' src="%(webroot)sdata/pulse.js" />\n' +
+                  ' src="%(_webroot)sdata/pulse.js" />\n' +
                   '</head><body>\n' +
-                  '<div id="body"><h1>%(title)s</h1>')
+                  '<div id="body"><h1>%(_title)s</h1>')
     _foot_text = '</div></body></html>'
+
     def __init__ (self, **kw):
         Block.__init__ (self, **kw)
-        self.http = kw.get ('http')
-        self.status = kw.get ('status')
-        self.title = kw.get ('title')
-        self.webroot = pulse.config.webroot
-        if self.http == True:
-            if self.status == 404:
-                self.pack_start ('Status: 404 Not found\n')
-            self.pack_start ('Content-type: text/html; charset=utf-8\n\n')
-        self.pack_start (self._head_text % self.__dict__ )
-        self.pack_end (self._foot_text)
+        self._http = kw.get ('http')
+        self._status = kw.get ('status')
+        self._title = kw.get ('title')
+        self._webroot = pulse.config.webroot
+        self._content = []
+
+    def set_title (self, title):
+        self._title = title
+
+    def add_content (self, content):
+        self._content.append (content)
+
+    def output_top (self, fd=sys.stdout):
+        if self._http == True:
+            if self._status == 404:
+                p (fd, 'Status: 404 Not found\n')
+            p (fd, 'Content-type: text/html; charset=utf-8\n\n')
+        p (fd, self._head_text % self.__dict__)
+
+    def output_middle (self, fd=sys.stdout):
+        for s in self._content:
+            p (fd, s)
+
+    def output_bottom (self, fd=sys.stdout):
+        p (fd, self._foot_text % self.__dict__)
+
+class ResourcePage (Page, Sublinkable):
+    def __init__ (self, resource, **kw):
+        Page.__init__ (self, **kw)
+        # FIXME: i18n
+        self.set_title (resource.get_localized_name (['C']))
+        self._sublinks = []
+        self._affils = {}
+        self._graphs = []
+
+    def output_middle (self, fd=sys.stdout):
+        Sublinkable.output (self, fd=fd)
+        Page.output_middle (self, fd=fd)
 
 class PageNotFound (Page):
     def __init__ (self, message, **kw):
@@ -92,11 +142,9 @@ class PageNotFound (Page):
             self.pack_start ('</ul></div>\n')
         self.pack_start ('</div>\n')
 
-# FIXME below
-class InformationPage (Page):
-    def __init__ (self, thing, **kw):
-        Page.__init__ (self, **kw)
-        self.pack_start (SynopsisDiv (thing))
+
+################################################################################
+## Other...
 
 class SynopsisDiv (Block):
     def __init__ (self, resource, **kw):
@@ -121,7 +169,7 @@ class SynopsisDiv (Block):
                               'src': src,
                               'alt': alt})
 
-    def output (self, fd=sys.stdout):
+    def output_middle (self, fd=sys.stdout):
         def p (s):
             if isinstance (s, Block):
                 s.output (fd=fd)
@@ -130,11 +178,9 @@ class SynopsisDiv (Block):
                 print >>fd, s.encode('utf-8')
         d = pulse.utils.attrdict ([self._resource, pulse.config])
 
-        # A few keys we assume are always there
-        if not d.has_val ('name'):
-            d['name'] = d['ident']
-        if not d.has_val ('type'):
-            d['type'] = self._resource.sqlmeta.table
+        # FIXME: i18n
+        d['name'] = self._resource.get_localized_name (['C'])
+        d['__url__'] = '/'.join ([pulse.config.webroot] + self._resource.ident.split('/')[1:])
 
         p ('<div class="%(type)s synopsis">' %d)
         p ('<table class="%(type)s synopsis"><tr>\n' %d)
@@ -150,8 +196,9 @@ class SynopsisDiv (Block):
         if len(self._sublinks) > 0:
             name_ = d['name']
         else:
-            name_ = ('<a href="%(webroot)s%(ident)s/">%(name)s</a>' %d)
+            name_ = ('<a href="%(__url__)s/">%(name)s</a>' %d)
         if d.has_val ('nick'):
+            # FIXME: i18n
             nick_ =  (' (%(nick)s)' %d)
         else:
             nick_ = ''
@@ -188,7 +235,7 @@ class SynopsisDiv (Block):
                 if list.resource.list_type == 'users': p (' (Users)')
                 if list.resource.list_type == 'devel': p (' (Developers)')
                 p ('</div><div class="sublinks">')
-                p (u'<a href="%(webroot)s%(ident)s/">Pluse</a> • ' %d)
+                p (u'<a href="%(__url__)s/">Pluse</a> • ' %d)
                 p (u'<a href="%(list_info)s/">Information</a> • ' %d)
                 p (u'<a href="%(list_archive)s/">Archive</a>' %d)
                 p ('</div></div>\n')
@@ -293,13 +340,15 @@ class Admonition (Block):
         self._type = type
 
     def output (self, fd=sys.stdout):
-        def p (s):
-            if isinstance (s, Block):
-                s.output (fd=fd)
-            else:
-                # FIXME: we need to escape all incoming text
-                print >>fd, s.encode('utf-8')
-        p ('<div class="admonition %s">' % self._type)
-        p ('<img src="%sdata/admon-%s-16.png" class="admonition"/>'
+        p (fd, '<div class="admonition %s">' % self._type)
+        p (fd, '<img src="%sdata/admon-%s-16.png" class="admonition"/>'
            % (pulse.config.webroot, self._type))
-        p ('%s</div>' % self._text)
+        p (fd, '%s</div>' % self._text)
+
+        
+
+def p (fd, s):
+    if isinstance (s, Block):
+        s.output (fd=fd)
+    else:
+        print >>fd, unicode(s).encode('utf-8')
