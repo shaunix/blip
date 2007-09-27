@@ -42,6 +42,7 @@ def update_branch (resource, update):
     # but branch names should be MODULE (BRANCH)
     # bug information
     # We can get much of this from a .desktop file for apps, if we can find it
+    domains = []
     keyfiles = []
     def visit (arg, dirname, names):
         names.remove (checkout.ignoredir)
@@ -50,13 +51,21 @@ def update_branch (resource, update):
             if not os.path.isfile (filename):
                 continue
             if name == 'POTFILES.in':
-                process_podir (resource, checkout, dirname)
+                domain = process_podir (resource, checkout, dirname)
+                if domain != None:
+                    domains.append (domain)
             if name.endswith ('.desktop.in.in'):
                 keyfiles.append (filename)
     os.path.walk (checkout.directory, visit, None)
 
+    resource.set_children ('Domain', domains)
+
+    applications = []
     for keyfile in keyfiles:
-        process_keyfile (resource, checkout, keyfile)
+        app = process_keyfile (resource, checkout, keyfile)
+        if app != None:
+            applications.append (app)
+    resource.set_children ('Application', applications)
 
     for res in (resource, resource.parent):
         if res.name == {}:
@@ -67,11 +76,12 @@ def process_podir (resource, checkout, dir):
                             resource.ident.split('/')[2:] +
                             [os.path.basename (dir)])
     domain = pulse.db.Resource.make (ident=ident, type='Domain')
-    domain.parent = resource
 
     data = {}
     data['directory'] = dir[len(checkout.directory)+1:]
     domain.update_data (data)
+
+    return domain
 
 def process_keyfile (resource, checkout, filename):
     basename = os.path.basename(filename)[0:-14]
@@ -98,7 +108,6 @@ def process_keyfile (resource, checkout, filename):
         desc = None
     data = {'keyfile' : relfile}
     app = pulse.db.Resource.make (ident=ident, type='Application')
-    app.parent = resource
     app.update_name (name)
     if desc != None:
         app.update_desc (desc)
@@ -110,6 +119,8 @@ def process_keyfile (resource, checkout, filename):
         if desc != None:
             resource.update_desc (desc)
         resource.update_data (data)
+
+    return app
 
 def main (argv):
     update = True

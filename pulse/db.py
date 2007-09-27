@@ -52,7 +52,7 @@ class Resource (sql.SQLObject):
     # List         /list/<server>/<list>
     ident = sql.StringCol (alternateID=True)
     type = sql.StringCol ()
-    parent = sql.ForeignKey ('Resource', dbName='parent', default=None)
+    parent = sql.ForeignKey ('Resource', dbName='parent', default=None, cascade=True)
 
     name = sql.PickleCol (default={})
     desc = sql.PickleCol (default={})
@@ -99,11 +99,28 @@ class Resource (sql.SQLObject):
             data[k] = d[k]
         self.data = data
 
+    def delete_full (self):
+        pulse.utils.log ('Deleting resource %s' % self.ident)
+        Resource.delete (self.id)
+
+    def set_children (self, type, children):
+        old = Resource.selectBy (type=type, parent=self)
+        olddict = {}
+        for res in old:
+            olddict[res.ident] = res
+        for child in children:
+            olddict.pop (child.ident, None)
+            child.parent = self
+        for old in olddict.values():
+            old.delete_full ()
+        
+            
+
 class Relation (sql.SQLObject):
     class sqlmeta:
         table = 'Relation'
-    subj = sql.ForeignKey ('Resource', dbName='subj')
-    pred = sql.ForeignKey ('Resource', dbName='pred')
+    subj = sql.ForeignKey ('Resource', dbName='subj', cascade=True)
+    pred = sql.ForeignKey ('Resource', dbName='pred', cascade=True)
     verb = sql.StringCol ()
     superlative = sql.BoolCol (default=False)
 
