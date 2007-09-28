@@ -102,10 +102,16 @@ def process_keyfile (resource, checkout, filename):
                             resource.ident.split('/')[2:] +
                             [basename])
     name = keyfile.get_value ('Desktop Entry', 'Name')
+    if isinstance (name, basestring):
+        name = {'C' : name}
+
     if keyfile.has_key ('Desktop Entry', 'Comment'):
         desc = keyfile.get_value ('Desktop Entry', 'Comment')
+        if isinstance (desc, basestring):
+            desc = {'C' : desc}
     else:
         desc = None
+
     data = {'keyfile' : relfile}
     app = pulse.db.Resource.make (ident=ident, type='Application')
     app.update_name (name)
