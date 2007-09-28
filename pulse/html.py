@@ -131,7 +131,7 @@ class ResourcePage (Page, SublinksComponent):
     def __init__ (self, resource, **kw):
         Page.__init__ (self, **kw)
         # FIXME: i18n
-        self.set_title (resource.get_localized_name (['C']))
+        self.set_title (resource.title)
         self._sublinks = []
         self._affils = {}
         self._graphs = []
@@ -203,7 +203,7 @@ class SynopsisDiv (Block):
         d = pulse.utils.attrdict ([self._resource, pulse.config])
 
         # FIXME: i18n
-        d['name'] = self._resource.get_localized_name (['C'])
+        d['name'] = self._resource.localized_name
         d['__url__'] = '/'.join ([pulse.config.webroot] + self._resource.ident.split('/')[1:])
 
         p ('<div class="%(type)s synopsis">' %d)

@@ -47,7 +47,7 @@ def main (path=[], query={}, http=True, fd=None):
             if modules.count() > 0:
                 module = modules[0]
                 # FIXME: i18n
-                kw['pages'] = [(module.ident, module.get_localized_name (['C']))]
+                kw['pages'] = [(module.ident, module.title)]
             else:
                 kw['pages'] = []
             page = pulse.html.PageNotFound (
@@ -65,7 +65,7 @@ def main (path=[], query={}, http=True, fd=None):
 def output_module (module, path=[], query={}, http=True, fd=None):
     kw = {'http' : http}
     # FIXME: i18n
-    kw['title'] = module.get_localized_name (['C'])
+    kw['title'] = module.title
 
     page = pulse.html.Page (**kw)
 
@@ -78,8 +78,6 @@ def output_module (module, path=[], query={}, http=True, fd=None):
 def output_branch (branch, path=[], query=[], http=True, fd=None):
 
     page = pulse.html.ResourcePage (branch, http=http)
-    # FIXME: i18n
-    page.set_title (pulse.utils.gettext('%s (%s)') % (branch.get_localized_name (['C']), path[-1]))
 
     branches = pulse.db.Resource.selectBy (parent=branch.parent)
     # FIXME: sort

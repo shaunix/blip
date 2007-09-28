@@ -73,13 +73,22 @@ class Resource (sql.SQLObject):
         else:
             return cls (ident=ident, type=type)
 
-    def get_localized_name (self, langs):
+    def get_title (self):
+        if self.nick != None:
+            return pulse.utils.gettext ('%s (%s)') % (self.localized_name, self.nick)
+        else:
+            return self.localized_name
+    title = property (get_title)
+
+    def get_localized_name (self):
         # FIXME: i18n
         return self.name['C']
+    localized_name = property (get_localized_name)
 
-    def get_localized_desc (self, langs):
+    def get_localized_desc (self):
         # FIXME: i18n
         return self.desc['C']
+    localized_desc = property (get_localized_desc)
 
     def update_name (self, d):
         name = self.name
