@@ -51,11 +51,12 @@ body {
   font-size: 75%;
 }
 #header h1 {
-  margin: 0;
+  margin: 0; padding: 0;
   margin-left: 85px;
   padding-top: 20px;
   font-size: 2.4em;
   color: #eeeeec;
+  border: none;
 }
 #tabs {
   background: url(bar.png) 0 100% repeat-x;
@@ -112,7 +113,9 @@ body {
 h1 {
   font-size: 1.44em;
   color: #555753;
-  margin: 0; padding: 0;
+  margin: 0 0 0.2em 0;
+  padding: 0 0 0.2em 0;
+  border-bottom: solid 1px #555753;
 }
 
 a { color: #204a87; text-decoration: none; }
@@ -128,7 +131,6 @@ ul {
 ul li { margin-left: 1.44em; }
 
 div.sublinks {
-  margin-top: 0.2em;
   margin-left: 1.44em;
 }
 
