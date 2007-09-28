@@ -1,10 +1,120 @@
 html { margin: 0px; padding: 0px; }
 body {
   margin: 0; padding: 0;
+  background-color: white;
   color: #2e3436;
 }
 
-h1 { font-size: 1.44em; color: #555753; }
+#general {
+  list-style: none;
+  background: #2e3436 url(general_bg.png) 0 100% repeat-x;
+  text-align: right;
+  padding: 0 1ex;
+  margin: 0;
+  font-size: 70%;
+}
+#general li {
+  display: inline;
+  background: url(general_separator.png) 0 0 no-repeat;
+  padding-top: 10px;
+  padding-bottom: 8px;
+  margin-left: 0px;
+  margin-top: 0px;
+}
+#general li a {
+  font-weight: bold;
+  color: white;
+  margin: 0 2ex;
+  text-decoration: none;
+  line-height: 30px;
+}
+#general li a:hover {
+  text-decoration: underline;
+}
+#general .home {
+  float: left;
+  background: url(general_separator.png) 100% 0 no-repeat;
+  padding-top: 0;
+  padding-bottom: 0;
+}
+#general .home a {
+  float: left;
+  background: url(foot.png) 7px 50% no-repeat;
+  margin-left: 0;
+  padding-left: 27px;
+}
+
+#header {
+  background: #729fcf url(pulse.png) 15px 10px no-repeat;
+  float: left;
+  width: 100%;
+  font-size: 75%;
+}
+#header h1 {
+  margin: 0;
+  margin-left: 85px;
+  padding-top: 20px;
+  font-size: 2.4em;
+  color: #eeeeec;
+}
+#tabs {
+  background: url(bar.png) 0 100% repeat-x;
+  width: 100%;
+  float: left;
+  margin: 0;
+  padding: 0;
+}
+#portal-globalnav {
+  float: right;
+  list-style: none;
+  margin: 0;
+  margin-right: 3ex;
+}
+#portal-globalnav li {
+  float: left;
+  margin: 0;
+  margin-left: 0.2ex;
+  font-size: 2ex;
+}
+#portal-globalnav li a:hover {
+  color: #111111;
+}
+#portal-globalnav li a {
+  float: left;
+  text-decoration: none;
+  color: #555555;
+  background: url(tab_left.png) 0 0 no-repeat;
+  padding: 7px 0 7px 7px;
+  border-bottom: 2px solid #CCCCCC;
+}
+#portal-globalnav li span {
+  background: url(tab_right.png) 100% 0 no-repeat;
+  padding: 7px 28px 7px 19px;
+}
+#portal-globalnav li.selected a {
+  color: #3566a5;
+  background: url(tab_left.png) 0 -57px no-repeat;
+  border-bottom: none;
+  padding-top: 8px;
+  padding-bottom: 8px;
+}
+#portal-globalnav li.selected a span {
+  background: url(tab_right.png) 100% -57px no-repeat;
+  padding-top: 8px;
+  padding-bottom: 8px;
+}
+
+#body {
+  margin-top: 4.8em;
+  padding: 2.4em;
+}
+
+h1 {
+  font-size: 1.44em;
+  color: #555753;
+  margin: 0; padding: 0;
+}
+
 a { color: #204a87; text-decoration: none; }
 a:visited { color: #a40000; }
 a:hover { text-decoration: underline; }
@@ -17,13 +127,13 @@ ul {
 }
 ul li { margin-left: 1.44em; }
 
-#head {
-  background: #000000;
-  padding: 2px;
+div.sublinks {
+  margin-top: 0.2em;
+  margin-left: 1.44em;
 }
-#body {
-  padding: 2.4em;
-}
+
+
+
 
 div.synopsis {
   margin-top: 2.4em;
@@ -48,10 +158,6 @@ table.synopsis td.graphs {
 
 div.name {
   font-size: 1.2em;
-}
-div.sublinks {
-  margin-top: 0.2em;
-  margin-left: 1.44em;
 }
 
 div.mail { margin-top: 0.2em; }
@@ -140,7 +246,7 @@ img.admonition {
 div.notfound {
   border: solid 2px #aaaaaa;
   padding: 8px 8px 8px 72px;
-  background: #ffffff url('error-48.png') 12px 8px no-repeat;
+  background: #ffffff url(error-48.png) 12px 8px no-repeat;
   font-size: 1.44em;
 }
 div.notfound div.title {

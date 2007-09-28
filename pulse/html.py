@@ -70,13 +70,33 @@ class SublinksComponent (Block):
 ## Pages
 
 class Page (Block):
-    _head_text = ('<html><head>\n' +
-                  '<title>%(_title)s</title>\n'
-                  '<link rel="stylesheet" href="%(_webroot)sdata/pulse.css" />\n' +
-                  '<script language="javascript" type="text/javascript"' +
-                  ' src="%(_webroot)sdata/pulse.js" />\n' +
-                  '</head><body>\n' +
-                  '<div id="body"><h1>%(_title)s</h1>')
+    # FIXME: i18n
+    _head_text = '''
+<html><head>
+  <title>%(_title)s</title>\n
+  <link rel="stylesheet" href="%(_webroot)sdata/pulse.css" />
+  <script language="javascript" type="text/javascript" src="%(_webroot)sdata/pulse.js" />
+</head><body>
+<ul id="general">
+  <li id="siteaction-gnome_home" class="home"><a href="http://www.gnome.org/">Home</a></li>
+  <li id="siteaction-gnome_news"><a href="http://news.gnome.org">News</a></li>
+  <li id="siteaction-gnome_projects"><a href="http://www.gnome.org/projects/">Projects</a></li>
+  <li id="siteaction-gnome_art"><a href="http://art.gnome.org">Art</a></li>
+  <li id="siteaction-gnome_support"><a href="http://www.gnome.org/support/">Support</a></li>
+  <li id="siteaction-gnome_development"><a href="http://developer.gnome.org">Development</a></li>
+  <li id="siteaction-gnome_community"><a href="http://www.gnome.org/community/">Community</a></li>
+</ul>
+<div id="header">
+  <h1>Pulse</h1>
+  <div id="tabs"><ul id="portal-globalnav">
+    <li id="portaltab-root" class="selected"><a href="/"><span>Home</span></a></li>
+    <li id="portaltab-users"><a href="/users/"><span>Users</span></a></li>
+    <li id="portaltab-sysadmins"><a href="/admin/"><span>Administrators</span></a></li>
+    <li id="portaltab-developers"><a href="/devel/"><span>Developers</span></a></li>
+    <li id="portaltab-about"><a href="/about/about"><span>About</span></a></li>
+  </ul></div>
+</div>
+<div id="body"><h1>%(_title)s</h1>'''
     _foot_text = '</div></body></html>'
 
     def __init__ (self, **kw):
