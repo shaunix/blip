@@ -182,11 +182,38 @@ class RelationBox (Block):
 
     def output (self, fd=sys.stdout):
         p (fd, '<div class="relations" id="%s">' % self._id)
-        p (fd, '<div class="title">%s</div>' % self._title)
+        p (fd, '<div class="title">%s</div><table>' % self._title)
         for res, super in self._resources:
             d = pulse.utils.attrdict ([res])
-            p (fd, '<div class="relation"><a href="%(url)s">%(title)s</a></div>' % d)
-        p (fd, '</div>')
+            if super:
+                p (fd, '<tr class="super">')
+            else:
+                p (fd, '<tr>')
+            p (fd, '<td class="icon">')
+            if (d['icon'] != None):
+                p (fd, '<img class="icon" src="%(icon)s" alt="%(title)s" />' %d)
+            p (fd, '</td><td>')
+            p (fd, '<div class="li-title"><a href="%(url)s">%(title)s</a></div>' %d)
+            if d.has_key ('localized_desc'):
+                p (fd, '<div class="li-desc">%(localized_desc)s</div>' %d)
+            p (fd, '</td></tr>')
+        p (fd, '</table></div>')
+
+class ColumnBox (Block):
+    def __init__ (self, num):
+        self._columns = [[] for i in range(num)]
+
+    def add_content (self, index, content):
+        self._columns[index].append (content)
+
+    def output (self, fd=sys.stdout):
+        p (fd, '<table class="columns"><tr>')
+        for column in self._columns:
+            p (fd, '<td>')
+            for item in column:
+                p (fd, item)
+            p (fd, '</td>')
+        p (fd, '</tr></table>')
 
 ################################################################################
 ## Other...
@@ -225,7 +252,6 @@ class SynopsisDiv (Block):
 
         # FIXME: i18n
         d['name'] = self._resource.localized_name
-        d['__url__'] = '/'.join ([pulse.config.webroot] + self._resource.ident.split('/')[1:])
 
         p ('<div class="%(type)s synopsis">' %d)
         p ('<table class="%(type)s synopsis"><tr>\n' %d)
@@ -241,7 +267,7 @@ class SynopsisDiv (Block):
         if len(self._sublinks) > 0:
             name_ = d['name']
         else:
-            name_ = ('<a href="%(__url__)s/">%(name)s</a>' %d)
+            name_ = ('<a href="%(url)s/">%(name)s</a>' %d)
         if d.has_val ('nick'):
             # FIXME: i18n
             nick_ =  (' (%(nick)s)' %d)
@@ -280,7 +306,7 @@ class SynopsisDiv (Block):
                 if list.resource.list_type == 'users': p (' (Users)')
                 if list.resource.list_type == 'devel': p (' (Developers)')
                 p ('</div><div class="sublinks">')
-                p (u'<a href="%(__url__)s/">Pluse</a> • ' %d)
+                p (u'<a href="%(url)s/">Pluse</a> • ' %d)
                 p (u'<a href="%(list_info)s/">Information</a> • ' %d)
                 p (u'<a href="%(list_archive)s/">Archive</a>' %d)
                 p ('</div></div>\n')
