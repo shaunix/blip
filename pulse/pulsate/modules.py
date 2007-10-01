@@ -30,18 +30,16 @@ synop = 'update information from module and branch checkouts'
 def usage (fd=sys.stderr):
     print >>fd, ('Usage: %s [PREFIX]' % sys.argv[0])
 
-def update_branch (resource, update):
-    checkout = pulse.scm.Checkout (update=update, **resource.data)
+def update_branch (branch, update):
+    checkout = pulse.scm.Checkout (update=update, **branch.data)
+    branch.nick = checkout.scm_branch
     # FIXME: what do we want to know?
     # find maintainers
     # find document (in documents.py?)
-    # find domains (in i18n.py?)
     # find human-readable names for the module
     # mailing list
     # icon
-    # but branch names should be MODULE (BRANCH)
     # bug information
-    # We can get much of this from a .desktop file for apps, if we can find it
     domains = []
     keyfiles = []
     def visit (arg, dirname, names):
@@ -51,29 +49,78 @@ def update_branch (resource, update):
             if not os.path.isfile (filename):
                 continue
             if name == 'POTFILES.in':
-                domain = process_podir (resource, checkout, dirname)
+                domain = process_podir (branch, checkout, dirname)
                 if domain != None:
                     domains.append (domain)
             if name.endswith ('.desktop.in.in'):
                 keyfiles.append (filename)
     os.path.walk (checkout.directory, visit, None)
 
-    resource.set_children ('Domain', domains)
+    branch.set_children ('Domain', domains)
 
     applications = []
     for keyfile in keyfiles:
-        app = process_keyfile (resource, checkout, keyfile)
+        app = process_keyfile (branch, checkout, keyfile)
         if app != None:
             applications.append (app)
-    resource.set_children ('Application', applications)
+    branch.set_children ('Application', applications)
 
-    for res in (resource, resource.parent):
-        if res.name == {}:
-            res.name = {'C' : res.ident.split('/')[3]}
+    if branch.name == {}:
+        branch.name = {'C' : branch.ident.split('/')[3]}
 
-def process_podir (resource, checkout, dir):
+    if checkout.default:
+        update_module_from_branch (branch, checkout)
+
+def update_module_from_branch (branch, checkout):
+    module = branch.parent
+    module.update_name (branch.name)
+    module.update_desc (branch.desc)
+
+    if os.path.isfile (os.path.join (checkout.directory, 'MAINTAINERS')):
+        start = True
+        name = None
+        email = None
+        userid = None
+        maints = []
+        def add_maint ():
+            if name != None and userid != None:
+                maints.append ((name, userid, email))
+        for l in open (os.path.join (checkout.directory, 'MAINTAINERS')):
+            line = l.rstrip()
+            if line.startswith ('#'):
+                continue
+            if line == "":
+                add_maint ()
+                name = email = userid = None
+                start = True
+                continue
+
+            if start:
+                name = line
+                start = False
+            elif line.startswith ('E-mail:'):
+                email = line[7:].strip()
+            elif line.startswith ('Userid:'):
+                userid = line[7:].strip()
+        add_maint ()
+        serverid = module.ident.split('/')[2]
+        rels = []
+        for name, userid, email in maints:
+            ident = '/person/' + serverid + '/' + userid
+            person = pulse.db.Resource.make (ident=ident, type='Person')
+            person.update_name ({'C' : name})
+            if email != None:
+                person.email = email
+            rels.append (pulse.db.Relation.make (subj=module,
+                                                 verb=pulse.db.Relation.module_developer,
+                                                 pred=person,
+                                                 superlative=True))
+        module.set_relations (pulse.db.Relation.module_developer, rels)
+
+
+def process_podir (branch, checkout, dir):
     ident = '/' + '/'.join (['i18n'] +
-                            resource.ident.split('/')[2:] +
+                            branch.ident.split('/')[2:] +
                             [os.path.basename (dir)])
     domain = pulse.db.Resource.make (ident=ident, type='Domain')
 
@@ -83,7 +130,7 @@ def process_podir (resource, checkout, dir):
 
     return domain
 
-def process_keyfile (resource, checkout, filename):
+def process_keyfile (branch, checkout, filename):
     basename = os.path.basename(filename)[0:-14]
     relfile = filename[len(checkout.directory)+1:]
     owd = os.getcwd ()
@@ -99,7 +146,7 @@ def process_keyfile (resource, checkout, filename):
     if keyfile.get_value ('Desktop Entry', 'Type') != 'Application':
         return
     ident = '/' + '/'.join (['app'] +
-                            resource.ident.split('/')[2:] +
+                            branch.ident.split('/')[2:] +
                             [basename])
     name = keyfile.get_value ('Desktop Entry', 'Name')
     if isinstance (name, basestring):
@@ -120,11 +167,11 @@ def process_keyfile (resource, checkout, filename):
     app.update_data (data)
     # FIXME: icon, bugzilla stuff
 
-    if basename == resource.ident.split('/')[3]:
-        resource.update_name (name)
+    if basename == branch.ident.split('/')[3]:
+        branch.update_name (name)
         if desc != None:
-            resource.update_desc (desc)
-        resource.update_data (data)
+            branch.update_desc (desc)
+        branch.update_data (data)
 
     return app
 

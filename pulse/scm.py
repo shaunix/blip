@@ -65,6 +65,7 @@ class Checkout (object):
 
         if not hasattr(self, 'scm_branch'):
             self.scm_branch = 'HEAD'
+        self.default = (self.scm_branch == 'HEAD')
                 
         self._name = '%s (%s)' % (self.scm_module, self.scm_branch)
         self._server = self.scm_server.split(':')[2]
@@ -93,6 +94,7 @@ class Checkout (object):
             self.scm_server = self.scm_server + '/'
         if not hasattr(self, 'scm_branch'):
             self.scm_branch = 'trunk'
+        self.default = (self.scm_branch == 'trunk')
 
         self._name = '%s (%s)' % (self.scm_module, self.scm_branch)
         self._server = self.scm_server.split('://')[1].split('/')[0]
