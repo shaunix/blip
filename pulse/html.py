@@ -207,9 +207,14 @@ class ColumnBox (Block):
         self._columns[index].append (content)
 
     def output (self, fd=sys.stdout):
-        p (fd, '<table class="columns"><tr>')
-        for column in self._columns:
-            p (fd, '<td>')
+        p (fd, '<table class="cols"><tr>')
+        width = str (100 / len(self._columns))
+        for i in range(len(self._columns)):
+            column = self._columns[i]
+            if i == 0:
+                p (fd, '<td class="col col-first">')
+            else:
+                p (fd, '<td class="col" style="width: ' + width + '%">')
             for item in column:
                 p (fd, item)
             p (fd, '</td>')

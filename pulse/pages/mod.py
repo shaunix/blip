@@ -96,6 +96,14 @@ def output_branch (branch, path=[], query=[], http=True, fd=None):
     for rel in developers:
         box.add_relation (rel.pred, rel.superlative)
 
+    # Domains
+    domains = pulse.db.Resource.selectBy (type='Domain', parent=branch)
+    if domains.count() > 0:
+        box = pulse.html.RelationBox ('domains', pulse.utils.gettext ('Domains'))
+        columns.add_content (0, box)
+        for domain in domains:
+            box.add_relation (domain, False)
+
     # Applications
     apps = pulse.db.Resource.selectBy (type='Application', parent=branch)
     if apps.count() > 0:
@@ -103,6 +111,14 @@ def output_branch (branch, path=[], query=[], http=True, fd=None):
         columns.add_content (1, box)
         for app in apps:
             box.add_relation (app, False)
+
+    # Documents
+    docs = pulse.db.Resource.selectBy (type='Document', parent=branch)
+    if docs.count() > 0:
+        box = pulse.html.RelationBox ('documents', pulse.utils.gettext ('Documents'))
+        columns.add_content (1, box)
+        for doc in docs:
+            box.add_relation (doc, False)
 
     page.output(fd=fd)
 

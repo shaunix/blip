@@ -138,8 +138,14 @@ div.sublinks {
   margin-left: 1.44em;
 }
 
-table.columns { width: 100%; }
-table.columns td { padding: 0; }
+table.cols { width: 100%; }
+td.col { padding: 0 0 0 1em; }
+td.col-first { padding: 0; }
+
+.li-desc {
+  margin-left: 1.2em;
+  font-style: italic;
+}
 
 div.relations {
   border: solid 1px #d3d7cf;
