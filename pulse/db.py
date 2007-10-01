@@ -74,10 +74,11 @@ class Resource (sql.SQLObject):
             return cls (ident=ident, type=type)
 
     def get_title (self):
+        if self.name == {}:
+            return self.ident.split('/')[-1]
         if self.nick != None:
             return pulse.utils.gettext ('%s (%s)') % (self.localized_name, self.nick)
-        else:
-            return self.localized_name
+        return self.localized_name
     title = property (get_title)
 
     def get_localized_name (self):
