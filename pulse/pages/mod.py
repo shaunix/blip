@@ -85,14 +85,24 @@ def output_branch (branch, path=[], query=[], http=True, fd=None):
         else:
             page.add_sublink (None, b.ident.split('/')[-1])
 
-    apps = pulse.db.Resource.selectBy (type='Application', parent=branch)
+    columns = pulse.html.ColumnBox (2)
+    page.add_content (columns)
 
+    # Developers
     box = pulse.html.RelationBox ('developers', pulse.utils.gettext ('Developers'))
-    page.add_content (box)
+    columns.add_content (0, box)
     developers = pulse.db.Relation.selectBy (subj=module,
                                              verb=pulse.db.Relation.module_developer)
     for rel in developers:
         box.add_relation (rel.pred, rel.superlative)
+
+    # Applications
+    apps = pulse.db.Resource.selectBy (type='Application', parent=branch)
+    if apps.count() > 0:
+        box = pulse.html.RelationBox ('applications', pulse.utils.gettext ('Applications'))
+        columns.add_content (1, box)
+        for app in apps:
+            box.add_relation (app, False)
 
     page.output(fd=fd)
 
