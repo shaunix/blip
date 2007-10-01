@@ -90,6 +90,10 @@ class Resource (sql.SQLObject):
         return self.desc['C']
     localized_desc = property (get_localized_desc)
 
+    def get_url (self):
+        return pulse.config.webroot + self.ident[1:]
+    url = property (get_url)
+
     def update_name (self, d):
         name = self.name
         for k in d:
@@ -122,8 +126,17 @@ class Resource (sql.SQLObject):
             child.parent = self
         for old in olddict.values():
             old.delete_full ()
-        
-            
+
+    def set_relations (self, verb, relations):
+        old = Relation.selectBy (subj=self, verb=verb)
+        olddict = {}
+        for rel in old:
+            olddict[rel.pred.ident] = rel
+        for relation in relations:
+            olddict.pop (relation.pred.ident, None)
+        for old in olddict.values():
+            old.delete_full ()
+
 
 class Relation (sql.SQLObject):
     class sqlmeta:
@@ -136,8 +149,11 @@ class Relation (sql.SQLObject):
     # Relations, so that we don't have typos
     set_subset = 'set_subset'             # Set -> Set
     set_branch = 'set_branch'             # Set -> Branch
-    module_branch = 'module_branch'       # Module -> Branch
     module_developer = 'module_developer' # Module -> Person/Team
+
+    def delete_full (self):
+        pulse.utils.log ('Deleting relation (%s %s %s)' % (self.subj.ident, self.verb, self.pred.ident))
+        Relation.delete (self.id)
 
     @classmethod
     def make (cls, subj, verb, pred, superlative=False):
