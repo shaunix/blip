@@ -152,20 +152,41 @@ class PageNotFound (Page):
                        http=http,
                        status=404,
                        title=title)
-        self.pack_start ('<div class="notfound">\n')
-        self.pack_start ('<div class="title">%(title)s</div>\n' %d)
-        self.pack_start ('<div class="message">%(message)s</div>' %d)
+        self.add_content ('<div class="notfound">\n')
+        self.add_content ('<div class="title">%(title)s</div>\n' %d)
+        self.add_content ('<div class="message">%(message)s</div>' %d)
         if len(pages) > 0:
-            self.pack_start ('<div class="pages">' +
-                             pulse.utils.gettext ('The following pages might interest you:') +
-                             '<ul>\n')
+            self.add_content ('<div class="pages">' +
+                              pulse.utils.gettext ('The following pages might interest you:') +
+                              '<ul>\n')
             for page in pages:
                 d['href'] = page[0]
                 d['name'] = page[1]
-                self.pack_start ('<li><a href="%(webroot)s%(href)s">%(name)s</a></li>\n' %d)
-            self.pack_start ('</ul></div>\n')
-        self.pack_start ('</div>\n')
+                self.add_content ('<li><a href="%(webroot)s%(href)s">%(name)s</a></li>\n' %d)
+            self.add_content ('</ul></div>\n')
+        self.add_content ('</div>\n')
 
+
+################################################################################
+## Boxes
+
+class RelationBox (Block):
+    def __init__ (self, id, title, **kw):
+        Block.__init__ (self, **kw)
+        self._id = id
+        self._title = title
+        self._resources = []
+
+    def add_relation (self, resource, superlative):
+        self._resources.append ((resource, superlative))
+
+    def output (self, fd=sys.stdout):
+        p (fd, '<div class="relations" id="%s">' % self._id)
+        p (fd, '<div class="title">%s</div>' % self._title)
+        for res, super in self._resources:
+            d = pulse.utils.attrdict ([res])
+            p (fd, '<div class="relation"><a href="%(url)s">%(title)s</a></div>' % d)
+        p (fd, '</div>')
 
 ################################################################################
 ## Other...

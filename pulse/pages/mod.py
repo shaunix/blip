@@ -63,11 +63,7 @@ def main (path=[], query={}, http=True, fd=None):
     return 0
 
 def output_module (module, path=[], query={}, http=True, fd=None):
-    kw = {'http' : http}
-    # FIXME: i18n
-    kw['title'] = module.title
-
-    page = pulse.html.Page (**kw)
+    page = pulse.html.ResourcePage (module, http=http)
 
     # FIXME: do stuff
 
@@ -76,6 +72,7 @@ def output_module (module, path=[], query={}, http=True, fd=None):
     return 0
 
 def output_branch (branch, path=[], query=[], http=True, fd=None):
+    module = branch.parent
 
     page = pulse.html.ResourcePage (branch, http=http)
 
@@ -89,6 +86,13 @@ def output_branch (branch, path=[], query=[], http=True, fd=None):
             page.add_sublink (None, b.ident.split('/')[-1])
 
     apps = pulse.db.Resource.selectBy (type='Application', parent=branch)
+
+    box = pulse.html.RelationBox ('developers', pulse.utils.gettext ('Developers'))
+    page.add_content (box)
+    developers = pulse.db.Relation.selectBy (subj=module,
+                                             verb=pulse.db.Relation.module_developer)
+    for rel in developers:
+        box.add_relation (rel.pred, rel.superlative)
 
     page.output(fd=fd)
 
