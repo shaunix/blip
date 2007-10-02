@@ -43,7 +43,8 @@ class Block:
 ## Components
 
 class SublinksComponent (Block):
-    def __init__ (self):
+    def __init__ (self, **kw):
+        Block.__init__ (self, **kw)
         self._sublinks = []
 
     def add_sublink (self, href, title):
@@ -65,11 +66,22 @@ class SublinksComponent (Block):
     def output (self, fd=sys.stdout):
         SublinksComponent.output_sublinks (self._sublinks, fd)
 
+class ContentComponent (Block):
+    def __init__ (self, **kw):
+        Block.__init__ (self, **kw)
+        self._content = []
+
+    def add_content (self, content):
+        self._content.append (content)
+
+    def output (self, fd=sys.stdout):
+        for s in self._content:
+            p (fd, s)
 
 ################################################################################
 ## Pages
 
-class Page (Block):
+class Page (Block, ContentComponent):
     # FIXME: i18n
     _head_text = '''
 <html><head>
@@ -101,17 +113,14 @@ class Page (Block):
 
     def __init__ (self, **kw):
         Block.__init__ (self, **kw)
+        ContentComponent.__init__ (self, **kw)
         self._http = kw.get ('http')
         self._status = kw.get ('status')
         self._title = kw.get ('title')
         self._webroot = pulse.config.webroot
-        self._content = []
 
     def set_title (self, title):
         self._title = title
-
-    def add_content (self, content):
-        self._content.append (content)
 
     def output_top (self, fd=sys.stdout):
         if self._http == True:
@@ -121,8 +130,7 @@ class Page (Block):
         p (fd, self._head_text % self.__dict__)
 
     def output_middle (self, fd=sys.stdout):
-        for s in self._content:
-            p (fd, s)
+        ContentComponent.output (self, fd=fd)
 
     def output_bottom (self, fd=sys.stdout):
         p (fd, self._foot_text % self.__dict__)
@@ -130,11 +138,8 @@ class Page (Block):
 class ResourcePage (Page, SublinksComponent):
     def __init__ (self, resource, **kw):
         Page.__init__ (self, **kw)
-        # FIXME: i18n
+        SublinksComponent.__init__ (self, **kw)
         self.set_title (resource.title)
-        self._sublinks = []
-        self._affils = {}
-        self._graphs = []
 
     def output_middle (self, fd=sys.stdout):
         SublinksComponent.output (self, fd=fd)
@@ -170,35 +175,39 @@ class PageNotFound (Page):
 ################################################################################
 ## Boxes
 
-class RelationBox (Block):
+class InfoBox (ContentComponent):
     def __init__ (self, id, title, **kw):
-        Block.__init__ (self, **kw)
+        ContentComponent.__init__ (self, **kw)
         self._id = id
         self._title = title
-        self._resources = []
 
-    def add_relation (self, resource, superlative):
-        self._resources.append ((resource, superlative))
+    def add_resource_link (self, resource, superlative=False):
+        self.add_content (ResourceLinkBox (resource, superlative=superlative))
 
     def output (self, fd=sys.stdout):
-        p (fd, '<div class="relations" id="%s">' % self._id)
-        p (fd, '<div class="title">%s</div><table>' % self._title)
-        for res, super in self._resources:
-            d = pulse.utils.attrdict ([res])
-            if super:
-                p (fd, '<tr class="super">')
-            else:
-                p (fd, '<tr>')
-            p (fd, '<td class="icon">')
-            if (d['icon'] != None):
-                p (fd, '<img class="icon" src="%(icon)s" alt="%(title)s" />' %d)
-            p (fd, '</td><td>')
-            p (fd, '<div class="li-title"><a href="%(url)s">%(title)s</a></div>' %d)
-            if d.has_key ('localized_desc'):
-                p (fd, '<div class="li-desc">%(localized_desc)s</div>' %d)
-            p (fd, '</td></tr>')
-        p (fd, '</table></div>')
+        p (fd, '<div class="infobox" id="%s">' % self._id)
+        p (fd, '<div class="title">%s</div>' % self._title)
+        ContentComponent.output (self, fd=fd)
+        p (fd, '</div>')
 
+class ResourceLinkBox (Block):
+    def __init__ (self, resource, **kw):
+        Block.__init__ (self, **kw)
+        self._resource = resource
+        self._superlative = kw.get ('superlative', False)
+
+    def output (self, fd=sys.stdout):
+        d = pulse.utils.attrdict ([self._resource])
+        p (fd, '<table class="rlink"><tr>')
+        p (fd, '<td class="rlink-icon">')
+        if (d['icon'] != None):
+            p (fd, '<img class="icon" src="%(icon)s" alt="%(title)s" />' %d)
+        p (fd, '</td><td class="rlink-text">')
+        p (fd, '<div class="rlink-title"><a href="%(url)s">%(title)s</a></div>' %d)
+        if d.has_key ('localized_desc'):
+            p (fd, '<div class="rlink-desc">%(localized_desc)s</div>' %d)
+        p (fd, '</td></tr></table>')
+        
 class ColumnBox (Block):
     def __init__ (self, num):
         self._columns = [[] for i in range(num)]

@@ -89,36 +89,37 @@ def output_branch (branch, path=[], query=[], http=True, fd=None):
     page.add_content (columns)
 
     # Developers
-    box = pulse.html.RelationBox ('developers', pulse.utils.gettext ('Developers'))
+    box = pulse.html.InfoBox ('developers', pulse.utils.gettext ('Developers'))
     columns.add_content (0, box)
     developers = pulse.db.Relation.selectBy (subj=module,
                                              verb=pulse.db.Relation.module_developer)
     for rel in developers:
-        box.add_relation (rel.pred, rel.superlative)
+        box.add_resource_link (rel.pred, rel.superlative)
 
     # Domains
     domains = pulse.db.Resource.selectBy (type='Domain', parent=branch)
     if domains.count() > 0:
-        box = pulse.html.RelationBox ('domains', pulse.utils.gettext ('Domains'))
+        box = pulse.html.InfoBox ('domains', pulse.utils.gettext ('Domains'))
         columns.add_content (0, box)
         for domain in domains:
-            box.add_relation (domain, False)
+            # FIXME: let's not do a simple resource link, but a tree with other info
+            box.add_resource_link (domain)
 
     # Applications
     apps = pulse.db.Resource.selectBy (type='Application', parent=branch)
     if apps.count() > 0:
-        box = pulse.html.RelationBox ('applications', pulse.utils.gettext ('Applications'))
+        box = pulse.html.InfoBox ('applications', pulse.utils.gettext ('Applications'))
         columns.add_content (1, box)
         for app in apps:
-            box.add_relation (app, False)
+            box.add_resource_link (app)
 
     # Documents
     docs = pulse.db.Resource.selectBy (type='Document', parent=branch)
     if docs.count() > 0:
-        box = pulse.html.RelationBox ('documents', pulse.utils.gettext ('Documents'))
+        box = pulse.html.InfoBox ('documents', pulse.utils.gettext ('Documents'))
         columns.add_content (1, box)
         for doc in docs:
-            box.add_relation (doc, False)
+            box.add_resource_link (doc)
 
     page.output(fd=fd)
 
