@@ -18,8 +18,11 @@
 # Suite 330, Boston, MA  0211-1307  USA.
 #
 
+import os
+import os.path
 import sys
 
+import pulse.config
 import pulse.db
 
 synop = 'initialize the Pulse database'
@@ -27,4 +30,7 @@ def usage (fd=sys.stderr):
     print >>fd, ('Usage: %s' % sys.argv[0])
 
 def main (argv):
+    for dir in (pulse.config.vardir, pulse.config.icondir):
+        if not os.path.exists (dir):
+            os.makedirs (dir)
     pulse.db.create_tables()

@@ -93,7 +93,7 @@ def output_branch (branch, path=[], query=[], http=True, fd=None):
     columns.add_content (0, box)
     developers = pulse.db.Relation.selectBy (subj=module,
                                              verb=pulse.db.Relation.module_developer)
-    for rel in developers:
+    for rel in pulse.utils.predsorted (developers[0:]):
         box.add_resource_link (rel.pred, rel.superlative)
 
     # Domains
@@ -101,7 +101,7 @@ def output_branch (branch, path=[], query=[], http=True, fd=None):
     if domains.count() > 0:
         box = pulse.html.InfoBox ('domains', pulse.utils.gettext ('Domains'))
         columns.add_content (0, box)
-        for domain in domains:
+        for domain in pulse.utils.titlesorted (domains[0:]):
             # FIXME: let's not do a simple resource link, but a tree with other info
             box.add_resource_link (domain)
 
@@ -110,7 +110,7 @@ def output_branch (branch, path=[], query=[], http=True, fd=None):
     if apps.count() > 0:
         box = pulse.html.InfoBox ('applications', pulse.utils.gettext ('Applications'))
         columns.add_content (1, box)
-        for app in apps:
+        for app in pulse.utils.titlesorted (apps[0:]):
             box.add_resource_link (app)
 
     # Documents
@@ -118,7 +118,7 @@ def output_branch (branch, path=[], query=[], http=True, fd=None):
     if docs.count() > 0:
         box = pulse.html.InfoBox ('documents', pulse.utils.gettext ('Documents'))
         columns.add_content (1, box)
-        for doc in docs:
+        for doc in pulse.utils.titlesorted (docs[0:]):
             box.add_resource_link (doc)
 
     page.output(fd=fd)

@@ -29,6 +29,9 @@ scmdir = os.path.join (vardir, 'scm')
 webdir = '/shaunm/projects/pulse/web/'
 webroot = 'file:///shaunm/projects/pulse/web/'
 
+icondir = os.path.join (webdir, 'icons')
+iconroot = webroot + 'icons/'
+
 # need dir2url to make this use vardir
 dbroot = 'sqlite:/shaunm/projects/pulse/var/pulse.db'
 #dbroot = _url( 'mysql://user:pass@localhost/pulse')

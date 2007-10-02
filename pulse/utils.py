@@ -30,6 +30,15 @@ def gettext (str):
 def isorted (list):
     return sorted (list, lambda x, y: cmp (x.lower(), y.lower()))
 
+def titlesorted (list):
+    return sorted (list, lambda x, y: cmp (x.title.lower(), y.title.lower()))
+
+def subjsorted (list):
+    return sorted (list, lambda x, y: cmp (x.subj.title.lower(), y.subj.title.lower()))
+
+def predsorted (list):
+    return sorted (list, lambda x, y: cmp (x.pred.title.lower(), y.pred.title.lower()))
+
 class odict (dict):
     def __init__ (self, d=None):
         if d != None:

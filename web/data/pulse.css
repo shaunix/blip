@@ -153,10 +153,8 @@ td.col-first { padding: 0; }
   border-bottom: solid 1px #d3d7cf;
 }
 
-table.rlink { margin-bottom: 0.2em; }
-td.rlink-icon { }
+table.rlink { margin: 0.2em 0 0.2em 6px; }
+td.rlink-icon { width: 24px; }
+td.rlink-icon img { width: 24px; }
 td.rlink-text { padding: 0 0.5em 0 0.5em; }
-div.rlink-desc {
-  margin-left: 1.2em;
-  font-style: italic;
-}
+div.rlink-desc { font-style: italic; }

@@ -19,6 +19,7 @@
 #
 
 import os
+import shutil
 import sys
 
 import xml.dom.minidom
@@ -42,6 +43,7 @@ def update_branch (branch, update):
     # bug information
     domains = []
     keyfiles = []
+    images = []
     def visit (arg, dirname, names):
         names.remove (checkout.ignoredir)
         for name in names:
@@ -52,15 +54,17 @@ def update_branch (branch, update):
                 domain = process_podir (branch, checkout, dirname)
                 if domain != None:
                     domains.append (domain)
-            if name.endswith ('.desktop.in.in'):
+            elif name.endswith ('.desktop.in.in'):
                 keyfiles.append (filename)
+            elif name.endswith ('.png'):
+                images.append (filename)
     os.path.walk (checkout.directory, visit, None)
 
     branch.set_children ('Domain', domains)
 
     applications = []
     for keyfile in keyfiles:
-        app = process_keyfile (branch, checkout, keyfile)
+        app = process_keyfile (branch, checkout, keyfile, images=images)
         if app != None:
             applications.append (app)
     branch.set_children ('Application', applications)
@@ -130,7 +134,7 @@ def process_podir (branch, checkout, dir):
 
     return domain
 
-def process_keyfile (branch, checkout, filename):
+def process_keyfile (branch, checkout, filename, **kw):
     basename = os.path.basename(filename)[0:-14]
     relfile = filename[len(checkout.directory)+1:]
     owd = os.getcwd ()
@@ -160,10 +164,35 @@ def process_keyfile (branch, checkout, filename):
         desc = None
 
     data = {'keyfile' : relfile}
+
+    icon = None
+    if keyfile.has_key ('Desktop Entry', 'Icon'):
+        iconfile = keyfile.get_value ('Desktop Entry', 'Icon')
+        if not iconfile.endswith ('.png'):
+            iconfile += '.png'
+        candidates = []
+        for img in kw.get ('images', []):
+            if os.path.basename (img) == iconfile:
+                candidates.append (img)
+        use = None
+        for img in candidates:
+            if '24x24' in img:
+                use = img
+                break
+        # FIXME: try actually looking at sizes, pick closest
+        if use != None:
+            shutil.copyfile (use, os.path.join (pulse.config.icondir, os.path.basename (use)))
+            icon = os.path.basename (use)
+        else:
+            # try looking in gnome-icon-theme
+            pass
+
     app = pulse.db.Resource.make (ident=ident, type='Application')
     app.update_name (name)
     if desc != None:
         app.update_desc (desc)
+    if icon != None:
+        app.icon = icon
     app.update_data (data)
     # FIXME: icon, bugzilla stuff
 
