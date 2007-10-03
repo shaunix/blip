@@ -106,7 +106,12 @@ def output_branch (branch, path=[], query=[], http=True, fd=None):
     if domains.count() > 0:
         for domain in pulse.utils.titlesorted (domains[0:]):
             # FIXME: let's not do a simple resource link, but a tree with other info
-            box.add_resource_link (domain)
+            reslink = box.add_resource_link (domain)
+            translations = pulse.db.Resource.selectBy (type='Translation', parent=domain)
+            grid = pulse.html.GridBox ()
+            reslink.add_content (grid)
+            for translation in pulse.utils.titlesorted (translations[0:]):
+                grid.add_row ((translation.title,))
     else:
         box.add_content (pulse.html.AdmonBox (pulse.html.AdmonBox.warning,
                                               pulse.utils.gettext ('No domains') ))

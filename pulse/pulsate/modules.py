@@ -44,6 +44,7 @@ def update_branch (branch, update):
     domains = []
     keyfiles = []
     images = []
+    gdu_docs = []
     def visit (arg, dirname, names):
         names.remove (checkout.ignoredir)
         for name in names:
@@ -58,9 +59,22 @@ def update_branch (branch, update):
                 keyfiles.append (filename)
             elif name.endswith ('.png'):
                 images.append (filename)
+            elif name == 'Makefile.am':
+                fd = open (filename)
+                makefile = pulse.utils.makefile (fd)
+                fd.close()
+                if 'include $(top_srcdir)/gnome-doc-utils.make' in makefile.get_lines():
+                    gdu_docs.append((dirname, makefile))
     os.path.walk (checkout.directory, visit, None)
 
     branch.set_children ('Domain', domains)
+
+    documents = []
+    for docdir, makefile in gdu_docs:
+        document = process_gdu_docdir (branch, checkout, docdir, makefile)
+        if document != None:
+            documents.append (document)
+    branch.set_children ('Document', documents)
 
     applications = []
     for keyfile in keyfiles:
@@ -122,17 +136,44 @@ def update_module_from_branch (branch, checkout):
         module.set_relations (pulse.db.Relation.module_developer, rels)
 
 
-def process_podir (branch, checkout, dir):
-    ident = '/' + '/'.join (['i18n'] +
-                            branch.ident.split('/')[2:] +
-                            [os.path.basename (dir)])
+def process_podir (branch, checkout, podir):
+    ident = '/i18n/' + '/'.join (branch.ident.split('/')[2:]) + '/' + os.path.basename (podir)
     domain = pulse.db.Resource.make (ident=ident, type='Domain')
 
     data = {}
-    data['directory'] = dir[len(checkout.directory)+1:]
+    for key in branch.data.keys():
+        if key.startswith ('scm_'):
+            data[key] = branch.data[key]
+    data['directory'] = podir[len(checkout.directory)+1:]
     domain.update_data (data)
 
+    linguas = os.path.join (podir, 'LINGUAS')
+    langs = []
+    translations = []
+    if os.path.isfile (linguas):
+        fd = open (linguas)
+        for line in fd:
+            if line.startswith ('#') or line == '\n':
+                continue
+            langs.append (line.strip ())
+        print langs
+    for lang in langs:
+        lident = '/i18n/' + '/'.join (branch.ident.split('/')[2:]) + '/po/' + os.path.basename (podir) + '/' + lang
+        translation = pulse.db.Resource.make (ident=lident, type='Translation')
+        translations.append (translation)
+        ldata = data
+        ldata['file'] = lang + '.po'
+        translation.update_data (data)
+    domain.set_children ('Translation', translations)
+
     return domain
+
+def process_gdu_docdir (branch, checkout, docdir, makefile, **kw):
+    doc_module = makefile['DOC_MODULE']
+    ident = '/doc/' + '/'.join(branch.ident.split('/')[2:5]) + '/' + doc_module
+    document = pulse.db.Resource.make (ident=ident, type='Document')
+    document.update_data ({'document_tool' : 'gnome-doc-utils'})
+    return document
 
 def process_keyfile (branch, checkout, filename, **kw):
     basename = os.path.basename(filename)[0:-14]

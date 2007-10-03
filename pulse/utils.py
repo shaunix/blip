@@ -19,6 +19,7 @@
 #
 
 from datetime import datetime
+import re
 import sys
 
 import ConfigParser
@@ -114,11 +115,49 @@ class attrdict (dict):
     def remove (self, obj):
         self.objs.remove (obj)
 
+class makefile (object):
+    def __init__ (self, fd):
+        self._variables = {}
+        self._lines = []
+        line = fd.readline ()
+        regexp = re.compile ('''([A-Za-z_]+)(\s*=)(.*)''')
+        while line:
+            match = regexp.match (line)
+            if match:
+                varname = match.group(1)
+                vartxt = match.group(3).strip()
+                if vartxt.endswith ('\\'):
+                    vartxt = vartxt[:-1]
+                    line = fd.readline ()
+                    while line:
+                        vartxt += line.strip()
+                        if vartxt.endswith ('\\'):
+                            vartxt = vartxt[:-1]
+                        else:
+                            break
+                        line = fd.readline()
+                self._variables[varname] = vartxt
+                self._lines.append (match.group(1) + match.group(2) + vartxt)
+            else:
+                self._lines.append (line.strip())
+
+            if line:
+                line = fd.readline ()
+
+    def get_lines (self):
+        return self._lines
+
+    def __getitem__ (self, key):
+        return self._variables[key]
+
+    def has_key (self, key):
+        return self._variables.has_key (key)
+
 class keyfile (object):
-    def __init__ (self, fp):
+    def __init__ (self, fd):
         cfg = ConfigParser.ConfigParser()
         cfg.optionxform = str
-        cfg.readfp (fp)
+        cfg.readfp (fd)
         self._data = {}
         for group in cfg.sections ():
             self._data[group] = {}

@@ -122,7 +122,8 @@ a { color: #204a87; text-decoration: none; }
 a:visited { color: #a40000; }
 a:hover { text-decoration: underline; }
 a img { border: none; }
-td { vertical-align: top; }
+table { margin: 0; padding: 0; }
+td { margin: 0; padding: 0; vertical-align: top; }
 ul {
   margin: 0; padding: 0;
   margin-top: 0.2em;

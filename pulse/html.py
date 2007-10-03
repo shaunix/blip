@@ -182,7 +182,9 @@ class InfoBox (ContentComponent):
         self._title = title
 
     def add_resource_link (self, resource, superlative=False):
-        self.add_content (ResourceLinkBox (resource, superlative=superlative))
+        reslink = ResourceLinkBox (resource, superlative=superlative)
+        self.add_content (reslink)
+        return reslink
 
     def output (self, fd=sys.stdout):
         p (fd, '<div class="info" id="%s">' % self._id)
@@ -191,9 +193,9 @@ class InfoBox (ContentComponent):
         ContentComponent.output (self, fd=fd)
         p (fd, '</div></div>')
 
-class ResourceLinkBox (Block):
+class ResourceLinkBox (ContentComponent):
     def __init__ (self, resource, **kw):
-        Block.__init__ (self, **kw)
+        ContentComponent.__init__ (self, **kw)
         self._resource = resource
         self._superlative = kw.get ('superlative', False)
 
@@ -207,6 +209,7 @@ class ResourceLinkBox (Block):
         p (fd, '<div class="rlink-title"><a href="%(url)s">%(title)s</a></div>' %d)
         if d.has_key ('localized_desc'):
             p (fd, '<div class="rlink-desc">%(localized_desc)s</div>' %d)
+        ContentComponent.output (self, fd=fd)
         p (fd, '</td></tr></table>')
         
 class ColumnBox (Block):
@@ -230,6 +233,29 @@ class ColumnBox (Block):
                 p (fd, item)
             p (fd, '</td>')
         p (fd, '</tr></table>')
+
+class GridBox (Block):
+    def __init__ (self, **kw):
+        Block.__init__ (self, **kw)
+        self._rows = []
+
+    def add_row (self, row):
+        self._rows.append (row)
+
+    def output (self, fd=sys.stdout):
+        if len (self._rows) == 0:
+            return
+        p (fd, '<table class="grid">')
+        cols = max (map (len, self._rows))
+        for row in self._rows:
+            p (fd, '<tr>')
+            for i in range (cols):
+                p (fd, '<td>')
+                if i < len (row):
+                    p (fd, row[i])
+                p (fd, '</td>')
+            p (fd, '</tr>')
+        p (fd, '</table>')
 
 class AdmonBox (Block):
     error = "error"
