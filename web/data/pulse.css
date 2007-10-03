@@ -117,10 +117,6 @@ h1 {
   padding: 0 0 0.2em 0;
   border-bottom: solid 1px #555753;
 }
-.title {
-  font-weight: bold;
-  color: #555753;
-}
 
 a { color: #204a87; text-decoration: none; }
 a:visited { color: #a40000; }
@@ -142,19 +138,23 @@ table.cols { width: 100%; }
 td.col { padding: 0 0 0 1em; }
 td.col-first { padding: 0; }
 
-.infobox {
+.info {
   border: solid 1px #d3d7cf;
   margin: 1em 0 1em 0;
 }
-.infobox .title {
+.info-title {
   background-color: #729fcf;
   color: white;
+  font-weight: bold;
   padding: 0.2em 0.5em 0.2em 0.5em;
   border-bottom: solid 1px #d3d7cf;
 }
+.info-content { padding: 0.2em 0.5em 0.2em 0.5em; }
 
-table.rlink { margin: 0.2em 0 0.2em 6px; }
 td.rlink-icon { width: 24px; }
 td.rlink-icon img { width: 24px; }
 td.rlink-text { padding: 0 0.5em 0 0.5em; }
 div.rlink-desc { font-style: italic; }
+
+.admon { font-style: italic; }
+.admon img { vertical-align: middle; }

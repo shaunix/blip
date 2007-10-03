@@ -77,8 +77,7 @@ def output_branch (branch, path=[], query=[], http=True, fd=None):
     page = pulse.html.ResourcePage (branch, http=http)
 
     branches = pulse.db.Resource.selectBy (parent=branch.parent)
-    # FIXME: sort
-    for b in branches:
+    for b in pulse.utils.titlesorted (branches[0:]):
         if b.ident != branch.ident:
             # FIXME: url, not ident
             page.add_sublink (b.ident, b.ident.split('/')[-1])
@@ -93,17 +92,24 @@ def output_branch (branch, path=[], query=[], http=True, fd=None):
     columns.add_content (0, box)
     developers = pulse.db.Relation.selectBy (subj=module,
                                              verb=pulse.db.Relation.module_developer)
-    for rel in pulse.utils.predsorted (developers[0:]):
-        box.add_resource_link (rel.pred, rel.superlative)
+    if developers.count() > 0:
+        for rel in pulse.utils.predsorted (developers[0:]):
+            box.add_resource_link (rel.pred, rel.superlative)
+    else:
+        box.add_content (pulse.html.AdmonBox (pulse.html.AdmonBox.warning,
+                                              pulse.utils.gettext ('No developers') ))
 
     # Domains
+    box = pulse.html.InfoBox ('domains', pulse.utils.gettext ('Domains'))
+    columns.add_content (0, box)
     domains = pulse.db.Resource.selectBy (type='Domain', parent=branch)
     if domains.count() > 0:
-        box = pulse.html.InfoBox ('domains', pulse.utils.gettext ('Domains'))
-        columns.add_content (0, box)
         for domain in pulse.utils.titlesorted (domains[0:]):
             # FIXME: let's not do a simple resource link, but a tree with other info
             box.add_resource_link (domain)
+    else:
+        box.add_content (pulse.html.AdmonBox (pulse.html.AdmonBox.warning,
+                                              pulse.utils.gettext ('No domains') ))
 
     # Applications
     apps = pulse.db.Resource.selectBy (type='Application', parent=branch)
@@ -114,12 +120,15 @@ def output_branch (branch, path=[], query=[], http=True, fd=None):
             box.add_resource_link (app)
 
     # Documents
+    box = pulse.html.InfoBox ('documents', pulse.utils.gettext ('Documents'))
+    columns.add_content (1, box)
     docs = pulse.db.Resource.selectBy (type='Document', parent=branch)
     if docs.count() > 0:
-        box = pulse.html.InfoBox ('documents', pulse.utils.gettext ('Documents'))
-        columns.add_content (1, box)
         for doc in pulse.utils.titlesorted (docs[0:]):
             box.add_resource_link (doc)
+    else:
+        box.add_content (pulse.html.AdmonBox (pulse.html.AdmonBox.warning,
+                                              pulse.utils.gettext ('No documents') ))
 
     page.output(fd=fd)
 

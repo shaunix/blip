@@ -185,10 +185,11 @@ class InfoBox (ContentComponent):
         self.add_content (ResourceLinkBox (resource, superlative=superlative))
 
     def output (self, fd=sys.stdout):
-        p (fd, '<div class="infobox" id="%s">' % self._id)
-        p (fd, '<div class="title">%s</div>' % self._title)
+        p (fd, '<div class="info" id="%s">' % self._id)
+        p (fd, '<div class="info-title">%s</div>' % self._title)
+        p (fd, '<div class="info-content">')
         ContentComponent.output (self, fd=fd)
-        p (fd, '</div>')
+        p (fd, '</div></div>')
 
 class ResourceLinkBox (Block):
     def __init__ (self, resource, **kw):
@@ -209,7 +210,8 @@ class ResourceLinkBox (Block):
         p (fd, '</td></tr></table>')
         
 class ColumnBox (Block):
-    def __init__ (self, num):
+    def __init__ (self, num, **kw):
+        Block.__init__ (self, **kw)
         self._columns = [[] for i in range(num)]
 
     def add_content (self, index, content):
@@ -228,6 +230,23 @@ class ColumnBox (Block):
                 p (fd, item)
             p (fd, '</td>')
         p (fd, '</tr></table>')
+
+class AdmonBox (Block):
+    error = "error"
+    information = "information"
+    warning = "warning"
+    
+    def __init__ (self, type, title, **kw):
+        Block.__init__ (self, **kw)
+        self._type = type
+        self._title = title
+
+    def output (self, fd=sys.stdout):
+        p (fd, '<div class="admon admon-%s">' % self._type)
+        p (fd, '<img src="%sdata/admon-%s-16.png" width="16" height="16" />' %
+           (pulse.config.webroot, self._type))
+        p (fd, self._title)
+        p (fd, '</div>')
 
 ################################################################################
 ## Other...
