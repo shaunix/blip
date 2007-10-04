@@ -44,6 +44,7 @@ class Resource (sql.SQLObject):
     # Branch       /mod/<server>/<module>/<branch>
     # Document     /doc/<server>/<module>/<branch>/<document>
     # Application  /app/<server>/<module>/<branch>/<app>
+    # Library      /lib/<server>/<module>/<branch>/<lib>
     # Domain       /i18n/<server>/<module>/<branch>/<domain>
     # Translation  /i18n/<server>/<module>/<branch>/po/<domain>/<lang>
     #              /i18n/<server>/<module>/<branch>/doc/<doc>/<lang>
@@ -52,7 +53,7 @@ class Resource (sql.SQLObject):
     # List         /list/<server>/<list>
     ident = sql.StringCol (alternateID=True)
     type = sql.StringCol ()
-    parent = sql.ForeignKey ('Resource', dbName='parent', default=None, cascade=True)
+    parent = sql.ForeignKey ('Resource', dbName='parent', default=None)
 
     name = sql.PickleCol (default={})
     desc = sql.PickleCol (default={})
@@ -114,6 +115,15 @@ class Resource (sql.SQLObject):
         self.data = data
 
     def delete_full (self):
+        rels = pulse.db.Relation.selectBy (subj=self)
+        for rel in rels:
+            rel.delete_full ()
+        rels = pulse.db.Relation.selectBy (pred=self)
+        for rel in rels:
+            rel.delete_full ()
+        children = pulse.db.Resource.selectBy (parent=self)
+        for child in children:
+            child.delete_full ()
         pulse.utils.log ('Deleting resource %s' % self.ident)
         Resource.delete (self.id)
 
@@ -142,8 +152,8 @@ class Resource (sql.SQLObject):
 class Relation (sql.SQLObject):
     class sqlmeta:
         table = 'Relation'
-    subj = sql.ForeignKey ('Resource', dbName='subj', cascade=True)
-    pred = sql.ForeignKey ('Resource', dbName='pred', cascade=True)
+    subj = sql.ForeignKey ('Resource', dbName='subj')
+    pred = sql.ForeignKey ('Resource', dbName='pred')
     verb = sql.StringCol ()
     superlative = sql.BoolCol (default=False)
 
