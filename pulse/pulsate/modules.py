@@ -83,6 +83,8 @@ def update_branch (branch, update):
             applications.append (app)
     branch.set_children ('Application', applications)
 
+    process_configure (branch, checkout)
+
     if branch.name == {}:
         branch.name = {'C' : branch.ident.split('/')[3]}
 
@@ -136,6 +138,37 @@ def update_module_from_branch (branch, checkout):
         module.set_relations (pulse.db.Relation.module_developer, rels)
 
 
+def process_configure (branch, checkout):
+    fname = os.path.join (checkout.directory, 'configure.in')
+    inittxt = None
+    for line in open (fname):
+        if line.startswith ('AC_INIT('):
+            inittxt = ''
+            line = line[8:]
+        if inittxt != None:
+            rparen = line.find (')')
+            if rparen >= 0:
+                inittxt += line[:rparen]
+                break
+            else:
+                inittxt += line.strip()
+    initargs = inittxt.split(',')
+    for i in range(len(initargs)):
+        arg = initargs[i]
+        arg = arg.strip().rstrip()
+        if arg[0] == '[' and arg[-1] == ']':
+            arg = arg[1:-1]
+        arg = arg.strip().rstrip()
+        initargs[i] = arg
+    if branch.name == {} or branch.name == {'C' : branch.ident.split('/')[3]}:
+        branch.name = {'C' : initargs[0]}
+    data = {'tarversion' : initargs[1]}
+    if len(initargs) >= 4:
+        data['tarname'] = initargs[3]
+    else:
+        data['tarname'] = initargs[0]
+    branch.update_data (data)
+
 def process_podir (branch, checkout, podir):
     ident = '/i18n/' + '/'.join (branch.ident.split('/')[2:]) + '/' + os.path.basename (podir)
     domain = pulse.db.Resource.make (ident=ident, type='Domain')
@@ -156,7 +189,6 @@ def process_podir (branch, checkout, podir):
             if line.startswith ('#') or line == '\n':
                 continue
             langs.append (line.strip ())
-        print langs
     for lang in langs:
         lident = '/i18n/' + '/'.join (branch.ident.split('/')[2:]) + '/po/' + os.path.basename (podir) + '/' + lang
         translation = pulse.db.Resource.make (ident=lident, type='Translation')
