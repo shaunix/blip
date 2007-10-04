@@ -77,12 +77,12 @@ def output_branch (branch, path=[], query=[], http=True, fd=None):
     page = pulse.html.ResourcePage (branch, http=http)
 
     branches = pulse.db.Resource.selectBy (parent=branch.parent)
-    for b in pulse.utils.titlesorted (branches[0:]):
-        if b.ident != branch.ident:
-            # FIXME: url, not ident
-            page.add_sublink (b.ident, b.ident.split('/')[-1])
-        else:
-            page.add_sublink (None, b.ident.split('/')[-1])
+    if branches.count() > 1:
+        for b in pulse.utils.titlesorted (branches[0:]):
+            if b.ident != branch.ident:
+                page.add_sublink (b.url, b.ident.split('/')[-1])
+            else:
+                page.add_sublink (None, b.ident.split('/')[-1])
 
     sep = False
     try:
