@@ -84,6 +84,22 @@ def output_branch (branch, path=[], query=[], http=True, fd=None):
         else:
             page.add_sublink (None, b.ident.split('/')[-1])
 
+    if branch.data['scm_type'] == 'cvs':
+        page.add_fact (pulse.utils.gettext ('CVS Server'), branch.data['scm_server'])
+        page.add_fact (pulse.utils.gettext ('CVS Module'), branch.data['scm_module'])
+        page.add_fact (pulse.utils.gettext ('CVS Branch'), branch.data['scm_branch'])
+    elif branch.data['scm_type'] == 'svn':
+        loc = branch.data['scm_server'] + branch.data['scm_module']
+        if branch.data['scm_branch'] == 'trunk':
+            loc += '/trunk'
+        else:
+            loc += '/branches/' + branch.data['scm_branch']
+        page.add_fact (pulse.utils.gettext ('SVN Location'), loc)
+
+    if branch.data.has_key ('tarname'):
+        page.add_fact_sep ()
+        page.add_fact (pulse.utils.gettext ('Tarball Name'), branch.data['tarname'])
+
     columns = pulse.html.ColumnBox (2)
     page.add_content (columns)
 

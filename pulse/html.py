@@ -66,6 +66,32 @@ class SublinksComponent (Block):
     def output (self, fd=sys.stdout):
         SublinksComponent.output_sublinks (self._sublinks, fd)
 
+class FactsComponent (Block):
+    def __init__ (self, **kw):
+        Block.__init__ (self, **kw)
+        self._facts = []
+
+    def add_fact (self, key, value):
+        self._facts.append ((key, value))
+
+    def add_fact_sep (self):
+        self._facts.append (None)
+
+    def output (self, fd=sys.stdout):
+        if len (self._facts) == 0:
+            return
+        p (fd, '<table class="facts">')
+        for fact in self._facts:
+            if fact == None:
+                p (fd, '<tr class="fact-sep"><td></td><td></td></tr>')
+            else:
+                p (fd, '<tr><td class="fact-key">')
+                p (fd, pulse.utils.gettext ('%s:') % fact[0])
+                p (fd, '</td><td class="fact-val">')
+                p (fd, fact[1])
+                p (fd, '</tr>')
+        p (fd, '</table>')
+
 class ContentComponent (Block):
     def __init__ (self, **kw):
         Block.__init__ (self, **kw)
@@ -135,14 +161,16 @@ class Page (Block, ContentComponent):
     def output_bottom (self, fd=sys.stdout):
         p (fd, self._foot_text % self.__dict__)
 
-class ResourcePage (Page, SublinksComponent):
+class ResourcePage (Page, SublinksComponent, FactsComponent):
     def __init__ (self, resource, **kw):
         Page.__init__ (self, **kw)
         SublinksComponent.__init__ (self, **kw)
+        FactsComponent.__init__ (self, **kw)
         self.set_title (resource.title)
 
     def output_middle (self, fd=sys.stdout):
         SublinksComponent.output (self, fd=fd)
+        FactsComponent.output (self, fd=fd)
         Page.output_middle (self, fd=fd)
 
 class PageNotFound (Page):
@@ -193,8 +221,9 @@ class InfoBox (ContentComponent):
         ContentComponent.output (self, fd=fd)
         p (fd, '</div></div>')
 
-class ResourceLinkBox (ContentComponent):
+class ResourceLinkBox (ContentComponent, FactsComponent):
     def __init__ (self, resource, **kw):
+        FactsComponent.__init__ (self, **kw)
         ContentComponent.__init__ (self, **kw)
         self._resource = resource
         self._superlative = kw.get ('superlative', False)
@@ -209,6 +238,7 @@ class ResourceLinkBox (ContentComponent):
         p (fd, '<div class="rlink-title"><a href="%(url)s">%(title)s</a></div>' %d)
         if d.has_key ('localized_desc'):
             p (fd, '<div class="rlink-desc">%(localized_desc)s</div>' %d)
+        FactsComponent.output (self, fd=fd)
         ContentComponent.output (self, fd=fd)
         p (fd, '</td></tr></table>')
         
