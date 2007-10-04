@@ -41,7 +41,8 @@ def update_branch (branch, update):
     # mailing list
     # icon
     # bug information
-    domains = []
+    podirs = []
+    pkgconfigs = []
     keyfiles = []
     images = []
     gdu_docs = []
@@ -52,9 +53,9 @@ def update_branch (branch, update):
             if not os.path.isfile (filename):
                 continue
             if name == 'POTFILES.in':
-                domain = process_podir (branch, checkout, dirname)
-                if domain != None:
-                    domains.append (domain)
+                podirs.append (dirname)
+            elif name.endswith ('.pc.in'):
+                pkgconfigs.append (filename)
             elif name.endswith ('.desktop.in.in'):
                 keyfiles.append (filename)
             elif name.endswith ('.png'):
@@ -67,6 +68,15 @@ def update_branch (branch, update):
                     gdu_docs.append((dirname, makefile))
     os.path.walk (checkout.directory, visit, None)
 
+    process_configure (branch, checkout)
+    if branch.name == {}:
+        branch.name = {'C' : branch.ident.split('/')[3]}
+
+    domains = []
+    for podir in podirs:
+        domain = process_podir (branch, checkout, podir)
+        if domain != None:
+            domains.append (domain)
     branch.set_children ('Domain', domains)
 
     documents = []
@@ -76,17 +86,19 @@ def update_branch (branch, update):
             documents.append (document)
     branch.set_children ('Document', documents)
 
+    libraries = []
+    for pkgconfig in pkgconfigs:
+        lib = process_pkgconfig (branch, checkout, pkgconfig)
+        if lib != None:
+            libraries.append (lib)
+    branch.set_children ('Library', libraries)
+
     applications = []
     for keyfile in keyfiles:
         app = process_keyfile (branch, checkout, keyfile, images=images)
         if app != None:
             applications.append (app)
     branch.set_children ('Application', applications)
-
-    process_configure (branch, checkout)
-
-    if branch.name == {}:
-        branch.name = {'C' : branch.ident.split('/')[3]}
 
     if checkout.default:
         update_module_from_branch (branch, checkout)
@@ -137,9 +149,13 @@ def update_module_from_branch (branch, checkout):
                                                  superlative=True))
         module.set_relations (pulse.db.Relation.module_developer, rels)
 
-
 def process_configure (branch, checkout):
     fname = os.path.join (checkout.directory, 'configure.in')
+    if not os.path.exists (fname):
+        fname = os.path.join (checkout.directory, 'configure.ac')
+    if not os.path.exists (fname):
+        return
+
     inittxt = None
     for line in open (fname):
         if line.startswith ('AC_INIT('):
@@ -207,8 +223,41 @@ def process_gdu_docdir (branch, checkout, docdir, makefile, **kw):
     document.update_data ({'document_tool' : 'gnome-doc-utils'})
     return document
 
+def process_pkgconfig (branch, checkout, filename, **kw):
+    basename = os.path.basename (filename)[:-6]
+    # Hack for GTK+'s uninstalled pkgconfig files
+    if '-uninstalled' in basename:
+        return None
+    islib = False
+    libname = ''
+    libdesc = ''
+    for line in open (filename):
+        if line.startswith ('Libs:'):
+            islib = True
+        elif line.startswith ('Name:'):
+            libname = line[5:].strip().rstrip()
+        elif line.startswith ('Description:'):
+            libdesc = line[12:].strip().rstrip()
+
+    if not islib:
+        return None
+
+    ident = '/lib/' + '/'.join (branch.ident.split('/')[2:]) + '/' + basename
+    lib = pulse.db.Resource.make (ident=ident, type='Library')
+
+    if libname == '@PACKAGE_NAME@':
+        libname = branch.name['C']
+    
+    lib.update_name ({'C' : libname})
+    lib.update_desc ({'C' : libdesc})
+
+    data = {'pkgconfig' : filename[len(checkout.directory)+1:]}
+    lib.update_data (data)
+
+    return lib
+
 def process_keyfile (branch, checkout, filename, **kw):
-    basename = os.path.basename(filename)[0:-14]
+    basename = os.path.basename (filename)[:-14]
     relfile = filename[len(checkout.directory)+1:]
     owd = os.getcwd ()
     try:
@@ -222,9 +271,7 @@ def process_keyfile (branch, checkout, filename, **kw):
         return
     if keyfile.get_value ('Desktop Entry', 'Type') != 'Application':
         return
-    ident = '/' + '/'.join (['app'] +
-                            branch.ident.split('/')[2:] +
-                            [basename])
+    ident = '/app/' + '/'.join (branch.ident.split('/')[2:]) + '/' + basename
     name = keyfile.get_value ('Desktop Entry', 'Name')
     if isinstance (name, basestring):
         name = {'C' : name}

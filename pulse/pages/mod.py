@@ -140,6 +140,14 @@ def output_branch (branch, path=[], query=[], http=True, fd=None):
         for app in pulse.utils.titlesorted (apps[0:]):
             box.add_resource_link (app)
 
+    # Libraries
+    libs = pulse.db.Resource.selectBy (type='Library', parent=branch)
+    if libs.count() > 0:
+        box = pulse.html.InfoBox ('libraries', pulse.utils.gettext ('Libraries'))
+        columns.add_content (1, box)
+        for lib in pulse.utils.titlesorted (libs[0:]):
+            box.add_resource_link (lib)
+
     # Documents
     box = pulse.html.InfoBox ('documents', pulse.utils.gettext ('Documents'))
     columns.add_content (1, box)
