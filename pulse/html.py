@@ -88,8 +88,18 @@ class FactsComponent (Block):
                 p (fd, '<tr><td class="fact-key">')
                 p (fd, pulse.utils.gettext ('%s:') % fact[0])
                 p (fd, '</td><td class="fact-val">')
-                p (fd, fact[1])
-                p (fd, '</tr>')
+                def factout (f):
+                    if isinstance (f, basestring) or isinstance (f, Block):
+                        p (fd, f)
+                    elif isinstance (f, pulse.db.Resource):
+                        p (fd, '<a href="%(url)s">%(title)s</a>' % pulse.utils.attrdict([f]))
+                    elif hasattr (f, '__getitem__'):
+                        for ff in f:
+                            p (fd, '<div>')
+                            factout (ff)
+                            p (fd, '</div')
+                factout (fact[1])
+                p (fd, '</td></tr>')
         p (fd, '</table>')
 
 class ContentComponent (Block):
@@ -186,7 +196,6 @@ class PageNotFound (Page):
                        status=404,
                        title=title)
         self.add_content ('<div class="notfound">\n')
-        self.add_content ('<div class="title">%(title)s</div>\n' %d)
         self.add_content ('<div class="message">%(message)s</div>' %d)
         if len(pages) > 0:
             self.add_content ('<div class="pages">' +

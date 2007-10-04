@@ -84,6 +84,22 @@ def output_branch (branch, path=[], query=[], http=True, fd=None):
         else:
             page.add_sublink (None, b.ident.split('/')[-1])
 
+    sep = False
+    try:
+        desc = branch.localized_desc
+        page.add_fact (pulse.utils.gettext ('Description'), desc)
+        sep = True
+    except:
+        pass
+
+    rels = pulse.db.Relation.selectBy (pred=branch, verb=pulse.db.Relation.set_branch)
+    if rels.count() > 0:
+        sets = [rel.subj for rel in rels]
+        page.add_fact (pulse.utils.gettext ('Release Sets'), sets)
+        sep = True
+
+    if sep: page.add_fact_sep ()
+    
     if branch.data['scm_type'] == 'cvs':
         page.add_fact (pulse.utils.gettext ('CVS Server'), branch.data['scm_server'])
         page.add_fact (pulse.utils.gettext ('CVS Module'), branch.data['scm_module'])
