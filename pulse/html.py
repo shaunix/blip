@@ -242,7 +242,7 @@ class ResourceLinkBox (ContentComponent, FactsComponent):
         p (fd, '<table class="rlink"><tr>')
         p (fd, '<td class="rlink-icon">')
         if (d['icon'] != None):
-            p (fd, '<img class="icon" src="%(iconroot)s%(icon)s" alt="%(title)s" />' %d)
+            p (fd, '<img class="icon" src="%(icon_url)s" alt="%(title)s" />' %d)
         p (fd, '</td><td class="rlink-text">')
         p (fd, '<div class="rlink-title"><a href="%(url)s">%(title)s</a></div>' %d)
         if d.has_key ('localized_desc'):
@@ -356,7 +356,7 @@ class SynopsisDiv (Block):
 
         p ('<td class="icon">')
         if d.has_val ('icon'):
-            p ('<img class="icon" src="%(iconroot)s%(icon)s" alt="%(name)s" />' %d)
+            p ('<img class="icon" src="%(icon_url)s" alt="%(name)s" />' %d)
         p ('</td>\n')
 
         p ('<td class="info">\n')

@@ -75,6 +75,13 @@ class Resource (sql.SQLObject):
         else:
             return cls (ident=ident, type=type)
 
+    def get_icon_url (self):
+        if self.icon == None or self.icon.startswith ('http://'):
+            return self.icon
+        else:
+            return pulse.config.iconroot + self.icon
+    icon_url = property (get_icon_url)
+
     def get_title (self):
         if self.name == {}:
             return self.ident.split('/')[-1]
