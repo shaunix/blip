@@ -55,7 +55,7 @@ class SublinksComponent (Block):
         if len(sublinks) > 0:
             p (fd, '<div class="sublinks">')
             for i in range(len(sublinks)):
-                str = (i != 0 and u' • ' or '')
+                str = (i != 0 and ' • ' or '')
                 if sublinks[i][0] != None:
                     str += ('<a href="%s">%s</a>' %sublinks[i])
                 else:
@@ -376,7 +376,7 @@ class SynopsisDiv (Block):
         if len(self._sublinks) > 0:
             p ('<div class="sublinks">')
             for i in range(len(self._sublinks)):
-                str = (i != 0 and u' • ' or '')
+                str = (i != 0 and ' • ' or '')
                 if self._sublinks[i][0] != None:
                     str += ('<a href="%s">%s</a>' %self._sublinks[i])
                 else:
@@ -388,7 +388,7 @@ class SynopsisDiv (Block):
             p ('<a href="mailto:%(mail)s">%(mail)s</a></div>\n' %d)
             if d.has_val ('list_info') or d.has_val ('list_archive'):
                 p ('<div class="sublinks">')
-                p (u'<a href="%(list_info)s">Information</a> • ' %d)
+                p ('<a href="%(list_info)s">Information</a> • ' %d)
                 p ('<a href="%(list_archive)s">Archives</a>' %d)
                 p ('</div>\n')
         if d.has_val ('web'):
@@ -404,9 +404,9 @@ class SynopsisDiv (Block):
                 if list.resource.list_type == 'users': p (' (Users)')
                 if list.resource.list_type == 'devel': p (' (Developers)')
                 p ('</div><div class="sublinks">')
-                p (u'<a href="%(url)s/">Pluse</a> • ' %d)
-                p (u'<a href="%(list_info)s/">Information</a> • ' %d)
-                p (u'<a href="%(list_archive)s/">Archive</a>' %d)
+                p ('<a href="%(url)s/">Pluse</a> • ' %d)
+                p ('<a href="%(list_info)s/">Information</a> • ' %d)
+                p ('<a href="%(list_archive)s/">Archive</a>' %d)
                 p ('</div></div>\n')
                 d.remove (list.resource)
 
@@ -520,4 +520,4 @@ def p (fd, s):
     if isinstance (s, Block):
         s.output (fd=fd)
     else:
-        print >>fd, unicode(s).encode('utf-8')
+        print >>fd, s
