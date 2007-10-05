@@ -105,9 +105,7 @@ def update_branch (branch, update):
 
     applets = []
     for oafserver in oafservers:
-        applet = process_oafserver (branch, checkout, oafserver, images=images)
-        if applet != None:
-            applets.append (applet)
+        applets += process_oafserver (branch, checkout, oafserver, images=images)
     branch.set_children ('Applet', applets)
 
     if checkout.default:
@@ -321,6 +319,7 @@ def process_oafserver (branch, checkout, filename, **kw):
     basename = os.path.basename (filename)[:-13]
     relfile = filename[len(checkout.directory)+1:]
     owd = os.getcwd ()
+    applets = []
     try:
         os.chdir (checkout.directory)
         dom = xml.dom.minidom.parse (os.popen ('LC_ALL=C intltool-merge -x -q -u po "' + relfile + '" -'))
@@ -331,6 +330,12 @@ def process_oafserver (branch, checkout, filename, **kw):
         applet_name = {}
         applet_desc = {}
         applet_icon = None
+        applet_iid = server.getAttribute ('iid')
+        if applet_iid == '': continue
+        if applet_iid.startswith ('OAFIID:'):
+            applet_iid = applet_iid[7:]
+        if applet_iid.startswith ('GNOME_'):
+            applet_iid = applet_iid[6:]
         for oafattr in server.childNodes:
             if oafattr.nodeType != oafattr.ELEMENT_NODE or oafattr.tagName != 'oaf_attribute':
                 continue
@@ -358,9 +363,9 @@ def process_oafserver (branch, checkout, filename, **kw):
             if oafattr.getAttribute ('name') == 'panel:icon':
                 applet_icon = oafattr.getAttribute ('value')
                 if applet_icon == '': applet_icon = None
-        if not is_applet:
+        if not is_applet or applet_icon == None:
             continue
-        ident = '/applet/' + '/'.join (branch.ident.split('/')[2:]) + '/' + basename
+        ident = '/applet/' + '/'.join (branch.ident.split('/')[2:]) + '/' + applet_iid
         applet = pulse.db.Resource.make (ident=ident, type='Applet')
         applet.update_name (applet_name)
         applet.update_desc (applet_desc)
@@ -369,8 +374,9 @@ def process_oafserver (branch, checkout, filename, **kw):
             icon = locate_icon (applet_icon, kw.get ('images', []))
             if icon != None:
                 applet.icon = icon
-        return applet
-    return None
+        applet.update_data ({'directlry' : os.path.dirname (relfile), 'file' : basename})
+        applets.append (applet)
+    return applets
 
 def locate_icon (icon, images):
     if icon.endswith ('.png'):
