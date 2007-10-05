@@ -19,6 +19,8 @@
 # Suite 330, Boston, MA  0211-1307  USA.
 #
 
+import os
+import os.path
 import sys
 from getopt import getopt
 
@@ -33,11 +35,17 @@ def usage (fd=sys.stderr, verbose=False):
     print >>fd, '  where tool is one of the following:'
     import pulse.pulsate
     d = 0
-    for tool in pulse.pulsate.__all__:
-        d = max (d, len (tool))
-    s = '    %%-%ds - %%s' % d
-    for tool in pulse.pulsate.__all__:
+    tools = []
+    for filename in os.listdir (os.path.dirname (pulse.pulsate.__file__)):
+        if not filename.endswith ('.py'):
+            continue
+        tool = os.path.basename (filename)[:-3]
         mod = pulse.utils.import_ ('pulse.pulsate.' + tool)
+        if hasattr (mod, 'synop'):
+            tools.append ((tool, mod))
+            d = max (d, len (tool))
+    s = '    %%-%ds - %%s' % d
+    for tool, mod in tools:
         print >>fd, (s % (tool, mod.synop))
     print >>fd, '\nFor help on a specific tool, type'
     print >>fd, '  %s --help tool' % sys.argv[0]

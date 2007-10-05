@@ -18,8 +18,3 @@
 # Suite 330, Boston, MA  0211-1307  USA.
 #
 
-__all__ = ['config',
-           'coredata',
-           'graphs',
-           'pages',
-           'pulsate']

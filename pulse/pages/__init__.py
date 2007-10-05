@@ -18,4 +18,3 @@
 # Suite 330, Boston, MA  0211-1307  USA.
 #
 
-__all__ = ['docs', 'l10n-teams', 'lists', 'modules', 'people']
