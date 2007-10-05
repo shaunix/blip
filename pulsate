@@ -36,17 +36,24 @@ def usage (fd=sys.stderr, verbose=False):
     import pulse.pulsate
     d = 0
     tools = []
-    for filename in os.listdir (os.path.dirname (pulse.pulsate.__file__)):
-        if not filename.endswith ('.py'):
+    mods = []
+    for filename in sorted (os.listdir (os.path.dirname (pulse.pulsate.__file__))):
+        if filename.endswith ('.py'):
+            tool = os.path.basename (filename)[:-3]
+        elif filename.endswith ('.pyc'):
+            tool = os.path.basename (filename)[:-4]
+        else:
             continue
-        tool = os.path.basename (filename)[:-3]
+        if tool in tools:
+            continue
         mod = pulse.utils.import_ ('pulse.pulsate.' + tool)
         if hasattr (mod, 'synop'):
-            tools.append ((tool, mod))
+            tools.append (tool)
+            mods.append (mod)
             d = max (d, len (tool))
     s = '    %%-%ds - %%s' % d
-    for tool, mod in tools:
-        print >>fd, (s % (tool, mod.synop))
+    for i in range (len (tools)):
+        print >>fd, (s % (tools[i], mods[i].synop))
     print >>fd, '\nFor help on a specific tool, type'
     print >>fd, '  %s --help tool' % sys.argv[0]
 
