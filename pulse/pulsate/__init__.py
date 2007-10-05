@@ -18,3 +18,18 @@
 # Suite 330, Boston, MA  0211-1307  USA.
 #
 
+import os
+import os.path
+import sys
+
+__all__ = []
+
+for f in os.listdir (os.path.dirname (sys.modules[__name__].__file__)):
+    if f.endswith ('.py'):
+        tool = os.path.basename (f)[:-3]
+    elif f.endswith ('.pyc'):
+        tool = os.path.basename (f)[:-4]
+    else:
+        continue
+    if not tool in __all__:
+        __all__.append (tool)
