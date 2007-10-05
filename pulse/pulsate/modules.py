@@ -89,6 +89,8 @@ def update_branch (branch, update):
             documents.append (document)
     branch.set_children ('Document', documents)
 
+    default_resource = None
+
     libraries = []
     for pkgconfig in pkgconfigs:
         lib = process_pkgconfig (branch, checkout, pkgconfig)
@@ -100,6 +102,9 @@ def update_branch (branch, update):
     for keyfile in keyfiles:
         app = process_keyfile (branch, checkout, keyfile, images=images)
         if app != None:
+            if default_resource == None:
+                if os.path.basename (keyfile)[:-14] == branch.ident.split('/')[3]:
+                    default_resource = app
             applications.append (app)
     branch.set_children ('Application', applications)
 
@@ -108,6 +113,17 @@ def update_branch (branch, update):
         applets += process_oafserver (branch, checkout, oafserver, images=images)
     branch.set_children ('Applet', applets)
 
+    if default_resource == None:
+        if len(applications) == 1 and len(applets) == 0:
+            default_resource = applications[0]
+        elif len(applets) == 1 and len(applications) == 0:
+            default_resource = applets[0]
+
+    if default_resource != None:
+        branch.name = default_resource.name
+        branch.desc = default_resource.desc
+        branch.icon = default_resource.icon
+    
     if checkout.default:
         update_module_from_branch (branch, checkout)
 
@@ -184,8 +200,6 @@ def process_configure (branch, checkout):
             arg = arg[1:-1]
         arg = arg.strip().rstrip()
         initargs[i] = arg
-    if branch.name == {} or branch.name == {'C' : branch.ident.split('/')[3]}:
-        branch.name = {'C' : initargs[0]}
     data = {'tarversion' : initargs[1]}
     if len(initargs) >= 4:
         data['tarname'] = initargs[3]
@@ -306,12 +320,6 @@ def process_keyfile (branch, checkout, filename, **kw):
         app.icon = icon
     app.update_data (data)
     # FIXME: icon, bugzilla stuff
-
-    if basename == branch.ident.split('/')[3]:
-        branch.update_name (name)
-        if desc != None:
-            branch.update_desc (desc)
-        branch.update_data (data)
 
     return app
 
