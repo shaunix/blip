@@ -404,7 +404,8 @@ def locate_icon (icon, images):
     if use != None:
         shutil.copyfile (use, os.path.join (pulse.config.icondir, os.path.basename (use)))
         return os.path.basename (use)
-    return None
+
+    return 'icon://' + icon
 
 def main (argv):
     update = True

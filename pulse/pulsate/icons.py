@@ -18,40 +18,19 @@
 # Suite 330, Boston, MA  0211-1307  USA.
 #
 
-from httplib import HTTPConnection
-import re
 import sys
 
-import pulse.db as db
+import pulse.db
 
-synop = 'find icons in standard locations'
+synop = 'find icons in icon themes'
 def usage (fd=sys.stderr):
     print >>fd, ('Usage: %s icons' % sys.argv[0])
 
-def updateIcon (resource):
-    url = resource.download + resource.rcs_module + '.png'
-    match = re.match ('^http://([^/]*)(/.*)', url)
-    if match:
-        conn = HTTPConnection (match.group(1))
-        conn.request ('HEAD', match.group(2))
-        if conn.getresponse().status == 200:
-            resource.set (icon = url)
+
 
 def main (argv):
-    # Module icons are checked in a set location relative to
-    # their download URL.
-    modules = db.Module.select()
-    for module in modules:
-        updateIcon (module)
-
-    # If a list is only the list for one other resource, then
-    # we let that list have that resource's icon.
-    lists = db.MailList.select()
-    for list in lists:
-        src = list.get_related ('mail_list', invert=True)
-        if len(src) == 1:
-            icon = src[0].resource.icon
-            if icon != None:
-                list.icon = icon
-
-    return 0
+    # first load in xmldata/icons.xml and grab the icons
+    resources = pulse.db.Resource.select (pulse.db.Resource.q.icon.startswith ('icon://'))
+    for resource in resources:
+        # see if one of the icon themes has the icon and use it
+        print resource.icon[7:]
