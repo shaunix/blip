@@ -122,8 +122,8 @@ class Page (Block, ContentComponent):
     _head_text = '''
 <html><head>
   <title>%(_title)s</title>\n
-  <link rel="stylesheet" href="%(_webroot)sdata/pulse.css" />
-  <script language="javascript" type="text/javascript" src="%(_webroot)sdata/pulse.js" />
+  <link rel="stylesheet" href="%(_webroot)sdata/pulse.css">
+  <script language="javascript" type="text/javascript" src="%(_webroot)sdata/pulse.js">
 </head><body>
 <ul id="general">
   <li id="siteaction-gnome_home" class="home"><a href="http://www.gnome.org/">Home</a></li>
@@ -242,7 +242,7 @@ class ResourceLinkBox (ContentComponent, FactsComponent):
         p (fd, '<table class="rlink"><tr>')
         p (fd, '<td class="rlink-icon">')
         if (d['icon'] != None):
-            p (fd, '<img class="icon" src="%(icon_url)s" alt="%(title)s" />' %d)
+            p (fd, '<img class="icon" src="%(icon_url)s" alt="%(title)s">' %d)
         p (fd, '</td><td class="rlink-text">')
         p (fd, '<div class="rlink-title"><a href="%(url)s">%(title)s</a></div>' %d)
         if d.has_key ('localized_desc'):
@@ -308,7 +308,7 @@ class AdmonBox (Block):
 
     def output (self, fd=sys.stdout):
         p (fd, '<div class="admon admon-%s">' % self._type)
-        p (fd, '<img src="%sdata/admon-%s-16.png" width="16" height="16" />' %
+        p (fd, '<img src="%sdata/admon-%s-16.png" width="16" height="16">' %
            (pulse.config.webroot, self._type))
         p (fd, self._title)
         p (fd, '</div>')
@@ -356,7 +356,7 @@ class SynopsisDiv (Block):
 
         p ('<td class="icon">')
         if d.has_val ('icon'):
-            p ('<img class="icon" src="%(icon_url)s" alt="%(name)s" />' %d)
+            p ('<img class="icon" src="%(icon_url)s" alt="%(name)s">' %d)
         p ('</td>\n')
 
         p ('<td class="info">\n')
@@ -425,7 +425,7 @@ class SynopsisDiv (Block):
         for g in self._graphs:
             p ('<div class="graph">')
             p ('<div class="title">%(title)s</div>' %g)
-            p ('<img src="%(src)s" alt="%(alt)s" />' %g)
+            p ('<img src="%(src)s" alt="%(alt)s">' %g)
             p ('</div></div>\n')
         p ('</td>')
 
