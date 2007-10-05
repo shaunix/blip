@@ -156,6 +156,14 @@ def output_branch (branch, path=[], query=[], http=True, fd=None):
         for app in pulse.utils.titlesorted (apps[0:]):
             box.add_resource_link (app)
 
+    # Applets
+    applets = pulse.db.Resource.selectBy (type='Applet', parent=branch)
+    if applets.count() > 0:
+        box = pulse.html.InfoBox ('applets', pulse.utils.gettext ('Applets'))
+        columns.add_content (1, box)
+        for applet in pulse.utils.titlesorted (applets[0:]):
+            box.add_resource_link (applet)
+
     # Libraries
     libs = pulse.db.Resource.selectBy (type='Library', parent=branch)
     if libs.count() > 0:

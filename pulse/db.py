@@ -44,6 +44,7 @@ class Resource (sql.SQLObject):
     # Branch       /mod/<server>/<module>/<branch>
     # Document     /doc/<server>/<module>/<branch>/<document>
     # Application  /app/<server>/<module>/<branch>/<app>
+    # Applet       /applet/<server>/<module>/<branch>/<applet>
     # Library      /lib/<server>/<module>/<branch>/<lib>
     # Domain       /i18n/<server>/<module>/<branch>/<domain>
     # Translation  /i18n/<server>/<module>/<branch>/po/<domain>/<lang>

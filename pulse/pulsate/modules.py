@@ -43,6 +43,7 @@ def update_branch (branch, update):
     # bug information
     podirs = []
     pkgconfigs = []
+    oafservers = []
     keyfiles = []
     images = []
     gdu_docs = []
@@ -58,6 +59,8 @@ def update_branch (branch, update):
                 pkgconfigs.append (filename)
             elif name.endswith ('.desktop.in.in'):
                 keyfiles.append (filename)
+            elif name.endswith ('.server.in.in'):
+                oafservers.append (filename)
             elif name.endswith ('.png'):
                 images.append (filename)
             elif name == 'Makefile.am':
@@ -99,6 +102,13 @@ def update_branch (branch, update):
         if app != None:
             applications.append (app)
     branch.set_children ('Application', applications)
+
+    applets = []
+    for oafserver in oafservers:
+        applet = process_oafserver (branch, checkout, oafserver, images=images)
+        if applet != None:
+            applets.append (applet)
+    branch.set_children ('Applet', applets)
 
     if checkout.default:
         update_module_from_branch (branch, checkout)
@@ -204,7 +214,8 @@ def process_podir (branch, checkout, podir):
         for line in fd:
             if line.startswith ('#') or line == '\n':
                 continue
-            langs.append (line.strip ())
+            for l in line.split():
+                langs.append (l)
     for lang in langs:
         lident = '/i18n/' + '/'.join (branch.ident.split('/')[2:]) + '/po/' + os.path.basename (podir) + '/' + lang
         translation = pulse.db.Resource.make (ident=lident, type='Translation')
@@ -287,25 +298,7 @@ def process_keyfile (branch, checkout, filename, **kw):
 
     icon = None
     if keyfile.has_key ('Desktop Entry', 'Icon'):
-        iconfile = keyfile.get_value ('Desktop Entry', 'Icon')
-        if not iconfile.endswith ('.png'):
-            iconfile += '.png'
-        candidates = []
-        for img in kw.get ('images', []):
-            if os.path.basename (img) == iconfile:
-                candidates.append (img)
-        use = None
-        for img in candidates:
-            if '24x24' in img:
-                use = img
-                break
-        # FIXME: try actually looking at sizes, pick closest
-        if use != None:
-            shutil.copyfile (use, os.path.join (pulse.config.icondir, os.path.basename (use)))
-            icon = os.path.basename (use)
-        else:
-            # try looking in gnome-icon-theme
-            pass
+        icon = locate_icon (keyfile.get_value ('Desktop Entry', 'Icon'), kw.get ('images', []))
 
     app = pulse.db.Resource.make (ident=ident, type='Application')
     app.update_name (name)
@@ -323,6 +316,81 @@ def process_keyfile (branch, checkout, filename, **kw):
         branch.update_data (data)
 
     return app
+
+def process_oafserver (branch, checkout, filename, **kw):
+    basename = os.path.basename (filename)[:-13]
+    relfile = filename[len(checkout.directory)+1:]
+    owd = os.getcwd ()
+    try:
+        os.chdir (checkout.directory)
+        dom = xml.dom.minidom.parse (os.popen ('LC_ALL=C intltool-merge -x -q -u po "' + relfile + '" -'))
+    finally:
+        os.chdir (owd)
+    for server in dom.getElementsByTagName ('oaf_server'):
+        is_applet = False
+        applet_name = {}
+        applet_desc = {}
+        applet_icon = None
+        for oafattr in server.childNodes:
+            if oafattr.nodeType != oafattr.ELEMENT_NODE or oafattr.tagName != 'oaf_attribute':
+                continue
+            if oafattr.getAttribute ('name') == 'repo_ids':
+                for item in oafattr.childNodes:
+                    if item.nodeType != item.ELEMENT_NODE or item.tagName != 'item':
+                        continue
+                    if item.getAttribute ('value') == 'IDL:GNOME/Vertigo/PanelAppletShell:1.0':
+                        is_applet = True
+                        break
+                if not is_applet:
+                    break
+            if oafattr.getAttribute ('name') == 'name':
+                lang = oafattr.getAttribute ('xml:lang')
+                if lang == '': lang = 'C'
+                value = oafattr.getAttribute ('value')
+                if value != '':
+                    applet_name[lang] = value
+            if oafattr.getAttribute ('name') == 'description':
+                lang = oafattr.getAttribute ('xml:lang')
+                if lang == '': lang = 'C'
+                value = oafattr.getAttribute ('value')
+                if value != '':
+                    applet_desc[lang] = value
+            if oafattr.getAttribute ('name') == 'panel:icon':
+                applet_icon = oafattr.getAttribute ('value')
+                if applet_icon == '': applet_icon = None
+        if not is_applet:
+            continue
+        ident = '/applet/' + '/'.join (branch.ident.split('/')[2:]) + '/' + basename
+        applet = pulse.db.Resource.make (ident=ident, type='Applet')
+        applet.update_name (applet_name)
+        applet.update_desc (applet_desc)
+        if applet_icon != None:
+            icon = None
+            icon = locate_icon (applet_icon, kw.get ('images', []))
+            if icon != None:
+                applet.icon = icon
+        return applet
+    return None
+
+def locate_icon (icon, images):
+    if icon.endswith ('.png'):
+        iconfile = icon
+    else:
+        iconfile = icon + '.png'
+    candidates = []
+    for img in images:
+        if os.path.basename (img) == iconfile:
+            candidates.append (img)
+    use = None
+    for img in candidates:
+        if '24x24' in img:
+            use = img
+            break
+    # FIXME: try actually looking at sizes, pick closest
+    if use != None:
+        shutil.copyfile (use, os.path.join (pulse.config.icondir, os.path.basename (use)))
+        return os.path.basename (use)
+    return None
 
 def main (argv):
     update = True
