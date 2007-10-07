@@ -3,6 +3,7 @@ body {
   margin: 0; padding: 0;
   background-color: white;
   color: #2e3436;
+  font-family: sans-serif;
 }
 
 #general {
@@ -153,6 +154,7 @@ td.col-first { padding: 0; }
 }
 .info-content { padding: 0.2em 0.5em 0.2em 0.5em; }
 
+table.rlink { margin: 0.2em 0 0.2em 0; }
 td.rlink-icon { width: 24px; }
 td.rlink-icon img { width: 24px; }
 td.rlink-text { padding: 0 0.5em 0 0.5em; }
