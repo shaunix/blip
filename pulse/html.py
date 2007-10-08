@@ -242,7 +242,7 @@ class ResourceLinkBox (ContentComponent, FactsComponent):
         d = pulse.utils.attrdict ([self._resource, pulse.config])
         p (fd, '<table class="rlink"><tr>')
         p (fd, '<td class="rlink-icon">')
-        if (d.has_key ('icon_url')):
+        if (d['icon_url'] != None):
             p (fd, '<img class="icon" src="%(icon_url)s" alt="%(title)s">' %d)
         p (fd, '</td><td class="rlink-text">')
         p (fd, '<div class="rlink-title"><a href="%(url)s">%(title)s</a></div>' %d)
