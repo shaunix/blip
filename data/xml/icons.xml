@@ -1,19 +1,11 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <group>
 
-<defaults>
-  <set>
-    <jhbuild_scm_type>svn</jhbuild_scm_type>
-    <jhbuild_scm_server>http://svn.gnome.org/svn/</jhbuild_scm_server>
-    <jhbuild_scm_module>jhbuild</jhbuild_scm_module>
-    <jhbuild_scm_branch>trunk</jhbuild_scm_branch>
-    <jhbuild_scm_dir>modulesets</jhbuild_scm_dir>
-  </set>
-</defaults>
-
 <theme id="gnome-icon-theme">
   <scm_server>http://svn.gnome.org/svn/</scm_server>
   <scm_module>gnome-icon-theme</scm_module>
   <scm_branch>trunk</scm_branch>
+  <directory>24x24/apps</directory>
 </theme>
+
 </group>

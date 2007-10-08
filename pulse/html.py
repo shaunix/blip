@@ -122,6 +122,7 @@ class Page (Block, ContentComponent):
     _head_text = '''
 <html><head>
   <title>%(_title)s</title>\n
+  <meta http-equiv="Content-type" content="text/html; charset=utf-8">
   <link rel="stylesheet" href="%(_webroot)sdata/pulse.css">
   <script language="javascript" type="text/javascript" src="%(_webroot)sdata/pulse.js">
 </head><body>
@@ -241,7 +242,7 @@ class ResourceLinkBox (ContentComponent, FactsComponent):
         d = pulse.utils.attrdict ([self._resource, pulse.config])
         p (fd, '<table class="rlink"><tr>')
         p (fd, '<td class="rlink-icon">')
-        if (d['icon'] != None):
+        if (d.has_key ('icon_url')):
             p (fd, '<img class="icon" src="%(icon_url)s" alt="%(title)s">' %d)
         p (fd, '</td><td class="rlink-text">')
         p (fd, '<div class="rlink-title"><a href="%(url)s">%(title)s</a></div>' %d)

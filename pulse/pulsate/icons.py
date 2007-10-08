@@ -18,17 +18,28 @@
 # Suite 330, Boston, MA  0211-1307  USA.
 #
 
+import os
 import sys
 
 import pulse.db
+import pulse.scm
+import pulse.xmldata
 
 synop = 'find icons in icon themes'
 def usage (fd=sys.stderr):
     print >>fd, ('Usage: %s icons' % sys.argv[0])
 
-
+def get_theme_icons (data, icons):
+    pass
 
 def main (argv):
+    data = pulse.xmldata.get_data (os.path.join (pulse.config.datadir, 'xml', 'icons.xml'))
+
+    icons = {}
+    for key in data.keys():
+        if data[key]['__type__'] == 'theme':
+            get_theme_icons (data[key], icons)
+    return
     # first load in xmldata/icons.xml and grab the icons
     resources = pulse.db.Resource.select (pulse.db.Resource.q.icon.startswith ('icon://'))
     for resource in resources:

@@ -59,7 +59,9 @@ class Resource (sql.SQLObject):
     name = sql.PickleCol (default={})
     desc = sql.PickleCol (default={})
 
-    icon = sql.StringCol (default=None)
+    icon_dir = sql.StringCol (default=None)
+    icon_name = sql.StringCol (default=None)
+
     nick = sql.StringCol (default=None)
 
     email = sql.StringCol (default=None)
@@ -76,12 +78,12 @@ class Resource (sql.SQLObject):
             return cls (ident=ident, type=type)
 
     def get_icon_url (self):
-        if self.icon == None or self.icon.startswith ('http://'):
-            return self.icon
-        elif self.icon.startswith ('icon://'):
+        if self.icon_none == None or self.icon_dir == '__icon__':
             return None
+        elif self.icon_dir == None:
+            return pulse.config.iconroot + self.icon_name + '.png'
         else:
-            return pulse.config.iconroot + self.icon
+            return pulse.config.iconroot + self.icon_dir + '/' + self.icon_name + '.png'
     icon_url = property (get_icon_url)
 
     def get_title (self):

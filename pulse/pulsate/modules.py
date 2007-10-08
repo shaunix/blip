@@ -19,6 +19,7 @@
 #
 
 import os
+import os.path
 import shutil
 import sys
 
@@ -39,7 +40,6 @@ def update_branch (branch, update):
     # find document (in documents.py?)
     # find human-readable names for the module
     # mailing list
-    # icon
     # bug information
     podirs = []
     pkgconfigs = []
@@ -122,7 +122,8 @@ def update_branch (branch, update):
     if default_resource != None:
         branch.name = default_resource.name
         branch.desc = default_resource.desc
-        branch.icon = default_resource.icon
+        branch.icon_dir = default_resource.icon_dir
+        branch.icon_name = default_resource.icon_name
     
     if checkout.default:
         update_module_from_branch (branch, checkout)
@@ -308,18 +309,16 @@ def process_keyfile (branch, checkout, filename, **kw):
 
     data = {'keyfile' : relfile}
 
-    icon = None
-    if keyfile.has_key ('Desktop Entry', 'Icon'):
-        icon = locate_icon (keyfile.get_value ('Desktop Entry', 'Icon'), kw.get ('images', []))
 
     app = pulse.db.Resource.make (ident=ident, type='Application')
     app.update_name (name)
     if desc != None:
         app.update_desc (desc)
-    if icon != None:
-        app.icon = icon
+    if keyfile.has_key ('Desktop Entry', 'Icon'):
+        locate_icon (app,
+                     keyfile.get_value ('Desktop Entry', 'Icon'),
+                     kw.get ('images', []))
     app.update_data (data)
-    # FIXME: icon, bugzilla stuff
 
     return app
 
@@ -378,15 +377,14 @@ def process_oafserver (branch, checkout, filename, **kw):
         applet.update_name (applet_name)
         applet.update_desc (applet_desc)
         if applet_icon != None:
-            icon = None
-            icon = locate_icon (applet_icon, kw.get ('images', []))
-            if icon != None:
-                applet.icon = icon
+            locate_icon (applet, applet_icon, kw.get ('images', []))
         applet.update_data ({'directlry' : os.path.dirname (relfile), 'file' : basename})
         applets.append (applet)
     return applets
 
-def locate_icon (icon, images):
+def locate_icon (resource, icon, images):
+    icondir = os.path.join (pulse.config.icondir, 'apps')
+
     if icon.endswith ('.png'):
         iconfile = icon
     else:
@@ -402,10 +400,14 @@ def locate_icon (icon, images):
             break
     # FIXME: try actually looking at sizes, pick closest
     if use != None:
-        shutil.copyfile (use, os.path.join (pulse.config.icondir, os.path.basename (use)))
-        return os.path.basename (use)
-
-    return 'icon://' + icon
+        if not os.path.isdir (icondir):
+            os.makedirs (icondir)
+        shutil.copyfile (use, os.path.join (icondir, os.path.basename (use)))
+        resource.icon_dir = 'apps'
+        resource.icon_name = os.path.basename (use[:-4])
+    elif resource.icon_name == None or resource.icon_name != icon:
+        resource.icon_dir = '__icon__'
+        resource.icon_name = icon
 
 def main (argv):
     update = True
