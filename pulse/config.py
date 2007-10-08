@@ -20,18 +20,18 @@
 
 import os
 
-datadir = '/shaunm/projects/pulse/data/'
-vardir = '/shaunm/projects/pulse/var/'
+datadir = '/home/shaunm/Projects/pulse/data/'
+vardir = '/home/shaunm/Projects/pulse/var/'
 
 potdir = os.path.join (vardir, 'pot')
 scmdir = os.path.join (vardir, 'scm')
 
-webdir = '/shaunm/projects/pulse/web/'
-webroot = 'file:///shaunm/projects/pulse/web/'
+webdir = '/home/shaunm/Projects/pulse/web/'
+webroot = 'file:///home/shaunm/Projects/pulse/web/'
 
 icondir = os.path.join (webdir, 'icons')
 iconroot = webroot + 'icons/'
 
 # need dir2url to make this use vardir
-dbroot = 'sqlite:/shaunm/projects/pulse/var/pulse.db'
+dbroot = 'sqlite:/home/shaunm/Projects/pulse/var/pulse.db'
 #dbroot = _url( 'mysql://user:pass@localhost/pulse')
