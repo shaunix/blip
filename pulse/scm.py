@@ -29,12 +29,21 @@ class CheckoutError (pulse.utils.PulseException):
         pulse.utils.PulseException.__init__ (self, str)
 
 class Checkout (object):
+    @classmethod
+    def from_resource (cls, resource, **kw):
+        return cls (scm_type=resource.scm_type,
+                    scm_server=resource.scm_server,
+                    scm_module=resource.scm_module,
+                    scm_branch=resource.scm_branch,
+                    **kw)
+
     def __init__ (self, **kw):
         
         updateQ = kw.get ('update', False)
         checkoutQ = kw.get ('checkout', True)
 
         if not kw.has_key ('scm_type'):
+            print kw.keys()
             raise CheckoutError (
                 'Checkout could not determine the type of SCM server to use')
 
@@ -63,7 +72,7 @@ class Checkout (object):
 
         self.ignoredir = 'CVS'
 
-        if not hasattr(self, 'scm_branch'):
+        if not hasattr(self, 'scm_branch') or self.scm_branch == None:
             self.scm_branch = 'HEAD'
         self.default = (self.scm_branch == 'HEAD')
                 
@@ -92,7 +101,7 @@ class Checkout (object):
 
         if self.scm_server[-1] != '/':
             self.scm_server = self.scm_server + '/'
-        if not hasattr(self, 'scm_branch'):
+        if not hasattr(self, 'scm_branch') or self.scm_branch == None:
             self.scm_branch = 'trunk'
         self.default = (self.scm_branch == 'trunk')
 

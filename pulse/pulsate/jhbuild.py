@@ -93,8 +93,8 @@ def update_branch (moduleset, key):
         m_data[key] = b_data[key] = scm_data[key]
     b_data['scm_branch'] = scm_data['scm_branch']
 
-    m_res.update_data (m_data)
-    b_res.update_data (b_data)
+    m_res.update (m_data)
+    b_res.update (b_data)
 
     b_res.parent = m_res
 

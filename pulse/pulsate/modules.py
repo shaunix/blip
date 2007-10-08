@@ -27,13 +27,14 @@ import xml.dom.minidom
 
 import pulse.db
 import pulse.scm
+import pulse.utils
 
 synop = 'update information from module and branch checkouts'
 def usage (fd=sys.stderr):
     print >>fd, ('Usage: %s [PREFIX]' % sys.argv[0])
 
 def update_branch (branch, update):
-    checkout = pulse.scm.Checkout (update=update, **branch.data)
+    checkout = pulse.scm.Checkout.from_resource (branch, update=update)
     branch.nick = checkout.scm_branch
     # FIXME: what do we want to know?
     # find maintainers
@@ -206,7 +207,7 @@ def process_configure (branch, checkout):
         data['tarname'] = initargs[3]
     else:
         data['tarname'] = initargs[0]
-    branch.update_data (data)
+    branch.update (data)
 
 def process_podir (branch, checkout, podir):
     ident = '/i18n/' + '/'.join (branch.ident.split('/')[2:]) + '/' + os.path.basename (podir)
@@ -216,8 +217,8 @@ def process_podir (branch, checkout, podir):
     for key in branch.data.keys():
         if key.startswith ('scm_'):
             data[key] = branch.data[key]
-    data['directory'] = podir[len(checkout.directory)+1:]
-    domain.update_data (data)
+    data['scm_dir'] = podir[len(checkout.directory)+1:]
+    domain.update (data)
 
     linguas = os.path.join (podir, 'LINGUAS')
     langs = []
@@ -234,8 +235,8 @@ def process_podir (branch, checkout, podir):
         translation = pulse.db.Resource.make (ident=lident, type='Translation')
         translations.append (translation)
         ldata = data
-        ldata['file'] = lang + '.po'
-        translation.update_data (data)
+        ldata['scm_file'] = lang + '.po'
+        translation.update (data)
     domain.set_children ('Translation', translations)
 
     return domain
@@ -244,11 +245,12 @@ def process_gdu_docdir (branch, checkout, docdir, makefile, **kw):
     doc_module = makefile['DOC_MODULE']
     ident = '/doc/' + '/'.join(branch.ident.split('/')[2:5]) + '/' + doc_module
     document = pulse.db.Resource.make (ident=ident, type='Document')
-    document.update_data ({'document_tool' : 'gnome-doc-utils'})
+    document.update ({'document_tool' : 'gnome-doc-utils'})
     return document
 
 def process_pkgconfig (branch, checkout, filename, **kw):
     basename = os.path.basename (filename)[:-6]
+    relfile = filename[len(checkout.directory)+1:]
     # Hack for GTK+'s uninstalled pkgconfig files
     if '-uninstalled' in basename:
         return None
@@ -275,12 +277,18 @@ def process_pkgconfig (branch, checkout, filename, **kw):
     lib.update_name ({'C' : libname})
     lib.update_desc ({'C' : libdesc})
 
-    data = {'pkgconfig' : filename[len(checkout.directory)+1:]}
-    lib.update_data (data)
+    data = {}
+    data['scm_dir'], data['scm_file'] = os.path.split (relfile)
+    lib.update (data)
 
     return lib
 
 def process_keyfile (branch, checkout, filename, **kw):
+    timestamp = pulse.db.Timestamp.get_timestamp (filename)
+    mtime = os.stat (filename).st_mtime
+    if mtime <= timestamp:
+        pass
+    
     basename = os.path.basename (filename)[:-14]
     relfile = filename[len(checkout.directory)+1:]
     owd = os.getcwd ()
@@ -307,9 +315,6 @@ def process_keyfile (branch, checkout, filename, **kw):
     else:
         desc = None
 
-    data = {'keyfile' : relfile}
-
-
     app = pulse.db.Resource.make (ident=ident, type='Application')
     app.update_name (name)
     if desc != None:
@@ -318,7 +323,10 @@ def process_keyfile (branch, checkout, filename, **kw):
         locate_icon (app,
                      keyfile.get_value ('Desktop Entry', 'Icon'),
                      kw.get ('images', []))
-    app.update_data (data)
+
+    data = {}
+    data['scm_dir'], data['scm_file'] = os.path.split (relfile)
+    app.update (data)
 
     return app
 
@@ -378,8 +386,13 @@ def process_oafserver (branch, checkout, filename, **kw):
         applet.update_desc (applet_desc)
         if applet_icon != None:
             locate_icon (applet, applet_icon, kw.get ('images', []))
-        applet.update_data ({'directlry' : os.path.dirname (relfile), 'file' : basename})
+
+        data = {}
+        data['scm_dir'], data['scm_file'] = os.path.split (relfile)
+        applet.update (data)
+
         applets.append (applet)
+
     return applets
 
 def locate_icon (resource, icon, images):
@@ -403,11 +416,9 @@ def locate_icon (resource, icon, images):
         if not os.path.isdir (icondir):
             os.makedirs (icondir)
         shutil.copyfile (use, os.path.join (icondir, os.path.basename (use)))
-        resource.icon_dir = 'apps'
-        resource.icon_name = os.path.basename (use[:-4])
+        resource.update ({'icon_dir' : 'apps', 'icon_name' : os.path.basename (use[:-4])})
     elif resource.icon_name == None or resource.icon_name != icon:
-        resource.icon_dir = '__icon__'
-        resource.icon_name = icon
+        resource.update ({'icon_dir' : '__icon__', 'icon_name' : icon})
 
 def main (argv):
     update = True

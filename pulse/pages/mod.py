@@ -100,16 +100,16 @@ def output_branch (branch, path=[], query=[], http=True, fd=None):
 
     if sep: page.add_fact_sep ()
     
-    if branch.data['scm_type'] == 'cvs':
-        page.add_fact (pulse.utils.gettext ('CVS Server'), branch.data['scm_server'])
-        page.add_fact (pulse.utils.gettext ('CVS Module'), branch.data['scm_module'])
-        page.add_fact (pulse.utils.gettext ('CVS Branch'), branch.data['scm_branch'])
-    elif branch.data['scm_type'] == 'svn':
-        loc = branch.data['scm_server'] + branch.data['scm_module']
-        if branch.data['scm_branch'] == 'trunk':
+    if branch.scm_type == 'cvs':
+        page.add_fact (pulse.utils.gettext ('CVS Server'), branch.scm_server)
+        page.add_fact (pulse.utils.gettext ('CVS Module'), branch.scm_module)
+        page.add_fact (pulse.utils.gettext ('CVS Branch'), branch.scm_branch)
+    elif branch.scm_type == 'svn':
+        loc = branch.scm_server + branch.scm_module
+        if branch.scm_branch == 'trunk':
             loc += '/trunk'
         else:
-            loc += '/branches/' + branch.data['scm_branch']
+            loc += '/branches/' + branch.scm_branch
         page.add_fact (pulse.utils.gettext ('SVN Location'), loc)
 
     if branch.data.has_key ('tarname'):

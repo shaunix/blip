@@ -34,6 +34,7 @@ sql.setDeprecationLevel (None)
 class Resource (sql.SQLObject):
     class sqlmeta:
         table = 'Resource'
+    _lazyUpdate = True
 
     def _create (self, *args, **kw):
         pulse.utils.log ('Creating resource %s' % kw['ident'])
@@ -66,6 +67,13 @@ class Resource (sql.SQLObject):
 
     email = sql.StringCol (default=None)
     web = sql.StringCol (default=None)
+
+    scm_type = sql.StringCol (default=None)
+    scm_server = sql.StringCol (default=None)
+    scm_module = sql.StringCol (default=None)
+    scm_branch = sql.StringCol (default=None)
+    scm_dir = sql.StringCol (default=None)
+    scm_file = sql.StringCol (default=None)
 
     data = sql.PickleCol (default={})
 
@@ -108,23 +116,45 @@ class Resource (sql.SQLObject):
         return pulse.config.webroot + self.ident[1:]
     url = property (get_url)
 
-    def update_name (self, d):
+    def update (self, d, sync=True):
+        data = {}
+        for k in d.keys():
+            if k == 'name':
+                self.update_name (d[k], False)
+            elif k == 'desc':
+                self.update_desc (d[k], False)
+            elif self.sqlmeta.columnDefinitions.has_key (k):
+                setattr (self, k, d[k])
+            else:
+                data[k] = d[k]
+        if len(data) > 0:
+            self.update_data (data, False)
+        if sync: self.syncUpdate ()
+
+    def update_name (self, d, sync=True):
+        if isinstance (d, basestring):
+            d = {'C' : d}
         name = self.name
         for k in d:
             name[k] = d[k]
         self.name = name
+        if sync: self.syncUpdate ()
 
-    def update_desc (self, d):
+    def update_desc (self, d, sync=True):
+        if isinstance (d, basestring):
+            d = {'C' : d}
         desc = self.desc
         for k in d:
             desc[k] = d[k]
         self.desc = desc
+        if sync: self.syncUpdate ()
 
-    def update_data (self, d):
+    def update_data (self, d, sync=True):
         data = self.data
         for k in d:
             data[k] = d[k]
         self.data = data
+        if sync: self.syncUpdate ()
 
     def delete_full (self):
         rels = pulse.db.Relation.selectBy (subj=self)
@@ -189,6 +219,30 @@ class Relation (sql.SQLObject):
         else:
             return Relation (subj=subj, pred=pred, verb=verb, superlative=superlative)
 
+
+class Timestamp (sql.SQLObject):
+    class sqlmeta:
+        table = 'Timestamp'
+
+    filename = sql.StringCol (alternateID=True)
+    stamp = sql.IntCol ()
+
+    @classmethod
+    def set_timestamp (cls, filename, stamp):
+        obj = Timestamp.selectBy (filename=filename)
+        if obj.count() > 0:
+            obj[0].stamp = stamp
+        else:
+            Timestamp (filename=filename, stamp=stamp)
+        return stamp
+
+    @classmethod
+    def get_timestamp (cls, filename):
+        obj = Timestamp.selectBy (filename=filename)
+        if obj.count() > 0:
+            return obj[0].stamp
+        else:
+            return -1
 
 def create_tables ():
     for table in inspect.getmembers (sys.modules[__name__]):
