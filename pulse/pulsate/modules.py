@@ -74,7 +74,7 @@ def update_branch (branch, update):
 
     process_configure (branch, checkout)
     if branch.name == {}:
-        branch.name = {'C' : branch.ident.split('/')[3]}
+        branch.name = {'C' : branch.scm_module}
 
     domains = []
     for podir in podirs:
@@ -104,7 +104,7 @@ def update_branch (branch, update):
         app = process_keyfile (branch, checkout, keyfile, images=images)
         if app != None:
             if default_resource == None:
-                if os.path.basename (keyfile)[:-14] == branch.ident.split('/')[3]:
+                if app.ident.split('/')[-1] == branch.scm_module:
                     default_resource = app
             applications.append (app)
     branch.set_children ('Application', applications)
@@ -119,6 +119,11 @@ def update_branch (branch, update):
             default_resource = applications[0]
         elif len(applets) == 1 and len(applications) == 0:
             default_resource = applets[0]
+        else:
+            for app in applications:
+                if app.data.get ('exec', None) == branch.scm_module:
+                    default_resource = app
+                    break
 
     if default_resource != None:
         branch.name = default_resource.name
@@ -318,6 +323,7 @@ def process_keyfile (branch, checkout, filename, **kw):
         return
     if keyfile.get_value ('Desktop Entry', 'Type') != 'Application':
         return
+
     ident = '/app/' + '/'.join (branch.ident.split('/')[2:]) + '/' + basename
     name = keyfile.get_value ('Desktop Entry', 'Name')
     if isinstance (name, basestring):
@@ -331,6 +337,9 @@ def process_keyfile (branch, checkout, filename, **kw):
         desc = None
 
     app = pulse.db.Resource.make (ident=ident, type='Application')
+    d, f = os.path.split (relfile)
+    app.update ({'scm_dir' : d, 'scm_file' : f})
+
     app.update_name (name)
     if desc != None:
         app.update_desc (desc)
@@ -339,9 +348,8 @@ def process_keyfile (branch, checkout, filename, **kw):
                      keyfile.get_value ('Desktop Entry', 'Icon'),
                      kw.get ('images', []))
 
-    data = {}
-    data['scm_dir'], data['scm_file'] = os.path.split (relfile)
-    app.update (data)
+    if keyfile.has_key ('Desktop Entry', 'Exec'):
+        app.update_data ({'exec' : keyfile.get_value ('Desktop Entry', 'Exec')})
 
     return app
 
