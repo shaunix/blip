@@ -31,14 +31,27 @@ def gettext (str):
 def isorted (list):
     return sorted (list, lambda x, y: cmp (x.lower(), y.lower()))
 
+def attrsorted (list, *attrs):
+    def get (obj, attrs):
+        if len(attrs) > 0:
+            return get (getattr (obj, attrs[0]), attrs[1:])
+        elif isinstance (obj, basestring):
+            return obj.lower()
+        else:
+            return obj
+    return sorted (list, lambda x, y: cmp (get(x, attrs), get(y, attrs)))
+
+# deprecated
 def titlesorted (list):
-    return sorted (list, lambda x, y: cmp (x.title.lower(), y.title.lower()))
+    return attrsorted (list, 'title')
 
+# deprecated
 def subjsorted (list):
-    return sorted (list, lambda x, y: cmp (x.subj.title.lower(), y.subj.title.lower()))
+    return attrsorted (list, 'subj', 'title')
 
+# deprecated
 def predsorted (list):
-    return sorted (list, lambda x, y: cmp (x.pred.title.lower(), y.pred.title.lower()))
+    return attrsorted (list, 'pred', 'title')
 
 class odict (dict):
     def __init__ (self, d=None):
