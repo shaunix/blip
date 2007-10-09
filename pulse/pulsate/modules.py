@@ -58,7 +58,7 @@ def update_branch (branch, update):
                 podirs.append (dirname)
             elif name.endswith ('.pc.in'):
                 pkgconfigs.append (filename)
-            elif name.endswith ('.desktop.in.in'):
+            elif name.endswith ('.desktop.in') or name.endswith ('.desktop.in.in'):
                 keyfiles.append (filename)
             elif name.endswith ('.server.in.in'):
                 oafservers.append (filename)
@@ -300,8 +300,11 @@ def process_keyfile (branch, checkout, filename, **kw):
     mtime = os.stat (filename).st_mtime
     if mtime <= timestamp:
         pass
-    
-    basename = os.path.basename (filename)[:-14]
+
+    if filename.endswith ('.desktop.in.in'):
+        basename = os.path.basename (filename)[:-14]
+    else:
+        basename = os.path.basename (filename)[:-11]
     relfile = filename[len(checkout.directory)+1:]
     owd = os.getcwd ()
     try:
