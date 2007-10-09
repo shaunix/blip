@@ -34,7 +34,6 @@ sql.setDeprecationLevel (None)
 class Resource (sql.SQLObject):
     class sqlmeta:
         table = 'Resource'
-    _lazyUpdate = True
 
     def _create (self, *args, **kw):
         pulse.utils.log ('Creating resource %s' % kw['ident'])
@@ -116,45 +115,49 @@ class Resource (sql.SQLObject):
         return pulse.config.webroot + self.ident[1:]
     url = property (get_url)
 
-    def update (self, d, sync=True):
+    def update (self, d):
+        stuff = {}
         data = {}
         for k in d.keys():
             if k == 'name':
-                self.update_name (d[k], False)
+                stuff['name'] = self.updated_name (d[k])
             elif k == 'desc':
-                self.update_desc (d[k], False)
+                stuff['desc'] = self.updated_desc (d[k])
             elif self.sqlmeta.columnDefinitions.has_key (k):
-                setattr (self, k, d[k])
+                stuff[k] = d[k]
             else:
                 data[k] = d[k]
         if len(data) > 0:
-            self.update_data (data, False)
-        if sync: self.syncUpdate ()
+            stuff['data'] = self.updated_data (data)
+        self.set (**stuff)
 
-    def update_name (self, d, sync=True):
+    def updated_name (self, d):
         if isinstance (d, basestring):
             d = {'C' : d}
         name = self.name
         for k in d:
             name[k] = d[k]
-        self.name = name
-        if sync: self.syncUpdate ()
+        return name
+    def update_name (self, d):
+        self.name = self.updated_name (d)
 
-    def update_desc (self, d, sync=True):
+    def updated_desc (self, d):
         if isinstance (d, basestring):
             d = {'C' : d}
         desc = self.desc
         for k in d:
             desc[k] = d[k]
-        self.desc = desc
-        if sync: self.syncUpdate ()
+        return desc
+    def update_desc (self, d):
+        self.desc = self.updated_desc (d)
 
-    def update_data (self, d, sync=True):
+    def updated_data (self, d):
         data = self.data
         for k in d:
             data[k] = d[k]
-        self.data = data
-        if sync: self.syncUpdate ()
+        return data
+    def update_data (self, d):
+        self.data = self.updated_data (d)
 
     def delete_full (self):
         rels = pulse.db.Relation.selectBy (subj=self)
