@@ -94,7 +94,7 @@ def output_branch (branch, path=[], query=[], http=True, fd=None):
 
     rels = pulse.db.Relation.selectBy (pred=branch, verb=pulse.db.Relation.set_branch)
     if rels.count() > 0:
-        sets = [rel.subj for rel in rels]
+        sets = pulse.utils.attrsorted ([rel.subj for rel in rels], 'title')
         page.add_fact (pulse.utils.gettext ('Release Sets'), sets)
         sep = True
 
