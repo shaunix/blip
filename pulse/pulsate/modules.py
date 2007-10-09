@@ -423,6 +423,7 @@ def locate_icon (resource, icon, images):
 
     if icon.endswith ('.png'):
         iconfile = icon
+        icon = icon[:-4]
     else:
         iconfile = icon + '.png'
     candidates = []
