@@ -145,7 +145,7 @@ class Page (Block, ContentComponent):
     <li id="portaltab-about"><a href="/about/about"><span>About</span></a></li>
   </ul></div>
 </div>
-<div id="body"><h1>%(_title)s</h1>'''
+<div id="body">'''
     _foot_text = '</div></body></html>'
 
     def __init__ (self, **kw):
@@ -154,10 +154,14 @@ class Page (Block, ContentComponent):
         self._http = kw.get ('http')
         self._status = kw.get ('status')
         self._title = kw.get ('title')
+        self._icon = kw.get ('icon')
         self._webroot = pulse.config.webroot
 
     def set_title (self, title):
         self._title = title
+
+    def set_icon (self, icon):
+        self._icon = icon
 
     def output_top (self, fd=sys.stdout):
         if self._http == True:
@@ -165,6 +169,11 @@ class Page (Block, ContentComponent):
                 p (fd, 'Status: 404 Not found\n')
             p (fd, 'Content-type: text/html; charset=utf-8\n\n')
         p (fd, self._head_text % self.__dict__)
+        p (fd, '<h1>')
+        if self._icon != None:
+            p (fd, '<img class="icon" src="%s" alt="%s">' % (self._icon, self._title))
+        p (fd, self._title)
+        p (fd, '</h1>')
 
     def output_middle (self, fd=sys.stdout):
         ContentComponent.output (self, fd=fd)
@@ -178,6 +187,8 @@ class ResourcePage (Page, SublinksComponent, FactsComponent):
         SublinksComponent.__init__ (self, **kw)
         FactsComponent.__init__ (self, **kw)
         self.set_title (resource.title)
+        if resource.icon_url != None:
+            self.set_icon (resource.icon_url)
 
     def output_middle (self, fd=sys.stdout):
         SublinksComponent.output (self, fd=fd)

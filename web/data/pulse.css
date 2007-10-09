@@ -114,10 +114,11 @@ body {
 h1 {
   font-size: 1.44em;
   color: #555753;
-  margin: 0 0 0.2em 0;
+  margin: 0.5em 0 0.2em 0;
   padding: 0 0 0.2em 0;
   border-bottom: solid 1px #555753;
 }
+h1 img { vertical-align: middle; }
 
 a { color: #204a87; text-decoration: none; }
 a:visited { color: #a40000; }
