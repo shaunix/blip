@@ -2,10 +2,11 @@
 <group>
 
 <theme id="gnome-icon-theme">
+  <scm_type>svn</scm_type>
   <scm_server>http://svn.gnome.org/svn/</scm_server>
   <scm_module>gnome-icon-theme</scm_module>
   <scm_branch>trunk</scm_branch>
-  <directory>24x24/apps</directory>
+  <scm_dir>24x24/apps</scm_dir>
 </theme>
 
 </group>

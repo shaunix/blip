@@ -85,7 +85,7 @@ class Resource (sql.SQLObject):
             return cls (ident=ident, type=type)
 
     def get_icon_url (self):
-        if self.icon_name == None or self.icon_dir == '__icon__':
+        if self.icon_name == None or self.icon_dir.startswith ('__icon__'):
             return None
         elif self.icon_dir == None:
             return pulse.config.iconroot + self.icon_name + '.png'
