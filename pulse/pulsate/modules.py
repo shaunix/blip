@@ -182,19 +182,31 @@ def process_configure (branch, checkout):
     if not os.path.exists (fname):
         return
 
-    inittxt = None
+    functxts = {}
+    infunc = None
+    ac_inittxt = None
+    am_inittxt = None
     for line in open (fname):
-        if line.startswith ('AC_INIT('):
-            inittxt = ''
+        if infunc != None:
+            pass
+        elif line.startswith ('AC_INIT('):
+            infunc = 'AC_INIT'
+            functxts[infunc] = ''
             line = line[8:]
-        if inittxt != None:
+        elif line.startswith ('AM_INIT_AUTOMAKE('):
+            infunc = 'AM_INIT_AUTOMAKE'
+            functxts[infunc] = ''
+            line = line[17:]
+        if infunc != None:
             rparen = line.find (')')
             if rparen >= 0:
-                inittxt += line[:rparen]
-                break
+                functxts[infunc] += line[:rparen]
+                infunc = None
             else:
-                inittxt += line.strip()
-    initargs = inittxt.split(',')
+                functxts[infunc] = line.strip()
+    initargs = functxts['AC_INIT'].split(',')
+    if len(initargs) < 2:
+        initargs = functxts['AM_INIT_AUTOMAKE'].split(',')
     for i in range(len(initargs)):
         arg = initargs[i]
         arg = arg.strip().rstrip()
@@ -418,7 +430,7 @@ def locate_icon (resource, icon, images):
         shutil.copyfile (use, os.path.join (icondir, os.path.basename (use)))
         resource.update ({'icon_dir' : 'apps', 'icon_name' : os.path.basename (use[:-4])})
     elif resource.icon_name == None or resource.icon_name != icon:
-        resource.update ({'icon_dir' : '__icon__', 'icon_name' : icon})
+        resource.update ({'icon_dir' : '__icon__:apps', 'icon_name' : icon})
 
 def main (argv):
     update = True
