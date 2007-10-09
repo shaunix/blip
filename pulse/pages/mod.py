@@ -78,7 +78,7 @@ def output_branch (branch, path=[], query=[], http=True, fd=None):
 
     branches = pulse.db.Resource.selectBy (parent=branch.parent)
     if branches.count() > 1:
-        for b in pulse.utils.titlesorted (branches[0:]):
+        for b in pulse.utils.attrsorted (branches[0:], 'scm_branch'):
             if b.ident != branch.ident:
                 page.add_sublink (b.url, b.ident.split('/')[-1])
             else:
@@ -125,7 +125,7 @@ def output_branch (branch, path=[], query=[], http=True, fd=None):
     developers = pulse.db.Relation.selectBy (subj=module,
                                              verb=pulse.db.Relation.module_developer)
     if developers.count() > 0:
-        for rel in pulse.utils.predsorted (developers[0:]):
+        for rel in pulse.utils.attrsorted (developers[0:], 'pred', 'title'):
             box.add_resource_link (rel.pred, rel.superlative)
     else:
         box.add_content (pulse.html.AdmonBox (pulse.html.AdmonBox.warning,
@@ -136,13 +136,13 @@ def output_branch (branch, path=[], query=[], http=True, fd=None):
     columns.add_content (0, box)
     domains = pulse.db.Resource.selectBy (type='Domain', parent=branch)
     if domains.count() > 0:
-        for domain in pulse.utils.titlesorted (domains[0:]):
+        for domain in pulse.utils.attrsorted (domains[0:], 'title'):
             # FIXME: let's not do a simple resource link, but a tree with other info
             reslink = box.add_resource_link (domain)
             translations = pulse.db.Resource.selectBy (type='Translation', parent=domain)
             grid = pulse.html.GridBox ()
             reslink.add_content (grid)
-            for translation in pulse.utils.titlesorted (translations[0:]):
+            for translation in pulse.utils.attrsorted (translations[0:], 'title'):
                 grid.add_row ((translation.title,))
     else:
         box.add_content (pulse.html.AdmonBox (pulse.html.AdmonBox.warning,
@@ -153,7 +153,7 @@ def output_branch (branch, path=[], query=[], http=True, fd=None):
     if apps.count() > 0:
         box = pulse.html.InfoBox ('applications', pulse.utils.gettext ('Applications'))
         columns.add_content (1, box)
-        for app in pulse.utils.titlesorted (apps[0:]):
+        for app in pulse.utils.attrsorted (apps[0:], 'title'):
             box.add_resource_link (app)
 
     # Applets
@@ -161,7 +161,7 @@ def output_branch (branch, path=[], query=[], http=True, fd=None):
     if applets.count() > 0:
         box = pulse.html.InfoBox ('applets', pulse.utils.gettext ('Applets'))
         columns.add_content (1, box)
-        for applet in pulse.utils.titlesorted (applets[0:]):
+        for applet in pulse.utils.attrsorted (applets[0:], 'title'):
             box.add_resource_link (applet)
 
     # Libraries
@@ -169,7 +169,7 @@ def output_branch (branch, path=[], query=[], http=True, fd=None):
     if libs.count() > 0:
         box = pulse.html.InfoBox ('libraries', pulse.utils.gettext ('Libraries'))
         columns.add_content (1, box)
-        for lib in pulse.utils.titlesorted (libs[0:]):
+        for lib in pulse.utils.attrsorted (libs[0:], 'title'):
             box.add_resource_link (lib)
 
     # Documents
@@ -177,7 +177,7 @@ def output_branch (branch, path=[], query=[], http=True, fd=None):
     columns.add_content (1, box)
     docs = pulse.db.Resource.selectBy (type='Document', parent=branch)
     if docs.count() > 0:
-        for doc in pulse.utils.titlesorted (docs[0:]):
+        for doc in pulse.utils.attrsorted (docs[0:], 'title'):
             box.add_resource_link (doc)
     else:
         box.add_content (pulse.html.AdmonBox (pulse.html.AdmonBox.warning,
