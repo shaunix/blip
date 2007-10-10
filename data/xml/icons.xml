@@ -1,12 +1,20 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <group>
 
+<naming id="icon-naming-utils">
+  <scm_type>cvs</scm_type>
+  <scm_server>:pserver:anoncvs@anoncvs.freedesktop.org:/cvs/icon-theme</scm_server>
+  <scm_module>icon-naming-utils</scm_module>
+  <scm_dir/>
+  <scm_file>legacy-icon-mapping.xml</scm_file>
+</naming>
+
 <theme id="gnome-icon-theme">
   <scm_type>svn</scm_type>
   <scm_server>http://svn.gnome.org/svn/</scm_server>
   <scm_module>gnome-icon-theme</scm_module>
   <scm_branch>trunk</scm_branch>
-  <scm_dir>24x24/apps</scm_dir>
+  <scm_dir>24x24</scm_dir>
 </theme>
 
 </group>

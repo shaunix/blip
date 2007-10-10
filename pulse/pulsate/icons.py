@@ -21,6 +21,7 @@
 import os
 import shutil
 import sys
+import xml.dom.minidom
 
 import pulse.db
 import pulse.scm
@@ -37,35 +38,69 @@ def get_theme_icons (data, icons, update=True):
                                    scm_branch=data['scm_branch'],
                                    update=update)
     dir = os.path.join (checkout.directory, data['scm_dir'])
-    for f in os.listdir (dir):
-        full = os.path.join (dir, f)
-        if not (os.path.isfile (full) and f.endswith ('.png')):
-            continue
-        name = f[:-4]
-        if not icons.has_key (name):
-            icons[name] = full
+    def visit (arg, dirname, names):
+        names.remove (checkout.ignoredir)
+        for name in names:
+            filename = os.path.join (dirname, name)
+            if not (os.path.isfile (filename) and name.endswith ('.png')):
+                continue
+            icon_name = name[:-4]
+            if not icons.has_key (icon_name):
+                icons[icon_name] = filename
+    os.path.walk (dir, visit, None)
 
-def update_installed_icons (icons):
+def get_naming_links (data, links, update=True):
+    checkout = pulse.scm.Checkout (scm_type=data['scm_type'],
+                                   scm_server=data['scm_server'],
+                                   scm_module=data['scm_module'],
+                                   scm_branch=data.get('scm_branch'),
+                                   update=update)
+    fname = os.path.join (checkout.directory, data['scm_dir'], data['scm_file'])
+    dom = xml.dom.minidom.parse (fname)
+    for context in dom.getElementsByTagName ('context'):
+        for icon in context.childNodes:
+            if icon.nodeType != icon.ELEMENT_NODE or icon.tagName != 'icon':
+                continue
+            for link in icon.childNodes:
+                if link.nodeType != link.ELEMENT_NODE or link.tagName != 'link':
+                    continue
+                if not links.has_key (link.firstChild.data):
+                    links[link.firstChild.data] = icon.getAttribute ('name')
+
+def update_installed_icons (icons, links):
     icondir = os.path.join (pulse.config.icondir, 'apps')
     for f in os.listdir (icondir):
         full = os.path.join (icondir, f)
         if not (os.path.isfile (full) and f.endswith ('.png')):
             continue
         name = f[:-4]
-        if not icons.has_key (name):
+        if icons.has_key (name):
+            iconsrc = name
+        elif links.has_key (name):
+            iconsrc = links[name]
+            if not icons.has_key (iconsrc):
+                continue
+        else:
             continue
-        if os.stat(icons[name]).st_mtime > os.stat(full).st_mtime:
-            shutil.copyfile (icons[name], full)
+        if os.stat(icons[iconsrc]).st_mtime > os.stat(full).st_mtime:
+            shutil.copyfile (icons[iconsrc], full)
 
-def update_uninstalled_icons (icons):
+def update_uninstalled_icons (icons, links):
     resources = pulse.db.Resource.selectBy (icon_dir='__icon__:apps')
     for resource in resources:
         if resource.icon_name == None:
             continue
         if icons.has_key (resource.icon_name):
-            shutil.copyfile (icons[resource.icon_name],
-                             os.path.join (pulse.config.icondir, 'apps', resource.icon_name + '.png'))
-            resource.icon_dir = 'apps'
+            iconsrc = resource.icon_name
+        elif links.has_key (resource.icon_name):
+            iconsrc = links[resource.icon_name]
+            if not icons.has_key (iconsrc):
+                continue
+        else:
+            continue
+        shutil.copyfile (icons[iconsrc],
+                         os.path.join (pulse.config.icondir, 'apps', resource.icon_name + '.png'))
+        resource.icon_dir = 'apps'
 
 def main (argv):
     update = True
@@ -78,12 +113,15 @@ def main (argv):
     data = pulse.xmldata.get_data (os.path.join (pulse.config.datadir, 'xml', 'icons.xml'))
 
     icons = {}
+    links = {}
     for key in data.keys():
         if data[key]['__type__'] == 'theme':
             get_theme_icons (data[key], icons, update=update)
+        elif data[key]['__type__'] == 'naming':
+            get_naming_links (data[key], links, update=update)
 
-    update_installed_icons (icons)
-    update_uninstalled_icons (icons)
+    update_installed_icons (icons, links)
+    update_uninstalled_icons (icons, links)
     return
     resources = pulse.db.Resource.select (pulse.db.Resource.q.icon.startswith ('icon://'))
     for resource in resources:
