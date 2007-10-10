@@ -28,8 +28,8 @@ import pulse.scm
 import pulse.xmldata
 
 synop = 'find icons in icon themes'
-def usage (fd=sys.stderr):
-    print >>fd, ('Usage: %s icons' % sys.argv[0])
+args = pulse.utils.odict()
+args['no-update']  = (None, 'do not update SCM checkouts.')
 
 def get_theme_icons (data, icons, update=True):
     checkout = pulse.scm.Checkout (scm_type=data['scm_type'],

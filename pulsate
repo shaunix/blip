@@ -28,56 +28,78 @@ import pulse.pulsate
 import pulse.utils
 
 args = pulse.utils.odict()
-args['log-file=']  = ('FILE', 'Log updates to the file FILE.')
-args['frob'] = (None, 'Frobnicate something or other.')
+args['log-file=']  = ('FILE', 'log updates to the file FILE')
 
-def usage (fd=sys.stderr, verbose=False):
-    print >>fd, 'Usage: %s [common-options] tool [tool-options]' % sys.argv[0]
-    print >>fd, '  where tool is one of the following:'
+def print_args (args, fd=sys.stderr):
     d = 0
-    tools = []
-    mods = []
-    for tool in sorted (pulse.pulsate.__all__):
-        mod = pulse.utils.import_ ('pulse.pulsate.' + tool)
-        if hasattr (mod, 'synop'):
-            tools.append (tool)
-            mods.append (mod)
-            d = max (d, len (tool))
-    s = '    %%-%ds - %%s' % d
-    for i in range (len (tools)):
-        print >>fd, (s % (tools[i], mods[i].synop))
-    print >>fd, '\nFor help on a specific tool, type'
-    print >>fd, '  %s --help tool' % sys.argv[0]
-
-    if not verbose: return
-    print >>fd, '\nThe following common options affect all tools:'
-    argmax = 15
+    txts = []
     for arg in args.keys():
         k = arg + (args[arg][0] or '')
-        if len(k) > argmax:
-            print >>fd, '  %s' % k
-            s = ('   %%-%ds%%%%s' % argmax) % ' '
-            print >>fd, s % args[arg][1]
-        else:
-            s = ('  %%-%ds %%s' % argmax)
-            print >>fd, s % (k, args[arg][1])
+        d = max (d, len(k))
+        txts.append ((k, args[arg][1]))
+    s = '  --%%-%ds   %%s' % d
+    for txt in txts:
+        print >>fd, (s % txt)
+    
+
+def usage (fd=sys.stderr, mod=None, verbose=False):
+    if mod == None:
+        print >>fd, 'Usage: %s [common options] <tool> <tool arguments>' % sys.argv[0]
+    else:
+        modname = mod.__name__.split('.')[-1]
+        s = 'Usage: %s [common options] %s' % (sys.argv[0], modname)
+        if hasattr (mod, 'args') and len(mod.args) > 0:
+            s += ' [%s options]' % modname
+        if hasattr (mod, 'usage_extra'):
+            s += ' ' + mod.usage_extra
+        print >>fd,  s
+
+    if not verbose: return
+
+    print >>fd, '\nCommon options:'
+    print_args (args, fd=fd)
+
+    if mod == None:
+        print >>fd, '\nTools:'
+        d = 0
+        txts = []
+        for tool in sorted (pulse.pulsate.__all__):
+            mod = pulse.utils.import_ ('pulse.pulsate.' + tool)
+            if hasattr (mod, 'synop'):
+                d = max (d, len (tool))
+                txts.append ((tool, mod.synop))
+        s = '  %%-%ds   %%s' % d
+        for txt in txts:
+            print >>fd, (s % txt)
+        print >>fd, '\nFor help on a specific tool, type'
+        print >>fd, '  %s --help <tool>' % sys.argv[0]
+    else:
+        if hasattr (mod, 'args') and len(mod.args) > 0:
+            print >>fd, '\nOptions for %s:' % modname
+            print_args (mod.args, fd=fd)
+        if hasattr (mod, 'help_extra'):
+            print >>fd, ''
+            mod.help_extra (fd=fd)
+
 
 
 if __name__ == "__main__":
-    try:
-        opts, argv = getopt (sys.argv[1:], '', args)
-    except:
+    if len (sys.argv) < 2:
         usage (sys.stderr)
         sys.exit (1)
-    if len (sys.argv) < 2 or sys.argv[1] == '--usage':
-        usage (sys.stderr)
-        sys.exit (1)
-    elif sys.argv[1] == '--help':
+    if sys.argv[1] == '--usage' or sys.argv[1] == '--help':
         if len (sys.argv) < 3:
-            usage (sys.stderr, verbose=True)
+            usage (sys.stderr, verbose=(sys.argv[1]=='--help'))
         else:
             mod = pulse.utils.import_ ('pulse.pulsate.' + sys.argv[2])
-            mod.usage (sys.stderr)
+            usage (sys.stderr, mod, verbose=(sys.argv[1]=='--help'))
+        sys.exit (0)
+
+    try:
+        opts, argv = getopt (sys.argv[1:], '', args.keys())
+        print argv
+    except:
+        usage (sys.stderr)
         sys.exit (1)
 
     mod = pulse.utils.import_ ('pulse.pulsate.' + argv[0])

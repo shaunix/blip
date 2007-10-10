@@ -28,8 +28,6 @@ import pulse.scm
 import pulse.xmldata
 
 synop = 'update information from Gnome\'s jhbuild module'
-def usage (fd=sys.stderr):
-    print >>fd, ('Usage: %s' % sys.argv[0])
 
 modulesets = {}
 checkouts = {}

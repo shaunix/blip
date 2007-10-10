@@ -30,8 +30,11 @@ import pulse.scm
 import pulse.utils
 
 synop = 'update information from module and branch checkouts'
-def usage (fd=sys.stderr):
-    print >>fd, ('Usage: %s [PREFIX]' % sys.argv[0])
+usage_extra = '[ident]'
+args = pulse.utils.odict()
+args['no-update']  = (None, 'do not update SCM checkouts.')
+def help_extra (fd=None):
+    print >>fd, 'If ident is passed, only modules and branches with a matching identifier will be updated.'
 
 def update_branch (branch, update):
     checkout = pulse.scm.Checkout.from_resource (branch, update=update)
