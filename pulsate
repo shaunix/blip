@@ -40,7 +40,15 @@ def print_args (args, fd=sys.stderr):
     s = '  --%%-%ds   %%s' % d
     for txt in txts:
         print >>fd, (s % txt)
-    
+
+def get_options (opts, args):
+    options = {}
+    for key, val in opts:
+        if args.has_key (key[2:]):
+            options[key] = True
+        else:
+            options[key] = val
+    return options
 
 def usage (fd=sys.stderr, mod=None, verbose=False):
     if mod == None:
@@ -81,8 +89,6 @@ def usage (fd=sys.stderr, mod=None, verbose=False):
             print >>fd, ''
             mod.help_extra (fd=fd)
 
-
-
 if __name__ == "__main__":
     if len (sys.argv) < 2:
         usage (sys.stderr)
@@ -97,10 +103,19 @@ if __name__ == "__main__":
 
     try:
         opts, argv = getopt (sys.argv[1:], '', args.keys())
-        print argv
     except:
         usage (sys.stderr)
         sys.exit (1)
+    if len (argv) == 0:
+        usage (sys.stderr)
+        sys.exit (1)
+    options = get_options (opts, args)
 
     mod = pulse.utils.import_ ('pulse.pulsate.' + argv[0])
-    sys.exit (mod.main (sys.argv))
+    if hasattr (mod, 'args'):
+        mod_opts, mod_argv = getopt (argv[1:], '', mod.args)
+        mod_options = get_options (mod_opts, mod.args)
+        retcode = mod.main (mod_argv, mod_options)
+    else:
+        retcode = mod.main (argv[1:])
+    sys.exit (retcode)

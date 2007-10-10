@@ -102,13 +102,8 @@ def update_uninstalled_icons (icons, links):
                          os.path.join (pulse.config.icondir, 'apps', resource.icon_name + '.png'))
         resource.icon_dir = 'apps'
 
-def main (argv):
-    update = True
-    if len (argv) > 2:
-        for arg in argv[2:]:
-            if arg.startswith ('-'):
-                if arg == '--no-update':
-                    update = False
+def main (argv, options={}):
+    update = not options.get ('--no-update', False)
 
     data = pulse.xmldata.get_data (os.path.join (pulse.config.datadir, 'xml', 'icons.xml'))
 

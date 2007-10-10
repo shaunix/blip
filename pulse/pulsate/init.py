@@ -26,10 +26,8 @@ import pulse.config
 import pulse.db
 
 synop = 'initialize the Pulse database'
-def usage (fd=sys.stderr):
-    print >>fd, ('Usage: %s' % sys.argv[0])
 
-def main (argv):
+def main (argv, options={}):
     for dir in (pulse.config.vardir, pulse.config.icondir):
         if not os.path.exists (dir):
             os.makedirs (dir)

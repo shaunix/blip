@@ -28,6 +28,8 @@ import pulse.scm
 import pulse.xmldata
 
 synop = 'update information from Gnome\'s jhbuild module'
+args = pulse.utils.odict()
+args['no-update']  = (None, 'do not update SCM checkouts.')
 
 modulesets = {}
 checkouts = {}
@@ -52,7 +54,7 @@ def get_moduleset (file):
     proc_element (modulesets[file]['__dom__'].documentElement)
     return modulesets[file]
 
-def update_branch (moduleset, key):
+def update_branch (moduleset, key, update=True):
     node = moduleset[key]
     if node.tagName != 'autotools':
         return None
@@ -98,7 +100,7 @@ def update_branch (moduleset, key):
 
     return b_res
 
-def update_set (data):
+def update_set (data, update=True):
     ident = '/set/' + data['id']
     res = pulse.db.Resource.selectBy (ident=ident)
     if res.count() > 0:
@@ -108,7 +110,7 @@ def update_set (data):
 
     if data.has_key ('set'):
         for subset in data['set'].keys():
-            subres = update_set (data['set'][subset])
+            subres = update_set (data['set'][subset], update=update)
             pulse.db.Relation.make (res, pulse.db.Relation.set_subset, subres)
 
     if (data.has_key ('jhbuild_scm_type')   and
@@ -131,7 +133,7 @@ def update_set (data):
                                            scm_server=data['jhbuild_scm_server'],
                                            scm_module=data['jhbuild_scm_module'],
                                            scm_branch=data['jhbuild_scm_branch'],
-                                           update=True)
+                                           update=update)
             checkouts[ident] = checkout
         file = os.path.join (checkout.directory,
                              data['jhbuild_scm_dir'],
@@ -161,18 +163,17 @@ def update_set (data):
                     if moduleset.has_key (pkg) and moduleset[pkg].tagName != 'metamodule':
                         packages.append (pkg)
         for pkg in packages:
-            branch = update_branch (moduleset, pkg)
+            branch = update_branch (moduleset, pkg, update=update)
             if branch != None:
                 pulse.db.Relation.make (res, pulse.db.Relation.set_branch, branch)
 
     return res
 
-def main (argv):
-    update = True
-    like = None
+def main (argv, options={}):
+    update = not options.get ('--no-update', False)
 
     data = pulse.xmldata.get_data (os.path.join (pulse.config.datadir, 'xml', 'sets.xml'))
 
     for key in data.keys():
         if data[key]['__type__'] == 'set':
-            update_set (data[key])
+            update_set (data[key], update=update)

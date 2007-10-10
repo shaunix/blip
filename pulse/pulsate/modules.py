@@ -447,16 +447,12 @@ def locate_icon (resource, icon, images):
     elif resource.icon_name == None or resource.icon_name != icon:
         resource.update ({'icon_dir' : '__icon__:apps', 'icon_name' : icon})
 
-def main (argv):
-    update = True
-    prefix = None
-    if len (argv) > 2:
-        for arg in argv[2:]:
-            if arg.startswith ('-'):
-                if arg == '--no-update':
-                    update = False
-            else:
-                prefix = arg
+def main (argv, options={}):
+    update = not options.get ('--no-update', False)
+    if len(argv) == 0:
+        prefix = None
+    else:
+        prefix = argv[0]
 
     if prefix != None:
         branches = pulse.db.Resource.select ((pulse.db.Resource.q.type == 'Branch') &
