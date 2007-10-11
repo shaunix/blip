@@ -246,10 +246,10 @@ def process_configure (branch, checkout, **kw):
         initargs = functxts['AM_INIT_AUTOMAKE'].split(',')
     for i in range(len(initargs)):
         arg = initargs[i]
-        arg = arg.strip().rstrip()
+        arg = arg.strip()
         if arg[0] == '[' and arg[-1] == ']':
             arg = arg[1:-1]
-        arg = arg.strip().rstrip()
+        arg = arg.strip()
         initargs[i] = arg
     data = {'tarversion' : initargs[1]}
     if len(initargs) >= 4:
@@ -342,9 +342,9 @@ def process_pkgconfig (branch, checkout, filename, **kw):
         if line.startswith ('Libs:'):
             islib = True
         elif line.startswith ('Name:'):
-            libname = line[5:].strip().rstrip()
+            libname = line[5:].strip()
         elif line.startswith ('Description:'):
-            libdesc = line[12:].strip().rstrip()
+            libdesc = line[12:].strip()
 
     if not islib:
         return None
