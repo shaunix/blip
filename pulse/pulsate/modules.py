@@ -249,7 +249,7 @@ def process_configure (branch, checkout, **kw):
                 functxts[infunc] += line[:rparen]
                 infunc = None
             else:
-                functxts[infunc] = line.strip()
+                functxts[infunc] += line.strip()
     initargs = functxts['AC_INIT'].split(',')
     if len(initargs) < 2:
         initargs = functxts['AM_INIT_AUTOMAKE'].split(',')
