@@ -335,19 +335,13 @@ def process_pkgconfig (branch, checkout, filename, **kw):
                 return None
     pulse.utils.log ('Processing file %s' % rel_scm)
 
-    islib = False
     libname = ''
     libdesc = ''
     for line in open (filename):
-        if line.startswith ('Libs:'):
-            islib = True
-        elif line.startswith ('Name:'):
+        if line.startswith ('Name:'):
             libname = line[5:].strip()
         elif line.startswith ('Description:'):
             libdesc = line[12:].strip()
-
-    if not islib:
-        return None
 
     ident = '/lib/' + '/'.join (branch.ident.split('/')[2:]) + '/' + basename
     lib = pulse.db.Resource.make (ident=ident, type='Library')
