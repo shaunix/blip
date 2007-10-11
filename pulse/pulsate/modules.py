@@ -142,65 +142,82 @@ def update_module_from_branch (branch, checkout):
     module.update_name (branch.name)
     module.update_desc (branch.desc)
 
+    update_module_maintainers (module, checkout)
+
+def update_module_maintainers (module, checkout):
     maintfile = os.path.join (checkout.directory, 'MAINTAINERS')
-    if os.path.isfile (maintfile):
-        pulse.utils.log ('Processing file %s' %
-                         pulse.utils.relative_path (maintfile, pulse.config.scmdir))
-        start = True
-        name = None
-        email = None
-        userid = None
-        maints = []
-        def add_maint ():
-            if name != None and userid != None:
-                maints.append ((name, userid, email))
-        for l in open (maintfile):
-            line = l.rstrip()
-            if line.startswith ('#'):
-                continue
-            if line == "":
-                add_maint ()
-                name = email = userid = None
-                start = True
-                continue
-
-            if start:
-                name = line
-                start = False
-            elif line.startswith ('E-mail:'):
-                email = line[7:].strip()
-            elif line.startswith ('Userid:'):
-                userid = line[7:].strip()
-        add_maint ()
-        serverid = module.ident.split('/')[2]
-        rels = []
-        for name, userid, email in maints:
-            ident = '/person/' + serverid + '/' + userid
-            person = pulse.db.Resource.make (ident=ident, type='Person')
-            person.update_name ({'C' : name})
-            if email != None:
-                person.email = email
-            rels.append (pulse.db.Relation.make (subj=module,
-                                                 verb=pulse.db.Relation.module_developer,
-                                                 pred=person,
-                                                 superlative=True))
-        module.set_relations (pulse.db.Relation.module_developer, rels)
-
-def process_configure (branch, checkout):
-    fname = os.path.join (checkout.directory, 'configure.in')
-    if not os.path.exists (fname):
-        fname = os.path.join (checkout.directory, 'configure.ac')
-    if not os.path.exists (fname):
+    if not os.path.isfile (maintfile):
         return
 
-    pulse.utils.log ('Processing file %s' %
-                     pulse.utils.relative_path (fname, pulse.config.scmdir))
+    rel_scm = pulse.utils.relative_path (maintfile, pulse.config.scmdir)
+    stamp = pulse.db.Timestamp.get_timestamp (rel_scm)
+    mtime = os.stat(maintfile).st_mtime
+    if mtime <= stamp:
+        pulse.utils.log ('Skipping file %s' % rel_scm)
+        return
+    pulse.utils.log ('Processing file %s' % rel_scm)
 
+    start = True
+    name = None
+    email = None
+    userid = None
+    maints = []
+    def add_maint ():
+        if name != None and userid != None:
+            maints.append ((name, userid, email))
+    for l in open (maintfile):
+        line = l.rstrip()
+        if line.startswith ('#'):
+            continue
+        if line == "":
+            add_maint ()
+            name = email = userid = None
+            start = True
+            continue
+
+        if start:
+            name = line
+            start = False
+        elif line.startswith ('E-mail:'):
+            email = line[7:].strip()
+        elif line.startswith ('Userid:'):
+            userid = line[7:].strip()
+    add_maint ()
+    serverid = module.ident.split('/')[2]
+    rels = []
+    for name, userid, email in maints:
+        ident = '/person/' + serverid + '/' + userid
+        person = pulse.db.Resource.make (ident=ident, type='Person')
+        person.update_name ({'C' : name})
+        if email != None:
+            person.email = email
+        rels.append (pulse.db.Relation.make (subj=module,
+                                             verb=pulse.db.Relation.module_developer,
+                                             pred=person,
+                                             superlative=True))
+    module.set_relations (pulse.db.Relation.module_developer, rels)
+    pulse.db.Timestamp.set_timestamp (rel_scm, mtime)
+
+def process_configure (branch, checkout):
+    filename = os.path.join (checkout.directory, 'configure.in')
+    if not os.path.exists (filename):
+        filename = os.path.join (checkout.directory, 'configure.ac')
+    if not os.path.exists (filename):
+        return
+
+    rel_scm = pulse.utils.relative_path (filename, pulse.config.scmdir)
+    stamp = pulse.db.Timestamp.get_timestamp (rel_scm)
+    mtime = os.stat(filename).st_mtime
+    if mtime <= stamp:
+        pulse.utils.log ('Skipping file %s' % rel_scm)
+        return
+    pulse.utils.log ('Processing file %s' % rel_scm)
+                     
     functxts = {}
     infunc = None
     ac_inittxt = None
     am_inittxt = None
-    for line in open (fname):
+    for line in open (filename):
         if infunc != None:
             pass
         elif line.startswith ('AC_INIT('):
@@ -235,6 +252,8 @@ def process_configure (branch, checkout):
         data['tarname'] = initargs[0]
     branch.update (data)
 
+    pulse.db.Timestamp.set_timestamp (rel_scm, mtime)
+
 def process_podir (branch, checkout, podir):
     ident = '/i18n/' + '/'.join (branch.ident.split('/')[2:]) + '/' + os.path.basename (podir)
     domain = pulse.db.Resource.make (ident=ident, type='Domain')
@@ -243,21 +262,30 @@ def process_podir (branch, checkout, podir):
     for key in branch.data.keys():
         if key.startswith ('scm_'):
             data[key] = branch.data[key]
-    data['scm_dir'] = podir[len(checkout.directory)+1:]
+    data['scm_dir'] = pulse.utils.relative_path (podir, checkout.directory)
     domain.update (data)
 
     linguas = os.path.join (podir, 'LINGUAS')
+    rel_scm = pulse.utils.relative_path (linguas, pulse.config.scmdir)
     langs = []
     translations = []
-    if os.path.isfile (linguas):
-        pulse.utils.log ('Processing file %s' %
-                         pulse.utils.relative_path (linguas, pulse.config.scmdir))
-        fd = open (linguas)
-        for line in fd:
-            if line.startswith ('#') or line == '\n':
-                continue
-            for l in line.split():
-                langs.append (l)
+
+    if not os.path.isfile (linguas):
+        return domain
+
+    stamp = pulse.db.Timestamp.get_timestamp (rel_scm)
+    mtime = os.stat(linguas).st_mtime
+    if mtime <= stamp:
+        pulse.utils.log ('Skipping file %s' % rel_scm)
+        return domain
+    pulse.utils.log ('Processing file %s' % rel_scm)
+
+    fd = open (linguas)
+    for line in fd:
+        if line.startswith ('#') or line == '\n':
+            continue
+        for l in line.split():
+            langs.append (l)
     for lang in langs:
         lident = '/i18n/' + '/'.join (branch.ident.split('/')[2:]) + '/po/' + os.path.basename (podir) + '/' + lang
         translation = pulse.db.Resource.make (ident=lident, type='Translation')
@@ -266,6 +294,8 @@ def process_podir (branch, checkout, podir):
         ldata['scm_file'] = lang + '.po'
         translation.update (data)
     domain.set_children ('Translation', translations)
+
+    pulse.db.Timestamp.set_timestamp (rel_scm, mtime)
 
     return domain
 
@@ -278,13 +308,24 @@ def process_gdu_docdir (branch, checkout, docdir, makefile, **kw):
 
 def process_pkgconfig (branch, checkout, filename, **kw):
     basename = os.path.basename (filename)[:-6]
-    relfile = pulse.utils.relative_path (filename, checkout.directory)
+    rel_ch = pulse.utils.relative_path (filename, checkout.directory)
+    rel_scm = pulse.utils.relative_path (filename, pulse.config.scmdir)
     # Hack for GTK+'s uninstalled pkgconfig files
     if '-uninstalled' in basename:
         return None
 
-    pulse.utils.log ('Processing file %s' %
-                     pulse.utils.relative_path (filename, pulse.config.scmdir))
+    stamp = pulse.db.Timestamp.get_timestamp (rel_scm)
+    mtime = os.stat(filename).st_mtime
+    if mtime <= stamp:
+        pulse.utils.log ('Skipping file %s' % rel_scm)
+        data = {'parent' : branch}
+        data['scm_dir'], data['scm_file'] = os.path.split (rel_ch)
+        libs = pulse.db.Resource.selectBy (type='Library', **data)
+        if libs.count() > 0:
+            return libs[0]
+        else:
+            return None
+    pulse.utils.log ('Processing file %s' % rel_scm)
 
     islib = False
     libname = ''
@@ -310,37 +351,46 @@ def process_pkgconfig (branch, checkout, filename, **kw):
     lib.update_desc ({'C' : libdesc})
 
     data = {}
-    data['scm_dir'], data['scm_file'] = os.path.split (relfile)
+    data['scm_dir'], data['scm_file'] = os.path.split (rel_ch)
     lib.update (data)
+
+    pulse.db.Timestamp.set_timestamp (rel_scm, mtime)
 
     return lib
 
 def process_keyfile (branch, checkout, filename, **kw):
-    timestamp = pulse.db.Timestamp.get_timestamp (filename)
-    mtime = os.stat (filename).st_mtime
-    if mtime <= timestamp:
-        pass
+    rel_ch = pulse.utils.relative_path (filename, checkout.directory)
+    rel_scm = pulse.utils.relative_path (filename, pulse.config.scmdir)
 
-    pulse.utils.log ('Processing file %s' %
-                     pulse.utils.relative_path (filename, pulse.config.scmdir))
-
+    stamp = pulse.db.Timestamp.get_timestamp (rel_scm)
+    mtime = os.stat(filename).st_mtime
+    if mtime <= stamp:
+        pulse.utils.log ('Skipping file %s' % rel_scm)
+        data = {'parent' : branch}
+        data['scm_dir'], data['scm_file'] = os.path.split (rel_ch)
+        apps = pulse.db.Resource.selectBy (type='Application', **data)
+        if apps.count() > 0:
+            return apps[0]
+        else:
+            return None
+    pulse.utils.log ('Processing file %s' % rel_scm)
+                     
     if filename.endswith ('.desktop.in.in'):
         basename = os.path.basename (filename)[:-14]
     else:
         basename = os.path.basename (filename)[:-11]
-    relfile = pulse.utils.relative_path (filename, checkout.directory)
     owd = os.getcwd ()
     try:
         os.chdir (checkout.directory)
-        keyfile = pulse.utils.keyfile (os.popen ('LC_ALL=C intltool-merge -d -q -u po "' + relfile + '" -'))
+        keyfile = pulse.utils.keyfile (os.popen ('LC_ALL=C intltool-merge -d -q -u po "' + rel_ch + '" -'))
     finally:
         os.chdir (owd)
     if not keyfile.has_group ('Desktop Entry'):
-        return
+        return None
     if not keyfile.has_key ('Desktop Entry', 'Type'):
-        return
+        return None
     if keyfile.get_value ('Desktop Entry', 'Type') != 'Application':
-        return
+        return None
 
     ident = '/app/' + '/'.join (branch.ident.split('/')[2:]) + '/' + basename
     name = keyfile.get_value ('Desktop Entry', 'Name')
@@ -355,8 +405,10 @@ def process_keyfile (branch, checkout, filename, **kw):
         desc = None
 
     app = pulse.db.Resource.make (ident=ident, type='Application')
-    d, f = os.path.split (relfile)
-    app.update ({'scm_dir' : d, 'scm_file' : f})
+
+    data = {}
+    data['scm_dir'], data['scm_file'] = os.path.split (rel_ch)
+    lib.update (data)
 
     app.update_name (name)
     if desc != None:
@@ -369,18 +421,32 @@ def process_keyfile (branch, checkout, filename, **kw):
     if keyfile.has_key ('Desktop Entry', 'Exec'):
         app.update_data ({'exec' : keyfile.get_value ('Desktop Entry', 'Exec')})
 
+    pulse.db.Timestamp.set_timestamp (rel_scm, mtime)
+
     return app
 
 def process_oafserver (branch, checkout, filename, **kw):
     basename = os.path.basename (filename)[:-13]
-    relfile = pulse.utils.relative_path (filename, checkout.directory)
+    rel_ch = pulse.utils.relative_path (filename, checkout.directory)
+    rel_scm = pulse.utils.relative_path (filename, pulse.config.scmdir)
+
+    stamp = pulse.db.Timestamp.get_timestamp (rel_scm)
+    mtime = os.stat(filename).st_mtime
+    if mtime <= stamp:
+        pulse.utils.log ('Skipping file %s' % rel_scm)
+        data = {'parent' : branch}
+        data['scm_dir'], data['scm_file'] = os.path.split (rel_ch)
+        applets = pulse.db.Resource.selectBy (type='Applet', **data)
+        return applets[0:]
+    pulse.utils.log ('Processing file %s' % rel_scm)
+
     owd = os.getcwd ()
     applets = []
     pulse.utils.log ('Processing file %s' %
                      pulse.utils.relative_path (filename, pulse.config.scmdir))
     try:
         os.chdir (checkout.directory)
-        dom = xml.dom.minidom.parse (os.popen ('LC_ALL=C intltool-merge -x -q -u po "' + relfile + '" -'))
+        dom = xml.dom.minidom.parse (os.popen ('LC_ALL=C intltool-merge -x -q -u po "' + rel_ch + '" -'))
     finally:
         os.chdir (owd)
     for server in dom.getElementsByTagName ('oaf_server'):
@@ -431,10 +497,12 @@ def process_oafserver (branch, checkout, filename, **kw):
             locate_icon (applet, applet_icon, kw.get ('images', []))
 
         data = {}
-        data['scm_dir'], data['scm_file'] = os.path.split (relfile)
+        data['scm_dir'], data['scm_file'] = os.path.split (rel_ch)
         applet.update (data)
 
         applets.append (applet)
+
+    pulse.db.Timestamp.set_timestamp (rel_scm, mtime)
 
     return applets
 
