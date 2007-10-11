@@ -235,9 +235,9 @@ class Timestamp (sql.SQLObject):
     def set_timestamp (cls, filename, stamp):
         obj = Timestamp.selectBy (filename=filename)
         if obj.count() > 0:
-            obj[0].stamp = stamp
+            obj[0].stamp = int(stamp)
         else:
-            Timestamp (filename=filename, stamp=stamp)
+            Timestamp (filename=filename, stamp=int(stamp))
         return stamp
 
     @classmethod
