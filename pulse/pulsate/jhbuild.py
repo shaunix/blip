@@ -74,7 +74,10 @@ def update_branch (moduleset, key, update=True):
         scm_data['scm_server'] = repo.getAttribute ('cvsroot')
     else:
         scm_data['scm_server'] = repo.getAttribute ('href')
-    scm_data['scm_module'] = key
+    if branch.hasAttribute ('module'):
+        scm_data['scm_module'] = branch.getAttribute ('module')
+    else:
+        scm_data['scm_module'] = key
     if branch.hasAttribute ('revision'):
         scm_data['scm_branch'] = branch.getAttribute ('revision')
 
@@ -92,6 +95,10 @@ def update_branch (moduleset, key, update=True):
     for key in ('scm_type', 'scm_server', 'scm_module'):
         m_data[key] = b_data[key] = scm_data[key]
     b_data['scm_branch'] = scm_data['scm_branch']
+    # FIXME: for svn, this seems to preclude "branches"
+    # This create a problem for mugshot in online-desktop
+    if branch.hasAttribute ('checkoutdir'):
+        b_data['module_dir'] = branch.getAttribute ('checkoutdir')
 
     m_res.update (m_data)
     b_res.update (b_data)

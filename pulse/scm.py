@@ -35,6 +35,7 @@ class Checkout (object):
                     scm_server=resource.scm_server,
                     scm_module=resource.scm_module,
                     scm_branch=resource.scm_branch,
+                    module_dir=resource.data.get('module_dir'),
                     **kw)
 
     def __init__ (self, **kw):
@@ -51,13 +52,29 @@ class Checkout (object):
             if key[:4] == 'scm_':
                 self.__setattr__ (key, kw[key])
 
+        self._server_dir = None
+
         if hasattr (Checkout, '_init_' + self.scm_type):
             getattr (Checkout, '_init_' + self.scm_type) (self)
         else:
             raise CheckoutError (
                 'Checkout got unknown SCM type "%s"' % self.scm_type)
 
-        if os.path.exists (os.path.join (self._topdir, self._codir)):
+        if kw.get('server_dir') != None:
+            self._server_dir = kw['server_dir']
+        if self._server_dir == None:
+            raise CheckoutError (
+                'Checkout could not determine a directory for the server "%s"' % self.scm_server)
+
+        self._module_dir = kw.get ('module_dir')
+        if self._module_dir == None:
+            self._module_dir = self.scm_module
+
+        self._branch_dir = kw.get ('branch_dir')
+        if self._branch_dir == None:
+            self._branch_dir = self.scm_branch
+
+        if os.path.exists (self.directory):
             if updateQ:
                 self.update ()
         else:
@@ -77,13 +94,10 @@ class Checkout (object):
         self.default = (self.scm_branch == 'HEAD')
                 
         self._name = '%s (%s)' % (self.scm_module, self.scm_branch)
-        self._server = self.scm_server.split(':')[2]
-        if self._server.find ('@') >= 0:
-            self._server = self._server.split('@')[-1]
-        self._topdir = os.path.join (pulse.config.scmdir,
-                                     self._server,
-                                     self.scm_module)
-        self._codir = self.scm_branch
+        self._server_dir = self.scm_server.split(':')[2]
+        if self._server_dir.find ('@') >= 0:
+            self._server_dir = self._server_dir.split('@')[-1]
+
         self._co = 'cvs -z3 -d%s co -r %s -d %s %s' %(
             self.scm_server,
             self.scm_branch,
@@ -106,11 +120,8 @@ class Checkout (object):
         self.default = (self.scm_branch == 'trunk')
 
         self._name = '%s (%s)' % (self.scm_module, self.scm_branch)
-        self._server = self.scm_server.split('://')[1].split('/')[0]
-        self._topdir = os.path.join (pulse.config.scmdir,
-                                     self._server,
-                                     self.scm_module)
-        self._codir = self.scm_branch
+        self._server_dir = self.scm_server.split('://')[1].split('/')[0]
+
         if self.scm_branch == 'trunk':
             url = self.scm_server + self.scm_module + '/trunk'
         else:
@@ -118,25 +129,29 @@ class Checkout (object):
         self._co = 'svn co ' + url
         self._up = 'svn up'
         
-    directory = property (lambda self: os.path.join (self._topdir, self._codir))
+    directory = property (lambda self: os.path.join (pulse.config.scmdir,
+                                                     self._server_dir,
+                                                     self._module_dir,
+                                                     self._branch_dir))
 
     def checkout (self):
-        pulse.utils.log ('Checking out %s from %s' % (self._name, self._server))
-        if not os.path.exists (self._topdir):
-            os.makedirs (self._topdir)
+        pulse.utils.log ('Checking out %s from %s' % (self._name, self._server_dir))
+        topdir = os.path.join (pulse.config.scmdir, self._server_dir, self._module_dir)
+        if not os.path.exists (topdir):
+            os.makedirs (topdir)
         owd = os.getcwd ()
         try:
-            os.chdir (self._topdir)
+            os.chdir (topdir)
             (status, output) = commands.getstatusoutput (self._co)
             # FIXME: check status, log output if error
         finally:
             os.chdir (owd)
         
     def update (self):
-        pulse.utils.log ('Updating %s from %s' % (self._name, self._server))
+        pulse.utils.log ('Updating %s from %s' % (self._name, self._server_dir))
         owd = os.getcwd ()
         try:
-            os.chdir (os.path.join (self._topdir, self._codir))
+            os.chdir (self.directory)
             (status, output) = commands.getstatusoutput (self._up)
             # FIXME: check status, log output if error
         finally:
