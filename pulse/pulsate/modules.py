@@ -142,7 +142,10 @@ def update_module_from_branch (branch, checkout):
     module.update_name (branch.name)
     module.update_desc (branch.desc)
 
-    if os.path.isfile (os.path.join (checkout.directory, 'MAINTAINERS')):
+    maintfile = os.path.join (checkout.directory, 'MAINTAINERS')
+    if os.path.isfile (maintfile):
+        pulse.utils.log ('Processing file %s' %
+                         pulse.utils.relative_path (maintfile, pulse.config.scmdir))
         start = True
         name = None
         email = None
@@ -151,7 +154,7 @@ def update_module_from_branch (branch, checkout):
         def add_maint ():
             if name != None and userid != None:
                 maints.append ((name, userid, email))
-        for l in open (os.path.join (checkout.directory, 'MAINTAINERS')):
+        for l in open (maintfile):
             line = l.rstrip()
             if line.startswith ('#'):
                 continue
@@ -189,6 +192,9 @@ def process_configure (branch, checkout):
         fname = os.path.join (checkout.directory, 'configure.ac')
     if not os.path.exists (fname):
         return
+
+    pulse.utils.log ('Processing file %s' %
+                     pulse.utils.relative_path (fname, pulse.config.scmdir))
 
     functxts = {}
     infunc = None
@@ -244,6 +250,8 @@ def process_podir (branch, checkout, podir):
     langs = []
     translations = []
     if os.path.isfile (linguas):
+        pulse.utils.log ('Processing file %s' %
+                         pulse.utils.relative_path (linguas, pulse.config.scmdir))
         fd = open (linguas)
         for line in fd:
             if line.startswith ('#') or line == '\n':
@@ -270,10 +278,14 @@ def process_gdu_docdir (branch, checkout, docdir, makefile, **kw):
 
 def process_pkgconfig (branch, checkout, filename, **kw):
     basename = os.path.basename (filename)[:-6]
-    relfile = filename[len(checkout.directory)+1:]
+    relfile = pulse.utils.relative_path (filename, checkout.directory)
     # Hack for GTK+'s uninstalled pkgconfig files
     if '-uninstalled' in basename:
         return None
+
+    pulse.utils.log ('Processing file %s' %
+                     pulse.utils.relative_path (filename, pulse.config.scmdir))
+
     islib = False
     libname = ''
     libdesc = ''
@@ -309,11 +321,14 @@ def process_keyfile (branch, checkout, filename, **kw):
     if mtime <= timestamp:
         pass
 
+    pulse.utils.log ('Processing file %s' %
+                     pulse.utils.relative_path (filename, pulse.config.scmdir))
+
     if filename.endswith ('.desktop.in.in'):
         basename = os.path.basename (filename)[:-14]
     else:
         basename = os.path.basename (filename)[:-11]
-    relfile = filename[len(checkout.directory)+1:]
+    relfile = pulse.utils.relative_path (filename, checkout.directory)
     owd = os.getcwd ()
     try:
         os.chdir (checkout.directory)
@@ -358,9 +373,11 @@ def process_keyfile (branch, checkout, filename, **kw):
 
 def process_oafserver (branch, checkout, filename, **kw):
     basename = os.path.basename (filename)[:-13]
-    relfile = filename[len(checkout.directory)+1:]
+    relfile = pulse.utils.relative_path (filename, checkout.directory)
     owd = os.getcwd ()
     applets = []
+    pulse.utils.log ('Processing file %s' %
+                     pulse.utils.relative_path (filename, pulse.config.scmdir))
     try:
         os.chdir (checkout.directory)
         dom = xml.dom.minidom.parse (os.popen ('LC_ALL=C intltool-merge -x -q -u po "' + relfile + '" -'))

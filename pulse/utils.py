@@ -19,6 +19,7 @@
 #
 
 from datetime import datetime
+import os.path
 import re
 import sys
 
@@ -40,6 +41,17 @@ def attrsorted (list, *attrs):
         else:
             return obj
     return sorted (list, lambda x, y: cmp (get(x, attrs), get(y, attrs)))
+
+def relative_path (path, base):
+    spath = os.path.abspath (path).split (os.sep)
+    sbase = os.path.abspath (base).split (os.sep)
+
+    while len(spath) > 0 and len(sbase) > 0 and spath[0] == sbase[0]:
+        spath.pop(0)
+        sbase.pop(0)
+
+    newpath = ([os.pardir] * len(sbase)) + spath
+    return os.path.join (*newpath)
 
 class odict (dict):
     def __init__ (self, d=None):
