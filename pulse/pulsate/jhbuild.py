@@ -29,7 +29,7 @@ import pulse.xmldata
 
 synop = 'update information from Gnome\'s jhbuild module'
 args = pulse.utils.odict()
-args['no-update']  = (None, 'do not update SCM checkouts.')
+args['no-update']  = (None, 'do not update SCM checkouts')
 
 modulesets = {}
 checkouts = {}
