@@ -32,11 +32,12 @@ import pulse.utils
 synop = 'update information from module and branch checkouts'
 usage_extra = '[ident]'
 args = pulse.utils.odict()
-args['no-update']  = (None, 'do not update SCM checkouts.')
+args['no-update']  = (None, 'do not update SCM checkouts')
+args['no-timestamps'] = (None, 'do not check timestamps before processing files')
 def help_extra (fd=None):
     print >>fd, 'If ident is passed, only modules and branches with a matching identifier will be updated.'
 
-def update_branch (branch, update):
+def update_branch (branch, update=True, timestamps=True):
     checkout = pulse.scm.Checkout.from_resource (branch, update=update)
     branch.nick = checkout.scm_branch
     # FIXME: what do we want to know?
@@ -75,20 +76,20 @@ def update_branch (branch, update):
                     gdu_docs.append((dirname, makefile))
     os.path.walk (checkout.directory, visit, None)
 
-    process_configure (branch, checkout)
+    process_configure (branch, checkout, timestamps=timestamps)
     if branch.name == {}:
         branch.name = {'C' : branch.scm_module}
 
     domains = []
     for podir in podirs:
-        domain = process_podir (branch, checkout, podir)
+        domain = process_podir (branch, checkout, podir, timestamps=timestamps)
         if domain != None:
             domains.append (domain)
     branch.set_children ('Domain', domains)
 
     documents = []
     for docdir, makefile in gdu_docs:
-        document = process_gdu_docdir (branch, checkout, docdir, makefile)
+        document = process_gdu_docdir (branch, checkout, docdir, makefile, timestamps=timestamps)
         if document != None:
             documents.append (document)
     branch.set_children ('Document', documents)
@@ -97,14 +98,14 @@ def update_branch (branch, update):
 
     libraries = []
     for pkgconfig in pkgconfigs:
-        lib = process_pkgconfig (branch, checkout, pkgconfig)
+        lib = process_pkgconfig (branch, checkout, pkgconfig, timestamps=timestamps)
         if lib != None:
             libraries.append (lib)
     branch.set_children ('Library', libraries)
 
     applications = []
     for keyfile in keyfiles:
-        app = process_keyfile (branch, checkout, keyfile, images=images)
+        app = process_keyfile (branch, checkout, keyfile, images=images, timestamps=timestamps)
         if app != None:
             if default_resource == None:
                 if app.ident.split('/')[-1] == branch.scm_module:
@@ -114,7 +115,7 @@ def update_branch (branch, update):
 
     applets = []
     for oafserver in oafservers:
-        applets += process_oafserver (branch, checkout, oafserver, images=images)
+        applets += process_oafserver (branch, checkout, oafserver, images=images, timestamps=timestamps)
     branch.set_children ('Applet', applets)
 
     if default_resource == None:
@@ -135,26 +136,29 @@ def update_branch (branch, update):
         branch.icon_name = default_resource.icon_name
     
     if checkout.default:
-        update_module_from_branch (branch, checkout)
+        update_module_from_branch (branch, checkout, timestamps=timestamps)
 
-def update_module_from_branch (branch, checkout):
+def update_module_from_branch (branch, checkout, **kw):
     module = branch.parent
     module.update_name (branch.name)
     module.update_desc (branch.desc)
 
-    update_module_maintainers (module, checkout)
+    update_module_maintainers (module, checkout, **kw)
 
-def update_module_maintainers (module, checkout):
+def update_module_maintainers (module, checkout, **kw):
     maintfile = os.path.join (checkout.directory, 'MAINTAINERS')
     if not os.path.isfile (maintfile):
         return
 
     rel_scm = pulse.utils.relative_path (maintfile, pulse.config.scmdir)
-    stamp = pulse.db.Timestamp.get_timestamp (rel_scm)
     mtime = os.stat(maintfile).st_mtime
-    if mtime <= stamp:
-        pulse.utils.log ('Skipping file %s' % rel_scm)
-        return
+
+    if kw.get('timestamps', True):
+        stamp = pulse.db.Timestamp.get_timestamp (rel_scm)
+        mtime = os.stat(maintfile).st_mtime
+        if mtime <= stamp:
+            pulse.utils.log ('Skipping file %s' % rel_scm)
+            return
     pulse.utils.log ('Processing file %s' % rel_scm)
 
     start = True
@@ -198,7 +202,7 @@ def update_module_maintainers (module, checkout):
     module.set_relations (pulse.db.Relation.module_developer, rels)
     pulse.db.Timestamp.set_timestamp (rel_scm, mtime)
 
-def process_configure (branch, checkout):
+def process_configure (branch, checkout, **kw):
     filename = os.path.join (checkout.directory, 'configure.in')
     if not os.path.exists (filename):
         filename = os.path.join (checkout.directory, 'configure.ac')
@@ -206,11 +210,13 @@ def process_configure (branch, checkout):
         return
 
     rel_scm = pulse.utils.relative_path (filename, pulse.config.scmdir)
-    stamp = pulse.db.Timestamp.get_timestamp (rel_scm)
     mtime = os.stat(filename).st_mtime
-    if mtime <= stamp:
-        pulse.utils.log ('Skipping file %s' % rel_scm)
-        return
+
+    if kw.get('timestamps', True):
+        stamp = pulse.db.Timestamp.get_timestamp (rel_scm)
+        if mtime <= stamp:
+            pulse.utils.log ('Skipping file %s' % rel_scm)
+            return
     pulse.utils.log ('Processing file %s' % rel_scm)
                      
     functxts = {}
@@ -254,7 +260,7 @@ def process_configure (branch, checkout):
 
     pulse.db.Timestamp.set_timestamp (rel_scm, mtime)
 
-def process_podir (branch, checkout, podir):
+def process_podir (branch, checkout, podir, **kw):
     ident = '/i18n/' + '/'.join (branch.ident.split('/')[2:]) + '/' + os.path.basename (podir)
     domain = pulse.db.Resource.make (ident=ident, type='Domain')
 
@@ -267,17 +273,18 @@ def process_podir (branch, checkout, podir):
 
     linguas = os.path.join (podir, 'LINGUAS')
     rel_scm = pulse.utils.relative_path (linguas, pulse.config.scmdir)
+    mtime = os.stat(linguas).st_mtime
     langs = []
     translations = []
 
     if not os.path.isfile (linguas):
         return domain
 
-    stamp = pulse.db.Timestamp.get_timestamp (rel_scm)
-    mtime = os.stat(linguas).st_mtime
-    if mtime <= stamp:
-        pulse.utils.log ('Skipping file %s' % rel_scm)
-        return domain
+    if kw.get('timestamps', True):
+        stamp = pulse.db.Timestamp.get_timestamp (rel_scm)
+        if mtime <= stamp:
+            pulse.utils.log ('Skipping file %s' % rel_scm)
+            return domain
     pulse.utils.log ('Processing file %s' % rel_scm)
 
     fd = open (linguas)
@@ -310,21 +317,22 @@ def process_pkgconfig (branch, checkout, filename, **kw):
     basename = os.path.basename (filename)[:-6]
     rel_ch = pulse.utils.relative_path (filename, checkout.directory)
     rel_scm = pulse.utils.relative_path (filename, pulse.config.scmdir)
+    mtime = os.stat(filename).st_mtime
     # Hack for GTK+'s uninstalled pkgconfig files
     if '-uninstalled' in basename:
         return None
 
-    stamp = pulse.db.Timestamp.get_timestamp (rel_scm)
-    mtime = os.stat(filename).st_mtime
-    if mtime <= stamp:
-        pulse.utils.log ('Skipping file %s' % rel_scm)
-        data = {'parent' : branch}
-        data['scm_dir'], data['scm_file'] = os.path.split (rel_ch)
-        libs = pulse.db.Resource.selectBy (type='Library', **data)
-        if libs.count() > 0:
-            return libs[0]
-        else:
-            return None
+    if kw.get('timestamps', True):
+        stamp = pulse.db.Timestamp.get_timestamp (rel_scm)
+        if mtime <= stamp:
+            pulse.utils.log ('Skipping file %s' % rel_scm)
+            data = {'parent' : branch}
+            data['scm_dir'], data['scm_file'] = os.path.split (rel_ch)
+            libs = pulse.db.Resource.selectBy (type='Library', **data)
+            if libs.count() > 0:
+                return libs[0]
+            else:
+                return None
     pulse.utils.log ('Processing file %s' % rel_scm)
 
     islib = False
@@ -361,18 +369,19 @@ def process_pkgconfig (branch, checkout, filename, **kw):
 def process_keyfile (branch, checkout, filename, **kw):
     rel_ch = pulse.utils.relative_path (filename, checkout.directory)
     rel_scm = pulse.utils.relative_path (filename, pulse.config.scmdir)
-
-    stamp = pulse.db.Timestamp.get_timestamp (rel_scm)
     mtime = os.stat(filename).st_mtime
-    if mtime <= stamp:
-        pulse.utils.log ('Skipping file %s' % rel_scm)
-        data = {'parent' : branch}
-        data['scm_dir'], data['scm_file'] = os.path.split (rel_ch)
-        apps = pulse.db.Resource.selectBy (type='Application', **data)
-        if apps.count() > 0:
-            return apps[0]
-        else:
-            return None
+
+    if kw.get('timestamps', True):
+        stamp = pulse.db.Timestamp.get_timestamp (rel_scm)
+        if mtime <= stamp:
+            pulse.utils.log ('Skipping file %s' % rel_scm)
+            data = {'parent' : branch}
+            data['scm_dir'], data['scm_file'] = os.path.split (rel_ch)
+            apps = pulse.db.Resource.selectBy (type='Application', **data)
+            if apps.count() > 0:
+                return apps[0]
+            else:
+                return None
     pulse.utils.log ('Processing file %s' % rel_scm)
                      
     if filename.endswith ('.desktop.in.in'):
@@ -408,7 +417,7 @@ def process_keyfile (branch, checkout, filename, **kw):
 
     data = {}
     data['scm_dir'], data['scm_file'] = os.path.split (rel_ch)
-    lib.update (data)
+    app.update (data)
 
     app.update_name (name)
     if desc != None:
@@ -429,15 +438,16 @@ def process_oafserver (branch, checkout, filename, **kw):
     basename = os.path.basename (filename)[:-13]
     rel_ch = pulse.utils.relative_path (filename, checkout.directory)
     rel_scm = pulse.utils.relative_path (filename, pulse.config.scmdir)
-
-    stamp = pulse.db.Timestamp.get_timestamp (rel_scm)
     mtime = os.stat(filename).st_mtime
-    if mtime <= stamp:
-        pulse.utils.log ('Skipping file %s' % rel_scm)
-        data = {'parent' : branch}
-        data['scm_dir'], data['scm_file'] = os.path.split (rel_ch)
-        applets = pulse.db.Resource.selectBy (type='Applet', **data)
-        return applets[0:]
+
+    if kw.get('timestamps', True):
+        stamp = pulse.db.Timestamp.get_timestamp (rel_scm)
+        if mtime <= stamp:
+            pulse.utils.log ('Skipping file %s' % rel_scm)
+            data = {'parent' : branch}
+            data['scm_dir'], data['scm_file'] = os.path.split (rel_ch)
+            applets = pulse.db.Resource.selectBy (type='Applet', **data)
+            return applets[0:]
     pulse.utils.log ('Processing file %s' % rel_scm)
 
     owd = os.getcwd ()
@@ -534,6 +544,7 @@ def locate_icon (resource, icon, images):
 
 def main (argv, options={}):
     update = not options.get ('--no-update', False)
+    timestamps = not options.get ('--no-timestamps', False)
     if len(argv) == 0:
         prefix = None
     else:
@@ -546,4 +557,4 @@ def main (argv, options={}):
         branches = pulse.db.Resource.selectBy (type='Branch')
 
     for branch in branches:
-        update_branch (branch, update)
+        update_branch (branch, update=update, timestamps=timestamps)
