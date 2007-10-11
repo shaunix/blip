@@ -11,6 +11,11 @@
   </set>
 </defaults>
 
+<set id="online-desktop">
+  <name>Online Desktop</name>
+  <jhbuild_scm_file>online-desktop.modules</jhbuild_scm_file>
+</set>
+
 <set id="gnome-2-22">
   <name>Gnome 2.22</name>
 

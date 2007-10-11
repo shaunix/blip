@@ -108,18 +108,17 @@ def update_set (data, update=True):
     else:
         res = pulse.db.Resource (ident=ident, type='Set')
 
+    # Sets may contain either other sets or modules, not both
     if data.has_key ('set'):
         for subset in data['set'].keys():
             subres = update_set (data['set'][subset], update=update)
             pulse.db.Relation.make (res, pulse.db.Relation.set_subset, subres)
-
-    if (data.has_key ('jhbuild_scm_type')   and
-        data.has_key ('jhbuild_scm_server') and
-        data.has_key ('jhbuild_scm_module') and
-        data.has_key ('jhbuild_scm_branch') and
-        data.has_key ('jhbuild_scm_dir')    and
-        data.has_key ('jhbuild_scm_file')   and
-        data.has_key ('jhbuild_metamodule') ):
+    elif (data.has_key ('jhbuild_scm_type')   and
+          data.has_key ('jhbuild_scm_server') and
+          data.has_key ('jhbuild_scm_module') and
+          data.has_key ('jhbuild_scm_branch') and
+          data.has_key ('jhbuild_scm_dir')    and
+          data.has_key ('jhbuild_scm_file')):
 
         ident = '/' + '/'.join (['jhbuild',
                                  data['jhbuild_scm_type'],
@@ -140,28 +139,32 @@ def update_set (data, update=True):
                              data['jhbuild_scm_file'])
         moduleset = get_moduleset (file)
 
-        modules = data['jhbuild_metamodule']
-        if isinstance (modules, basestring):
-            modules = [modules]
-
         packages = []
+        if not data.has_key ('jhbuild_metamodule'):
+            for node in moduleset['__dom__'].getElementsByTagName ('autotools'):
+                packages.append (node.getAttribute ('id'))
+        else:
+            modules = data['jhbuild_metamodule']
+            if isinstance (modules, basestring):
+                modules = [modules]
 
-        for module in modules:
-            if not moduleset.has_key (module):
-                continue
-            node = moduleset[module]
-            if node.tagName != 'metamodule':
-                continue
-            for deps in node.childNodes:
-                if deps.nodeType == deps.ELEMENT_NODE and deps.tagName == 'dependencies':
-                    break
-            for child in deps.childNodes:
-                if child.nodeType == child.ELEMENT_NODE and child.tagName == 'dep':
-                    if not child.hasAttribute ('package'):
-                        continue
-                    pkg = child.getAttribute ('package')
-                    if moduleset.has_key (pkg) and moduleset[pkg].tagName != 'metamodule':
-                        packages.append (pkg)
+            for module in modules:
+                if not moduleset.has_key (module):
+                    continue
+                node = moduleset[module]
+                if node.tagName != 'metamodule':
+                    continue
+                for deps in node.childNodes:
+                    if deps.nodeType == deps.ELEMENT_NODE and deps.tagName == 'dependencies':
+                        break
+                for child in deps.childNodes:
+                    if child.nodeType == child.ELEMENT_NODE and child.tagName == 'dep':
+                        if not child.hasAttribute ('package'):
+                            continue
+                        pkg = child.getAttribute ('package')
+                        if moduleset.has_key (pkg) and moduleset[pkg].tagName != 'metamodule':
+                            packages.append (pkg)
+
         for pkg in packages:
             branch = update_branch (moduleset, pkg, update=update)
             if branch != None:
