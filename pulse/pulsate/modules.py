@@ -52,6 +52,7 @@ def update_branch (branch, update=True, timestamps=True):
     keyfiles = []
     images = []
     gdu_docs = []
+    gtk_docs = []
     def visit (arg, dirname, names):
         names.remove (checkout.ignoredir)
         for name in names:
@@ -72,8 +73,12 @@ def update_branch (branch, update=True, timestamps=True):
                 fd = open (filename)
                 makefile = pulse.utils.makefile (fd)
                 fd.close()
-                if 'include $(top_srcdir)/gnome-doc-utils.make' in makefile.get_lines():
-                    gdu_docs.append((dirname, makefile))
+                for line in makefile.get_lines():
+                    if line.startswith ('include $(top_srcdir)/'):
+                        if line.endswith ('gnome-doc-utils.make'):
+                            gdu_docs.append((dirname, makefile))
+                        elif line.endswith ('gtk-doc.make'):
+                            gtk_docs.append((dirname, makefile))
     os.path.walk (checkout.directory, visit, None)
 
     process_configure (branch, checkout, timestamps=timestamps)
@@ -90,6 +95,10 @@ def update_branch (branch, update=True, timestamps=True):
     documents = []
     for docdir, makefile in gdu_docs:
         document = process_gdu_docdir (branch, checkout, docdir, makefile, timestamps=timestamps)
+        if document != None:
+            documents.append (document)
+    for docdir, makefile in gtk_docs:
+        document = process_gtk_docdir (branch, checkout, docdir, makefile, timestamps=timestamps)
         if document != None:
             documents.append (document)
     branch.set_children ('Document', documents)
@@ -272,13 +281,13 @@ def process_podir (branch, checkout, podir, **kw):
     domain.update (data)
 
     linguas = os.path.join (podir, 'LINGUAS')
+    if not os.path.isfile (linguas):
+        return domain
+
     rel_scm = pulse.utils.relative_path (linguas, pulse.config.scmdir)
     mtime = os.stat(linguas).st_mtime
     langs = []
     translations = []
-
-    if not os.path.isfile (linguas):
-        return domain
 
     if kw.get('timestamps', True):
         stamp = pulse.db.Timestamp.get_timestamp (rel_scm)
@@ -310,7 +319,14 @@ def process_gdu_docdir (branch, checkout, docdir, makefile, **kw):
     doc_module = makefile['DOC_MODULE']
     ident = '/doc/' + '/'.join(branch.ident.split('/')[2:5]) + '/' + doc_module
     document = pulse.db.Resource.make (ident=ident, type='Document')
-    document.update ({'document_tool' : 'gnome-doc-utils'})
+    document.update ({'subtype' : 'docbook'})
+    return document
+
+def process_gtk_docdir (branch, checkout, docdir, makefile, **kw):
+    doc_module = makefile['DOC_MODULE']
+    ident = '/doc/' + '/'.join(branch.ident.split('/')[2:5]) + '/' + doc_module
+    document = pulse.db.Resource.make (ident=ident, type='Document')
+    document.update ({'subtype' : 'gtk-doc'})
     return document
 
 def process_pkgconfig (branch, checkout, filename, **kw):

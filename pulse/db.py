@@ -54,6 +54,7 @@ class Resource (sql.SQLObject):
     # List         /list/<server>/<list>
     ident = sql.StringCol (alternateID=True)
     type = sql.StringCol ()
+    subtype = sql.StringCol (default=None)
     parent = sql.ForeignKey ('Resource', dbName='parent', default=None)
 
     name = sql.PickleCol (default={})
