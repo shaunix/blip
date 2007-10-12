@@ -248,17 +248,25 @@ class ResourceLinkBox (ContentComponent, FactsComponent):
         ContentComponent.__init__ (self, **kw)
         self._resource = resource
         self._superlative = kw.get ('superlative', False)
+        self._title = resource.title
+        self._description = resource.localized_desc
+
+    def set_title (self, title):
+        self._title = title
+
+    def set_description (self, description):
+        self._description = description
 
     def output (self, fd=sys.stdout):
-        d = pulse.utils.attrdict ([self._resource, pulse.config])
+        d = pulse.utils.attrdict ([self, self._resource, pulse.config])
         p (fd, '<table class="rlink"><tr>')
         p (fd, '<td class="rlink-icon">')
         if (d['icon_url'] != None):
-            p (fd, '<img class="icon" src="%(icon_url)s" alt="%(title)s">' %d)
+            p (fd, '<img class="icon" src="%(icon_url)s" alt="%(_title)s">' %d)
         p (fd, '</td><td class="rlink-text">')
-        p (fd, '<div class="rlink-title"><a href="%(url)s">%(title)s</a></div>' %d)
-        if d.has_key ('localized_desc'):
-            p (fd, '<div class="rlink-desc">%(localized_desc)s</div>' %d)
+        p (fd, '<div class="rlink-title"><a href="%(url)s">%(_title)s</a></div>' %d)
+        if self._description != None:
+            p (fd, '<div class="rlink-desc">%s</div>' % self._description)
         FactsComponent.output (self, fd=fd)
         ContentComponent.output (self, fd=fd)
         p (fd, '</td></tr></table>')

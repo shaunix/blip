@@ -62,10 +62,53 @@ def main (path=[], query={}, http=True, fd=None):
         pass
     return 0
 
+def get_developers_box (module):
+    box = pulse.html.InfoBox ('developers', pulse.utils.gettext ('Developers'))
+    developers = pulse.db.Relation.selectBy (subj=module,
+                                             verb=pulse.db.Relation.module_developer)
+    if developers.count() > 0:
+        for rel in pulse.utils.attrsorted (developers[0:], 'pred', 'title'):
+            box.add_resource_link (rel.pred, rel.superlative)
+    else:
+        box.add_content (pulse.html.AdmonBox (pulse.html.AdmonBox.warning,
+                                              pulse.utils.gettext ('No developers') ))
+    return box
+
 def output_module (module, path=[], query={}, http=True, fd=None):
     page = pulse.html.ResourcePage (module, http=http)
 
-    # FIXME: do stuff
+    branches = pulse.db.Resource.selectBy (parent=module, type='Branch')
+    bsorted = pulse.utils.attrsorted (branches[0:], 'scm_branch')
+    if branches.count() > 0:
+        for b in bsorted:
+            page.add_sublink (b.url, b.scm_branch)
+
+    columns = pulse.html.ColumnBox (2)
+    page.add_content (columns)
+
+    box = get_developers_box (module)
+    columns.add_content (0, box)
+
+    box = pulse.html.InfoBox ('branches', pulse.utils.gettext ('Branches'))
+    columns.add_content (1, box)
+    if len(bsorted) > 0:
+        for branch in bsorted:
+            rlink = box.add_resource_link (branch, False)
+            rlink.set_title (branch.scm_branch)
+            rlink.set_description (None)
+            # FIXME: ngettext
+            # FIXME: fact tables aren't the right way to do this
+            res = pulse.db.Resource.selectBy (parent=branch, type='Application')
+            rlink.add_fact ('', pulse.utils.gettext ('%i applications') % res.count())
+            res = pulse.db.Resource.selectBy (parent=branch, type='Applet')
+            rlink.add_fact ('', pulse.utils.gettext ('%i applets') % res.count())
+            res = pulse.db.Resource.selectBy (parent=branch, type='Library')
+            rlink.add_fact ('', pulse.utils.gettext ('%i libraries') % res.count())
+            res = pulse.db.Resource.selectBy (parent=branch, type='Document')
+            rlink.add_fact ('', pulse.utils.gettext ('%i documents') % res.count())
+    else:
+        box.add_content (pulse.html.AdmonBox (pulse.html.AdmonBox.warning,
+                                              pulse.utils.gettext ('No branches') ))
 
     page.output(fd=fd)
 
@@ -76,7 +119,7 @@ def output_branch (branch, path=[], query=[], http=True, fd=None):
 
     page = pulse.html.ResourcePage (branch, http=http)
 
-    branches = pulse.db.Resource.selectBy (parent=branch.parent)
+    branches = pulse.db.Resource.selectBy (parent=module)
     if branches.count() > 1:
         for b in pulse.utils.attrsorted (branches[0:], 'scm_branch'):
             if b.ident != branch.ident:
@@ -120,16 +163,8 @@ def output_branch (branch, path=[], query=[], http=True, fd=None):
     page.add_content (columns)
 
     # Developers
-    box = pulse.html.InfoBox ('developers', pulse.utils.gettext ('Developers'))
+    box = get_developers_box (module)
     columns.add_content (0, box)
-    developers = pulse.db.Relation.selectBy (subj=module,
-                                             verb=pulse.db.Relation.module_developer)
-    if developers.count() > 0:
-        for rel in pulse.utils.attrsorted (developers[0:], 'pred', 'title'):
-            box.add_resource_link (rel.pred, rel.superlative)
-    else:
-        box.add_content (pulse.html.AdmonBox (pulse.html.AdmonBox.warning,
-                                              pulse.utils.gettext ('No developers') ))
 
     # Domains
     box = pulse.html.InfoBox ('domains', pulse.utils.gettext ('Domains'))
