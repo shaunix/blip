@@ -1,6 +1,29 @@
-* Many modules have multiple programs and libraries.  It would
-be nice to track these: who works on them, what documentation
-covers them, etc.
+* Look for plugins.  Here's a list of applications suggested by various folks on IRC: 
+- key files
+  - eog
+    http://bugzilla.gnome.org/show_bug.cgi?id=462338v
+  - epiphany
+    http://svn.gnome.org/svn/epiphany-extensions/trunk/extensions/actions/actions.ephy-extension.in.in
+  - gedit
+    http://svn.gnome.org/svn/gedit/trunk/plugins/changecase/changecase.gedit-plugin.desktop.in
+  - rhythmbox
+    http://svn.gnome.org/svn/rhythmbox/trunk/plugins/artdisplay/artdisplay.rb-plugin.desktop.in
+- xml files
+  - evolution
+    http://svn.gnome.org/svn/evolution/trunk/plugins/addressbook-file/org-gnome-addressbook-file.eplug.xml
+  - f-spot
+    http://svn.gnome.org/svn/f-spot/trunk/extensions/DefaultExporters/DefaultExporters.addin.xml
+  - muine
+    http://svn.gnome.org/svn/muine/trunk/plugins/InotifyPlugin.dll.config.in
+  - tomboy
+    http://svn.gnome.org/svn/tomboy/trunk/Tomboy/Addins/Backlinks/Backlinks.addin.xml
+- unknown
+  - gimp
+  - nautilus
+  - totem
+  - xchat-gnome
+  
+* Check all the TODO items below:
 
 * We want to see all posts to all mailing lists in our database.
 This will be used to construct the activity pulse for the mailing
@@ -33,10 +56,6 @@ to see activity deltas.  This can provide a good way to see
 when and where there are sudden bursts of activity.
 
 * Track foundation members.
-
-* Make xmldata able to return a dict of values for nodes
-with xml:lang, and make the xml-source updater able to
-handle these.
 
 * Internationalize everything using the Accept-Language
 HTTP header.
