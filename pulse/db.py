@@ -104,12 +104,12 @@ class Resource (sql.SQLObject):
 
     def get_localized_name (self):
         # FIXME: i18n
-        return self.name['C']
+        return self.name.get('C')
     localized_name = property (get_localized_name)
 
     def get_localized_desc (self):
         # FIXME: i18n
-        return self.desc['C']
+        return self.desc.get('C')
     localized_desc = property (get_localized_desc)
 
     def get_url (self):
