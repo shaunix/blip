@@ -135,6 +135,7 @@ class makefile (object):
         line = fd.readline ()
         regexp = re.compile ('''([A-Za-z_]+)(\s*=)(.*)''')
         while line:
+            if '#' in line: line = line[line.index('#')]
             match = regexp.match (line)
             if match:
                 varname = match.group(1)
@@ -143,6 +144,7 @@ class makefile (object):
                     vartxt = vartxt[:-1]
                     line = fd.readline ()
                     while line:
+                        if '#' in line: line = line[line.index('#')]
                         vartxt += line.strip()
                         if vartxt.endswith ('\\'):
                             vartxt = vartxt[:-1]

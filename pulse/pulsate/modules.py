@@ -273,11 +273,7 @@ def process_podir (branch, checkout, podir, **kw):
     ident = '/i18n/' + '/'.join (branch.ident.split('/')[2:]) + '/' + os.path.basename (podir)
     domain = pulse.db.Resource.make (ident=ident, type='Domain')
 
-    data = {}
-    for key in branch.data.keys():
-        if key.startswith ('scm_'):
-            data[key] = branch.data[key]
-    data['scm_dir'] = pulse.utils.relative_path (podir, checkout.directory)
+    data = {'scm_dir' : pulse.utils.relative_path (podir, checkout.directory)}
     domain.update (data)
 
     linguas = os.path.join (podir, 'LINGUAS')
@@ -306,7 +302,9 @@ def process_podir (branch, checkout, podir, **kw):
         lident = '/i18n/' + '/'.join (branch.ident.split('/')[2:]) + '/po/' + os.path.basename (podir) + '/' + lang
         translation = pulse.db.Resource.make (ident=lident, type='Translation')
         translations.append (translation)
-        ldata = data
+        ldata = {}
+        ldata['subtype'] = 'intltool'
+        ldata['scm_dir'] = data['scm_dir']
         ldata['scm_file'] = lang + '.po'
         translation.update (data)
     domain.set_children ('Translation', translations)
@@ -319,7 +317,24 @@ def process_gdu_docdir (branch, checkout, docdir, makefile, **kw):
     doc_module = makefile['DOC_MODULE']
     ident = '/doc/' + '/'.join(branch.ident.split('/')[2:5]) + '/' + doc_module
     document = pulse.db.Resource.make (ident=ident, type='Document')
-    document.update ({'subtype' : 'docbook'})
+
+    data = {}
+    data['subtype'] = 'gdu-docbook'
+    data['scm_dir'] = pulse.utils.relative_path (docdir, checkout.directory)
+    document.update (data)
+
+    if makefile.has_key ('DOC_LINGUAS'):
+        translations = []
+        for lang in makefile['DOC_LINGUAS'].split():
+            lident = '/i18n/' + '/'.join (branch.ident.split('/')[2:]) + '/doc/' + doc_module + '/' + lang
+            translation = pulse.db.Resource.make (ident=lident, type='Translation')
+            translations.append (translation)
+            ldata = {}
+            ldata['subtype'] = 'xml2po'
+            ldata['scm_dir'] = os.path.join (pulse.utils.relative_path (docdir, checkout.directory), lang)
+            ldata['scm_file'] = lang + '.po'
+            translation.update (data)
+        document.set_children ('Translation', translations)
     return document
 
 def process_gtk_docdir (branch, checkout, docdir, makefile, **kw):
