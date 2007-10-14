@@ -19,6 +19,7 @@
 #
 
 import inspect
+import os.path
 import sys
 
 import sqlobject as sql
@@ -228,21 +229,26 @@ class Timestamp (sql.SQLObject):
     class sqlmeta:
         table = 'Timestamp'
 
-    filename = sql.StringCol (alternateID=True)
+    filename = sql.StringCol ()
+    sourcefunc = sql.StringCol ()
     stamp = sql.IntCol ()
 
     @classmethod
     def set_timestamp (cls, filename, stamp):
-        obj = Timestamp.selectBy (filename=filename)
+        sfunc = inspect.stack()[1]
+        sfunc = os.path.basename (sfunc[1]) + '#' + sfunc[3]
+        obj = Timestamp.selectBy (filename=filename, sourcefunc=sfunc)
         if obj.count() > 0:
             obj[0].stamp = int(stamp)
         else:
-            Timestamp (filename=filename, stamp=int(stamp))
+            Timestamp (filename=filename, sourcefunc=sfunc, stamp=int(stamp))
         return stamp
 
     @classmethod
     def get_timestamp (cls, filename):
-        obj = Timestamp.selectBy (filename=filename)
+        sfunc = inspect.stack()[1]
+        sfunc = os.path.basename (sfunc[1]) + '#' + sfunc[3]
+        obj = Timestamp.selectBy (filename=filename, sourcefunc=sfunc)
         if obj.count() > 0:
             return obj[0].stamp
         else:
