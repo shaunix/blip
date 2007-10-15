@@ -27,6 +27,7 @@ import xml.dom.minidom
 
 import pulse.db
 import pulse.scm
+import pulse.parsers
 import pulse.utils
 
 synop = 'update information from module and branch checkouts'
@@ -70,9 +71,7 @@ def update_branch (branch, update=True, timestamps=True):
             elif name.endswith ('.png'):
                 images.append (filename)
             elif name == 'Makefile.am':
-                fd = open (filename)
-                makefile = pulse.utils.makefile (fd)
-                fd.close()
+                makefile = pulse.parsers.Automake (filename)
                 for line in makefile.get_lines():
                     if line.startswith ('include $(top_srcdir)/'):
                         if line.endswith ('gnome-doc-utils.make'):

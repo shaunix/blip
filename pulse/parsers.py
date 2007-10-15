@@ -18,6 +18,49 @@
 # Suite 330, Boston, MA  0211-1307  USA.
 #
 
+import re
+
+class Automake (object):
+    def __init__ (self, filename):
+        self._variables = {}
+        self._lines = []
+        regexp = re.compile ('''([A-Za-z_]+)(\s*=)(.*)''')
+        fd = open (filename)
+        line = fd.readline ()
+        while line:
+            if '#' in line: line = line[line.index('#')]
+            match = regexp.match (line)
+            if match:
+                varname = match.group(1)
+                vartxt = match.group(3).strip()
+                if vartxt.endswith ('\\'):
+                    vartxt = vartxt[:-1]
+                    line = fd.readline ()
+                    while line:
+                        if '#' in line: line = line[line.index('#')]
+                        vartxt += line.strip()
+                        if vartxt.endswith ('\\'):
+                            vartxt = vartxt[:-1]
+                        else:
+                            break
+                        line = fd.readline()
+                self._variables[varname] = vartxt
+                self._lines.append (match.group(1) + match.group(2) + vartxt)
+            else:
+                self._lines.append (line.strip())
+
+            if line:
+                line = fd.readline ()
+
+    def get_lines (self):
+        return self._lines
+
+    def __getitem__ (self, key):
+        return self._variables[key]
+
+    def has_key (self, key):
+        return self._variables.has_key (key)
+
 class Po:
     def __init__ (self, filename):
         self._filename = filename
