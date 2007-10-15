@@ -415,7 +415,7 @@ def process_keyfile (branch, checkout, filename, **kw):
     owd = os.getcwd ()
     try:
         os.chdir (checkout.directory)
-        keyfile = pulse.utils.keyfile (os.popen ('LC_ALL=C intltool-merge -d -q -u po "' + rel_ch + '" -'))
+        keyfile = pulse.parsers.KeyFile (os.popen ('LC_ALL=C intltool-merge -d -q -u po "' + rel_ch + '" -'))
     finally:
         os.chdir (owd)
     if not keyfile.has_group ('Desktop Entry'):

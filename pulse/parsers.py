@@ -18,6 +18,7 @@
 # Suite 330, Boston, MA  0211-1307  USA.
 #
 
+import ConfigParser
 import re
 
 class Automake (object):
@@ -60,6 +61,46 @@ class Automake (object):
 
     def has_key (self, key):
         return self._variables.has_key (key)
+
+class KeyFile (object):
+    def __init__ (self, f):
+        if isinstance (f, basestring):
+            fd = open (f)
+        else:
+            fd = f
+        cfg = ConfigParser.ConfigParser()
+        cfg.optionxform = str
+        cfg.readfp (fd)
+        self._data = {}
+        for group in cfg.sections ():
+            self._data[group] = {}
+            for key, value in cfg.items (group):
+                lb = key.find ('[')
+                rb = key.find (']')
+                if lb >= 0 and rb > lb:
+                    keybase = key[0:lb]
+                    keylang = key[lb+1:rb]
+                    self._data[group].setdefault (keybase, {})
+                    if isinstance (self._data[group][keybase], basestring):
+                        self._data[group][keybase] = {'C' : self._data[group][keybase]}
+                    self._data[group][keybase][keylang] = value
+                else:
+                    self._data[group][key] = value
+
+    def get_groups (self):
+        return self._data.keys()
+
+    def has_group (self, group):
+        return self._data.has_key (group)
+
+    def get_keys (self, group):
+        return self._data[group].keys()
+
+    def has_key (self, group, key):
+        return self._data[group].has_key (key)
+
+    def get_value (self, group, key):
+        return self._data[group][key]
 
 class Po:
     def __init__ (self, filename):
