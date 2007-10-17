@@ -71,6 +71,7 @@ def update_branch (branch, update=True, timestamps=True):
             elif name.endswith ('.png'):
                 images.append (filename)
             elif name == 'Makefile.am':
+                # FIXME: timestamp this
                 makefile = pulse.parsers.Automake (filename)
                 for line in makefile.get_lines():
                     if line.startswith ('include $(top_srcdir)/'):
@@ -338,7 +339,7 @@ def process_gdu_docdir (branch, checkout, docdir, makefile, **kw):
 
 def process_gtk_docdir (branch, checkout, docdir, makefile, **kw):
     doc_module = makefile['DOC_MODULE']
-    ident = '/doc/' + '/'.join(branch.ident.split('/')[2:5]) + '/' + doc_module
+    ident = '/ref/' + '/'.join(branch.ident.split('/')[2:5]) + '/' + doc_module
     document = pulse.db.Resource.make (ident=ident, type='Document')
     document.update ({'subtype' : 'gtk-doc'})
     return document

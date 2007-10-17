@@ -43,14 +43,19 @@ class Resource (sql.SQLObject):
     # Set          /set/<set>
     # Module       /mod/<server>/<module>
     # Branch       /mod/<server>/<module>/<branch>
-    # Document     /doc/<server>/<module>/<branch>/<document>
+    # Document     /doc/<server>/<module>/<branch>/<document> (gnome-doc-utils)
+    #              /ref/<server>/<module>/<branch>/<document> (gtk-doc)
     # Application  /app/<server>/<module>/<branch>/<app>
     # Applet       /applet/<server>/<module>/<branch>/<applet>
     # Library      /lib/<server>/<module>/<branch>/<lib>
     # Domain       /i18n/<server>/<module>/<branch>/<domain>
+    # FIXME: I don't like the translation naming scheme
     # Translation  /i18n/<server>/<module>/<branch>/po/<domain>/<lang>
     #              /i18n/<server>/<module>/<branch>/doc/<doc>/<lang>
+    # Maybe this:
+    # Translation  /l10n/<lang>/[i18n|doc|ref]/<server>/<module>/<branch>/<i18n|doc|ref>
     # Team         /team/<server>/<team>
+    # FIXME: what do we do about people with accounts in different places?
     # Person       /person/<server>/<person>
     # List         /list/<server>/<list>
     ident = sql.StringCol (alternateID=True)
