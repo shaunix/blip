@@ -18,6 +18,7 @@
 # Suite 330, Boston, MA  0211-1307  USA.
 #
 
+import inspect
 import os
 import shutil
 import sys
@@ -86,21 +87,24 @@ def update_installed_icons (icons, links):
             shutil.copyfile (icons[iconsrc], full)
 
 def update_uninstalled_icons (icons, links):
-    resources = pulse.db.Resource.selectBy (icon_dir='__icon__:apps')
-    for resource in resources:
-        if resource.icon_name == None:
-            continue
-        if icons.has_key (resource.icon_name):
-            iconsrc = resource.icon_name
-        elif links.has_key (resource.icon_name):
-            iconsrc = links[resource.icon_name]
-            if not icons.has_key (iconsrc):
-                continue
-        else:
-            continue
-        shutil.copyfile (icons[iconsrc],
-                         os.path.join (pulse.config.icondir, 'apps', resource.icon_name + '.png'))
-        resource.icon_dir = 'apps'
+    for table in inspect.getmembers (pulse.db):
+        cls = table[1]
+        if inspect.isclass (cls) and hasattr (cls, 'icon_dir'):
+            recs = cls.selectBy (icon_dir='__icon__:apps')
+            for rec in recs:
+                if rec.icon_name == None:
+                    continue
+                if icons.has_key (rec.icon_name):
+                    iconsrc = rec.icon_name
+                elif links.has_key (rec.icon_name):
+                    iconsrc = links[rec.icon_name]
+                    if not icons.has_key (iconsrc):
+                        continue
+                else:
+                    continue
+                shutil.copyfile (icons[iconsrc],
+                                 os.path.join (pulse.config.icondir, 'apps', rec.icon_name + '.png'))
+                rec.icon_dir = 'apps'
 
 def main (argv, options={}):
     update = not options.get ('--no-update', False)
@@ -117,8 +121,3 @@ def main (argv, options={}):
 
     update_installed_icons (icons, links)
     update_uninstalled_icons (icons, links)
-    return
-    resources = pulse.db.Resource.select (pulse.db.Resource.q.icon.startswith ('icon://'))
-    for resource in resources:
-        # see if one of the icon themes has the icon and use it
-        print resource.icon[7:]
