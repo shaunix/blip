@@ -69,7 +69,7 @@ class Record (sql.SQLObject):
     data = sql.PickleCol (default={})
 
     def _create (self, *args, **kw):
-        pulse.utils.log ('Creating %s %s' % (self.__class__.sqlmeta.table, kw['ident']))
+        pulse.utils.log ('Creating %s %s' % (kw['type'], kw['ident']))
         sql.SQLObject._create (self, *args, **kw)
 
     @ classmethod
