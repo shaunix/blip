@@ -51,6 +51,9 @@ sql.setDeprecationLevel (None)
 ## Records
 
 class Record (sql.SQLObject):
+    class sqlmeta:
+        table = 'Record'
+
     ident = sql.StringCol (alternateID=True)
     type = sql.StringCol ()
 
@@ -65,16 +68,15 @@ class Record (sql.SQLObject):
 
     data = sql.PickleCol (default={})
 
-    @ classmethod
-    def _create (cls, *args, **kw):
-        pulse.utils.log ('Creating %s %s' % (cls.sqlmeta.table, kw['ident']))
+    def _create (self, *args, **kw):
+        pulse.utils.log ('Creating %s %s' % (self.__class__.sqlmeta.table, kw['ident']))
         sql.SQLObject._create (self, *args, **kw)
 
     @ classmethod
     def get_record (cls, ident, type):
-        res = cls.selectBy (ident=ident, type=type)
-        if res.count() > 0:
-            return res[0]
+        record = cls.selectBy (ident=ident, type=type)
+        if record.count() > 0:
+            return record[0]
         else:
             return cls (ident=ident, type=type)
 
@@ -207,9 +209,13 @@ class Branch (Record):
 
     @ classmethod
     def get_record (cls, ident, type):
-        record = Record.get_record (ident=ident, type=type)
+        record = cls.selectBy (ident=ident, type=type)
+        if record.count() > 0:
+            record = record[0]
+        else:
+            record = cls (ident=ident, type=type)
         if record.resource == None:
-            ident = '/' + '/'.join(record.ident.split('/')[:-1])
+            ident = '/'.join(record.ident.split('/')[:-1])
             record.resource = Resource.get_record (ident=ident, type=record.type)
         return record
 
@@ -266,9 +272,9 @@ class Entity (Record):
 ## Relations
 
 class PulseRelation (object):
-    @ classmethod
     def _create (self, *args, **kw):
-        pulse.utils.log ('Creating %(verb)s (%(subj)s %(pred)s)' % kw)
+        pulse.utils.log ('Creating relation %s %s %s' %
+                         (kw['subj'].ident, kw['verb'], kw['pred'].ident))
         sql.SQLObject._create (self, *args, **kw)
 
     @ classmethod
@@ -285,12 +291,20 @@ class PulseRelation (object):
         return res.count() > 0
 
     def remove (self):
-        pulse.utils.log ('Removing %s (%s %s)' % (self.verb, self.subj, self.pred))
+        pulse.utils.log ('Removing relation %s %s %s' % (self.subj, self.verb, self.pred))
         self.__class__.delete (self.id)
+
+class RecordRelation (PulseRelation, sql.SQLObject):
+    class sqlmeta:
+        table = 'RecordRelation'
+
+    subj = sql.ForeignKey ('Record', dbName='subj')
+    pred = sql.ForeignKey ('Branch', dbName='pred')
+    verb = sql.StringCol ()
 
 class RecordBranchRelation (PulseRelation, sql.SQLObject):
     class sqlmeta:
-        table = 'RecordBranch'
+        table = 'RecordBranchRelation'
 
     subj = sql.ForeignKey ('Record', dbName='subj')
     pred = sql.ForeignKey ('Branch', dbName='pred')
@@ -305,7 +319,7 @@ class ResourceRelation (PulseRelation, sql.SQLObject):
 
 class BranchRelation (PulseRelation, sql.SQLObject):
     class sqlmeta:
-        table = 'ResourceRelation'
+        table = 'BranchRelation'
     subj = sql.ForeignKey ('Branch', dbName='subj')
     pred = sql.ForeignKey ('Branch', dbName='pred')
     verb = sql.StringCol ()
