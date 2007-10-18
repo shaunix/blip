@@ -205,6 +205,14 @@ class Branch (Record):
     scm_dir = sql.StringCol (default=None)
     scm_file = sql.StringCol (default=None)
 
+    @ classmethod
+    def get_record (cls, ident, type):
+        record = Record.get_record (ident=ident, type=type)
+        if record.resource == None:
+            ident = '/' + '/'.join(record.ident.split('/')[:-1])
+            record.resource = Resource.get_record (ident=ident, type=record.type)
+        return record
+
     def get_branch_title (self):
         return pulse.utils.gettext ('%s (%s)') % (self.title, self.scm_branch)
     branch_title = property (get_branch_title)
