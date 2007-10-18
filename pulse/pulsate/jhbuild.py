@@ -68,58 +68,46 @@ def update_branch (moduleset, key, update=True):
     else:
         repo = moduleset['__repos__']['__default__']
 
-    scm_data = {}
-    scm_data['scm_type'] = repo.getAttribute ('type')
-    if scm_data['scm_type'] == 'cvs':
-        scm_data['scm_server'] = repo.getAttribute ('cvsroot')
+    data = {}
+    data['scm_type'] = repo.getAttribute ('type')
+
+    if data['scm_type'] == 'cvs':
+        data['scm_server'] = repo.getAttribute ('cvsroot')
     else:
-        scm_data['scm_server'] = repo.getAttribute ('href')
+        data['scm_server'] = repo.getAttribute ('href')
+
     if branch.hasAttribute ('module'):
-        scm_data['scm_module'] = branch.getAttribute ('module')
+        data['scm_module'] = branch.getAttribute ('module')
     else:
-        scm_data['scm_module'] = key
+        data['scm_module'] = key
+
     if branch.hasAttribute ('revision'):
-        scm_data['scm_branch'] = branch.getAttribute ('revision')
+        data['scm_branch'] = branch.getAttribute ('revision')
+    else:
+        data['scm_branch'] = pulse.scm.default_branches.get(data['scm_type'])
 
-    checkout = pulse.scm.Checkout(checkout=False, update=False, **scm_data)
-    scm_data['scm_branch'] = checkout.scm_branch
-
-    m_ident = '/mod/' + repo.getAttribute ('name') + '/' + key
-    b_ident = m_ident + '/' + scm_data['scm_branch']
-
-    m_res = pulse.db.Resource.make (ident=m_ident, type='Module')
-    b_res = pulse.db.Resource.make (ident=b_ident, type='Branch')
-
-    m_data = b_data = {}
-
-    for key in ('scm_type', 'scm_server', 'scm_module'):
-        m_data[key] = b_data[key] = scm_data[key]
-    b_data['scm_branch'] = scm_data['scm_branch']
-    # FIXME: for svn, this seems to preclude "branches"
-    # This create a problem for mugshot in online-desktop
     if branch.hasAttribute ('checkoutdir'):
-        b_data['module_dir'] = branch.getAttribute ('checkoutdir')
+        data['module_dir'] = branch.getAttribute ('checkoutdir')
 
-    m_res.update (m_data)
-    b_res.update (b_data)
+    ident = '/mod/' + repo.getAttribute ('name') + '/' + data['scm_module'] + '/' + data['scm_branch']
 
-    b_res.parent = m_res
+    record = pulse.db.Branch.get_record (ident=ident, type='Module')
+    record.update (data)
 
-    return b_res
+    if pulse.scm.default_branches[record.scm_type] == record.scm_branch:
+        record.resource.default_branch = record
+
+    return record
 
 def update_set (data, update=True):
     ident = '/set/' + data['id']
-    res = pulse.db.Resource.selectBy (ident=ident)
-    if res.count() > 0:
-        res = res[0]
-    else:
-        res = pulse.db.Resource (ident=ident, type='Set')
+    record = pulse.db.Record.get_record (ident=ident, type='Set')
 
     # Sets may contain either other sets or modules, not both
     if data.has_key ('set'):
         for subset in data['set'].keys():
-            subres = update_set (data['set'][subset], update=update)
-            pulse.db.Relation.make (res, pulse.db.Relation.set_subset, subres)
+            subrecord = update_set (data['set'][subset], update=update)
+            pulse.db.RecordRelation.set_related (record, 'subset', subrecord)
     elif (data.has_key ('jhbuild_scm_type')   and
           data.has_key ('jhbuild_scm_server') and
           data.has_key ('jhbuild_scm_module') and
@@ -127,20 +115,20 @@ def update_set (data, update=True):
           data.has_key ('jhbuild_scm_dir')    and
           data.has_key ('jhbuild_scm_file')):
 
-        ident = '/' + '/'.join (['jhbuild',
-                                 data['jhbuild_scm_type'],
-                                 data['jhbuild_scm_server'],
-                                 data['jhbuild_scm_module'],
-                                 data['jhbuild_scm_branch']])
-        if checkouts.has_key (ident):
-            checkout = checkouts[ident]
+        coid = '/'.join (['jhbuild',
+                          data['jhbuild_scm_type'],
+                          data['jhbuild_scm_server'],
+                          data['jhbuild_scm_module'],
+                          data['jhbuild_scm_branch']])
+        if checkouts.has_key (coid):
+            checkout = checkouts[coid]
         else:
             checkout = pulse.scm.Checkout (scm_type=data['jhbuild_scm_type'],
                                            scm_server=data['jhbuild_scm_server'],
                                            scm_module=data['jhbuild_scm_module'],
                                            scm_branch=data['jhbuild_scm_branch'],
                                            update=update)
-            checkouts[ident] = checkout
+            checkouts[coid] = checkout
         file = os.path.join (checkout.directory,
                              data['jhbuild_scm_dir'],
                              data['jhbuild_scm_file'])
@@ -175,9 +163,9 @@ def update_set (data, update=True):
         for pkg in packages:
             branch = update_branch (moduleset, pkg, update=update)
             if branch != None:
-                pulse.db.Relation.make (res, pulse.db.Relation.set_branch, branch)
+                pulse.db.RecordBranchRelation.set_related (record, 'contains', branch)
 
-    return res
+    return record
 
 def main (argv, options={}):
     update = not options.get ('--no-update', False)

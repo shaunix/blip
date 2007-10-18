@@ -24,6 +24,23 @@ import os
 import pulse.config
 import pulse.utils
 
+default_branches = {
+    'cvs' : 'HEAD',
+    'svn' : 'trunk'
+    }
+
+def server_name (scm_type, scm_server):
+    if scm_type == 'cvs':
+        name = server_name = self.scm_server.split(':')[2]
+        if name.find ('@') >= 0:
+            return name.split('@')[-1]
+        else:
+            return name
+    elif scm_type == 'svn':
+        return scm_server.split('://')[1].split('/')[0]
+    else:
+        return None
+
 class CheckoutError (pulse.utils.PulseException):
     def __init__ (self, str):
         pulse.utils.PulseException.__init__ (self, str)
@@ -52,26 +69,32 @@ class Checkout (object):
             if key[:4] == 'scm_':
                 self.__setattr__ (key, kw[key])
 
-        self._server_dir = None
-
-        if hasattr (Checkout, '_init_' + self.scm_type):
-            getattr (Checkout, '_init_' + self.scm_type) (self)
+        if hasattr (Checkout, '_init_' + self.scm_type) and self.scm_type in default_branches:
+            initfunc = getattr (Checkout, '_init_' + self.scm_type)
         else:
             raise CheckoutError (
                 'Checkout got unknown SCM type "%s"' % self.scm_type)
 
+        if not hasattr(self, 'scm_branch') or self.scm_branch == None:
+            self.scm_branch = default_branches.get(self.scm_type)
+
+        self._name = '%s (%s)' % (self.scm_module, self.scm_branch)
+
+        initfunc (self)
+
         if kw.get('server_dir') != None:
             self._server_dir = kw['server_dir']
-        if self._server_dir == None:
-            raise CheckoutError (
-                'Checkout could not determine a directory for the server "%s"' % self.scm_server)
+        else:
+            self._server_dir = server_name (self.scm_type, self.scm_server)
 
-        self._module_dir = kw.get ('module_dir')
-        if self._module_dir == None:
+        if kw.get('module_dir') != None:
+            self._module_dir = kw['module_dir']
+        else:
             self._module_dir = self.scm_module
 
-        self._branch_dir = kw.get ('branch_dir')
-        if self._branch_dir == None:
+        if kw.get('branch_dir') != None:
+            self._branch_dir = kw['branch_dir']
+        else:
             self._branch_dir = self.scm_branch
 
         if os.path.exists (self.directory):
@@ -88,15 +111,6 @@ class Checkout (object):
             raise CheckoutError ('Checkout did not receive a server for ' % self.scm_module)
 
         self.ignoredir = 'CVS'
-
-        if not hasattr(self, 'scm_branch') or self.scm_branch == None:
-            self.scm_branch = 'HEAD'
-        self.default = (self.scm_branch == 'HEAD')
-                
-        self._name = '%s (%s)' % (self.scm_module, self.scm_branch)
-        self._server_dir = self.scm_server.split(':')[2]
-        if self._server_dir.find ('@') >= 0:
-            self._server_dir = self._server_dir.split('@')[-1]
 
         self._co = 'cvs -z3 -d%s co -r %s -d %s %s' %(
             self.scm_server,
@@ -115,12 +129,6 @@ class Checkout (object):
 
         if self.scm_server[-1] != '/':
             self.scm_server = self.scm_server + '/'
-        if not hasattr(self, 'scm_branch') or self.scm_branch == None:
-            self.scm_branch = 'trunk'
-        self.default = (self.scm_branch == 'trunk')
-
-        self._name = '%s (%s)' % (self.scm_module, self.scm_branch)
-        self._server_dir = self.scm_server.split('://')[1].split('/')[0]
 
         if self.scm_branch == 'trunk':
             url = self.scm_server + self.scm_module + '/trunk'
