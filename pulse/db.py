@@ -166,16 +166,15 @@ class Record (sql.SQLObject):
         return self.desc.get('C')
     localized_desc = property (get_localized_desc)
 
-    # FIXME
-#     def set_relations (self, verb, relations):
-#         old = Relation.selectBy (subj=self, verb=verb)
-#         olddict = {}
-#         for rel in old:
-#             olddict[rel.pred.ident] = rel
-#         for relation in relations:
-#             olddict.pop (relation.pred.ident, None)
-#         for old in olddict.values():
-#             old.delete_full ()
+    def set_relations (self, cls, verb, relations):
+        old = cls.selectBy (subj=self, verb=verb)
+        olddict = {}
+        for rel in old:
+            olddict[rel.pred.ident] = rel
+        for relation in relations:
+            olddict.pop (relation.pred.ident, None)
+        for old in olddict.values():
+            old.remove ()
 
 
 class Resource (Record):
