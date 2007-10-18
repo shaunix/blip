@@ -47,12 +47,12 @@ class CheckoutError (pulse.utils.PulseException):
 
 class Checkout (object):
     @classmethod
-    def from_resource (cls, resource, **kw):
-        return cls (scm_type=resource.scm_type,
-                    scm_server=resource.scm_server,
-                    scm_module=resource.scm_module,
-                    scm_branch=resource.scm_branch,
-                    module_dir=resource.data.get('module_dir'),
+    def from_record (cls, record, **kw):
+        return cls (scm_type=record.scm_type,
+                    scm_server=record.scm_server,
+                    scm_module=record.scm_module,
+                    scm_branch=record.scm_branch,
+                    module_dir=record.data.get('module_dir'),
                     **kw)
 
     def __init__ (self, **kw):

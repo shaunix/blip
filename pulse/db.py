@@ -83,8 +83,8 @@ class Record (sql.SQLObject):
     def remove (self):
         cls = self.__class__
         self.remove_relations ()
-        pulse.utils.log ('Deleting %s %s' % (cls.sqlmeta.table, kw['ident']))
-        self.__class__.delete (self.id)
+        pulse.utils.log ('Removing %s %s' % (self.type, self.ident))
+        cls.delete (self.id)
 
     def remove_relations (self):
         for rel in RecordBranchRelation.selectBy (subj=self):
@@ -184,6 +184,8 @@ class Resource (Record):
     default_branch = sql.ForeignKey ('Branch', dbName='default_branch', default=None)
 
     def remove_relations (self):
+        for branch in Branch.selectBy (resource=self):
+            branch.remove ()
         for rel in ResourceRelation.selectBy (subj=self):
             rel.remove ()
         for rel in ResourceRelation.selectBy (pred=self):
@@ -223,7 +225,12 @@ class Branch (Record):
     branch_title = property (get_branch_title)
 
     def remove_relations (self):
-        for rel in RecordBranchRelation.selectBy (branch=self):
+        if self.resource != None and Branch.selectBy (resource=self.resource).count() <= 1:
+            # Bad things happen if we don't do this
+            resource = self.resource
+            self.resource = None
+            resource.remove ()
+        for rel in RecordBranchRelation.selectBy (pred=self):
             rel.remove ()
         for rel in BranchRelation.selectBy (subj=self):
             rel.remove ()

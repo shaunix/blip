@@ -38,9 +38,9 @@ args['no-timestamps'] = (None, 'do not check timestamps before processing files'
 def help_extra (fd=None):
     print >>fd, 'If ident is passed, only modules and branches with a matching identifier will be updated.'
 
+
 def update_branch (branch, update=True, timestamps=True):
-    checkout = pulse.scm.Checkout.from_resource (branch, update=update)
-    branch.nick = checkout.scm_branch
+    checkout = pulse.scm.Checkout.from_record (branch, update=update)
     # FIXME: what do we want to know?
     # find maintainers
     # find document (in documents.py?)
@@ -84,6 +84,8 @@ def update_branch (branch, update=True, timestamps=True):
     process_configure (branch, checkout, timestamps=timestamps)
     if branch.name == {}:
         branch.name = {'C' : branch.scm_module}
+
+    process_maintainers (branch, checkout, timestamps=timestamps)
 
     domains = []
     for podir in podirs:
@@ -144,17 +146,8 @@ def update_branch (branch, update=True, timestamps=True):
         branch.icon_dir = default_resource.icon_dir
         branch.icon_name = default_resource.icon_name
     
-    if checkout.default:
-        update_module_from_branch (branch, checkout, timestamps=timestamps)
 
-def update_module_from_branch (branch, checkout, **kw):
-    module = branch.parent
-    module.update_name (branch.name)
-    module.update_desc (branch.desc)
-
-    update_module_maintainers (module, checkout, **kw)
-
-def update_module_maintainers (module, checkout, **kw):
+def process_maintainers (branch, checkout, **kw):
     maintfile = os.path.join (checkout.directory, 'MAINTAINERS')
     if not os.path.isfile (maintfile):
         return
@@ -196,19 +189,19 @@ def update_module_maintainers (module, checkout, **kw):
         elif line.startswith ('Userid:'):
             userid = line[7:].strip()
     add_maint ()
-    serverid = module.ident.split('/')[2]
+    serverid = '.'.join(branch.ident.split('/')[2].split('.')[-2:])
     rels = []
     for name, userid, email in maints:
         ident = '/person/' + serverid + '/' + userid
-        person = pulse.db.Resource.make (ident=ident, type='Person')
+        person = pulse.db.Entity.get_record (ident=ident, type='Person')
         person.update_name ({'C' : name})
         if email != None:
             person.email = email
-        rels.append (pulse.db.Relation.make (subj=module,
-                                             verb=pulse.db.Relation.module_developer,
-                                             pred=person,
-                                             superlative=True))
-    module.set_relations (pulse.db.Relation.module_developer, rels)
+        rels.append (pulse.db.BranchEntityRelation.set_related (subj=branch,
+                                                                verb='maintainer',
+                                                                pred=person))
+    branch.set_relations (pulse.db.BranchEntityRelation, 'maintainer', rels)
+
     pulse.db.Timestamp.set_timestamp (rel_scm, mtime)
 
 def process_configure (branch, checkout, **kw):
@@ -271,7 +264,7 @@ def process_configure (branch, checkout, **kw):
 
 def process_podir (branch, checkout, podir, **kw):
     ident = '/i18n/' + '/'.join (branch.ident.split('/')[2:]) + '/' + os.path.basename (podir)
-    domain = pulse.db.Resource.make (ident=ident, type='Domain')
+    domain = pulse.db.Branch.get_record (ident=ident, type='Domain')
 
     data = {'scm_dir' : pulse.utils.relative_path (podir, checkout.directory)}
     domain.update (data)
@@ -299,8 +292,8 @@ def process_podir (branch, checkout, podir, **kw):
         for l in line.split():
             langs.append (l)
     for lang in langs:
-        lident = '/i18n/' + '/'.join (branch.ident.split('/')[2:]) + '/po/' + os.path.basename (podir) + '/' + lang
-        translation = pulse.db.Resource.make (ident=lident, type='Translation')
+        lident = '/l10n/' + lang + domain.ident
+        translation = pulse.db.Branch.get_record (ident=lident, type='Translation')
         translations.append (translation)
         ldata = {}
         ldata['subtype'] = 'intltool'
@@ -316,7 +309,7 @@ def process_podir (branch, checkout, podir, **kw):
 def process_gdu_docdir (branch, checkout, docdir, makefile, **kw):
     doc_module = makefile['DOC_MODULE']
     ident = '/doc/' + '/'.join(branch.ident.split('/')[2:5]) + '/' + doc_module
-    document = pulse.db.Resource.make (ident=ident, type='Document')
+    document = pulse.db.Branch.get_record (ident=ident, type='Document')
 
     data = {}
     data['subtype'] = 'gdu-docbook'
@@ -326,8 +319,8 @@ def process_gdu_docdir (branch, checkout, docdir, makefile, **kw):
     if makefile.has_key ('DOC_LINGUAS'):
         translations = []
         for lang in makefile['DOC_LINGUAS'].split():
-            lident = '/i18n/' + '/'.join (branch.ident.split('/')[2:]) + '/doc/' + doc_module + '/' + lang
-            translation = pulse.db.Resource.make (ident=lident, type='Translation')
+            lident = '/l10n/' + lang + document.ident
+            translation = pulse.db.Branch.get_record (ident=lident, type='Translation')
             translations.append (translation)
             ldata = {}
             ldata['subtype'] = 'xml2po'
@@ -340,7 +333,7 @@ def process_gdu_docdir (branch, checkout, docdir, makefile, **kw):
 def process_gtk_docdir (branch, checkout, docdir, makefile, **kw):
     doc_module = makefile['DOC_MODULE']
     ident = '/ref/' + '/'.join(branch.ident.split('/')[2:5]) + '/' + doc_module
-    document = pulse.db.Resource.make (ident=ident, type='Document')
+    document = pulse.db.Branch.get_record (ident=ident, type='Document')
     document.update ({'subtype' : 'gtk-doc'})
     return document
 
@@ -359,7 +352,7 @@ def process_pkgconfig (branch, checkout, filename, **kw):
             pulse.utils.log ('Skipping file %s' % rel_scm)
             data = {'parent' : branch}
             data['scm_dir'], data['scm_file'] = os.path.split (rel_ch)
-            libs = pulse.db.Resource.selectBy (type='Library', **data)
+            libs = pulse.db.Branch.selectBy (type='Library', **data)
             if libs.count() > 0:
                 return libs[0]
             else:
@@ -375,7 +368,7 @@ def process_pkgconfig (branch, checkout, filename, **kw):
             libdesc = line[12:].strip()
 
     ident = '/lib/' + '/'.join (branch.ident.split('/')[2:]) + '/' + basename
-    lib = pulse.db.Resource.make (ident=ident, type='Library')
+    lib = pulse.db.Branch.get_record (ident=ident, type='Library')
 
     if libname == '@PACKAGE_NAME@':
         libname = branch.name['C']
@@ -402,7 +395,7 @@ def process_keyfile (branch, checkout, filename, **kw):
             pulse.utils.log ('Skipping file %s' % rel_scm)
             data = {'parent' : branch}
             data['scm_dir'], data['scm_file'] = os.path.split (rel_ch)
-            apps = pulse.db.Resource.selectBy (type='Application', **data)
+            apps = pulse.db.Branch.selectBy (type='Application', **data)
             if apps.count() > 0:
                 return apps[0]
             else:
@@ -438,7 +431,7 @@ def process_keyfile (branch, checkout, filename, **kw):
     else:
         desc = None
 
-    app = pulse.db.Resource.make (ident=ident, type='Application')
+    app = pulse.db.Branch.get_record (ident=ident, type='Application')
 
     data = {}
     data['scm_dir'], data['scm_file'] = os.path.split (rel_ch)
@@ -471,7 +464,7 @@ def process_oafserver (branch, checkout, filename, **kw):
             pulse.utils.log ('Skipping file %s' % rel_scm)
             data = {'parent' : branch}
             data['scm_dir'], data['scm_file'] = os.path.split (rel_ch)
-            applets = pulse.db.Resource.selectBy (type='Applet', **data)
+            applets = pulse.db.Branch.selectBy (type='Applet', **data)
             return applets[0:]
     pulse.utils.log ('Processing file %s' % rel_scm)
 
@@ -525,7 +518,7 @@ def process_oafserver (branch, checkout, filename, **kw):
         if not is_applet or applet_icon == None:
             continue
         ident = '/applet/' + '/'.join (branch.ident.split('/')[2:]) + '/' + applet_iid
-        applet = pulse.db.Resource.make (ident=ident, type='Applet')
+        applet = pulse.db.Branch.get_record (ident=ident, type='Applet')
         applet.update_name (applet_name)
         applet.update_desc (applet_desc)
         if applet_icon != None:
@@ -576,10 +569,10 @@ def main (argv, options={}):
         prefix = argv[0]
 
     if prefix != None:
-        branches = pulse.db.Resource.select ((pulse.db.Resource.q.type == 'Branch') &
-                                             (pulse.db.Resource.q.ident.startswith (prefix)) )
+        branches = pulse.db.Branch.select ((pulse.db.Branch.q.type == 'Module') &
+                                           (pulse.db.Branch.q.ident.startswith (prefix)) )
     else:
-        branches = pulse.db.Resource.selectBy (type='Branch')
+        branches = pulse.db.Branch.selectBy (type='Module')
 
     for branch in branches:
         update_branch (branch, update=update, timestamps=timestamps)
