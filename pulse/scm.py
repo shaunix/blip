@@ -31,7 +31,7 @@ default_branches = {
 
 def server_name (scm_type, scm_server):
     if scm_type == 'cvs':
-        name = server_name = self.scm_server.split(':')[2]
+        name = scm_server.split(':')[2]
         if name.find ('@') >= 0:
             return name.split('@')[-1]
         else:
