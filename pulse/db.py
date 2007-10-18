@@ -32,36 +32,27 @@ sql.sqlhub.processConnection = conn
 sql.setDeprecationLevel (None)
 
 
-class Resource (sql.SQLObject):
-    class sqlmeta:
-        table = 'Resource'
+## Resource ident schemas per-type
+## Branch idents have /<branch> appended
+# Module       /mod/<server>/<module>
+# Document     /doc/<server>/<module>/<document>  (gnome-doc-utils)
+#              /ref/<server>/<module>/<document>  (gtk-doc)
+# Application  /app/<server>/<module>/<app>
+# Applet       /applet/<server>/<module>/<applet>
+# Library      /lib/<server>/<module>/<lib>
+# Plugin       /ext/<server>/<module>/<ext>
+# Domain       /i18n/<server>/<module>/<domain>
+# Translation  /l10n/<lang>/i18n/<server>/<module>/<domain>
+#              /l10n/<lang>/doc/<server>/<module>/<document>
+#              /l10n/<lang>/ref/<server>/<module>/<document>
 
-    def _create (self, *args, **kw):
-        pulse.utils.log ('Creating resource %s' % kw['ident'])
-        sql.SQLObject._create (self, *args, **kw)
 
-    # Set          /set/<set>
-    # Module       /mod/<server>/<module>
-    # Branch       /mod/<server>/<module>/<branch>
-    # Document     /doc/<server>/<module>/<branch>/<document> (gnome-doc-utils)
-    #              /ref/<server>/<module>/<branch>/<document> (gtk-doc)
-    # Application  /app/<server>/<module>/<branch>/<app>
-    # Applet       /applet/<server>/<module>/<branch>/<applet>
-    # Library      /lib/<server>/<module>/<branch>/<lib>
-    # Domain       /i18n/<server>/<module>/<branch>/<domain>
-    # FIXME: I don't like the translation naming scheme
-    # Translation  /i18n/<server>/<module>/<branch>/po/<domain>/<lang>
-    #              /i18n/<server>/<module>/<branch>/doc/<doc>/<lang>
-    # Maybe this:
-    # Translation  /l10n/<lang>/[i18n|doc|ref]/<server>/<module>/<branch>/<i18n|doc|ref>
-    # Team         /team/<server>/<team>
-    # FIXME: what do we do about people with accounts in different places?
-    # Person       /person/<server>/<person>
-    # List         /list/<server>/<list>
+################################################################################
+## Records
+
+class Record (sql.SQLObject):
     ident = sql.StringCol (alternateID=True)
     type = sql.StringCol ()
-    subtype = sql.StringCol (default=None)
-    parent = sql.ForeignKey ('Resource', dbName='parent', default=None)
 
     name = sql.PickleCol (default={})
     desc = sql.PickleCol (default={})
@@ -69,58 +60,33 @@ class Resource (sql.SQLObject):
     icon_dir = sql.StringCol (default=None)
     icon_name = sql.StringCol (default=None)
 
-    nick = sql.StringCol (default=None)
-
     email = sql.StringCol (default=None)
     web = sql.StringCol (default=None)
-
-    scm_type = sql.StringCol (default=None)
-    scm_server = sql.StringCol (default=None)
-    scm_module = sql.StringCol (default=None)
-    scm_branch = sql.StringCol (default=None)
-    scm_dir = sql.StringCol (default=None)
-    scm_file = sql.StringCol (default=None)
 
     data = sql.PickleCol (default={})
 
     @ classmethod
-    def make (cls, ident, type):
+    def _create (cls, *args, **kw):
+        pulse.utils.log ('Creating %s %s' % (cls.sqlmeta.table, kw['ident']))
+        sql.SQLObject._create (self, *args, **kw)
+
+    @ classmethod
+    def get_record (cls, ident, type):
         res = cls.selectBy (ident=ident, type=type)
         if res.count() > 0:
             return res[0]
         else:
             return cls (ident=ident, type=type)
 
-    def get_icon_url (self):
-        if self.icon_name == None or self.icon_dir.startswith ('__icon__'):
-            return None
-        elif self.icon_dir == None:
-            return pulse.config.iconroot + self.icon_name + '.png'
-        else:
-            return pulse.config.iconroot + self.icon_dir + '/' + self.icon_name + '.png'
-    icon_url = property (get_icon_url)
+    def remove (self):
+        cls = self.__class__
+        self.remove_relations ()
+        pulse.utils.log ('Deleting %s %s' % (cls.sqlmeta.table, kw['ident']))
+        self.__class__.delete (self.id)
 
-    def get_title (self):
-        if self.name == {}:
-            return self.ident.split('/')[-1]
-        if self.nick != None:
-            return pulse.utils.gettext ('%s (%s)') % (self.localized_name, self.nick)
-        return self.localized_name
-    title = property (get_title)
-
-    def get_localized_name (self):
-        # FIXME: i18n
-        return self.name.get('C')
-    localized_name = property (get_localized_name)
-
-    def get_localized_desc (self):
-        # FIXME: i18n
-        return self.desc.get('C')
-    localized_desc = property (get_localized_desc)
-
-    def get_url (self):
-        return pulse.config.webroot + self.ident[1:]
-    url = property (get_url)
+    def remove_relations (self):
+        for rel in RecordBranchRelation.selectBy (subj=self):
+            rel.remove ()
 
     def update (self, d):
         stuff = {}
@@ -166,21 +132,93 @@ class Resource (sql.SQLObject):
     def update_data (self, d):
         self.data = self.updated_data (d)
 
-    def delete_full (self):
-        rels = pulse.db.Relation.selectBy (subj=self)
-        for rel in rels:
-            rel.delete_full ()
-        rels = pulse.db.Relation.selectBy (pred=self)
-        for rel in rels:
-            rel.delete_full ()
-        children = pulse.db.Resource.selectBy (parent=self)
-        for child in children:
-            child.delete_full ()
-        pulse.utils.log ('Deleting resource %s' % self.ident)
-        Resource.delete (self.id)
+    def get_pulse_url (self):
+        return pulse.config.webroot + self.ident[1:]
+    pulse_url = property (get_pulse_url)
+
+    def get_icon_url (self):
+        if self.icon_name == None or self.icon_dir.startswith ('__icon__'):
+            return None
+        elif self.icon_dir == None:
+            return pulse.config.iconroot + self.icon_name + '.png'
+        else:
+            return pulse.config.iconroot + self.icon_dir + '/' + self.icon_name + '.png'
+    icon_url = property (get_icon_url)
+
+    def get_title (self):
+        if self.name == {}:
+            if self.__class__ == Branch:
+                return self.ident.split('/')[-2]
+            else:
+                return self.ident.split('/')[-1]
+        return self.localized_name
+    title = property (get_title)
+
+    def get_localized_name (self):
+        # FIXME: i18n
+        return self.name.get('C')
+    localized_name = property (get_localized_name)
+
+    def get_localized_desc (self):
+        # FIXME: i18n
+        return self.desc.get('C')
+    localized_desc = property (get_localized_desc)
+
+    # FIXME
+#     def set_relations (self, verb, relations):
+#         old = Relation.selectBy (subj=self, verb=verb)
+#         olddict = {}
+#         for rel in old:
+#             olddict[rel.pred.ident] = rel
+#         for relation in relations:
+#             olddict.pop (relation.pred.ident, None)
+#         for old in olddict.values():
+#             old.delete_full ()
+
+
+class Resource (Record):
+    class sqlmeta:
+        table = 'Resource'
+
+    default_branch = sql.ForeignKey ('Branch', dbName='default_branch', default=None)
+
+    def remove_relations (self):
+        for rel in ResourceRelation.selectBy (subj=self):
+            rel.remove ()
+        for rel in ResourceRelation.selectBy (pred=self):
+            rel.remove ()
+
+
+class Branch (Record):
+    class sqlmeta:
+        table = 'Branch'
+
+    subtype = sql.StringCol (default=None)
+    parent = sql.ForeignKey ('Branch', dbName='parent', default=None)
+    resource = sql.ForeignKey ('Resource', dbName='resource', default=None)
+
+    scm_type = sql.StringCol (default=None)
+    scm_server = sql.StringCol (default=None)
+    scm_module = sql.StringCol (default=None)
+    scm_branch = sql.StringCol (default=None)
+    scm_path = sql.StringCol (default=None)
+    scm_dir = sql.StringCol (default=None)
+    scm_file = sql.StringCol (default=None)
+
+    def get_branch_title (self):
+        return pulse.utils.gettext ('%s (%s)') % (self.title, self.scm_branch)
+    branch_title = property (get_branch_title)
+
+    def remove_relations (self):
+        for rel in RecordBranchRelation.selectBy (branch=self):
+            rel.remove ()
+        for rel in BranchRelation.selectBy (subj=self):
+            rel.remove ()
+        for rel in BranchRelation.selectBy (pred=self):
+            rel.remove ()
 
     def set_children (self, type, children):
-        old = Resource.selectBy (type=type, parent=self)
+        old = Branch.selectBy (type=type, parent=self)
         olddict = {}
         for res in old:
             olddict[res.ident] = res
@@ -188,47 +226,106 @@ class Resource (sql.SQLObject):
             olddict.pop (child.ident, None)
             child.parent = self
         for old in olddict.values():
-            old.delete_full ()
-
-    def set_relations (self, verb, relations):
-        old = Relation.selectBy (subj=self, verb=verb)
-        olddict = {}
-        for rel in old:
-            olddict[rel.pred.ident] = rel
-        for relation in relations:
-            olddict.pop (relation.pred.ident, None)
-        for old in olddict.values():
-            old.delete_full ()
+            old.remove ()
 
 
-class Relation (sql.SQLObject):
+class Entity (Record):
     class sqlmeta:
-        table = 'Relation'
+        table = 'Entity'
+
+    nick = sql.StringCol (default=None)
+
+    def get_name_nick (self):
+        # FIXME: latinized names
+        if self.nick != None:
+            return pulse.utils.gettext ('%s (%s)') % (self.localized_name, self.nick)
+        else:
+            return self.localized_name
+    name_nick = property (get_name_nick)
+
+    def remove_relations (self):
+        for rel in ResourceEntityRelation.selectBy (pred=self):
+            rel.remove ()
+        for rel in BranchEntityRelation.selectBy (pred=self):
+            rel.remove ()
+        for rel in EntityRelation.selectBy (subj=self):
+            rel.remove ()
+        for rel in EntityRelation.selectBy (pred=self):
+            rel.remove ()
+
+
+################################################################################
+## Relations
+
+class PulseRelation (object):
+    @ classmethod
+    def _create (self, *args, **kw):
+        pulse.utils.log ('Creating %(verb)s (%(subj)s %(pred)s)' % kw)
+        sql.SQLObject._create (self, *args, **kw)
+
+    @ classmethod
+    def set_related (cls, subj, verb, pred):
+        res = cls.selectBy (subj=subj, verb=verb, pred=pred)
+        if res.count() > 0:
+            return res[0]
+        else:
+            return cls (subj=subj, verb=verb, pred=pred)
+
+    @ classmethod
+    def is_related (cls, subj, verb, pred):
+        res = cls.selectBy (subj=subj, verb=verb, pred=pred)
+        return res.count() > 0
+
+    def remove (self):
+        pulse.utils.log ('Removing %s (%s %s)' % (self.verb, self.subj, self.pred))
+        self.__class__.delete (self.id)
+
+class RecordBranchRelation (PulseRelation, sql.SQLObject):
+    class sqlmeta:
+        table = 'RecordBranch'
+
+    subj = sql.ForeignKey ('Record', dbName='subj')
+    pred = sql.ForeignKey ('Branch', dbName='pred')
+    verb = sql.StringCol ()
+  
+class ResourceRelation (PulseRelation, sql.SQLObject):
+    class sqlmeta:
+        table = 'ResourceRelation'
     subj = sql.ForeignKey ('Resource', dbName='subj')
     pred = sql.ForeignKey ('Resource', dbName='pred')
     verb = sql.StringCol ()
-    superlative = sql.BoolCol (default=False)
 
-    # Relations, so that we don't have typos
-    set_subset = 'set_subset'             # Set -> Set
-    set_branch = 'set_branch'             # Set -> Branch
-    module_developer = 'module_developer' # Module -> Person/Team
+class BranchRelation (PulseRelation, sql.SQLObject):
+    class sqlmeta:
+        table = 'ResourceRelation'
+    subj = sql.ForeignKey ('Branch', dbName='subj')
+    pred = sql.ForeignKey ('Branch', dbName='pred')
+    verb = sql.StringCol ()
 
-    def delete_full (self):
-        pulse.utils.log ('Deleting relation (%s %s %s)' % (self.subj.ident, self.verb, self.pred.ident))
-        Relation.delete (self.id)
+class EntityRelation (PulseRelation, sql.SQLObject):
+    class sqlmeta:
+        table = 'EntityRelation'
+    subj = sql.ForeignKey ('Entity', dbName='subj')
+    pred = sql.ForeignKey ('Entity', dbName='pred')
+    verb = sql.StringCol ()
 
-    @classmethod
-    def make (cls, subj, verb, pred, superlative=False):
-        # FIXME: pulse.utils.log
-        rel = Relation.selectBy (subj=subj, pred=pred, verb=verb)
-        if rel.count() > 0:
-            if superlative:
-                rel[0].superlative = True
-                return rel[0]
-        else:
-            return Relation (subj=subj, pred=pred, verb=verb, superlative=superlative)
+class ResourceEntityRelation (PulseRelation, sql.SQLObject):
+    class sqlmeta:
+        table = 'ResourceEntityRelation'
+    subj = sql.ForeignKey ('Resource', dbName='subj')
+    pred = sql.ForeignKey ('Entity', dbName='pred')
+    verb = sql.StringCol ()
 
+class BranchEntityRelation (PulseRelation, sql.SQLObject):
+    class sqlmeta:
+        table = 'BranchEntityRelation'
+    subj = sql.ForeignKey ('Branch', dbName='subj')
+    pred = sql.ForeignKey ('Entity', dbName='pred')
+    verb = sql.StringCol ()
+
+
+################################################################################
+## Timestamps
 
 class Timestamp (sql.SQLObject):
     class sqlmeta:
@@ -258,6 +355,10 @@ class Timestamp (sql.SQLObject):
             return obj[0].stamp
         else:
             return -1
+
+
+################################################################################
+## Utilities
 
 def create_tables ():
     for table in inspect.getmembers (sys.modules[__name__]):
