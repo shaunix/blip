@@ -198,7 +198,7 @@ def process_maintainers (branch, checkout, **kw):
         if email != None:
             person.email = email
         rels.append (pulse.db.BranchEntityRelation.set_related (subj=branch,
-                                                                verb='maintainer',
+                                                                verb='ModuleMaintainer',
                                                                 pred=person))
     branch.set_relations (pulse.db.BranchEntityRelation, 'maintainer', rels)
 
@@ -263,7 +263,8 @@ def process_configure (branch, checkout, **kw):
     pulse.db.Timestamp.set_timestamp (rel_scm, mtime)
 
 def process_podir (branch, checkout, podir, **kw):
-    ident = '/i18n/' + '/'.join (branch.ident.split('/')[2:]) + '/' + os.path.basename (podir)
+    bserver, bmodule, bbranch = branch.ident.split('/')[2:]
+    ident = '/'.join(['/i18n', bserver, bmodule, os.path.basename (podir), bbranch])
     domain = pulse.db.Branch.get_record (ident=ident, type='Domain')
 
     data = {'scm_dir' : pulse.utils.relative_path (podir, checkout.directory)}
@@ -307,8 +308,9 @@ def process_podir (branch, checkout, podir, **kw):
     return domain
 
 def process_gdu_docdir (branch, checkout, docdir, makefile, **kw):
+    bserver, bmodule, bbranch = branch.ident.split('/')[2:]
     doc_module = makefile['DOC_MODULE']
-    ident = '/doc/' + '/'.join(branch.ident.split('/')[2:5]) + '/' + doc_module
+    ident = '/'.join(['/doc', bserver, bmodule, doc_module, bbranch])
     document = pulse.db.Branch.get_record (ident=ident, type='Document')
 
     data = {}
@@ -331,8 +333,9 @@ def process_gdu_docdir (branch, checkout, docdir, makefile, **kw):
     return document
 
 def process_gtk_docdir (branch, checkout, docdir, makefile, **kw):
+    bserver, bmodule, bbranch = branch.ident.split('/')[2:]
     doc_module = makefile['DOC_MODULE']
-    ident = '/ref/' + '/'.join(branch.ident.split('/')[2:5]) + '/' + doc_module
+    ident = '/'.join(['/ref', bserver, bmodule, doc_module, bbranch])
     document = pulse.db.Branch.get_record (ident=ident, type='Document')
     document.update ({'subtype' : 'gtk-doc'})
     return document
@@ -367,7 +370,8 @@ def process_pkgconfig (branch, checkout, filename, **kw):
         elif line.startswith ('Description:'):
             libdesc = line[12:].strip()
 
-    ident = '/lib/' + '/'.join (branch.ident.split('/')[2:]) + '/' + basename
+    bserver, bmodule, bbranch = branch.ident.split('/')[2:]
+    ident = '/'.join(['/lib', bserver, bmodule, basename, bbranch])
     lib = pulse.db.Branch.get_record (ident=ident, type='Library')
 
     if libname == '@PACKAGE_NAME@':
@@ -419,7 +423,9 @@ def process_keyfile (branch, checkout, filename, **kw):
     if keyfile.get_value ('Desktop Entry', 'Type') != 'Application':
         return None
 
-    ident = '/app/' + '/'.join (branch.ident.split('/')[2:]) + '/' + basename
+    bserver, bmodule, bbranch = branch.ident.split('/')[2:]
+    ident = '/'.join(['/app', bserver, bmodule, basename, bbranch])
+
     name = keyfile.get_value ('Desktop Entry', 'Name')
     if isinstance (name, basestring):
         name = {'C' : name}
@@ -453,6 +459,7 @@ def process_keyfile (branch, checkout, filename, **kw):
     return app
 
 def process_oafserver (branch, checkout, filename, **kw):
+    bserver, bmodule, bbranch = branch.ident.split('/')[2:]
     basename = os.path.basename (filename)[:-13]
     rel_ch = pulse.utils.relative_path (filename, checkout.directory)
     rel_scm = pulse.utils.relative_path (filename, pulse.config.scmdir)
@@ -517,7 +524,7 @@ def process_oafserver (branch, checkout, filename, **kw):
                 if applet_icon == '': applet_icon = None
         if not is_applet or applet_icon == None:
             continue
-        ident = '/applet/' + '/'.join (branch.ident.split('/')[2:]) + '/' + applet_iid
+        ident = '/'.join(['/app', bserver, bmodule, applet_iid, bbranch])
         applet = pulse.db.Branch.get_record (ident=ident, type='Applet')
         applet.update_name (applet_name)
         applet.update_desc (applet_desc)
