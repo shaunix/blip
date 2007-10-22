@@ -279,7 +279,7 @@ class Entity (Record):
 
 class PulseRelation (object):
     def _create (self, *args, **kw):
-        pulse.utils.log ('Creating relation %s %s %s' %
+        pulse.utils.log ('Creating relation %s -%s- %s' %
                          (kw['subj'].ident, kw['verb'], kw['pred'].ident))
         sql.SQLObject._create (self, *args, **kw)
 

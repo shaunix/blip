@@ -107,7 +107,7 @@ def update_set (data, update=True):
     if data.has_key ('set'):
         for subset in data['set'].keys():
             subrecord = update_set (data['set'][subset], update=update)
-            pulse.db.RecordRelation.set_related (record, 'subset', subrecord)
+            pulse.db.RecordRelation.set_related (record, 'SetSubset', subrecord)
     elif (data.has_key ('jhbuild_scm_type')   and
           data.has_key ('jhbuild_scm_server') and
           data.has_key ('jhbuild_scm_module') and
@@ -163,7 +163,7 @@ def update_set (data, update=True):
         for pkg in packages:
             branch = update_branch (moduleset, pkg, update=update)
             if branch != None:
-                pulse.db.RecordBranchRelation.set_related (record, 'contains', branch)
+                pulse.db.RecordBranchRelation.set_related (record, 'SetModule', branch)
 
     return record
 
