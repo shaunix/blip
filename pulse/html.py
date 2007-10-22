@@ -92,7 +92,7 @@ class FactsComponent (Block):
                     if isinstance (f, basestring) or isinstance (f, Block):
                         p (fd, f)
                     elif isinstance (f, pulse.db.Resource):
-                        p (fd, '<a href="%(url)s">%(title)s</a>' % pulse.utils.attrdict([f]))
+                        p (fd, '<a href="%(pulse_url)s">%(title)s</a>' % pulse.utils.attrdict([f]))
                     elif hasattr (f, '__getitem__'):
                         for ff in f:
                             p (fd, '<div>')
@@ -264,7 +264,7 @@ class ResourceLinkBox (ContentComponent, FactsComponent):
         if (d['icon_url'] != None):
             p (fd, '<img class="icon" src="%(icon_url)s" alt="%(_title)s">' %d)
         p (fd, '</td><td class="rlink-text">')
-        p (fd, '<div class="rlink-title"><a href="%(url)s">%(_title)s</a></div>' %d)
+        p (fd, '<div class="rlink-title"><a href="%(pulse_url)s">%(_title)s</a></div>' %d)
         if self._description != None:
             p (fd, '<div class="rlink-desc">%s</div>' % self._description)
         FactsComponent.output (self, fd=fd)
@@ -385,7 +385,7 @@ class SynopsisDiv (Block):
         if len(self._sublinks) > 0:
             name_ = d['name']
         else:
-            name_ = ('<a href="%(url)s/">%(name)s</a>' %d)
+            name_ = ('<a href="%(pulse_url)s/">%(name)s</a>' %d)
         if d.has_val ('nick'):
             # FIXME: i18n
             nick_ =  (' (%(nick)s)' %d)
