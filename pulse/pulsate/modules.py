@@ -200,7 +200,7 @@ def process_maintainers (branch, checkout, **kw):
         rels.append (pulse.db.BranchEntityRelation.set_related (subj=branch,
                                                                 verb='ModuleMaintainer',
                                                                 pred=person))
-    branch.set_relations (pulse.db.BranchEntityRelation, 'maintainer', rels)
+    branch.set_relations (pulse.db.BranchEntityRelation, 'ModuleMaintainer', rels)
 
     pulse.db.Timestamp.set_timestamp (rel_scm, mtime)
 
@@ -312,10 +312,12 @@ def process_gdu_docdir (branch, checkout, docdir, makefile, **kw):
     doc_module = makefile['DOC_MODULE']
     ident = '/'.join(['/doc', bserver, bmodule, doc_module, bbranch])
     document = pulse.db.Branch.get_record (ident=ident, type='Document')
+    relpath = pulse.utils.relative_path (docdir, checkout.directory)
 
     data = {}
     data['subtype'] = 'gdu-docbook'
-    data['scm_dir'] = pulse.utils.relative_path (docdir, checkout.directory)
+    data['scm_dir'] = os.path.join (relpath, 'C')
+    data['scm_file'] = doc_module + '.xml'
     document.update (data)
 
     if makefile.has_key ('DOC_LINGUAS'):

@@ -297,7 +297,7 @@ class PulseRelation (object):
         return res.count() > 0
 
     def remove (self):
-        pulse.utils.log ('Removing relation %s %s %s' % (self.subj, self.verb, self.pred))
+        pulse.utils.log ('Removing relation %s -%s- %s' % (self.subj.ident, self.verb, self.pred.ident))
         self.__class__.delete (self.id)
 
 class RecordRelation (PulseRelation, sql.SQLObject):
