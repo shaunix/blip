@@ -94,9 +94,6 @@ def update_branch (moduleset, key, update=True):
     record = pulse.db.Branch.get_record (ident=ident, type='Module')
     record.update (data)
 
-    if pulse.scm.default_branches[record.scm_type] == record.scm_branch:
-        record.resource.default_branch = record
-
     return record
 
 def update_set (data, update=True):
