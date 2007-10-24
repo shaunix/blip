@@ -55,7 +55,7 @@ class SublinksComponent (Block):
         if len(sublinks) > 0:
             p (fd, '<div class="sublinks">')
             for i in range(len(sublinks)):
-                str = (i != 0 and ' • ' or '')
+                str = (i != 0 and u' • ' or '')
                 if sublinks[i][0] != None:
                     str += ('<a href="%s">%s</a>' %sublinks[i])
                 else:
