@@ -113,10 +113,17 @@ def output_doc (doc, path=[], query=[], http=True, fd=None):
     for t, l in (('author', authors), ('editor', editors), ('credit', credits), ('maint', maints)):
         for cr in l:
             people.setdefault (cr.pred, [])
-            people[cr.pred] += t
+            people[cr.pred].append(t)
     if len(people) > 0:
         for person in pulse.utils.attrsorted (people.keys(), 'title'):
-            box.add_resource_link (person)
+            reslink = box.add_resource_link (person)
+            badges = people[person]
+            if 'maint' in badges:
+                reslink.add_badge ('maintainer')
+            if 'author' in badges:
+                reslink.add_badge ('author')
+            if 'editor' in badges:
+                reslink.add_badge ('editor')
     else:
         box.add_content (pulse.html.AdmonBox (pulse.html.AdmonBox.warning,
                                               pulse.utils.gettext ('No developers') ))

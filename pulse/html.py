@@ -257,12 +257,16 @@ class ResourceLinkBox (ContentComponent, FactsComponent):
         self._superlative = kw.get ('superlative', False)
         self._title = resource.title
         self._description = resource.localized_desc
+        self._badges = []
 
     def set_title (self, title):
         self._title = title
 
     def set_description (self, description):
         self._description = description
+
+    def add_badge (self, badge):
+        self._badges.append (badge)
 
     def output (self, fd=sys.stdout):
         d = pulse.utils.attrdict ([self, self._resource, pulse.config])
@@ -271,7 +275,13 @@ class ResourceLinkBox (ContentComponent, FactsComponent):
         if (d['icon_url'] != None):
             p (fd, '<img class="icon" src="%(icon_url)s" alt="%(_title)s">' %d)
         p (fd, '</td><td class="rlink-text">')
-        p (fd, '<div class="rlink-title"><a href="%(pulse_url)s">%(_title)s</a></div>' %d)
+        p (fd, '<div class="rlink-title"><a href="%(pulse_url)s">%(_title)s</a>' %d)
+        if len(self._badges) > 0:
+            p (fd, ' ')
+            for badge in self._badges:
+                p (fd, '<img src="%sdata/badge-%s-16.png" width="16" height="16" alt="%s">' %
+                   (pulse.config.webroot, badge, badge))
+        p (fd, '</div>')
         if self._description != None:
             p (fd, '<div class="rlink-desc">%s</div>' % self._description)
         FactsComponent.output (self, fd=fd)
