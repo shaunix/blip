@@ -182,7 +182,7 @@ def output_branch (branch, path=[], query=[], http=True, fd=None):
         for doc in pulse.utils.attrsorted (docs[0:], 'title'):
             rlink = box.add_resource_link (doc)
             res = pulse.db.Branch.selectBy (parent=doc, type='Translation')
-            rlink.add_fact ('', pulse.utils.gettext ('%i translations') % res.count())
+            rlink.add_fact_div (pulse.utils.gettext ('%i translations') % res.count())
     else:
         box.add_content (pulse.html.AdmonBox (pulse.html.AdmonBox.warning,
                                               pulse.utils.gettext ('No documents') ))

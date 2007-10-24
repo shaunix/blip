@@ -69,7 +69,11 @@ class SublinksComponent (Block):
 class FactsComponent (Block):
     def __init__ (self, **kw):
         Block.__init__ (self, **kw)
+        self._divs = []
         self._facts = []
+
+    def add_fact_div (self, value):
+        self._divs.append (value)
 
     def add_fact (self, key, value):
         self._facts.append ((key, value))
@@ -78,6 +82,9 @@ class FactsComponent (Block):
         self._facts.append (None)
 
     def output (self, fd=sys.stdout):
+        if len (self._divs) != 0:
+            for div in self._divs:
+                p (fd, '<div class="fact">%s</div>' % div)
         if len (self._facts) == 0:
             return
         p (fd, '<table class="facts">')
