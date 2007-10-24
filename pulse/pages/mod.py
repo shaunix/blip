@@ -145,7 +145,7 @@ def output_branch (branch, path=[], query=[], http=True, fd=None):
             grid = pulse.html.GridBox ()
             reslink.add_content (grid)
             for translation in pulse.utils.attrsorted (translations[0:], 'title'):
-                grid.add_row ((translation.title,))
+                grid.add_row ((translation.scm_file[:-3],))
     else:
         box.add_content (pulse.html.AdmonBox (pulse.html.AdmonBox.warning,
                                               pulse.utils.gettext ('No domains') ))
