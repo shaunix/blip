@@ -86,7 +86,13 @@ class KeyFile (object):
                         self._data[group][keybase] = {'C' : self._data[group][keybase]}
                     self._data[group][keybase][keylang] = value
                 else:
-                    self._data[group][key] = value
+                    if self._data[group].has_key (key):
+                        if isinstance (self._data[group][key], dict):
+                            self._data[group][key]['C'] = value
+                        else:
+                            raise pulse.utils.PulseException ('Duplicate entry for %s in %s' % (key, fd.nae))
+                    else:
+                        self._data[group][key] = value
 
     def get_groups (self):
         return self._data.keys()
