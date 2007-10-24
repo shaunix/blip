@@ -18,6 +18,7 @@
 # Suite 330, Boston, MA  0211-1307  USA.
 #
 
+import codecs
 import ConfigParser
 import re
 
@@ -26,7 +27,7 @@ class Automake (object):
         self._variables = {}
         self._lines = []
         regexp = re.compile ('''([A-Za-z_]+)(\s*=)(.*)''')
-        fd = open (filename)
+        fd = codecs.open (filename, 'r', 'utf-8')
         line = fd.readline ()
         while line:
             if '#' in line: line = line[line.index('#')]
@@ -65,7 +66,7 @@ class Automake (object):
 class KeyFile (object):
     def __init__ (self, f):
         if isinstance (f, basestring):
-            fd = open (f)
+            fd = codecs.open (f, 'r', 'utf-8')
         else:
             fd = f
         cfg = ConfigParser.ConfigParser()
@@ -121,7 +122,7 @@ class Po:
             self._inkey = ''
             self._msg = {}
                 
-        for line in open (self._filename):
+        for line in codecs.open (self._filename, 'r', 'utf-8'):
             line = line.strip()
             if line.startswith ('#~'):
                 continue

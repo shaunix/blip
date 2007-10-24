@@ -547,4 +547,4 @@ def p (fd, s):
     if isinstance (s, Block):
         s.output (fd=fd)
     else:
-        print >>fd, s
+        print >>fd, s.encode('utf-8')
