@@ -78,6 +78,8 @@ class KeyFile (object):
             for key, value in cfg.items (group):
                 lb = key.find ('[')
                 rb = key.find (']')
+                if not isinstance (value, unicode):
+                    value = unicode(value, 'utf-8')
                 if lb >= 0 and rb > lb:
                     keybase = key[0:lb]
                     keylang = key[lb+1:rb]
