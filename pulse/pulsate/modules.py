@@ -526,7 +526,7 @@ def process_oafserver (branch, checkout, filename, **kw):
                 if applet_icon == '': applet_icon = None
         if not is_applet or applet_icon == None:
             continue
-        ident = '/'.join(['/app', bserver, bmodule, applet_iid, bbranch])
+        ident = '/'.join(['/applet', bserver, bmodule, applet_iid, bbranch])
         applet = pulse.db.Branch.get_record (ident=ident, type='Applet')
         applet.update_name (applet_name)
         applet.update_desc (applet_desc)
