@@ -124,7 +124,7 @@ def output_branch (branch, path=[], query=[], http=True, fd=None):
 
     # Developers
     box = pulse.html.InfoBox ('developers', pulse.utils.gettext ('Developers'))
-    developers = pulse.db.BranchEntityRelation.selectBy (subj=module, verb='ModuleMaintainer')
+    developers = pulse.db.BranchEntityRelation.selectBy (subj=branch, verb='ModuleMaintainer')
     if developers.count() > 0:
         for rel in pulse.utils.attrsorted (developers[0:], 'pred', 'title'):
             box.add_resource_link (rel.pred)
