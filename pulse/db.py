@@ -208,6 +208,17 @@ class Branch (Record):
     scm_dir = sql.StringCol (default=None)
     scm_file = sql.StringCol (default=None)
 
+    def _ensure_default_branch (self):
+        if getattr (self, 'scm_type', None) != None and getattr (self, 'scm_branch', None) != None:
+            if pulse.scm.default_branches[self.scm_type] == self.scm_branch:
+                self.resource.default_branch = self
+    def _set_scm_type (self, value):
+        self._ensure_default_branch ()
+        self._SO_set_scm_type (value)
+    def _set_scm_branch (self, value):
+        self._ensure_default_branch ()
+        self._SO_set_scm_branch (value)
+
     @ classmethod
     def get_record (cls, ident, type):
         record = cls.selectBy (ident=ident, type=type)
@@ -218,6 +229,7 @@ class Branch (Record):
         if record.resource == None:
             ident = '/'.join(record.ident.split('/')[:-1])
             record.resource = Resource.get_record (ident=ident, type=record.type)
+        record._ensure_default_branch ()
         return record
 
     def get_branch_title (self):
@@ -245,6 +257,8 @@ class Branch (Record):
         for child in children:
             olddict.pop (child.ident, None)
             child.parent = self
+            if self.resource.default_branch == self:
+                child.resource.default_branch = child
         for old in olddict.values():
             old.remove ()
 
