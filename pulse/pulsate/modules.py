@@ -300,7 +300,7 @@ def process_podir (branch, checkout, podir, **kw):
         ldata['subtype'] = 'intltool'
         ldata['scm_dir'] = data['scm_dir']
         ldata['scm_file'] = lang + '.po'
-        translation.update (data)
+        translation.update (ldata)
     domain.set_children ('Translation', translations)
 
     pulse.db.Timestamp.set_timestamp (rel_scm, mtime)
@@ -330,7 +330,7 @@ def process_gdu_docdir (branch, checkout, docdir, makefile, **kw):
             ldata['subtype'] = 'xml2po'
             ldata['scm_dir'] = os.path.join (pulse.utils.relative_path (docdir, checkout.directory), lang)
             ldata['scm_file'] = lang + '.po'
-            translation.update (data)
+            translation.update (ldata)
         document.set_children ('Translation', translations)
     return document
 
