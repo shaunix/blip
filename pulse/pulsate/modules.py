@@ -578,8 +578,17 @@ def main (argv, options={}):
         prefix = argv[0]
 
     if prefix != None:
-        branches = pulse.db.Branch.select ((pulse.db.Branch.q.type == 'Module') &
-                                           (pulse.db.Branch.q.ident.startswith (prefix)) )
+        if prefix[:5] == '/set/':
+            sets = pulse.db.Record.select ((pulse.db.Record.q.type == 'Set') &
+                                           (pulse.db.Record.q.ident.startswith (prefix)) )
+            branches = []
+            for set in sets:
+                rels = pulse.db.RecordBranchRelation.selectBy (subj=set, verb='SetModule')
+                for rel in rels:
+                    branches.append (rel.pred)
+        else:
+            branches = pulse.db.Branch.select ((pulse.db.Branch.q.type == 'Module') &
+                                               (pulse.db.Branch.q.ident.startswith (prefix)) )
     else:
         branches = pulse.db.Branch.selectBy (type='Module')
 
