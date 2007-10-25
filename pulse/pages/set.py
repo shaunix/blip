@@ -23,6 +23,8 @@ import pulse.db
 import pulse.html
 import pulse.utils
 
+from sqlobject.sqlbuilder import *
+
 def main (path=[], query={}, http=True, fd=None):
     # FIXME: path == [] -> show all top-level sets
     ident = '/' + '/'.join(path[:2])
@@ -51,22 +53,27 @@ def output_set (set, path=[], query=[], http=True, fd=None):
             subset = rel.pred
             reslink = pulse.html.ResourceLinkBox (subset)
             page.add_content (reslink)
-            subrels = pulse.db.RecordBranchRelation.selectBy (subj=subset, verb='SetModule')
-            reslink.add_fact_div (pulse.utils.gettext ('%i modules') % subrels.count())
-            documents = 0;
-            domains = 0;
-            applications = 0;
-            applets = 0;
-            for subrel in subrels:
-                branch = subrel.pred
-                documents += pulse.db.Branch.selectBy (parent=branch, type='Document').count()
-                domains += pulse.db.Branch.selectBy (parent=branch, type='Domain').count()
-                applications += pulse.db.Branch.selectBy (parent=branch, type='Application').count()
-                applets += pulse.db.Branch.selectBy (parent=branch, type='Applet').count()
-            reslink.add_fact_div (pulse.utils.gettext ('%i documents') % documents)
-            reslink.add_fact_div (pulse.utils.gettext ('%i domains') % domains)
-            reslink.add_fact_div (pulse.utils.gettext ('%i applications') % applications)
-            reslink.add_fact_div (pulse.utils.gettext ('%i applets') % applets)
+            cnt = pulse.db.RecordBranchRelation.selectBy (subj=subset, verb='SetModule')
+            cnt = cnt.count()
+            reslink.add_fact_div (pulse.utils.gettext ('%i modules') % cnt)
+            if cnt == 0: continue
+
+            Module = Alias (pulse.db.Branch, 'Module')
+            things = (('Document', pulse.utils.gettext ('%i documents')),
+                      ('Domain', pulse.utils.gettext ('%i domains')),
+                      ('Application', pulse.utils.gettext ('%i applications')),
+                      ('Applet', pulse.utils.gettext ('%i applets'))
+                      )
+            for type, txt in things:
+                cnt = pulse.db.Branch.select (
+                    AND(pulse.db.Branch.q.type == type,
+                        pulse.db.RecordBranchRelation.q.subjID == subset.id),
+                    join=LEFTJOINOn(Module, pulse.db.RecordBranchRelation,
+                                    AND(pulse.db.Branch.q.parentID == Module.q.id,
+                                        Module.q.id == pulse.db.RecordBranchRelation.q.predID)) )
+                cnt = cnt.count()
+                if cnt > 0:
+                    reslink.add_fact_div (txt % cnt)
 
     rels = pulse.db.RecordBranchRelation.selectBy (subj=set, verb='SetModule')
 
