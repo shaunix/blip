@@ -20,6 +20,7 @@
 
 import os
 import re
+import urllib
 import xml.dom.minidom
 
 import pulse.db
@@ -66,7 +67,7 @@ def update_gdu_docbook (doc, update=True, timestamps=True):
                 else:
                     ent = None
             if ent == None:
-                ident = '/ghost/' + re.sub ('[^A-Za-z0-9]', '', cr_name)
+                ident = '/ghost/' + urllib.quote (cr_name)
                 ent = pulse.db.Entity.get_record (ident=ident, type='Ghost')
                 ent.update_name ({'C' : cr_name})
                 if cr_email != None:
@@ -221,7 +222,7 @@ def personname (node):
         if child.nodeType != child.ELEMENT_NODE:
             continue
         if child.tagName == 'personname':
-            namestr = personname (child)
+            namestr = personname(child)[0]
         elif child.tagName == 'email':
             email = strvalue (child)
         elif namestr == None:
@@ -235,7 +236,7 @@ def personname (node):
         while None in name:
             name.remove(None)
         namestr = ' '.join (name)
-    return (namestr, email)
+    return (normalize (namestr), normalize (email))
 
 
 ################################################################################
