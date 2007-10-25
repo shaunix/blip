@@ -275,7 +275,11 @@ class ResourceLinkBox (ContentComponent, FactsComponent):
         if (d['icon_url'] != None):
             p (fd, '<img class="icon" src="%(icon_url)s" alt="%(_title)s">' %d)
         p (fd, '</td><td class="rlink-text">')
-        p (fd, '<div class="rlink-title"><a href="%(pulse_url)s">%(_title)s</a>' %d)
+        p (fd, '<div class="rlink-title">')
+        if True or self._resource.type != 'Ghost':
+            p (fd, '<a href="%(pulse_url)s">%(_title)s</a>' %d)
+        else:
+            p (fd, self._title)
         if len(self._badges) > 0:
             p (fd, ' ')
             for badge in self._badges:
