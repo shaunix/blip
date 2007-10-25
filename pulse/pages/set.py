@@ -26,7 +26,9 @@ import pulse.utils
 from sqlobject.sqlbuilder import *
 
 def main (path=[], query={}, http=True, fd=None):
-    # FIXME: path == [] -> show all top-level sets
+    if len(path) == 1:
+        return output_top (path=path, query=query, http=http, fd=fd)
+    
     ident = '/' + '/'.join(path[:2])
     sets = pulse.db.Record.selectBy (ident=ident)
     if sets.count() == 0:
@@ -44,40 +46,61 @@ def main (path=[], query={}, http=True, fd=None):
     return output_set (set, path, query, http, fd)
 
 
+def output_top (path=[], query=[], http=True, fd=None):
+    page = pulse.html.Page (http=http)
+    page.set_title (pulse.utils.gettext ('Sets'))
+
+    sets = pulse.db.Record.select (
+        pulse.db.RecordRelation.q.subjID == None,
+        join=LEFTJOINOn(None, pulse.db.RecordRelation,
+                        AND (pulse.db.RecordRelation.q.predID == pulse.db.Record.q.id,
+                             pulse.db.RecordRelation.q.verb == 'SetSubset')) )
+    for set in sets:
+        add_subset (set, page)
+
+    page.output(fd=fd)
+
+    return 0
+
+
 def output_set (set, path=[], query=[], http=True, fd=None):
     page = pulse.html.ResourcePage (set, http=http)
 
     rels = pulse.db.RecordRelation.selectBy (subj=set, verb='SetSubset')
     if rels.count() > 0:
         for rel in pulse.utils.attrsorted (rels, 'pred', 'title'):
-            subset = rel.pred
-            reslink = pulse.html.ResourceLinkBox (subset)
-            page.add_content (reslink)
-            cnt = pulse.db.RecordBranchRelation.selectBy (subj=subset, verb='SetModule')
-            cnt = cnt.count()
-            reslink.add_fact_div (pulse.utils.gettext ('%i modules') % cnt)
-            if cnt == 0: continue
-
-            Module = Alias (pulse.db.Branch, 'Module')
-            things = (('Document', pulse.utils.gettext ('%i documents')),
-                      ('Domain', pulse.utils.gettext ('%i domains')),
-                      ('Application', pulse.utils.gettext ('%i applications')),
-                      ('Library', pulse.utils.gettext ('%i libraries')),
-                      ('Applet', pulse.utils.gettext ('%i applets'))
-                      )
-            for type, txt in things:
-                cnt = pulse.db.Branch.select (
-                    AND(pulse.db.Branch.q.type == type,
-                        pulse.db.RecordBranchRelation.q.subjID == subset.id),
-                    join=LEFTJOINOn(Module, pulse.db.RecordBranchRelation,
-                                    AND(pulse.db.Branch.q.parentID == Module.q.id,
-                                        Module.q.id == pulse.db.RecordBranchRelation.q.predID)) )
-                cnt = cnt.count()
-                if cnt > 0:
-                    reslink.add_fact_div (txt % cnt)
-
+            add_subset (rel.pred, page)
+        
     rels = pulse.db.RecordBranchRelation.selectBy (subj=set, verb='SetModule')
 
     page.output(fd=fd)
 
     return 0
+
+
+def add_subset (subset, page):
+    reslink = pulse.html.ResourceLinkBox (subset)
+    page.add_content (reslink)
+    cnt = pulse.db.RecordBranchRelation.selectBy (subj=subset, verb='SetModule')
+    cnt = cnt.count()
+    reslink.add_fact_div (pulse.utils.gettext ('%i modules') % cnt)
+    if cnt == 0: return
+
+    Module = Alias (pulse.db.Branch, 'Module')
+    things = (('Document', pulse.utils.gettext ('%i documents')),
+              ('Domain', pulse.utils.gettext ('%i domains')),
+              ('Application', pulse.utils.gettext ('%i applications')),
+              ('Library', pulse.utils.gettext ('%i libraries')),
+              ('Applet', pulse.utils.gettext ('%i applets'))
+              )
+    for type, txt in things:
+        cnt = pulse.db.Branch.select (
+            AND(pulse.db.Branch.q.type == type,
+                pulse.db.RecordBranchRelation.q.subjID == subset.id),
+            join=LEFTJOINOn(Module, pulse.db.RecordBranchRelation,
+                            AND(pulse.db.Branch.q.parentID == Module.q.id,
+                                Module.q.id == pulse.db.RecordBranchRelation.q.predID)) )
+        cnt = cnt.count()
+        if cnt > 0:
+            reslink.add_fact_div (txt % cnt)
+
