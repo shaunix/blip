@@ -27,7 +27,7 @@ class Automake (object):
         self._variables = {}
         self._lines = []
         regexp = re.compile ('''([A-Za-z_]+)(\s*=)(.*)''')
-        fd = codecs.open (filename, 'r', 'utf-8')
+        fd = open (filename)
         line = fd.readline ()
         while line:
             if '#' in line: line = line[line.index('#')]
