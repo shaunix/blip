@@ -62,6 +62,7 @@ def output_set (set, path=[], query=[], http=True, fd=None):
             things = (('Document', pulse.utils.gettext ('%i documents')),
                       ('Domain', pulse.utils.gettext ('%i domains')),
                       ('Application', pulse.utils.gettext ('%i applications')),
+                      ('Library', pulse.utils.gettext ('%i libraries')),
                       ('Applet', pulse.utils.gettext ('%i applets'))
                       )
             for type, txt in things:
