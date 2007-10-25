@@ -319,7 +319,7 @@ class RecordRelation (PulseRelation, sql.SQLObject):
         table = 'RecordRelation'
 
     subj = sql.ForeignKey ('Record', dbName='subj')
-    pred = sql.ForeignKey ('Branch', dbName='pred')
+    pred = sql.ForeignKey ('Record', dbName='pred')
     verb = sql.StringCol ()
 
 class RecordBranchRelation (PulseRelation, sql.SQLObject):
