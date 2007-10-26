@@ -116,7 +116,11 @@ def update_branch (branch, update=True, timestamps=True):
 
     applications = []
     for keyfile in keyfiles:
-        app = process_keyfile (branch, checkout, keyfile, images=images, timestamps=timestamps)
+        try:
+            app = process_keyfile (branch, checkout, keyfile, images=images, timestamps=timestamps)
+        except:
+            # FIXME: log something
+            app = None
         if app != None:
             if default_resource == None:
                 if app.ident.split('/')[-1] == branch.scm_module:
