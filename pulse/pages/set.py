@@ -49,16 +49,23 @@ def main (path=[], query={}, http=True, fd=None):
 def output_top (path=[], query=[], http=True, fd=None):
     page = pulse.html.Page (http=http)
     page.set_title (pulse.utils.gettext ('Sets'))
-    dl = pulse.html.DefinitionList ()
-    page.add_content (dl)
 
     sets = pulse.db.Record.select (
         pulse.db.RecordRelation.q.subjID == None,
         join=LEFTJOINOn(None, pulse.db.RecordRelation,
                         AND (pulse.db.RecordRelation.q.predID == pulse.db.Record.q.id,
                              pulse.db.RecordRelation.q.verb == 'SetSubset')) )
-    for set in sets:
-        add_subset (set, dl)
+    sets = pulse.utils.attrsorted (sets[0:], 'title')
+    # We should probably max this a 3 if we get more sets
+    columns = pulse.html.ColumnBox (len(sets))
+    page.add_content (columns)
+    for i in range(len(sets)):
+        set = sets[i]
+        box = pulse.html.InfoBox ('set', set.title)
+        columns.add_content (i, box)
+        dl = pulse.html.DefinitionList ()
+        box.add_content (dl)
+        add_set_entries (set, dl)
 
     page.output(fd=fd)
 
@@ -73,7 +80,9 @@ def output_set (set, path=[], query=[], http=True, fd=None):
     rels = pulse.db.RecordRelation.selectBy (subj=set, verb='SetSubset')
     if rels.count() > 0:
         for rel in pulse.utils.attrsorted (rels, 'pred', 'title'):
-            add_subset (rel.pred, dl)
+            set = rel.pred
+            dl.add_term (pulse.html.Link (set))
+            add_set_entries (set, dl)
         
     rels = pulse.db.RecordBranchRelation.selectBy (subj=set, verb='SetModule')
 
@@ -82,9 +91,19 @@ def output_set (set, path=[], query=[], http=True, fd=None):
     return 0
 
 
-def add_subset (subset, dl):
-    dl.add_term (pulse.html.Link (subset))
-    cnt = pulse.db.RecordBranchRelation.selectBy (subj=subset, verb='SetModule')
+def add_set_entries (set, dl):
+    rels = pulse.db.RecordRelation.selectBy (subj=set, verb='SetSubset')
+    rels = pulse.utils.attrsorted (rels[0:], 'pred', 'title')
+    if len(rels) > 0:
+        for rel in rels:
+            subset = rel.pred
+            subdl = pulse.html.DefinitionList ()
+            subdl.add_term (pulse.html.Link (subset))
+            add_set_entries (subset, subdl)
+            dl.add_entry (subdl)
+        return
+
+    cnt = pulse.db.RecordBranchRelation.selectBy (subj=set, verb='SetModule')
     cnt = cnt.count()
     dl.add_entry (pulse.utils.gettext ('%i modules') % cnt)
     if cnt == 0: return
@@ -99,11 +118,11 @@ def add_subset (subset, dl):
     for type, txt, ext in things:
         cnt = pulse.db.Branch.select (
             AND(pulse.db.Branch.q.type == type,
-                pulse.db.RecordBranchRelation.q.subjID == subset.id),
+                pulse.db.RecordBranchRelation.q.subjID == set.id),
             join=LEFTJOINOn(Module, pulse.db.RecordBranchRelation,
                             AND(pulse.db.Branch.q.parentID == Module.q.id,
                                 Module.q.id == pulse.db.RecordBranchRelation.q.predID)) )
         cnt = cnt.count()
         if cnt > 0:
-            dl.add_entry (pulse.html.Link (subset.pulse_url + '/' + ext, txt % cnt))
+            dl.add_entry (pulse.html.Link (set.pulse_url + '/' + ext, txt % cnt))
 
