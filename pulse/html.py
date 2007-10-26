@@ -604,4 +604,7 @@ def p (fd, s):
     if isinstance (s, Block):
         s.output (fd=fd)
     else:
-        print >>fd, s.encode('utf-8')
+        try:
+            print >>fd, s.encode('utf-8')
+        except:
+            print >>fd, s
