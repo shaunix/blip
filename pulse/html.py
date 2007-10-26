@@ -98,13 +98,13 @@ class FactsComponent (Block):
                 def factout (f):
                     if isinstance (f, basestring) or isinstance (f, Block):
                         p (fd, f)
-                    elif isinstance (f, pulse.db.Resource):
+                    elif isinstance (f, pulse.db.Record):
                         p (fd, '<a href="%(pulse_url)s">%(title)s</a>' % pulse.utils.attrdict([f]))
                     elif hasattr (f, '__getitem__'):
                         for ff in f:
                             p (fd, '<div>')
                             factout (ff)
-                            p (fd, '</div')
+                            p (fd, '</div>')
                 factout (fact[1])
                 p (fd, '</td></tr>')
         p (fd, '</table>')
@@ -354,8 +354,51 @@ class AdmonBox (Block):
         p (fd, self._title)
         p (fd, '</div>')
 
+
+################################################################################
+## Lists
+
+class DefinitionList (Block):
+    def __init__ (self, **kw):
+        Block.__init__ (self, **kw)
+        self._all = []
+
+    def add_term (self, term):
+        self._all.append (('dt', term))
+
+    def add_entry (self, entry):
+        self._all.append (('dd', entry))
+        
+    def output (self, fd=sys.stdout):
+        p (fd, '<dl>')
+        for d in self._all:
+            p (fd, '<%s>' % d[0])
+            p (fd, d[1])
+            p (fd, '</%s>' % d[0])
+        p (fd, '</dl>')
+
+
 ################################################################################
 ## Other...
+
+class Link (Block):
+    def __init__ (self, *args, **kw):
+        Block.__init__ (self, **kw)
+        if isinstance (args[0], pulse.db.Record):
+            self._href = args[0].pulse_url
+            self._text = args[0].title
+        elif len(args) > 1:
+            self._href = args[0]
+            self._text = args[1]
+        else:
+            self._href = self._text = args[0]
+    
+    def output (self, fd=sys.stdout):
+        p (fd, '<a href="%s">%s</a>' % (self._href, self._text))
+
+
+################################################################################
+## FIXME
 
 class SynopsisDiv (Block):
     def __init__ (self, resource, **kw):

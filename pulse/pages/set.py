@@ -49,6 +49,8 @@ def main (path=[], query={}, http=True, fd=None):
 def output_top (path=[], query=[], http=True, fd=None):
     page = pulse.html.Page (http=http)
     page.set_title (pulse.utils.gettext ('Sets'))
+    dl = pulse.html.DefinitionList ()
+    page.add_content (dl)
 
     sets = pulse.db.Record.select (
         pulse.db.RecordRelation.q.subjID == None,
@@ -56,7 +58,7 @@ def output_top (path=[], query=[], http=True, fd=None):
                         AND (pulse.db.RecordRelation.q.predID == pulse.db.Record.q.id,
                              pulse.db.RecordRelation.q.verb == 'SetSubset')) )
     for set in sets:
-        add_subset (set, page)
+        add_subset (set, dl)
 
     page.output(fd=fd)
 
@@ -65,11 +67,13 @@ def output_top (path=[], query=[], http=True, fd=None):
 
 def output_set (set, path=[], query=[], http=True, fd=None):
     page = pulse.html.ResourcePage (set, http=http)
+    dl = pulse.html.DefinitionList ()
+    page.add_content (dl)
 
     rels = pulse.db.RecordRelation.selectBy (subj=set, verb='SetSubset')
     if rels.count() > 0:
         for rel in pulse.utils.attrsorted (rels, 'pred', 'title'):
-            add_subset (rel.pred, page)
+            add_subset (rel.pred, dl)
         
     rels = pulse.db.RecordBranchRelation.selectBy (subj=set, verb='SetModule')
 
@@ -78,22 +82,21 @@ def output_set (set, path=[], query=[], http=True, fd=None):
     return 0
 
 
-def add_subset (subset, page):
-    reslink = pulse.html.ResourceLinkBox (subset)
-    page.add_content (reslink)
+def add_subset (subset, dl):
+    dl.add_term (pulse.html.Link (subset))
     cnt = pulse.db.RecordBranchRelation.selectBy (subj=subset, verb='SetModule')
     cnt = cnt.count()
-    reslink.add_fact_div (pulse.utils.gettext ('%i modules') % cnt)
+    dl.add_entry (pulse.utils.gettext ('%i modules') % cnt)
     if cnt == 0: return
 
     Module = Alias (pulse.db.Branch, 'Module')
-    things = (('Document', pulse.utils.gettext ('%i documents')),
-              ('Domain', pulse.utils.gettext ('%i domains')),
-              ('Application', pulse.utils.gettext ('%i applications')),
-              ('Library', pulse.utils.gettext ('%i libraries')),
-              ('Applet', pulse.utils.gettext ('%i applets'))
+    things = (('Document', pulse.utils.gettext ('%i documents'), 'docs'),
+              ('Domain', pulse.utils.gettext ('%i domains'), 'i18n'),
+              ('Application', pulse.utils.gettext ('%i applications'), 'etc#apps'),
+              ('Library', pulse.utils.gettext ('%i libraries'), 'etc#libs'),
+              ('Applet', pulse.utils.gettext ('%i applets'), 'etc#applets')
               )
-    for type, txt in things:
+    for type, txt, ext in things:
         cnt = pulse.db.Branch.select (
             AND(pulse.db.Branch.q.type == type,
                 pulse.db.RecordBranchRelation.q.subjID == subset.id),
@@ -102,5 +105,5 @@ def add_subset (subset, page):
                                 Module.q.id == pulse.db.RecordBranchRelation.q.predID)) )
         cnt = cnt.count()
         if cnt > 0:
-            reslink.add_fact_div (txt % cnt)
+            dl.add_entry (pulse.html.Link (subset.pulse_url + '/' + ext, txt % cnt))
 
