@@ -35,65 +35,108 @@ modulesets = {}
 checkouts = {}
 
 def get_moduleset (file):
-    if modulesets.has_key (file):
-        return modulesets[file]
-    modulesets[file] = {'__dom__' : xml.dom.minidom.parse (file)}
-    def proc_element (node):
-        if node.tagName == 'repository':
-            modulesets[file].setdefault ('__repos__', {})
-            if node.hasAttribute ('name'):
-                modulesets[file]['__repos__'][node.getAttribute ('name')] = node
-            if node.getAttribute ('default') == 'yes':
-                modulesets[file]['__repos__']['__default__'] = node
-        else:
-            if node.hasAttribute ('id'):
-                modulesets[file][node.getAttribute ('id')] = node
-            for child in node.childNodes:
-                if child.nodeType == child.ELEMENT_NODE:
-                    proc_element (child)
-    proc_element (modulesets[file]['__dom__'].documentElement)
+    if not modulesets.has_key (file):
+        modulesets[file] = ModuleSet (file)
     return modulesets[file]
 
+class ModuleSet:
+    def __init__ (self, file):
+        self._packages = {}
+        self._metas = {}
+        self.parse (file)
+
+    def get_packages (self):
+        return self._packages.keys()
+
+    def has_package (self, key):
+        return self._packages.has_key (key)
+
+    def get_package (self, key):
+        return self._packages[key]
+
+    def get_metamodules (self):
+        return self._metas.keys()
+
+    def has_metamodule (self, key):
+        return self._metas.has_key (key)
+
+    def get_metamodule (self, key):
+        return self._metas[key]
+
+    def parse (self, file):
+        dom = xml.dom.minidom.parse (file)
+        repos = {}
+        default_repo = None
+        for node in dom.documentElement.childNodes:
+            if node.nodeType != node.ELEMENT_NODE:
+                continue
+            if node.tagName == 'repository':
+                repo_data = {}
+                repo_data['scm_type'] = node.getAttribute ('type')
+                if repo_data['scm_type'] == 'cvs':
+                    repo_data['scm_server'] = node.getAttribute ('cvsroot')
+                else:
+                    repo_data['scm_server'] = node.getAttribute ('href')
+                repo_data['repo_name'] = node.getAttribute ('name')
+                if node.hasAttribute ('name'):
+                    repos[node.getAttribute ('name')] = repo_data
+                if node.getAttribute ('default') == 'yes':
+                    default_repo = repo_data
+            elif node.tagName == 'autotools':
+                pkg_data = {'id' : node.getAttribute ('id')}
+                for branch in node.childNodes:
+                    if branch.nodeType == branch.ELEMENT_NODE and branch.tagName == 'branch':
+                        if branch.hasAttribute ('repo'):
+                            repo_data = repos.get (branch.getAttribute ('repo'), None)
+                        else:
+                            repo_data = default_repo
+                        if repo_data != None:
+                            pkg_data['scm_type'] = repo_data['scm_type']
+                            pkg_data['scm_server'] = repo_data['scm_server']
+                        if branch.hasAttribute ('module'):
+                            pkg_data['scm_path'] = branch.getAttribute ('module')
+                            if branch.hasAttribute ('checkoutdir'):
+                                pkg_data['scm_module'] = branch.getAttribute ('checkoutdir')
+                            else:
+                                pkg_data['scm_module'] = pkg_data['id']
+                        else:
+                            pkg_data['scm_module'] = pkg_data['id']
+                        if branch.hasAttribute ('revision'):
+                            pkg_data['scm_branch'] = branch.getAttribute ('revision')
+                        else:
+                            pkg_data['scm_branch'] = pulse.scm.default_branches.get(pkg_data['scm_type'])
+                        break
+                if pkg_data.has_key ('scm_type'):
+                    self._packages[pkg_data['id']] = pkg_data
+            elif node.tagName == 'metamodule':
+                meta = []
+                for deps in node.childNodes:
+                    if deps.nodeType == deps.ELEMENT_NODE and deps.tagName == 'dependencies':
+                        for dep in deps.childNodes:
+                            if dep.nodeType == dep.ELEMENT_NODE and dep.tagName == 'dep':
+                                meta.append (dep.getAttribute ('package'))
+                        break
+                self._metas[node.getAttribute ('id')] = meta
+            elif node.tagName == 'include':
+                self.parse (os.path.join (os.path.dirname (file), node.getAttribute ('href')))
+
+
 def update_branch (moduleset, key, update=True):
-    node = moduleset[key]
-    if node.tagName != 'autotools':
+    if not moduleset.has_package (key):
         return None
-    for branch in node.childNodes:
-        if branch.nodeType == branch.ELEMENT_NODE and branch.tagName == 'branch':
-            break
-    if branch.nodeType != branch.ELEMENT_NODE or branch.tagName != 'branch':
-        return None
-    if branch.hasAttribute ('repo'):
-        repo = moduleset['__repos__'][branch.getAttribute ('repo')]
-    else:
-        repo = moduleset['__repos__']['__default__']
+    pkg_data = moduleset.get_package (key)
 
     data = {}
-    data['scm_type'] = repo.getAttribute ('type')
-
-    if data['scm_type'] == 'cvs':
-        data['scm_server'] = repo.getAttribute ('cvsroot')
-    else:
-        data['scm_server'] = repo.getAttribute ('href')
-
-    if branch.hasAttribute ('module'):
-        data['scm_module'] = branch.getAttribute ('module')
-    else:
-        data['scm_module'] = key
-
-    if branch.hasAttribute ('revision'):
-        data['scm_branch'] = branch.getAttribute ('revision')
-    else:
-        data['scm_branch'] = pulse.scm.default_branches.get(data['scm_type'])
-
-    if branch.hasAttribute ('checkoutdir'):
-        data['module_dir'] = branch.getAttribute ('checkoutdir')
-
-    ident = '/mod/' + repo.getAttribute ('name') + '/' + data['scm_module'] + '/' + data['scm_branch']
+    for k in pkg_data.keys():
+        if k[:4] == 'scm_':
+            data[k] = pkg_data[k]
+    servername = pulse.scm.server_name (pkg_data['scm_type'], pkg_data['scm_server'])
+    if servername == None:
+        return None
+    ident = '/'.join (['/mod', servername, pkg_data['scm_module'], pkg_data['scm_branch']])
 
     record = pulse.db.Branch.get_record (ident=ident, type='Module')
     record.update (data)
-
     return record
 
 def update_set (data, update=True):
@@ -133,29 +176,16 @@ def update_set (data, update=True):
 
         packages = []
         if not data.has_key ('jhbuild_metamodule'):
-            for node in moduleset['__dom__'].getElementsByTagName ('autotools'):
-                packages.append (node.getAttribute ('id'))
+            packages = moduleset.get_packages()
         else:
             modules = data['jhbuild_metamodule']
             if isinstance (modules, basestring):
                 modules = [modules]
 
             for module in modules:
-                if not moduleset.has_key (module):
+                if not moduleset.has_metamodule (module):
                     continue
-                node = moduleset[module]
-                if node.tagName != 'metamodule':
-                    continue
-                for deps in node.childNodes:
-                    if deps.nodeType == deps.ELEMENT_NODE and deps.tagName == 'dependencies':
-                        break
-                for child in deps.childNodes:
-                    if child.nodeType == child.ELEMENT_NODE and child.tagName == 'dep':
-                        if not child.hasAttribute ('package'):
-                            continue
-                        pkg = child.getAttribute ('package')
-                        if moduleset.has_key (pkg) and moduleset[pkg].tagName != 'metamodule':
-                            packages.append (pkg)
+                packages += moduleset.get_metamodule (module)
 
         for pkg in packages:
             branch = update_branch (moduleset, pkg, update=update)
