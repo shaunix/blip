@@ -193,7 +193,7 @@ def process_maintainers (branch, checkout, **kw):
         elif line.startswith ('Userid:'):
             userid = line[7:].strip()
     add_maint ()
-    serverid = '.'.join(branch.ident.split('/')[2].split('.')[-2:])
+    serverid = '.'.join (pulse.scm.server_name (branch.scm_type, branch.scm_server).split('.')[-2:])
     rels = []
     for name, userid, email in maints:
         ident = '/person/' + serverid + '/' + userid
