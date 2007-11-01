@@ -63,8 +63,9 @@ class ModuleSet:
     def get_metamodule (self, key):
         return self._metas[key]
 
-    def parse (self, file):
-        dom = xml.dom.minidom.parse (file)
+    def parse (self, filename):
+        base = os.path.basename (filename)
+        dom = xml.dom.minidom.parse (filename)
         repos = {}
         default_repo = None
         for node in dom.documentElement.childNodes:
@@ -108,6 +109,8 @@ class ModuleSet:
                         break
                 if pkg_data.has_key ('scm_type'):
                     self._packages[pkg_data['id']] = pkg_data
+                    self._metas.setdefault (base, [])
+                    self._metas[base].append (pkg_data['id'])
             elif node.tagName == 'metamodule':
                 meta = []
                 for deps in node.childNodes:
@@ -118,7 +121,7 @@ class ModuleSet:
                         break
                 self._metas[node.getAttribute ('id')] = meta
             elif node.tagName == 'include':
-                self.parse (os.path.join (os.path.dirname (file), node.getAttribute ('href')))
+                self.parse (os.path.join (os.path.dirname (filename), node.getAttribute ('href')))
 
 
 def update_branch (moduleset, key, update=True):
@@ -169,14 +172,14 @@ def update_set (data, update=True):
                                            scm_branch=data['jhbuild_scm_branch'],
                                            update=update)
             checkouts[coid] = checkout
-        file = os.path.join (checkout.directory,
-                             data['jhbuild_scm_dir'],
-                             data['jhbuild_scm_file'])
-        moduleset = get_moduleset (file)
+        filename = os.path.join (checkout.directory,
+                                 data['jhbuild_scm_dir'],
+                                 data['jhbuild_scm_file'])
+        moduleset = get_moduleset (filename)
 
         packages = []
         if not data.has_key ('jhbuild_metamodule'):
-            packages = moduleset.get_packages()
+            packages = moduleset.get_metamodule (os.path.basename (filename))
         else:
             modules = data['jhbuild_metamodule']
             if isinstance (modules, basestring):
