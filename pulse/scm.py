@@ -26,6 +26,7 @@ import pulse.utils
 
 default_branches = {
     'cvs' : 'HEAD',
+    'git' : 'master',
     'svn' : 'trunk'
     }
 
@@ -36,7 +37,7 @@ def server_name (scm_type, scm_server):
             return name.split('@')[-1]
         else:
             return name
-    elif scm_type == 'svn':
+    elif scm_type in ('git', 'svn'):
         return scm_server.split('://')[1].split('/')[0]
     else:
         return None
@@ -52,7 +53,7 @@ class Checkout (object):
                     scm_server=record.scm_server,
                     scm_module=record.scm_module,
                     scm_branch=record.scm_branch,
-                    module_dir=record.data.get('module_dir'),
+                    scm_path=record.scm_path,
                     **kw)
 
     def __init__ (self, **kw):
@@ -112,6 +113,7 @@ class Checkout (object):
 
         self.ignoredir = 'CVS'
 
+        self.location = '%s %s@%s' % (self.scm_server, self.scm_module, self.scm_branch)
         self._co = 'cvs -z3 -d%s co -r %s -d %s %s' %(
             self.scm_server,
             self.scm_branch,
@@ -119,22 +121,47 @@ class Checkout (object):
             self.scm_module)
         self._up = 'cvs -z3 up -Pd'
 
+    def _init_git (self):
+        if not hasattr (self, 'scm_module'):
+            raise CheckoutError ('Checkout did not receive a module')
+        if not hasattr (self, 'scm_server'):
+            raise CheckoutError ('Checkout did not receive a server for ' + self.scm_module)
+
+        self.ignoredir = '.git'
+
+        if self.scm_server[-1] != '/':
+            self.scm_server = self.scm_server + '/'
+
+        if getattr (self, 'scm_path', None) != None:
+            url = self.scm_server + self.scm_path
+        else:
+            url = self.scm_server + self.scm_module
+
+        self.location = url + '@' + self.scm_branch
+        self._co = ('git clone --depth 0 %s %s && (cd %s && git checkout origin/%s)' %
+                    (url, self.scm_branch, self.scm_branch, self.scm_branch))
+        self._up = 'git fetch origin && git rebase origin/' + self.scm_branch
+
     def _init_svn (self):
         if not hasattr (self, 'scm_module'):
             raise CheckoutError ('Checkout did not receive a module')
         if not hasattr (self, 'scm_server'):
-            raise CheckoutError ('Checkout did not receive a server for ' % self.scm_module)
+            raise CheckoutError ('Checkout did not receive a server for ' + self.scm_module)
 
         self.ignoredir = '.svn'
 
         if self.scm_server[-1] != '/':
             self.scm_server = self.scm_server + '/'
 
-        if self.scm_branch == 'trunk':
+        if getattr (self, 'scm_path', None) != None:
+            url = self.scm_server + self.scm_path
+        elif self.scm_branch == 'trunk':
             url = self.scm_server + self.scm_module + '/trunk'
         else:
             url = self.scm_server + self.scm_module + '/branches/' + self.scm_branch
-        self._co = 'svn co ' + url
+
+        self.location = url
+        self._co = 'svn co ' + url + ' ' + self.scm_branch
         self._up = 'svn up'
         
     directory = property (lambda self: os.path.join (pulse.config.scmdir,

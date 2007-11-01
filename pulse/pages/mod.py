@@ -21,6 +21,7 @@
 import pulse.config
 import pulse.db
 import pulse.html
+import pulse.scm
 import pulse.utils
 
 def main (path=[], query={}, http=True, fd=None):
@@ -76,6 +77,7 @@ def main (path=[], query={}, http=True, fd=None):
 
 def output_branch (branch, path=[], query=[], http=True, fd=None):
     module = branch.resource
+    checkout = pulse.scm.Checkout.from_record (branch, checkout=False, update=False)
 
     page = pulse.html.ResourcePage (branch, http=http)
 
@@ -102,18 +104,8 @@ def output_branch (branch, path=[], query=[], http=True, fd=None):
         sep = True
 
     if sep: page.add_fact_sep ()
-    
-    if branch.scm_type == 'cvs':
-        page.add_fact (pulse.utils.gettext ('CVS Server'), branch.scm_server)
-        page.add_fact (pulse.utils.gettext ('CVS Module'), branch.scm_module)
-        page.add_fact (pulse.utils.gettext ('CVS Branch'), branch.scm_branch)
-    elif branch.scm_type == 'svn':
-        loc = branch.scm_server + branch.scm_module
-        if branch.scm_branch == 'trunk':
-            loc += '/trunk'
-        else:
-            loc += '/branches/' + branch.scm_branch
-        page.add_fact (pulse.utils.gettext ('SVN Location'), loc)
+
+    page.add_fact (pulse.utils.gettext ('Location'), checkout.location)
 
     if branch.data.has_key ('tarname'):
         page.add_fact_sep ()
