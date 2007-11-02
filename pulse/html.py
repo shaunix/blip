@@ -227,6 +227,21 @@ class PageNotFound (Page):
             self.add_content ('</ul></div>\n')
         self.add_content ('</div>\n')
 
+class PageError (Page):
+    def __init__ (self, message, **kw):
+        http = kw.get ('http', True)
+        title = kw.get ('title', pulse.utils.gettext('Bad Monkeys'))
+        d = pulse.utils.attrdict ([pulse.config])
+        d['title'] = title
+        d['message'] = message
+        Page.__init__ (self,
+                       http=http,
+                       status=500,
+                       title=title)
+        self.add_content ('<div class="servererror">\n')
+        self.add_content ('<div class="message">%(message)s</div>' %d)
+        self.add_content ('</div>\n')
+
 
 ################################################################################
 ## Boxes
