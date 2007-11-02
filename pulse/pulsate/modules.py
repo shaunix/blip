@@ -123,7 +123,7 @@ def update_branch (branch, update=True, timestamps=True):
             app = None
         if app != None:
             if default_resource == None:
-                if app.ident.split('/')[-1] == branch.scm_module:
+                if app.ident.split('/')[-2] == branch.scm_module:
                     default_resource = app
             applications.append (app)
     branch.set_children ('Application', applications)
