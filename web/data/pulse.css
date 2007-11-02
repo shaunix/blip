@@ -111,6 +111,10 @@ body {
   padding: 2.4em;
 }
 
+.notfound, .servererror {
+  max-width: 40em;
+}
+
 h1 {
   font-size: 1.44em;
   color: #555753;
@@ -121,7 +125,7 @@ h1 {
 h1 img { vertical-align: middle; }
 
 a { color: #204a87; text-decoration: none; }
-a:visited { color: #a40000; }
+a:visited { color: #5c3566; }
 a:hover { text-decoration: underline; }
 a img { border: none; }
 table { margin: 0; padding: 0; border-collapse: collapse; }
