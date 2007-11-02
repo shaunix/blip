@@ -212,6 +212,8 @@ def strvalue(node):
     return s
 
 def normalize (s):
+    if s == None:
+        return s
     return re.sub('\s+', ' ', s).strip()
 
 def personname (node):
