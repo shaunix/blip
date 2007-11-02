@@ -27,10 +27,10 @@ potdir = os.path.join (vardir, 'pot')
 scmdir = os.path.join (vardir, 'scm')
 
 webdir = '/home/shaunm/Projects/pulse/web/'
-webroot = 'file:///home/shaunm/Projects/pulse/web/'
+webroot = 'http://shaunmlx/'
 
-icondir = os.path.join (webdir, 'icons')
-iconroot = webroot + 'icons/'
+icondir = os.path.join (webdir, 'var', 'icons')
+iconroot = webroot + 'var/icons/'
 
 # need dir2url to make this use vardir
 dbroot = 'sqlite:/home/shaunm/Projects/pulse/var/pulse.db'
