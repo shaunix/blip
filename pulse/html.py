@@ -302,7 +302,19 @@ class ResourceLinkBox (ContentComponent, FactsComponent):
                    (pulse.config.webroot, badge, badge))
         p (fd, '</div>')
         if self._description != None:
-            p (fd, '<div class="rlink-desc">%s</div>' % self._description)
+            if len(self._description) > 130:
+                i = 120
+                while i < len(self._description):
+                    if self._description[i] == ' ':
+                        break
+                    i += 1
+                if i == len(self._description):
+                    p (fd, '<div class="rlink-desc">%s</div>' % self._description)
+                else:
+                    # FIXME: a cool JS 'more' link would be nice
+                    p (fd, '<div class="rlink-desc">%s</div>' % (self._description[:i] + '...'))
+            else:
+                p (fd, '<div class="rlink-desc">%s</div>' % self._description)
         FactsComponent.output (self, fd=fd)
         ContentComponent.output (self, fd=fd)
         p (fd, '</td></tr></table>')
