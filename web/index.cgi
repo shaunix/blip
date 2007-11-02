@@ -56,18 +56,22 @@ def main ():
         # FIXME: show index
         pass
     else:
-        try:
+        if not http:
             mod = pulse.utils.import_ ('pulse.pages.' + path[0])
             return mod.main (path=path, query=query, http=http, fd=fd)
-        except:
-            kw = {'http': http}
-            kw['title'] = pulse.utils.gettext ('Bad Monkeys')
-            page = pulse.html.PageError (pulse.utils.gettext (
-                'Pulse does not know how to construct this page.  This is' +
-                ' probably because some naughty little monkeys didn\'t finish' +
-                ' their programming assignment.'))
-            page.output(fd=fd)
-            return 500
+        else:
+            try:
+                mod = pulse.utils.import_ ('pulse.pages.' + path[0])
+                return mod.main (path=path, query=query, http=http, fd=fd)
+            except:
+                kw = {'http': http}
+                kw['title'] = pulse.utils.gettext ('Bad Monkeys')
+                page = pulse.html.PageError (pulse.utils.gettext (
+                    'Pulse does not know how to construct this page.  This is' +
+                    ' probably because some naughty little monkeys didn\'t finish' +
+                    ' their programming assignment.'))
+                page.output(fd=fd)
+                return 500
 
 if __name__ == "__main__":
     main ()
