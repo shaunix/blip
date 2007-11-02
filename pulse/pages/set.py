@@ -74,17 +74,61 @@ def output_top (path=[], query=[], http=True, fd=None):
 
 def output_set (set, path=[], query=[], http=True, fd=None):
     page = pulse.html.ResourcePage (set, http=http)
-    dl = pulse.html.DefinitionList ()
-    page.add_content (dl)
 
-    rels = pulse.db.RecordRelation.selectBy (subj=set, verb='SetSubset')
-    if rels.count() > 0:
-        for rel in pulse.utils.attrsorted (rels, 'pred', 'title'):
-            set = rel.pred
-            dl.add_term (pulse.html.Link (set))
-            add_set_entries (set, dl)
-        
+    tabbed = pulse.html.TabbedBox ()
+    page.add_content (tabbed)
+
+    subsets = pulse.db.RecordRelation.selectBy (subj=set, verb='SetSubset')
+    subsets = pulse.utils.attrsorted (subsets, 'pred', 'title')
+    if len(subsets) > 0:
+        if len(path) < 3 or path[2] == 'set':
+            dl = pulse.html.DefinitionList ()
+            tabbed.add_tab (pulse.utils.gettext ('Subsets&nbsp;(%i)') % len(subsets), True, dl)
+            for rel in subsets:
+                subset = rel.pred
+                dl.add_term (pulse.html.Link (subset))
+                add_set_entries (subset, dl)
+        else:
+            tabbed.add_tab (pulse.utils.gettext ('Subsets&nbsp;(%i)') % len(subsets),
+                            False, set.pulse_url + '/set')
+
     rels = pulse.db.RecordBranchRelation.selectBy (subj=set, verb='SetModule')
+    cnt = rels.count()
+    if cnt > 0 or (len(path) > 2 and path[2] != 'set'):
+        if (len(path) > 2 and path[2] == 'mod') or (len(path) == 2 and len(subsets) == 0):
+            columns = pulse.html.ColumnBox (2)
+            tabbed.add_tab (pulse.utils.gettext ('Modules&nbsp;(%i)') % cnt, True, columns)
+            rels = pulse.utils.attrsorted (rels, 'pred', 'title')
+            for i in range(cnt):
+                rlink = pulse.html.ResourceLinkBox (rels[i].pred)
+                columns.add_content (int(i > (cnt /2)), rlink)
+        else:
+            tabbed.add_tab (pulse.utils.gettext ('Modules&nbsp;(%i)') % cnt, False, set.pulse_url + '/mod')
+
+        Module = Alias (pulse.db.Branch, 'Module')
+        things = (('Document', pulse.utils.gettext ('Documents&nbsp;(%i)'), 'doc'),
+                  ('Domain', pulse.utils.gettext ('Domains&nbsp;(%i)'), 'i18n'),
+                  ('Application', pulse.utils.gettext ('Applications&nbsp;(%i)'), 'app'),
+                  ('Library', pulse.utils.gettext ('Libraries&nbsp;(%i)'), 'lib'),
+                  ('Applet', pulse.utils.gettext ('Applets&nbsp;(%i)'), 'applet')
+                  )
+        for type, txt, ext in things:
+            rels = pulse.db.Branch.select (
+                AND(pulse.db.Branch.q.type == type,
+                    pulse.db.RecordBranchRelation.q.subjID == set.id),
+                join=LEFTJOINOn(Module, pulse.db.RecordBranchRelation,
+                                AND(pulse.db.Branch.q.parentID == Module.q.id,
+                                    Module.q.id == pulse.db.RecordBranchRelation.q.predID)) )
+            cnt = rels.count()
+            if len(path) > 2 and path[2] == ext:
+                columns = pulse.html.ColumnBox (2)
+                tabbed.add_tab (txt % cnt, True, columns)
+                rels = pulse.utils.attrsorted (rels[0:], 'title')
+                for i in range(cnt):
+                    rlink = pulse.html.ResourceLinkBox (rels[i])
+                    columns.add_content (int(i > (cnt /2)), rlink)
+            elif cnt > 0:
+                tabbed.add_tab (txt % cnt, False, set.pulse_url + '/' + ext)
 
     page.output(fd=fd)
 
@@ -109,11 +153,11 @@ def add_set_entries (set, dl):
     if cnt == 0: return
 
     Module = Alias (pulse.db.Branch, 'Module')
-    things = (('Document', pulse.utils.gettext ('%i documents'), 'docs'),
+    things = (('Document', pulse.utils.gettext ('%i documents'), 'doc'),
               ('Domain', pulse.utils.gettext ('%i domains'), 'i18n'),
-              ('Application', pulse.utils.gettext ('%i applications'), 'etc#apps'),
-              ('Library', pulse.utils.gettext ('%i libraries'), 'etc#libs'),
-              ('Applet', pulse.utils.gettext ('%i applets'), 'etc#applets')
+              ('Application', pulse.utils.gettext ('%i applications'), 'app'),
+              ('Library', pulse.utils.gettext ('%i libraries'), 'lib'),
+              ('Applet', pulse.utils.gettext ('%i applets'), 'applet')
               )
     for type, txt, ext in things:
         cnt = pulse.db.Branch.select (

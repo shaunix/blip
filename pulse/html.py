@@ -370,6 +370,31 @@ class AdmonBox (Block):
         p (fd, '</div>')
 
 
+class TabbedBox (Block):
+    def __init__ (self, **kw):
+        Block.__init__ (self, **kw)
+        self._tabs = []
+
+    def add_tab (self, title, active, data):
+        self._tabs.append ((title, active, data))
+
+    def output (self, fd=sys.stdout):
+        content = None
+        p (fd, '<div class="tabbed">')
+        p (fd, '<div class="tabbed-tabs">')
+        for tab in self._tabs:
+            if tab[1]:
+                p (fd, '<span class="tabbed-tab-active">%s</span>' % tab[0])
+                content = tab[2]
+            else:
+                p (fd, '<span class="tabbed-tab-link"><a href="%s">%s</a></span>' % (tab[2], tab[0]))
+        p (fd, '</div>')
+        if content != None:
+            p (fd, '<div class="tabbed-content">')
+            p (fd, content)
+            p (fd, '</div>')
+
+
 ################################################################################
 ## Lists
 

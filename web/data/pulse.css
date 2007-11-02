@@ -184,3 +184,31 @@ td.fact-val { margin: 0; padding: 0.1em 1em 0.1em 0; }
 
 .admon { font-style: italic; }
 .admon img { vertical-align: middle; }
+
+.tabbed {
+  margin: 1em 0 1em 0;
+  padding: 0;
+}
+.tabbed-tabs {
+  border-bottom: solid 1px #d3d7cf;
+}
+.tabbed-tab-active {
+  border-left:  solid 1px #d3d7cf;
+  border-right:  solid 1px #d3d7cf;
+  border-top:  solid 1px #d3d7cf;
+  border-bottom:  solid 1px white;
+  padding: 0 1em 0 1em;
+}
+.tabbed-tab-link {
+  border-left:  solid 1px #d3d7cf;
+  border-right:  solid 1px #d3d7cf;
+  border-top:  solid 1px #d3d7cf;
+  padding: 0 1em 0 1em;
+  background-color: #eeeeec;
+}
+.tabbed-content {
+  border-left: solid 1px #d3d7cf;
+  border-right: solid 1px #d3d7cf;
+  border-bottom: solid 1px #d3d7cf;
+  padding: 1em;
+}
