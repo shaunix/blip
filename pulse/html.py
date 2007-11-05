@@ -389,6 +389,20 @@ class AdmonBox (Block):
         p (fd, '</div>')
 
 
+class ExpanderBox (ContentComponent):
+    def __init__ (self, id, title, **kw):
+        ContentComponent.__init__ (self, **kw)
+        self._id = id
+        self._title = title
+
+    def output (self, fd=sys.stdout):
+        p (fd, '<div class="expander">')
+        p (fd, '<div class="expander-title">%s</div>' % self._title)
+        p (fd, '<div class="expander-content">')
+        ContentComponent.output (self, fd=fd)
+        p (fd, '</div>')
+
+        
 class TabbedBox (Block):
     def __init__ (self, **kw):
         Block.__init__ (self, **kw)

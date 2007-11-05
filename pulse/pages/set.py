@@ -113,8 +113,39 @@ def output_set (set, path=[], query=[], http=True, fd=None):
             tabbed.add_tab (pulse.utils.gettext ('Modules&nbsp;(%i)') % cnt, False, set.pulse_url + '/mod')
 
         Module = Alias (pulse.db.Branch, 'Module')
-        things = (('Document', pulse.utils.gettext ('Documents&nbsp;(%i)'), 'doc'),
-                  ('Domain', pulse.utils.gettext ('Domains&nbsp;(%i)'), 'i18n'),
+
+        rels = pulse.db.Branch.select (
+            AND(pulse.db.Branch.q.type == 'Document',
+                pulse.db.RecordBranchRelation.q.subjID == set.id),
+            join=LEFTJOINOn(Module, pulse.db.RecordBranchRelation,
+                            AND(pulse.db.Branch.q.parentID == Module.q.id,
+                                Module.q.id == pulse.db.RecordBranchRelation.q.predID)) )
+        cnt = rels.count()
+        if len(path) > 2 and path[2] == 'doc':
+            docs = {'users' : [], 'devels' : []}
+            user_docs = []
+            devel_docs = []
+            for doc in pulse.utils.attrsorted (rels, 'title'):
+                if doc.subtype == 'gtk-doc':
+                    docs['devels'].append (doc)
+                else:
+                    docs['users'].append (doc)
+            content = pulse.html.ContentComponent ()
+            for id, str in (('users', pulse.utils.gettext ('User Documentation (%i)')),
+                            ('devels', pulse.utils.gettext ('Developer Documentation (%i)')) ):
+                if len(docs[id]) > 0:
+                    exp = pulse.html.ExpanderBox (docs[id], str % len(docs[id]))
+                    content.add_content (exp)
+                    columns = pulse.html.ColumnBox (2)
+                    exp.add_content (columns)
+                    for i in range(len(docs[id])):
+                        rlink = pulse.html.ResourceLinkBox (docs[id][i])
+                        columns.add_content (int(i >= (len(docs[id]) / 2)), rlink)
+            tabbed.add_tab ('Documents&nbsp;(%i)' % cnt, True, content)
+        else:
+            tabbed.add_tab ('Documents&nbsp;(%i)' % cnt, False, set.pulse_url + '/doc')
+
+        things = (('Domain', pulse.utils.gettext ('Domains&nbsp;(%i)'), 'i18n'),
                   ('Application', pulse.utils.gettext ('Applications&nbsp;(%i)'), 'app'),
                   ('Library', pulse.utils.gettext ('Libraries&nbsp;(%i)'), 'lib'),
                   ('Applet', pulse.utils.gettext ('Applets&nbsp;(%i)'), 'applet')
@@ -133,7 +164,7 @@ def output_set (set, path=[], query=[], http=True, fd=None):
                 rels = pulse.utils.attrsorted (rels[0:], 'title')
                 for i in range(cnt):
                     rlink = pulse.html.ResourceLinkBox (rels[i])
-                    columns.add_content (int(i >= (cnt /2)), rlink)
+                    columns.add_content (int(i >= (cnt / 2)), rlink)
             elif cnt > 0:
                 tabbed.add_tab (txt % cnt, False, set.pulse_url + '/' + ext)
 
