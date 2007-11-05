@@ -343,7 +343,14 @@ def process_gtk_docdir (branch, checkout, docdir, makefile, **kw):
     doc_module = makefile['DOC_MODULE']
     ident = '/'.join(['/ref', bserver, bmodule, doc_module, bbranch])
     document = pulse.db.Branch.get_record (ident=ident, type='Document')
-    document.update ({'subtype' : 'gtk-doc'})
+    relpath = pulse.utils.relative_path (docdir, checkout.directory)
+
+    data = {}
+    data['subtype'] = 'gtk-doc'
+    data['scm_dir'] = relpath
+    data['scm_file'] = makefile['DOC_MAIN_SGML_FILE']
+    document.update (data)
+
     return document
 
 def process_pkgconfig (branch, checkout, filename, **kw):

@@ -51,47 +51,10 @@ def update_gdu_docbook (doc, update=True, timestamps=True):
     data = {}
 
     docfile = os.path.join (checkout.directory, doc.scm_dir, doc.scm_file)
-    process_gdu_docbook_docfile (docfile, name, desc, data, timestamps=timestamps)
+    process_docbook_docfile (docfile, name, desc, data, timestamps=timestamps)
 
     if data.has_key ('credits'):
-        author_rels = []
-        editor_rels = []
-        credit_rels = []
-        maint_rels = []
-        for cr_name, cr_email, cr_type, cr_maint in data.pop ('credits'):
-            ent = None
-            if cr_email != None:
-                ent = pulse.db.Entity.selectBy (email=cr_email)
-                if ent.count() > 0:
-                    ent = ent[0]
-                else:
-                    ent = None
-            if ent == None:
-                ident = '/ghost/' + urllib.quote (cr_name)
-                ent = pulse.db.Entity.get_record (ident=ident, type='Ghost')
-                ent.update_name ({'C' : cr_name})
-                if cr_email != None:
-                    ent.email = cr_email
-            if cr_type in ('author', 'corpauthor'):
-                author_rels.append (pulse.db.BranchEntityRelation.set_related (subj=doc,
-                                                                               verb='DocumentAuthor',
-                                                                               pred=ent))
-            elif cr_type == 'editor':
-                editor_rels.append (pulse.db.BranchEntityRelation.set_related (subj=doc,
-                                                                               verb='DocumentEditor',
-                                                                               pred=ent))
-            else:
-                credit_rels.append (pulse.db.BranchEntityRelation.set_related (subj=doc,
-                                                                               verb='DocumentCredit',
-                                                                               pred=ent))
-            if cr_maint:
-                maint_rels.append (pulse.db.BranchEntityRelation.set_related (subj=doc,
-                                                                              verb='DocumentMaintainer',
-                                                                              pred=ent))
-        doc.set_relations (pulse.db.BranchEntityRelation, 'DocumentAuthor', author_rels)
-        doc.set_relations (pulse.db.BranchEntityRelation, 'DocumentEditor', editor_rels)
-        doc.set_relations (pulse.db.BranchEntityRelation, 'DocumentCredit', credit_rels)
-        doc.set_relations (pulse.db.BranchEntityRelation, 'DocumentMaintainer', maint_rels)
+        set_credits (doc, data.pop ('credits'))
 
     if not name.has_key ('C') and doc.name.has_key ('C'):
         name['C'] = doc.name['C']
@@ -101,13 +64,34 @@ def update_gdu_docbook (doc, update=True, timestamps=True):
     translations = pulse.db.Branch.selectBy (type='Translation', parent=doc)
     for translation in translations:
         pofile = os.path.join (checkout.directory, translation.scm_dir, translation.scm_file)
-        process_gdu_docbook_pofile (pofile, name, desc, data, timestamps=timestamps)
+        process_docbook_pofile (pofile, name, desc, data, timestamps=timestamps)
 
     doc.update_name (name)
     doc.update_desc (desc)
 
 
-def process_gdu_docbook_docfile (docfile, name, desc, data, **kw):
+def update_gtk_doc (doc, update=True, timestamps=True):
+    checkout = get_checkout (doc.parent, update=update)
+    name = {}
+    desc = {}
+    data = {}
+
+    docfile = os.path.join (checkout.directory, doc.scm_dir, doc.scm_file)
+    process_docbook_docfile (docfile, name, desc, data, timestamps=timestamps)
+
+    if data.has_key ('credits'):
+        set_credits (doc, data.pop ('credits'))
+
+    if not name.has_key ('C') and doc.name.has_key ('C'):
+        name['C'] = doc.name['C']
+    if not desc.has_key ('C') and doc.desc.has_key ('C'):
+        desc['C'] = doc.desc['C']
+
+    doc.update_name (name)
+    doc.update_desc (desc)
+
+
+def process_docbook_docfile (docfile, name, desc, data, **kw):
     rel_scm = pulse.utils.relative_path (docfile, pulse.config.scmdir)
     mtime = os.stat(docfile).st_mtime
     if kw.get('timestamps', True):
@@ -175,7 +159,7 @@ def process_gdu_docbook_docfile (docfile, name, desc, data, **kw):
     pulse.db.Timestamp.set_timestamp (rel_scm, mtime)
 
 
-def process_gdu_docbook_pofile (pofile, name, desc, data, **kw):
+def process_docbook_pofile (pofile, name, desc, data, **kw):
     rel_scm = pulse.utils.relative_path (pofile, pulse.config.scmdir)
     mtime = os.stat(pofile).st_mtime
     if kw.get('timestamps', True):
@@ -195,8 +179,45 @@ def process_gdu_docbook_pofile (pofile, name, desc, data, **kw):
     pulse.db.Timestamp.set_timestamp (rel_scm, mtime)
 
 
-def update_gtk_doc (doc, update=True, timestamps=True):
-    pass
+def set_credits (doc, credits):
+    author_rels = []
+    editor_rels = []
+    credit_rels = []
+    maint_rels = []
+    for cr_name, cr_email, cr_type, cr_maint in credits:
+        ent = None
+        if cr_email != None:
+            ent = pulse.db.Entity.selectBy (email=cr_email)
+            if ent.count() > 0:
+                ent = ent[0]
+            else:
+                ent = None
+        if ent == None:
+            ident = '/ghost/' + urllib.quote (cr_name)
+            ent = pulse.db.Entity.get_record (ident=ident, type='Ghost')
+            ent.update_name ({'C' : cr_name})
+            if cr_email != None:
+                ent.email = cr_email
+        if cr_type in ('author', 'corpauthor'):
+            author_rels.append (pulse.db.BranchEntityRelation.set_related (subj=doc,
+                                                                           verb='DocumentAuthor',
+                                                                           pred=ent))
+        elif cr_type == 'editor':
+            editor_rels.append (pulse.db.BranchEntityRelation.set_related (subj=doc,
+                                                                           verb='DocumentEditor',
+                                                                           pred=ent))
+        else:
+            credit_rels.append (pulse.db.BranchEntityRelation.set_related (subj=doc,
+                                                                           verb='DocumentCredit',
+                                                                           pred=ent))
+        if cr_maint:
+            maint_rels.append (pulse.db.BranchEntityRelation.set_related (subj=doc,
+                                                                          verb='DocumentMaintainer',
+                                                                          pred=ent))
+    doc.set_relations (pulse.db.BranchEntityRelation, 'DocumentAuthor', author_rels)
+    doc.set_relations (pulse.db.BranchEntityRelation, 'DocumentEditor', editor_rels)
+    doc.set_relations (pulse.db.BranchEntityRelation, 'DocumentCredit', credit_rels)
+    doc.set_relations (pulse.db.BranchEntityRelation, 'DocumentMaintainer', maint_rels)
 
 
 ################################################################################
