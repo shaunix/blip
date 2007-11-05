@@ -78,14 +78,21 @@ def output_set (set, path=[], query=[], http=True, fd=None):
     tabbed = pulse.html.TabbedBox ()
     page.add_content (tabbed)
 
+    page.set_sublinks_divider (page.TRIANGLE)
+    page.add_sublink (pulse.config.webroot + 'set', pulse.utils.gettext ('Sets'))
+    for super in get_supersets (set):
+        page.add_sublink (super.pulse_url, super.title)
+
     subsets = pulse.db.RecordRelation.selectBy (subj=set, verb='SetSubset')
     subsets = pulse.utils.attrsorted (subsets, 'pred', 'title')
     if len(subsets) > 0:
         if len(path) < 3 or path[2] == 'set':
-            dl = pulse.html.DefinitionList ()
-            tabbed.add_tab (pulse.utils.gettext ('Subsets&nbsp;(%i)') % len(subsets), True, dl)
-            for rel in subsets:
-                subset = rel.pred
+            columns = pulse.html.ColumnBox (2)
+            tabbed.add_tab (pulse.utils.gettext ('Subsets&nbsp;(%i)') % len(subsets), True, columns)
+            dls = [columns.add_content (i, pulse.html.DefinitionList()) for i in range(2)]
+            for i in range(len(subsets)):
+                subset = subsets[i].pred
+                dl = dls[int(i >= (len(subsets) / 2))]
                 dl.add_term (pulse.html.Link (subset))
                 add_set_entries (subset, dl)
         else:
@@ -101,7 +108,7 @@ def output_set (set, path=[], query=[], http=True, fd=None):
             rels = pulse.utils.attrsorted (rels, 'pred', 'title')
             for i in range(cnt):
                 rlink = pulse.html.ResourceLinkBox (rels[i].pred)
-                columns.add_content (int(i > (cnt /2)), rlink)
+                columns.add_content (int(i >= (cnt / 2)), rlink)
         else:
             tabbed.add_tab (pulse.utils.gettext ('Modules&nbsp;(%i)') % cnt, False, set.pulse_url + '/mod')
 
@@ -126,7 +133,7 @@ def output_set (set, path=[], query=[], http=True, fd=None):
                 rels = pulse.utils.attrsorted (rels[0:], 'title')
                 for i in range(cnt):
                     rlink = pulse.html.ResourceLinkBox (rels[i])
-                    columns.add_content (int(i > (cnt /2)), rlink)
+                    columns.add_content (int(i >= (cnt /2)), rlink)
             elif cnt > 0:
                 tabbed.add_tab (txt % cnt, False, set.pulse_url + '/' + ext)
 
@@ -134,7 +141,15 @@ def output_set (set, path=[], query=[], http=True, fd=None):
 
     return 0
 
-
+def get_supersets (set):
+    supersets = pulse.db.RecordRelation.selectBy (pred=set, verb='SetSubset')
+    if supersets.count() > 0:
+        superset = supersets[0].subj
+        supers = get_supersets (superset)
+        return supers + [superset]
+    else:
+        return []
+    
 def add_set_entries (set, dl):
     rels = pulse.db.RecordRelation.selectBy (subj=set, verb='SetSubset')
     rels = pulse.utils.attrsorted (rels[0:], 'pred', 'title')

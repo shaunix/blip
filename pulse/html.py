@@ -43,28 +43,32 @@ class Block:
 ## Components
 
 class SublinksComponent (Block):
+    BULLET = u' • '
+    TRIANGLE = u' ‣ '
+    
     def __init__ (self, **kw):
         Block.__init__ (self, **kw)
         self._sublinks = []
+        self._divider = self.BULLET
 
     def add_sublink (self, href, title):
         self._sublinks.append ((href, title))
 
-    @classmethod
-    def output_sublinks (cls, sublinks, fd):
-        if len(sublinks) > 0:
+    def set_sublinks_divider (self, div):
+        self._divider = div
+
+    def output (self, fd=sys.stdout):
+        if len(self._sublinks) > 0:
             p (fd, '<div class="sublinks">')
-            for i in range(len(sublinks)):
-                str = (i != 0 and u' • ' or '')
-                if sublinks[i][0] != None:
-                    str += ('<a href="%s">%s</a>' %sublinks[i])
+            for i in range(len(self._sublinks)):
+                str = (i != 0 and self._divider or '')
+                if self._sublinks[i][0] != None:
+                    str += ('<a href="%s">%s</a>' %self._sublinks[i])
                 else:
-                    str += ('%s' %sublinks[i][1])
+                    str += ('%s' %self._sublinks[i][1])
                 p (fd, str)
             p (fd, '</div>\n')
 
-    def output (self, fd=sys.stdout):
-        SublinksComponent.output_sublinks (self._sublinks, fd)
 
 class FactsComponent (Block):
     def __init__ (self, **kw):
@@ -109,6 +113,7 @@ class FactsComponent (Block):
                 p (fd, '</td></tr>')
         p (fd, '</table>')
 
+
 class ContentComponent (Block):
     def __init__ (self, **kw):
         Block.__init__ (self, **kw)
@@ -120,6 +125,7 @@ class ContentComponent (Block):
     def output (self, fd=sys.stdout):
         for s in self._content:
             p (fd, s)
+
 
 ################################################################################
 ## Pages
@@ -326,6 +332,7 @@ class ColumnBox (Block):
 
     def add_content (self, index, content):
         self._columns[index].append (content)
+        return content
 
     def output (self, fd=sys.stdout):
         p (fd, '<table class="cols"><tr>')
