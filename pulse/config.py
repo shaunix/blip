@@ -27,7 +27,7 @@ potdir = os.path.join (vardir, 'pot')
 scmdir = os.path.join (vardir, 'scm')
 
 webdir = '/home/shaunm/Projects/pulse/web/'
-webroot = 'http://shaunmlx/'
+webroot = 'http://localhost/'
 
 icondir = os.path.join (webdir, 'var', 'icons')
 iconroot = webroot + 'var/icons/'
