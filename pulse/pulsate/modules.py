@@ -348,7 +348,10 @@ def process_gtk_docdir (branch, checkout, docdir, makefile, **kw):
     data = {}
     data['subtype'] = 'gtk-doc'
     data['scm_dir'] = relpath
-    data['scm_file'] = makefile['DOC_MAIN_SGML_FILE']
+    scm_file = makefile['DOC_MAIN_SGML_FILE']
+    if '$(DOC_MODULE)' in scm_file:
+        scm_file = scm_file.replace ('$(DOC_MODULE)', doc_module)
+    data['scm_file'] = scm_file
     document.update (data)
 
     return document

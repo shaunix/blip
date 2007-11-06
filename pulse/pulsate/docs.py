@@ -50,6 +50,14 @@ def update_gdu_docbook (doc, update=True, timestamps=True):
     desc = {}
     data = {}
 
+    # FIXME: we want to add "audience" for docs.  use that here
+    cnt = pulse.db.Branch.select ((pulse.db.Branch.q.type == 'Document') &
+                                  (pulse.db.Branch.q.subtype.startswith ('gdu-')) &
+                                  (pulse.db.Branch.q.parentID == doc.parent.id))
+    if cnt.count() == 1:
+        data['icon_name'] = doc.parent.icon_name
+        data['icon_dir'] = doc.parent.icon_dir
+
     docfile = os.path.join (checkout.directory, doc.scm_dir, doc.scm_file)
     process_docbook_docfile (docfile, name, desc, data, timestamps=timestamps)
 
@@ -68,6 +76,8 @@ def update_gdu_docbook (doc, update=True, timestamps=True):
 
     doc.update_name (name)
     doc.update_desc (desc)
+    if len(data) > 0:
+        doc.update (data)
 
 
 def update_gtk_doc (doc, update=True, timestamps=True):
@@ -89,10 +99,15 @@ def update_gtk_doc (doc, update=True, timestamps=True):
 
     doc.update_name (name)
     doc.update_desc (desc)
+    if len (data) > 0:
+        doc.update (data)
 
 
 def process_docbook_docfile (docfile, name, desc, data, **kw):
     rel_scm = pulse.utils.relative_path (docfile, pulse.config.scmdir)
+    if not os.path.exists (docfile):
+        pulse.utils.log ('No such file %s' % rel_scm)
+        return
     mtime = os.stat(docfile).st_mtime
     if kw.get('timestamps', True):
         stamp = pulse.db.Timestamp.get_timestamp (rel_scm)
@@ -161,6 +176,9 @@ def process_docbook_docfile (docfile, name, desc, data, **kw):
 
 def process_docbook_pofile (pofile, name, desc, data, **kw):
     rel_scm = pulse.utils.relative_path (pofile, pulse.config.scmdir)
+    if not os.path.exists (pofile):
+        pulse.utils.log ('No such file %s' % rel_scm)
+        return
     mtime = os.stat(pofile).st_mtime
     if kw.get('timestamps', True):
         stamp = pulse.db.Timestamp.get_timestamp (rel_scm)
@@ -193,7 +211,7 @@ def set_credits (doc, credits):
             else:
                 ent = None
         if ent == None:
-            ident = '/ghost/' + urllib.quote (cr_name)
+            ident = '/ghost/' + urllib.quote (cr_name.encode('utf-8'))
             ent = pulse.db.Entity.get_record (ident=ident, type='Ghost')
             ent.update_name ({'C' : cr_name})
             if cr_email != None:
