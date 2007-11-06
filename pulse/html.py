@@ -122,6 +122,9 @@ class ContentComponent (Block):
     def add_content (self, content):
         self._content.append (content)
 
+    def get_content (self):
+        return self._content
+
     def output (self, fd=sys.stdout):
         for s in self._content:
             p (fd, s)
@@ -371,6 +374,23 @@ class GridBox (Block):
             p (fd, '</tr>')
         p (fd, '</table>')
 
+class VBox (ContentComponent):
+    def __init__ (self, **kw):
+        ContentComponent.__init__ (self, **kw)
+
+    def output (self, fd=sys.stdout):
+        p (fd, '<div class="vbox">')
+        content = self.get_content()
+        for i in range(len(content)):
+            s = content[i]
+            if i == 0:
+                p (fd, '<div class="vbox-el-first">')
+            else:
+                p (fd, '<div class="vbox-el">')
+            p (fd, s)
+            p (fd, '</div>')
+        p (fd, '</div>')
+
 class AdmonBox (Block):
     error = "error"
     information = "information"
@@ -396,8 +416,9 @@ class ExpanderBox (ContentComponent):
         self._title = title
 
     def output (self, fd=sys.stdout):
-        p (fd, '<div class="expander">')
-        p (fd, '<div class="expander-title">%s</div>' % self._title)
+        p (fd, '<div class="expander" id="%s">' % self._id)
+        p (fd, '<div class="expander-title"><a href="javascript:expander_toggle(\'%s\')"><img class="expander-img" src="%sdata/expander-open.png"> %s</a></div>' %
+           (self._id, pulse.config.webroot, self._title))
         p (fd, '<div class="expander-content">')
         ContentComponent.output (self, fd=fd)
         p (fd, '</div>')

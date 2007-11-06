@@ -130,18 +130,18 @@ def output_set (set, path=[], query=[], http=True, fd=None):
                     docs['devels'].append (doc)
                 else:
                     docs['users'].append (doc)
-            content = pulse.html.ContentComponent ()
+            vbox = pulse.html.VBox()
             for id, str in (('users', pulse.utils.gettext ('User Documentation (%i)')),
                             ('devels', pulse.utils.gettext ('Developer Documentation (%i)')) ):
                 if len(docs[id]) > 0:
-                    exp = pulse.html.ExpanderBox (docs[id], str % len(docs[id]))
-                    content.add_content (exp)
+                    exp = pulse.html.ExpanderBox (id, str % len(docs[id]))
+                    vbox.add_content (exp)
                     columns = pulse.html.ColumnBox (2)
                     exp.add_content (columns)
                     for i in range(len(docs[id])):
                         rlink = pulse.html.ResourceLinkBox (docs[id][i])
                         columns.add_content (int(i >= (len(docs[id]) / 2)), rlink)
-            tabbed.add_tab ('Documents&nbsp;(%i)' % cnt, True, content)
+            tabbed.add_tab ('Documents&nbsp;(%i)' % cnt, True, vbox)
         else:
             tabbed.add_tab ('Documents&nbsp;(%i)' % cnt, False, set.pulse_url + '/doc')
 
