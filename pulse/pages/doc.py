@@ -21,6 +21,7 @@
 import pulse.config
 import pulse.db
 import pulse.html
+import pulse.scm
 import pulse.utils
 
 def main (path=[], query={}, http=True, fd=None):
@@ -69,6 +70,7 @@ def main (path=[], query={}, http=True, fd=None):
 
 def output_doc (doc, path=[], query=[], http=True, fd=None):
     page = pulse.html.ResourcePage (doc, http=http)
+    checkout = pulse.scm.Checkout.from_record (doc.parent, checkout=False, update=False)
 
     branches = pulse.db.Branch.selectBy (resource=doc.resource)
     if branches.count() > 1:
@@ -86,8 +88,16 @@ def output_doc (doc, path=[], query=[], http=True, fd=None):
     except:
         pass
 
+    rels = pulse.db.RecordBranchRelation.selectBy (pred=doc.parent, verb='SetModule')
+    if rels.count() > 0:
+        sets = pulse.utils.attrsorted ([rel.subj for rel in rels], 'title')
+        page.add_fact (pulse.utils.gettext ('Release Sets'), sets)
+        sep = True
+
     if sep: page.add_fact_sep ()
     
+    page.add_fact (pulse.utils.gettext ('Location'), checkout.get_location (doc.scm_dir, doc.scm_file))
+
     if doc.scm_type == 'cvs':
         page.add_fact (pulse.utils.gettext ('CVS Server'), doc.scm_server)
         page.add_fact (pulse.utils.gettext ('CVS Module'), doc.scm_module)

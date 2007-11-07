@@ -113,7 +113,12 @@ class Checkout (object):
 
         self.ignoredir = 'CVS'
 
-        self.location = '%s %s@%s' % (self.scm_server, self.scm_module, self.scm_branch)
+        if self.scm_branch == 'HEAD':
+            self._location = self.scm_server + ' ' + self.scm_module
+        else:
+            self._location = self.scm_server + ' ' + self.scm_module + '@' + self.scm_branch
+        self._location_dir = self._location + ' %s'
+        self._location_dirfile = self._location_dir + '/%s'
         self._co = 'cvs -z3 -d%s co -r %s -d %s %s' %(
             self.scm_server,
             self.scm_branch,
@@ -137,7 +142,14 @@ class Checkout (object):
         else:
             url = self.scm_server + self.scm_module
 
-        self.location = url + '@' + self.scm_branch
+        if self.scm_branch == 'master':
+            self._location = url
+            self._location_dir = url + '/%s'
+            self._location_dirfile = url + '/%s/%s'
+        else:
+            self._location = url + '@' + self.scm_branch
+            self._location_dir = url + '/%s@' + self.scm_branch
+            self._location_dirfile = url + '/%s/%s@' + self.scm_branch
         self._co = ('git clone --depth 0 %s %s && (cd %s && git checkout origin/%s)' %
                     (url, self.scm_branch, self.scm_branch, self.scm_branch))
         self._up = 'git fetch origin && git rebase origin/' + self.scm_branch
@@ -160,7 +172,9 @@ class Checkout (object):
         else:
             url = self.scm_server + self.scm_module + '/branches/' + self.scm_branch
 
-        self.location = url
+        self._location = url
+        self._location_dir = url + '/%s'
+        self._location_dirfile = url + '/%s/%s'
         self._co = 'svn co ' + url + ' ' + self.scm_branch
         self._up = 'svn up'
         
@@ -168,6 +182,16 @@ class Checkout (object):
                                                      self._server_dir,
                                                      self._module_dir,
                                                      self._branch_dir))
+
+    def get_location (self, scm_dir=None, scm_file=None):
+        if scm_dir == None:
+            return self._location
+        elif scm_file == None:
+            return self._location_dir % scm_dir
+        else:
+            return self._location_dirfile % (scm_dir, scm_file)
+
+    location = property (get_location)
 
     def checkout (self):
         pulse.utils.log ('Checking out %s from %s' % (self._name, self._server_dir))
