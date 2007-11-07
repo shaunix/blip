@@ -212,12 +212,12 @@ td.fact-val { margin: 0; padding: 0.1em 1em 0.1em 0; }
   border-bottom: solid 1px #d3d7cf;
   padding: 1em;
 }
-.vbox-el { margin-top: 1.44em; }
-.expander-title { font-weight: bold; }
+.vbox-el { margin-top: 1em; }
+.expander-title a { color: black; }
 .expander-title img { vertical-align: -10%; }
-.expander-content {
-  padding-left: 1em;
+.expander-content { padding-left: 1em; }
+.expander-hidden { display: none; }
+span.elliplnk {
+  font-style: normal;
 }
-.expander-hidden {
-  display: none;
-}
+span.elliptxt { display: none; }

@@ -105,10 +105,11 @@ def output_set (set, path=[], query=[], http=True, fd=None):
         if (len(path) > 2 and path[2] == 'mod') or (len(path) == 2 and len(subsets) == 0):
             columns = pulse.html.ColumnBox (2)
             tabbed.add_tab (pulse.utils.gettext ('Modules&nbsp;(%i)') % cnt, True, columns)
+            clv = [columns.add_content (i, pulse.html.VBox()) for i in range(2)]
             rels = pulse.utils.attrsorted (rels, 'pred', 'title')
             for i in range(cnt):
                 rlink = pulse.html.ResourceLinkBox (rels[i].pred)
-                columns.add_content (int(i >= (cnt / 2)), rlink)
+                clv[int(i >= (cnt / 2))].add_content (rlink)
         else:
             tabbed.add_tab (pulse.utils.gettext ('Modules&nbsp;(%i)') % cnt, False, set.pulse_url + '/mod')
 
@@ -138,9 +139,10 @@ def output_set (set, path=[], query=[], http=True, fd=None):
                     vbox.add_content (exp)
                     columns = pulse.html.ColumnBox (2)
                     exp.add_content (columns)
+                    clv = [columns.add_content (i, pulse.html.VBox()) for i in range(2)]
                     for i in range(len(docs[id])):
                         rlink = pulse.html.ResourceLinkBox (docs[id][i])
-                        columns.add_content (int(i >= (len(docs[id]) / 2)), rlink)
+                        clv[int(i >= (len(docs[id]) / 2))].add_content (rlink)
             tabbed.add_tab ('Documents&nbsp;(%i)' % cnt, True, vbox)
         else:
             tabbed.add_tab ('Documents&nbsp;(%i)' % cnt, False, set.pulse_url + '/doc')
@@ -161,10 +163,11 @@ def output_set (set, path=[], query=[], http=True, fd=None):
             if len(path) > 2 and path[2] == ext:
                 columns = pulse.html.ColumnBox (2)
                 tabbed.add_tab (txt % cnt, True, columns)
+                clv = [columns.add_content (i, pulse.html.VBox()) for i in range(2)]
                 rels = pulse.utils.attrsorted (rels[0:], 'title')
                 for i in range(cnt):
                     rlink = pulse.html.ResourceLinkBox (rels[i])
-                    columns.add_content (int(i >= (cnt / 2)), rlink)
+                    clv[int(i >= (cnt / 2))].add_content (rlink)
             elif cnt > 0:
                 tabbed.add_tab (txt % cnt, False, set.pulse_url + '/' + ext)
 

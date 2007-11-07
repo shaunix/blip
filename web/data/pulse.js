@@ -22,6 +22,13 @@ function expander_toggle (id) {
   }
 }
 
+function ellip (id) {
+  var lnk = document.getElementById ('elliplnk-' + id);
+  lnk.parentNode.removeChild (lnk);
+  var txt = document.getElementById ('elliptxt-' + id);
+  txt.className = '';
+}
+
 function tab (id) {
   var el = document.getElementById (id);
   var par = el.parentNode;

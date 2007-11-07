@@ -19,6 +19,7 @@
 # Suite 330, Boston, MA  0211-1307  USA.
 #
 
+import md5
 import sys
 
 import pulse.config
@@ -311,19 +312,9 @@ class ResourceLinkBox (ContentComponent, FactsComponent):
                    (pulse.config.webroot, badge, badge))
         p (fd, '</div>')
         if self._description != None:
-            if len(self._description) > 130:
-                i = 120
-                while i < len(self._description):
-                    if self._description[i] == ' ':
-                        break
-                    i += 1
-                if i == len(self._description):
-                    p (fd, '<div class="rlink-desc">%s</div>' % self._description)
-                else:
-                    # FIXME: a cool JS 'more' link would be nice
-                    p (fd, '<div class="rlink-desc">%s</div>' % (self._description[:i] + '...'))
-            else:
-                p (fd, '<div class="rlink-desc">%s</div>' % self._description)
+            p (fd, '<div class="rlink-desc">')
+            p (fd, EllipsizedLabel (self._description, 130))
+            p (fd, '</div>')
         FactsComponent.output (self, fd=fd)
         ContentComponent.output (self, fd=fd)
         p (fd, '</td></tr></table>')
@@ -474,6 +465,30 @@ class DefinitionList (Block):
 
 ################################################################################
 ## Other...
+
+class EllipsizedLabel (Block):
+    def __init__ (self, label, size, **kw):
+        Block.__init__ (self, **kw)
+        self._label = label
+        self._size = size
+
+    def output (self, fd=sys.stdout):
+        if len (self._label) > self._size:
+            i = self._size - 10
+            if i <= 0: i = self._size
+            while i < len(self._label):
+                if self._label[i] == ' ':
+                    break
+                i += 1
+            if i == len(self._label):
+                p (fd, self._label)
+            else:
+                id = md5.md5(self._label).hexdigest()[:6]
+                p (fd, self._label[:i])
+                p (fd, '<span class="elliplnk" id="elliplnk-%s">(<a href="javascript:ellip(\'%s\')">%s</a>)</span>' % (id, id, pulse.utils.gettext ('more')))
+                p (fd, '<span class="elliptxt" id="elliptxt-%s">%s</span>' % (id, self._label[i+1:]))
+        else:
+            p (fd, self._label)
 
 class Link (Block):
     def __init__ (self, *args, **kw):
