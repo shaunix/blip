@@ -104,7 +104,7 @@ class FactsComponent (Block):
                     if isinstance (f, basestring) or isinstance (f, Block):
                         p (fd, f)
                     elif isinstance (f, pulse.db.Record):
-                        p (fd, '<a href="%(pulse_url)s">%(title)s</a>' % pulse.utils.attrdict([f]))
+                        p (fd, Link(f))
                     elif hasattr (f, '__getitem__'):
                         for ff in f:
                             p (fd, '<div>')
@@ -489,6 +489,29 @@ class EllipsizedLabel (Block):
                 p (fd, '<span class="elliptxt" id="elliptxt-%s">%s</span>' % (id, self._label[i+1:]))
         else:
             p (fd, self._label)
+
+class Span (ContentComponent):
+    SPACE = ' '
+    BULLET = u' • '
+    TRIANGLE = u' ‣ '
+
+    def __init__ (self, *args, **kw):
+        ContentComponent.__init__ (self, **kw)
+        for arg in args:
+            self.add_content (arg)
+        self._divider = None
+
+    def set_divider (self, divider):
+        self._divider = divider
+
+    def output (self, fd=sys.stdout):
+        p (fd, '<span>')
+        content = self.get_content()
+        for i in range(len(self.get_content())):
+            if i != 0 and self._divider != None:
+                p (fd, self._divider)
+            p (fd, content[i])
+        p (fd, '</span>')
 
 class Link (Block):
     def __init__ (self, *args, **kw):

@@ -100,7 +100,9 @@ def output_branch (branch, path=[], query=[], http=True, fd=None):
     rels = pulse.db.RecordBranchRelation.selectBy (pred=branch, verb='SetModule')
     if rels.count() > 0:
         sets = pulse.utils.attrsorted ([rel.subj for rel in rels], 'title')
-        page.add_fact (pulse.utils.gettext ('Release Sets'), sets)
+        span = pulse.html.Span (*[pulse.html.Link(rel.subj) for rel in rels])
+        span.set_divider (span.BULLET)
+        page.add_fact (pulse.utils.gettext ('Release Sets'), span)
         sep = True
 
     if sep: page.add_fact_sep ()
