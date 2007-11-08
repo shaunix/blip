@@ -88,7 +88,7 @@ def output_set (set, path=[], query=[], http=True, fd=None):
     if len(subsets) > 0:
         if len(path) < 3 or path[2] == 'set':
             columns = pulse.html.ColumnBox (2)
-            tabbed.add_tab (pulse.utils.gettext ('Subsets&nbsp;(%i)') % len(subsets), True, columns)
+            tabbed.add_tab (pulse.utils.gettext ('Subsets (%i)') % len(subsets), True, columns)
             dls = [columns.add_content (i, pulse.html.DefinitionList()) for i in range(2)]
             for i in range(len(subsets)):
                 subset = subsets[i].pred
@@ -96,7 +96,7 @@ def output_set (set, path=[], query=[], http=True, fd=None):
                 dl.add_term (pulse.html.Link (subset))
                 add_set_entries (subset, dl)
         else:
-            tabbed.add_tab (pulse.utils.gettext ('Subsets&nbsp;(%i)') % len(subsets),
+            tabbed.add_tab (pulse.utils.gettext ('Subsets (%i)') % len(subsets),
                             False, set.pulse_url + '/set')
 
     rels = pulse.db.RecordBranchRelation.selectBy (subj=set, verb='SetModule')
@@ -104,14 +104,14 @@ def output_set (set, path=[], query=[], http=True, fd=None):
     if cnt > 0 or (len(path) > 2 and path[2] != 'set'):
         if (len(path) > 2 and path[2] == 'mod') or (len(path) == 2 and len(subsets) == 0):
             columns = pulse.html.ColumnBox (2)
-            tabbed.add_tab (pulse.utils.gettext ('Modules&nbsp;(%i)') % cnt, True, columns)
+            tabbed.add_tab (pulse.utils.gettext ('Modules (%i)') % cnt, True, columns)
             clv = [columns.add_content (i, pulse.html.VBox()) for i in range(2)]
             rels = pulse.utils.attrsorted (rels, 'pred', 'title')
             for i in range(cnt):
                 rlink = pulse.html.ResourceLinkBox (rels[i].pred)
                 clv[int(i >= (cnt / 2))].add_content (rlink)
         else:
-            tabbed.add_tab (pulse.utils.gettext ('Modules&nbsp;(%i)') % cnt, False, set.pulse_url + '/mod')
+            tabbed.add_tab (pulse.utils.gettext ('Modules (%i)') % cnt, False, set.pulse_url + '/mod')
 
         Module = Alias (pulse.db.Branch, 'Module')
 
@@ -143,14 +143,14 @@ def output_set (set, path=[], query=[], http=True, fd=None):
                     for i in range(len(docs[id])):
                         rlink = pulse.html.ResourceLinkBox (docs[id][i])
                         clv[int(i >= (len(docs[id]) / 2))].add_content (rlink)
-            tabbed.add_tab ('Documents&nbsp;(%i)' % cnt, True, vbox)
+            tabbed.add_tab ('Documents (%i)' % cnt, True, vbox)
         else:
-            tabbed.add_tab ('Documents&nbsp;(%i)' % cnt, False, set.pulse_url + '/doc')
+            tabbed.add_tab ('Documents (%i)' % cnt, False, set.pulse_url + '/doc')
 
-        things = (('Domain', pulse.utils.gettext ('Domains&nbsp;(%i)'), 'i18n'),
-                  ('Application', pulse.utils.gettext ('Applications&nbsp;(%i)'), 'app'),
-                  ('Library', pulse.utils.gettext ('Libraries&nbsp;(%i)'), 'lib'),
-                  ('Applet', pulse.utils.gettext ('Applets&nbsp;(%i)'), 'applet')
+        things = (('Domain', pulse.utils.gettext ('Domains (%i)'), 'i18n'),
+                  ('Application', pulse.utils.gettext ('Applications (%i)'), 'app'),
+                  ('Library', pulse.utils.gettext ('Libraries (%i)'), 'lib'),
+                  ('Applet', pulse.utils.gettext ('Applets (%i)'), 'applet')
                   )
         for type, txt, ext in things:
             rels = pulse.db.Branch.select (

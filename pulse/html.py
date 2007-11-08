@@ -98,7 +98,7 @@ class FactsComponent (Block):
                 p (fd, '<tr class="fact-sep"><td></td><td></td></tr>')
             else:
                 p (fd, '<tr><td class="fact-key">')
-                p (fd, pulse.utils.gettext ('%s:') % fact[0])
+                p (fd, pulse.utils.gettext ('%s:') % fact[0].replace(' ', '&nbsp;'))
                 p (fd, '</td><td class="fact-val">')
                 def factout (f):
                     if isinstance (f, basestring) or isinstance (f, Block):
@@ -428,11 +428,12 @@ class TabbedBox (Block):
         p (fd, '<div class="tabbed">')
         p (fd, '<div class="tabbed-tabs">')
         for tab in self._tabs:
+            title = tab[0].replace (' ', '&nbsp;')
             if tab[1]:
-                p (fd, '<span class="tabbed-tab-active">%s</span>' % tab[0])
+                p (fd, '<span class="tabbed-tab-active">%s</span>' % title)
                 content = tab[2]
             else:
-                p (fd, '<span class="tabbed-tab-link"><a href="%s">%s</a></span>' % (tab[2], tab[0]))
+                p (fd, '<span class="tabbed-tab-link"><a href="%s">%s</a></span>' % (tab[2], title))
         p (fd, '</div>')
         if content != None:
             p (fd, '<div class="tabbed-content">')
