@@ -8,6 +8,7 @@ import cgi
 
 import pulse.db
 import pulse.html
+import pulse.pages
 import pulse.utils
 
 def usage ():
@@ -56,8 +57,14 @@ def main ():
         query = {}
 
     if len (path) == 0:
-        # FIXME: show index
-        pass
+        page = pulse.html.Page (http=http)
+        page.set_title (pulse.utils.gettext ('Pulse'))
+        for type in pulse.pages.__all__:
+            mod = pulse.utils.import_ ('pulse.pages.' + type)
+            if hasattr (mod, 'main'):
+                rlink = pulse.html.ResourceLinkBox (pulse.config.webroot + type, type)
+                page.add_content (rlink)
+        page.output (fd=fd)
     else:
         if not http:
             mod = pulse.utils.import_ ('pulse.pages.' + path[0])
