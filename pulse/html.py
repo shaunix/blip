@@ -275,34 +275,47 @@ class InfoBox (ContentComponent):
         p (fd, '</div></div>')
 
 class ResourceLinkBox (ContentComponent, FactsComponent):
-    def __init__ (self, resource, **kw):
+    def __init__ (self, *args, **kw):
         FactsComponent.__init__ (self, **kw)
         ContentComponent.__init__ (self, **kw)
-        self._resource = resource
-        self._superlative = kw.get ('superlative', False)
-        self._title = resource.title
-        self._description = resource.localized_desc
+        self._url = self._title = self._icon = self._desc = None
+        if isinstance (args[0], pulse.db.Record):
+            self._url = args[0].pulse_url
+            self._title = args[0].title
+            self._desc = args[0].localized_desc
+            self._icon = args[0].icon_url
+        elif len(args) > 1:
+            self._url = args[0]
+            self._title = args[1]
+        else:
+            self._href = self._text = args[0]
         self._badges = []
+
+    def set_url (self, url):
+        self._url = url
 
     def set_title (self, title):
         self._title = title
 
+    def set_icon (self, icon):
+        self._icon = icon
+
     def set_description (self, description):
-        self._description = description
+        self._desc = description
 
     def add_badge (self, badge):
         self._badges.append (badge)
 
     def output (self, fd=sys.stdout):
-        d = pulse.utils.attrdict ([self, self._resource, pulse.config])
+        d = pulse.utils.attrdict ([self, pulse.config])
         p (fd, '<table class="rlink"><tr>')
         p (fd, '<td class="rlink-icon">')
-        if (d['icon_url'] != None):
-            p (fd, '<img class="icon" src="%(icon_url)s" alt="%(_title)s">' %d)
+        if self._icon != None:
+            p (fd, '<img class="icon" src="%(_icon)s" alt="%(_title)s">' % d)
         p (fd, '</td><td class="rlink-text">')
         p (fd, '<div class="rlink-title">')
-        if True or self._resource.type != 'Ghost':
-            p (fd, '<a href="%(pulse_url)s">%(_title)s</a>' %d)
+        if self._url != None:
+            p (fd, '<a href="%(_url)s">%(_title)s</a>' %d)
         else:
             p (fd, self._title)
         if len(self._badges) > 0:
@@ -311,9 +324,9 @@ class ResourceLinkBox (ContentComponent, FactsComponent):
                 p (fd, '<img src="%sdata/badge-%s-16.png" width="16" height="16" alt="%s">' %
                    (pulse.config.webroot, badge, badge))
         p (fd, '</div>')
-        if self._description != None:
+        if self._desc != None:
             p (fd, '<div class="rlink-desc">')
-            p (fd, EllipsizedLabel (self._description, 130))
+            p (fd, EllipsizedLabel (self._desc, 130))
             p (fd, '</div>')
         FactsComponent.output (self, fd=fd)
         ContentComponent.output (self, fd=fd)
