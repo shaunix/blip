@@ -6,6 +6,7 @@ import sys
 sys.path.append ('/home/shaunm/Projects/pulse')
 import cgi
 
+import pulse.db
 import pulse.html
 import pulse.utils
 
@@ -15,13 +16,15 @@ def usage ():
 def main ():
     fd = None
     try:
-        (opts, args) = getopt.gnu_getopt (sys.argv[1:], 'o:', ['output='])
+        (opts, args) = getopt.gnu_getopt (sys.argv[1:], 'o:', ['output=', 'debug'])
     except getopt.GetoptError:
         usage ()
         sys.exit (1)
     for (opt, arg) in opts:
         if opt in ('-o', '--output'):
             fd = file (arg, 'w')
+        elif opt == '--debug':
+            pulse.db.conn.debug = True
     if len(args) > 0:
         http = False
         pathInfo = args[0]
