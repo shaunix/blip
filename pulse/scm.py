@@ -19,6 +19,7 @@
 #
 
 import commands
+import datetime
 import os
 
 import pulse.config
@@ -228,7 +229,16 @@ class Checkout (object):
         entries = os.path.join (self.directory, os.path.dirname (filename), 'CVS', 'Entries')
         for line in open(entries):
             if line.startswith ('/' + os.path.basename (filename) + '/'):
-                return line.split('/')[2].strip()
+                revnumber, revdate = line.split('/')[2:4]
+                datelist = [0, 0, 0, 0, 0, 0]
+                revdate = revdate.split()
+                datelist[0] = int(revdate[-1])
+                months = {'Jan':1, 'Feb':2, 'Mar':3, 'Apr':4, 'May':5, 'Jun':6,
+                          'Jul':7, 'Aug':8, 'Sep':9, 'Oct':10, 'Nov':11, 'Dec':12}
+                datelist[1] = months[revdate[1]]
+                datelist[2] = int(revdate[2])
+                datelist[3:6] = map (int, revdate[3].split(':'))
+                return (revnumber, datetime.datetime(*datelist))
         return None
 
     def _get_revision_git (self, filename):
