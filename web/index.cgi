@@ -6,6 +6,7 @@ import sys
 sys.path.append ('/home/shaunm/Projects/pulse')
 import cgi
 
+import pulse.config
 import pulse.db
 import pulse.html
 import pulse.pages
@@ -17,7 +18,7 @@ def usage ():
 def main ():
     fd = None
     try:
-        (opts, args) = getopt.gnu_getopt (sys.argv[1:], 'o:', ['output=', 'debug'])
+        (opts, args) = getopt.gnu_getopt (sys.argv[1:], 'o:', ['output=', 'debug', 'webroot='])
     except getopt.GetoptError:
         usage ()
         sys.exit (1)
@@ -26,6 +27,8 @@ def main ():
             fd = file (arg, 'w')
         elif opt == '--debug':
             pulse.db.conn.debug = True
+        elif opt == '--webroot':
+            pulse.config.webroot = arg
     if len(args) > 0:
         http = False
         pathInfo = args[0]
