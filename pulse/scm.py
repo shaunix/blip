@@ -215,3 +215,24 @@ class Checkout (object):
             # FIXME: check status, log output if error
         finally:
             os.chdir (owd)
+
+    def get_revision (self, filename):
+        if hasattr (Checkout, '_get_revision_' + self.scm_type) and self.scm_type in default_branches:
+            func = getattr (Checkout, '_get_revision_' + self.scm_type)
+        else:
+            raise CheckoutError (
+                'Checkout got unknown SCM type "%s"' % self.scm_type)
+        return func (self, filename)
+
+    def _get_revision_cvs (self, filename):
+        entries = os.path.join (self.directory, os.path.dirname (filename), 'CVS', 'Entries')
+        for line in open(entries):
+            if line.startswith ('/' + os.path.basename (filename) + '/'):
+                return line.split('/')[2].strip()
+        return None
+
+    def _get_revision_git (self, filename):
+        pass
+
+    def _get_revision_svn (self, filename):
+        pass
