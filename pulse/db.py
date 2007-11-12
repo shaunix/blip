@@ -248,6 +248,8 @@ class Branch (Record):
             rel.remove ()
         for rel in BranchRelation.selectBy (pred=self):
             rel.remove ()
+        for commit in Commits.selectBy (branch=self):
+            commit.remove ()
 
     def set_children (self, type, children):
         old = Branch.selectBy (type=type, parent=self)
@@ -286,6 +288,19 @@ class Entity (Record):
             rel.remove ()
         for rel in EntityRelation.selectBy (pred=self):
             rel.remove ()
+
+
+class ScmCommit (sql.SQLObject):
+    class sqlmeta:
+        table = 'ScmCommit'
+
+    branch =  sql.ForeignKey ('Branch', dbName='branch')
+    person = sql.ForeignKey ('Entity', dbName='person')
+    filename = sql.StringCol ()
+    filetype = sql.StringCol (default=None)
+    revision = sql.StringCol ()
+    datetime = sql.DateTimeCol ()
+    comment = sql.StringCol ()
 
 
 ################################################################################

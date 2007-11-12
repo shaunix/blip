@@ -243,12 +243,11 @@ class Checkout (object):
                 return (revnumber, datetime.datetime(*datelist))
         return None
 
-    def _get_revision_git (self, filename):
-        
-        pass
+    #def _get_revision_git (self, filename):
 
     def _get_revision_svn (self, filename):
         owd = os.getcwd ()
+        retval = None
         try:
             os.chdir (os.path.join (self.directory, os.path.dirname (filename)))
             cmd = 'svn info "%s"' % os.path.basename (filename)
@@ -258,13 +257,64 @@ class Checkout (object):
                 elif line.startswith ('Last Changed Date: '):
                     revdate = line[19:].strip()
                     break
-            revdate = revdate.split('(')[0]
-            dt = datetime.datetime (*time.strptime(revdate[:19], '%Y-%m-%d %H:%M:%S')[:6])
-            off = revdate[20:25]
-            offhours = int(off[:3])
-            offmins = int(off[0] + off[3:])
-            delta = datetime.timedelta (hours=offhours, minutes=offmins)
-            return (revnumber, dt - delta)
+            retval = (revnumber, parse_date_svn (revdate))
         finally:
             os.chdir (owd)
-        pass
+        return retval
+
+    def get_history (self, filename, since=None):
+        if hasattr (Checkout, '_get_history_' + self.scm_type) and self.scm_type in default_branches:
+            func = getattr (Checkout, '_get_history_' + self.scm_type)
+        else:
+            raise CheckoutError (
+                'get_history got unknown SCM type "%s"' % self.scm_type)
+        return func (self, filename, since=since)
+
+    #def _get_history_cvs (self, filename, since=None)
+    
+    #def _get_history_git (self, filename, since=None)
+    
+    def _get_history_svn (self, filename, since=None):
+        owd = os.getcwd ()
+        retval = []
+        try:
+            os.chdir (os.path.join (self.directory, os.path.dirname (filename)))
+            cmd = 'svn log '
+            if since != None:
+                cmd += '-r' + since + ':HEAD '
+            cmd += '"' + os.path.basename (filename) + '"'
+            fd = os.popen (cmd)
+            line = fd.readline()
+            while line:
+                if line == '-' * 72 + '\n':
+                    line = fd.readline()
+                    if not line: break
+                    (rev, who, date, diff) = line.split('|')
+                    rev = rev[1:].strip()
+                    who = who.strip()
+                    date = parse_date_svn (date)
+                    comment = ''
+                    line = fd.readline()
+                    if line == '\n': line = fd.readline()
+                    while line:
+                        if line == '-' * 72 + '\n':
+                            break
+                        comment += line
+                        line = fd.readline()
+                    if rev != since:
+                        retval.append ({'revision' : rev, 'date' : date,
+                                        'userid' : who, 'comment' : comment})
+                else:
+                    line = fd.readline()
+        finally:
+            os.chdir (owd)
+        return retval
+
+def parse_date_svn (datestr):
+    d = datestr.split('(')[0].strip()
+    dt = datetime.datetime (*time.strptime(d[:19], '%Y-%m-%d %H:%M:%S')[:6])
+    off = d[20:25]
+    offhours = int(off[:3])
+    offmins = int(off[0] + off[3:])
+    delta = datetime.timedelta (hours=offhours, minutes=offmins)
+    return dt - delta

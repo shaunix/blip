@@ -50,7 +50,7 @@ class SublinksComponent (Block):
     def __init__ (self, **kw):
         Block.__init__ (self, **kw)
         self._sublinks = []
-        self._divider = self.BULLET
+        self._divider = kw.get('divider', self.BULLET)
 
     def add_sublink (self, href, title):
         self._sublinks.append ((href, title))
@@ -513,7 +513,7 @@ class Span (ContentComponent):
         ContentComponent.__init__ (self, **kw)
         for arg in args:
             self.add_content (arg)
-        self._divider = None
+        self._divider = kw.get('divider', None)
 
     def set_divider (self, divider):
         self._divider = divider

@@ -74,6 +74,27 @@ def update_gdu_docbook (doc, update=True, timestamps=True):
         pofile = os.path.join (checkout.directory, translation.scm_dir, translation.scm_file)
         process_docbook_pofile (pofile, name, desc, data, timestamps=timestamps)
 
+    makedir = os.path.join (checkout.directory, os.path.dirname (doc.scm_dir))
+    makefile = pulse.parsers.Automake (os.path.join (makedir, 'Makefile.am'))
+    for fname in ([makefile['DOC_MODULE']+'.xml']  +
+                  makefile.get('DOC_INCLUDES', '').split() +
+                  makefile.get('DOC_ENTITIES', '').split() ):
+        fullname = os.path.join (makedir, 'C', fname)
+        rel_ch = pulse.utils.relative_path (fullname, checkout.directory)
+        commits = pulse.db.ScmCommit.select ((pulse.db.ScmCommit.q.branchID == doc.id) &
+                                             (pulse.db.ScmCommit.q.filename == fname),
+                                             orderBy='-datetime')
+        if commits.count() == 0:
+            since = None
+        else:
+            since = commits[0].revision
+        serverid = '.'.join (pulse.scm.server_name (checkout.scm_type, checkout.scm_server).split('.')[-2:])
+        for hist in checkout.get_history (rel_ch, since=since):
+            pident = '/person/' + serverid + '/' + hist['userid']
+            pers = pulse.db.Entity.get_record (ident=pident, type='Person')
+            pulse.db.ScmCommit (branch=doc, person=pers, filename=fname, filetype='xml',
+                                revision=hist['revision'], datetime=hist['date'], comment=hist['comment'])
+
     doc.update_name (name)
     doc.update_desc (desc)
     if len(data) > 0:
@@ -195,6 +216,11 @@ def process_docbook_pofile (pofile, name, desc, data, **kw):
         desc[lang] = po.get_message_str (desc['C'])
    
     pulse.db.Timestamp.set_timestamp (rel_scm, mtime)
+
+
+def update_scm_file (doc, filename):
+    print filename
+    pass
 
 
 def set_credits (doc, credits):

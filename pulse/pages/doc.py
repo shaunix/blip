@@ -114,6 +114,18 @@ def output_doc (doc, path=[], query=[], http=True, fd=None):
             loc += '/branches/' + doc.scm_branch
         page.add_fact (pulse.utils.gettext ('SVN Location'), loc)
 
+
+    commits = pulse.db.ScmCommit.select (pulse.db.ScmCommit.q.branchID == doc.id,
+                                         orderBy='-datetime')
+    if commits.count() > 0:
+        commit = commits[0]
+        span = pulse.html.Span(divider=pulse.html.Span.SPACE)
+        # FIXME: i18n, word order, but we want to link person
+        span.add_content (str(commit.datetime))
+        span.add_content (' by ')
+        span.add_content (pulse.html.Link (commit.person))
+        page.add_fact (pulse.utils.gettext ('Last Modified'), span)
+
     columns = pulse.html.ColumnBox (2)
     page.add_content (columns)
 

@@ -60,6 +60,9 @@ class Automake (object):
     def __getitem__ (self, key):
         return self._variables[key]
 
+    def get (self, key, val=None):
+        return self._variables.get(key, val)
+
     def has_key (self, key):
         return self._variables.has_key (key)
 
