@@ -96,6 +96,8 @@ def output_doc (doc, path=[], query=[], http=True, fd=None):
         page.add_fact (pulse.utils.gettext ('Release Sets'), span)
         sep = True
 
+    page.add_fact (pulse.utils.gettext ('Module'), pulse.html.Link (doc.parent))
+
     if sep: page.add_fact_sep ()
     
     page.add_fact (pulse.utils.gettext ('Location'), checkout.get_location (doc.scm_dir, doc.scm_file))
