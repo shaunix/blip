@@ -21,6 +21,7 @@
 import commands
 import datetime
 import os
+import time
 
 import pulse.config
 import pulse.utils
@@ -151,7 +152,7 @@ class Checkout (object):
             self._location = url + '@' + self.scm_branch
             self._location_dir = url + '/%s@' + self.scm_branch
             self._location_dirfile = url + '/%s/%s@' + self.scm_branch
-        self._co = ('git clone --depth 0 %s %s && (cd %s && git checkout origin/%s)' %
+        self._co = ('git clone %s %s && (cd %s && git checkout origin/%s)' %
                     (url, self.scm_branch, self.scm_branch, self.scm_branch))
         self._up = 'git fetch origin && git rebase origin/' + self.scm_branch
 
@@ -202,6 +203,7 @@ class Checkout (object):
         owd = os.getcwd ()
         try:
             os.chdir (topdir)
+            print self._co
             (status, output) = commands.getstatusoutput (self._co)
             # FIXME: check status, log output if error
         finally:
@@ -222,7 +224,7 @@ class Checkout (object):
             func = getattr (Checkout, '_get_revision_' + self.scm_type)
         else:
             raise CheckoutError (
-                'Checkout got unknown SCM type "%s"' % self.scm_type)
+                'get_revision got unknown SCM type "%s"' % self.scm_type)
         return func (self, filename)
 
     def _get_revision_cvs (self, filename):
@@ -242,7 +244,27 @@ class Checkout (object):
         return None
 
     def _get_revision_git (self, filename):
+        
         pass
 
     def _get_revision_svn (self, filename):
+        owd = os.getcwd ()
+        try:
+            os.chdir (os.path.join (self.directory, os.path.dirname (filename)))
+            cmd = 'svn info "%s"' % os.path.basename (filename)
+            for line in os.popen (cmd):
+                if line.startswith ('Last Changed Rev: '):
+                    revnumber = line[18:].strip()
+                elif line.startswith ('Last Changed Date: '):
+                    revdate = line[19:].strip()
+                    break
+            revdate = revdate.split('(')[0]
+            dt = datetime.datetime (*time.strptime(revdate[:19], '%Y-%m-%d %H:%M:%S')[:6])
+            off = revdate[20:25]
+            offhours = int(off[:3])
+            offmins = int(off[0] + off[3:])
+            delta = datetime.timedelta (hours=offhours, minutes=offmins)
+            return (revnumber, dt - delta)
+        finally:
+            os.chdir (owd)
         pass
