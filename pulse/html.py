@@ -360,7 +360,7 @@ class GridBox (Block):
         Block.__init__ (self, **kw)
         self._rows = []
 
-    def add_row (self, row):
+    def add_row (self, *row):
         self._rows.append (row)
 
     def output (self, fd=sys.stdout):
@@ -421,8 +421,8 @@ class ExpanderBox (ContentComponent):
 
     def output (self, fd=sys.stdout):
         p (fd, '<div class="expander" id="%s">' % self._id)
-        p (fd, '<div class="expander-title"><a href="javascript:expander_toggle(\'%s\')"><img class="expander-img" src="%sdata/expander-open.png"> %s</a></div>' %
-           (self._id, pulse.config.webroot, self._title))
+        p (fd, '<div class="expander-title"><a href="javascript:expander_toggle(\'%s\')"><img id="img-%s" class="expander-img" src="%sdata/expander-open.png"> %s</a></div>' %
+           (self._id, self._id, pulse.config.webroot, self._title))
         p (fd, '<div class="expander-content">')
         ContentComponent.output (self, fd=fd)
         p (fd, '</div>')

@@ -18,6 +18,8 @@
 # Suite 330, Boston, MA  0211-1307  USA.
 #
 
+import math
+
 import pulse.config
 import pulse.db
 import pulse.html
@@ -133,13 +135,31 @@ def output_branch (branch, path=[], query=[], http=True, fd=None):
     domains = pulse.db.Branch.selectBy (type='Domain', parent=branch)
     if domains.count() > 0:
         for domain in pulse.utils.attrsorted (domains[0:], 'title'):
-            # FIXME: let's not do a simple resource link, but a tree with other info
-            reslink = box.add_resource_link (domain)
             translations = pulse.db.Branch.selectBy (type='Translation', parent=domain)
+            translations = pulse.utils.attrsorted (list(translations), 'title')
+            exp = pulse.html.ExpanderBox (domain.ident.split('/')[-2],
+                                          pulse.utils.gettext ('%s (%s)')
+                                          % (domain.title, len(translations)))
+            box.add_content (exp)
             grid = pulse.html.GridBox ()
-            reslink.add_content (grid)
-            for translation in pulse.utils.attrsorted (translations[0:], 'title'):
-                grid.add_row ((translation.scm_file[:-3],))
+            exp.add_content (grid)
+            if len(translations) == 0:
+                grid.add_row (pulse.html.AdmonBox (pulse.html.AdmonBox.warning,
+                                                   pulse.utils.gettext ('No translations') ))
+            else:
+                for translation in translations:
+                    stat = pulse.db.Statistic.select ((pulse.db.Statistic.q.branchID == translation.id) &
+                                                      (pulse.db.Statistic.q.type == 'Messages'),
+                                                      orderBy='-daynum')
+                    if stat.count() == 0:
+                        grid.add_row (translation.scm_file[:-3])
+                    else:
+                        stat = stat[0]
+                        untranslated = stat.total - stat.stat1 - stat.stat2
+                        percent = math.floor(100 * (float(stat.stat1) / stat.total))
+                        text = pulse.utils.gettext ('%i%% (%i/%i/%i)') % (
+                            percent, stat.stat1, stat.stat2, untranslated)
+                        grid.add_row (translation.scm_file[:-3], text)
     else:
         box.add_content (pulse.html.AdmonBox (pulse.html.AdmonBox.warning,
                                               pulse.utils.gettext ('No domains') ))

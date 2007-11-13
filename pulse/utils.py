@@ -22,6 +22,9 @@ from datetime import datetime
 import os.path
 import sys
 
+def daynum (when=datetime.now()):
+    return (when - datetime(1970, 1, 1, 0, 0, 0)).days
+
 # Just a dummy until we hook up gettext
 def gettext (str):
     return str

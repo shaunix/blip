@@ -10,14 +10,12 @@ function expander_toggle (id) {
       div.className = 'expander-content';
     }
   }
-  img = el.getElementsByTagName ('img');
-  for (var i = 0; i < img.length; i++) {
-    if (img[i].className == 'expander-img') {
-      if (open) {
-        img[i].src = img[i].src.replace('closed', 'open');
-      } else {
-        img[i].src = img[i].src.replace('open', 'closed');
-      }
+  img = document.getElementById ('img-' + id);
+  if (img.className == 'expander-img') {
+    if (open) {
+      img.src = img.src.replace('closed', 'open');
+    } else {
+      img.src = img.src.replace('open', 'closed');
     }
   }
 }

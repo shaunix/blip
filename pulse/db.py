@@ -147,12 +147,11 @@ class Record (sql.SQLObject):
             return pulse.config.iconroot + self.icon_dir + '/' + self.icon_name + '.png'
     icon_url = property (get_icon_url)
 
+    def get_title_default (self):
+        return self.ident.split('/')[-1]
     def get_title (self):
         if self.name == {}:
-            if self.__class__ == Branch:
-                return self.ident.split('/')[-2]
-            else:
-                return self.ident.split('/')[-1]
+            return self.get_title_default ()
         return self.localized_name
     title = property (get_title)
 
@@ -232,6 +231,12 @@ class Branch (Record):
         record._ensure_default_branch ()
         return record
 
+    def get_title_default (self):
+        id = self.ident.split('/')[-2]
+        if self.type == 'Domain' and id == 'po':
+            return pulse.utils.gettext ('Core Translations')
+        return id
+
     def get_branch_title (self):
         return pulse.utils.gettext ('%s (%s)') % (self.title, self.scm_branch)
     branch_title = property (get_branch_title)
@@ -290,6 +295,9 @@ class Entity (Record):
             rel.remove ()
 
 
+################################################################################
+## Extra Information
+
 class ScmCommit (sql.SQLObject):
     class sqlmeta:
         table = 'ScmCommit'
@@ -301,6 +309,28 @@ class ScmCommit (sql.SQLObject):
     revision = sql.StringCol ()
     datetime = sql.DateTimeCol ()
     comment = sql.StringCol ()
+
+class Statistic (sql.SQLObject):
+    class sqlmeta:
+        table = 'Statistic'
+
+    branch = sql.ForeignKey ('Branch', dbName='branch')
+    daynum = sql.IntCol ()
+    type = sql.StringCol ()
+    stat1 = sql.IntCol ()
+    stat2 = sql.IntCol ()
+    total = sql.IntCol ()
+
+    @classmethod
+    def set_statistic (cls, branch, daynum, type, stat1, stat2, total):
+        res = Statistic.selectBy (branch=branch, daynum=daynum, type=type)
+        if res.count() > 0:
+            res = res[0]
+            res.set (stat1=stat1, stat2=stat2, total=total)
+            return res
+        else:
+            return Statistic (branch=branch, daynum=daynum, type=type,
+                              stat1=stat1, stat2=stat2, total=total)
 
 
 ################################################################################
