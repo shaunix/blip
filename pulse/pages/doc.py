@@ -164,20 +164,23 @@ def output_doc (doc, path=[], query=[], http=True, fd=None):
     vbox = pulse.html.VBox()
     box.add_content (vbox)
 
-    linkspan = pulse.html.Span (divider=pulse.html.Span.SPACE)
-    vbox.add_content (linkspan)
     potlst = ['var', 'l10n'] + doc.ident.split('/')[1:] + [doc.ident.split('/')[-2] + '.pot']
     poturl = pulse.config.webroot + '/'.join (potlst)
-    linkspan.add_content (pulse.html.Link (poturl,
-                                           pulse.utils.gettext ('POT file'),
-                                           icon='download' ))
     potfile = os.path.join (*potlst)
     vf = pulse.db.VarFile.selectBy (filename=potfile)
     if vf.count() > 0:
+        linkspan = pulse.html.Span (divider=pulse.html.Span.SPACE)
+        vbox.add_content (linkspan)
         vf = vf[0]
+        linkspan.add_content (pulse.html.Link (poturl,
+                                               pulse.utils.gettext ('POT file'),
+                                               icon='download' ))
         # FIXME: i18n reordering
         linkspan.add_content (pulse.utils.gettext ('(%i messages)') % vf.statistic)
         linkspan.add_content (pulse.utils.gettext ('on %s') % str(vf.datetime))
+    else:
+        vbox.add_content (pulse.html.AdmonBox (pulse.html.AdmonBox.warning,
+                                               pulse.utils.gettext ('No POT file') ))
 
     grid = pulse.html.GridBox ()
     vbox.add_content (grid)
