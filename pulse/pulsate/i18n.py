@@ -86,7 +86,7 @@ def get_xml2po_potfile (po, checkout):
     if xml2po_potfiles.has_key (makedir):
         return xml2po_potfiles[makedir]
     makefile = pulse.parsers.Automake (os.path.join (makedir, 'Makefile.am'))
-    docfiles = [os.path.join (makedir, 'C', fname)
+    docfiles = [os.path.join ('C', fname)
                 for fname in ([makefile['DOC_MODULE']+'.xml'] + makefile.get('DOC_INCLUDES', '').split())]
     potdir_rel = os.path.join (*(['var', 'l10n'] + po.ident.split('/')[3:]))
     potdir_abs = os.path.join (pulse.config.webdir, potdir_rel)
@@ -95,7 +95,12 @@ def get_xml2po_potfile (po, checkout):
     if not os.path.exists (potdir_abs):
         os.makedirs (potdir_abs)
     cmd = 'xml2po -o "' + potfile_abs + '" "' + '" "'.join(docfiles) + '"'
-    (status, output) = commands.getstatusoutput (cmd)
+    owd = os.getcwd ()
+    try:
+        os.chdir (makedir)
+        (status, output) = commands.getstatusoutput (cmd)
+    finally:
+        os.chdir (owd)
     if status == 0:
         popo = pulse.parsers.Po (potfile_abs)
         num = popo.get_num_messages ()
