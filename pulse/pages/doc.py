@@ -131,6 +131,7 @@ def output_doc (doc, path=[], query=[], http=True, fd=None):
 
     # Developers
     box = pulse.html.InfoBox ('developers', pulse.utils.gettext ('Developers'))
+    columns.add_content (0, box)
     authors = pulse.db.BranchEntityRelation.selectBy (subj=doc, verb='DocumentAuthor')
     editors = pulse.db.BranchEntityRelation.selectBy (subj=doc, verb='DocumentEditor')
     credits = pulse.db.BranchEntityRelation.selectBy (subj=doc, verb='DocumentCredit')
@@ -153,7 +154,38 @@ def output_doc (doc, path=[], query=[], http=True, fd=None):
     else:
         box.add_content (pulse.html.AdmonBox (pulse.html.AdmonBox.warning,
                                               pulse.utils.gettext ('No developers') ))
-    columns.add_content (0, box)
+
+    # Translations
+    box = pulse.html.InfoBox ('translations', pulse.utils.gettext ('Translations'))
+    columns.add_content (1, box)
+
+    potfile = pulse.config.webroot + '/'.join (['var', 'l10n'] +
+                                               doc.ident.split('/')[1:] +
+                                               [doc.ident.split('/')[-2] + '.pot'] )
+    box.add_content (pulse.html.Link (potfile,
+                                      pulse.utils.gettext ('POT file') ))
+
+    grid = pulse.html.GridBox ()
+    box.add_content (grid)
+    translations = pulse.db.Branch.selectBy (parent=doc, type='Translation')
+    translations = pulse.utils.attrsorted (list(translations), 'title')
+    if len(translations) == 0:
+        grid.add_row (pulse.html.AdmonBox (pulse.html.AdmonBox.warning,
+                                           pulse.utils.gettext ('No translations') ))
+    else:
+        for translation in translations:
+            stat = pulse.db.Statistic.select ((pulse.db.Statistic.q.branchID == translation.id) &
+                                              (pulse.db.Statistic.q.type == 'Messages'),
+                                              orderBy='-daynum')
+            if stat.count() == 0:
+                grid.add_row (translation.scm_file[:-3])
+            else:
+                stat = stat[0]
+                untranslated = stat.total - stat.stat1 - stat.stat2
+                percent = math.floor(100 * (float(stat.stat1) / stat.total))
+                text = pulse.utils.gettext ('%i%% (%i/%i/%i)') % (
+                    percent, stat.stat1, stat.stat2, untranslated)
+                grid.add_row (translation.scm_file[:-3], text)
 
     page.output(fd=fd)
 

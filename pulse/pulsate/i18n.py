@@ -74,8 +74,28 @@ def update_intltool (po, update=True, timestamps=True):
 
 
 def update_xml2po (po, update=True, timestamps=True):
-    pass
+    checkout = get_checkout (po.parent.parent, update=update)
+    potfile = get_xml2po_potfile (po, checkout)
+    # FIXME: merge with potfile, stats
+    
 
+xml2po_potfiles = {}
+def get_xml2po_potfile (po, checkout):
+    makedir = os.path.join (checkout.directory, os.path.dirname (po.scm_dir))
+    if xml2po_potfiles.has_key (makedir):
+        return xml2po_potfiles[makedir]
+    makefile = pulse.parsers.Automake (os.path.join (makedir, 'Makefile.am'))
+    docfiles = [os.path.join (makedir, 'C', fname)
+                for fname in ([makefile['DOC_MODULE']+'.xml'] + makefile.get('DOC_INCLUDES', '').split())]
+    potdir = os.path.join (*([pulse.config.webdir, 'var', 'l10n'] + po.ident.split('/')[3:]))
+    potfile = os.path.join (potdir, makefile['DOC_MODULE'] + '.pot')
+    if not os.path.exists (potdir):
+        os.makedirs (potdir)
+    cmd = 'xml2po -o "' + potfile + '" "' + '" "'.join(docfiles) + '"'
+    (status, output) = commands.getstatusoutput (cmd)
+    xml2po_potfiles[makedir] = potfile
+    return potfile
+    
 
 ################################################################################
 ## main
@@ -96,7 +116,12 @@ def main (argv, options={}):
         pos = []
         for domain in domains:
             pos += list(pulse.db.Branch.selectBy (type='Translation', parent=domain))
-    # FIXME: an elif for document translations
+    elif prefix.startswith ('/doc/') or prefix.startswith ('/ref/'):
+        docs = pulse.db.Branch.select ((pulse.db.Branch.q.type == 'Document') &
+                                       (pulse.db.Branch.q.ident.startswith (prefix)) )
+        pos = []
+        for doc in docs:
+            pos += list(pulse.db.Branch.selectBy (type='Translation', parent=doc))
     else:
         pos = pulse.db.Branch.select ((pulse.db.Branch.q.type == 'Translation') &
                                       (pulse.db.Branch.q.ident.startswith (prefix)) )
