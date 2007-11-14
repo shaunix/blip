@@ -94,7 +94,7 @@ def get_xml2po_potfile (po, checkout):
     potfile_abs = os.path.join (potdir_abs, makefile['DOC_MODULE'] + '.pot')
     if not os.path.exists (potdir_abs):
         os.makedirs (potdir_abs)
-    cmd = 'xml2po -o "' + potfile_abs + '" "' + '" "'.join(docfiles) + '"'
+    cmd = 'xml2po -e -o "' + potfile_abs + '" "' + '" "'.join(docfiles) + '"'
     owd = os.getcwd ()
     try:
         os.chdir (makedir)
