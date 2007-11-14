@@ -18,6 +18,8 @@
 # Suite 330, Boston, MA  0211-1307  USA.
 #
 
+import os
+
 import pulse.config
 import pulse.db
 import pulse.html
@@ -159,14 +161,26 @@ def output_doc (doc, path=[], query=[], http=True, fd=None):
     box = pulse.html.InfoBox ('translations', pulse.utils.gettext ('Translations'))
     columns.add_content (1, box)
 
-    potfile = pulse.config.webroot + '/'.join (['var', 'l10n'] +
-                                               doc.ident.split('/')[1:] +
-                                               [doc.ident.split('/')[-2] + '.pot'] )
-    box.add_content (pulse.html.Link (potfile,
-                                      pulse.utils.gettext ('POT file') ))
+    vbox = pulse.html.VBox()
+    box.add_content (vbox)
+
+    linkspan = pulse.html.Span (divider=pulse.html.Span.SPACE)
+    vbox.add_content (linkspan)
+    potlst = ['var', 'l10n'] + doc.ident.split('/')[1:] + [doc.ident.split('/')[-2] + '.pot']
+    poturl = pulse.config.webroot + '/'.join (potlst)
+    linkspan.add_content (pulse.html.Link (poturl,
+                                           pulse.utils.gettext ('POT file'),
+                                           icon='download' ))
+    potfile = os.path.join (*potlst)
+    vf = pulse.db.VarFile.selectBy (filename=potfile)
+    if vf.count() > 0:
+        vf = vf[0]
+        # FIXME: i18n reordering
+        linkspan.add_content (pulse.utils.gettext ('(%i messages)') % vf.statistic)
+        linkspan.add_content (pulse.utils.gettext ('on %s') % str(vf.datetime))
 
     grid = pulse.html.GridBox ()
-    box.add_content (grid)
+    vbox.add_content (grid)
     translations = pulse.db.Branch.selectBy (parent=doc, type='Translation')
     translations = pulse.utils.attrsorted (list(translations), 'title')
     if len(translations) == 0:

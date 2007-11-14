@@ -538,9 +538,14 @@ class Link (Block):
             self._text = args[1]
         else:
             self._href = self._text = args[0]
+        self._icon = kw.get('icon', None)
     
     def output (self, fd=sys.stdout):
-        p (fd, '<a href="%s">%s</a>' % (self._href, self._text))
+        if self._icon != None:
+            p (fd, '<a href="%s"><img src="%sdata/%s-16.png" height="16" width="16"> %s</a>' %
+               (self._href, pulse.config.webroot, self._icon, self._text))
+        else:
+            p (fd, '<a href="%s">%s</a>' % (self._href, self._text))
 
 
 ################################################################################

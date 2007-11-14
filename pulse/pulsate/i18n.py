@@ -19,6 +19,7 @@
 #
 
 import commands
+import datetime
 import os
 import os.path
 
@@ -87,14 +88,28 @@ def get_xml2po_potfile (po, checkout):
     makefile = pulse.parsers.Automake (os.path.join (makedir, 'Makefile.am'))
     docfiles = [os.path.join (makedir, 'C', fname)
                 for fname in ([makefile['DOC_MODULE']+'.xml'] + makefile.get('DOC_INCLUDES', '').split())]
-    potdir = os.path.join (*([pulse.config.webdir, 'var', 'l10n'] + po.ident.split('/')[3:]))
-    potfile = os.path.join (potdir, makefile['DOC_MODULE'] + '.pot')
-    if not os.path.exists (potdir):
-        os.makedirs (potdir)
-    cmd = 'xml2po -o "' + potfile + '" "' + '" "'.join(docfiles) + '"'
+    potdir_rel = os.path.join (*(['var', 'l10n'] + po.ident.split('/')[3:]))
+    potdir_abs = os.path.join (pulse.config.webdir, potdir_rel)
+    potfile_rel = os.path.join (potdir_rel, makefile['DOC_MODULE'] + '.pot')
+    potfile_abs = os.path.join (potdir_abs, makefile['DOC_MODULE'] + '.pot')
+    if not os.path.exists (potdir_abs):
+        os.makedirs (potdir_abs)
+    cmd = 'xml2po -o "' + potfile_abs + '" "' + '" "'.join(docfiles) + '"'
     (status, output) = commands.getstatusoutput (cmd)
-    xml2po_potfiles[makedir] = potfile
-    return potfile
+    if status == 0:
+        popo = pulse.parsers.Po (potfile_abs)
+        num = popo.get_num_messages ()
+        vf = pulse.db.VarFile.selectBy (filename=potfile_rel)
+        if vf.count() > 0:
+            vf = vf[0]
+            vf.set(datetime=datetime.datetime.now(), statistic=num)
+        else:
+            pulse.db.VarFile (filename=potfile_rel, datetime=datetime.datetime.now(), statistic=num)
+        xml2po_potfiles[makedir] = potfile_abs
+        return potfile_abs
+    else:
+        # FIXME
+        raise "xml2po failed"
     
 
 ################################################################################

@@ -178,3 +178,5 @@ class Po:
     def get_message_comment (self, msgid, msgctxt=None):
         return self._comments[(msgid, msgctxt)]
 
+    def get_num_messages (self):
+        return len(self._msgstrs)

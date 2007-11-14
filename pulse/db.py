@@ -332,6 +332,14 @@ class Statistic (sql.SQLObject):
             return Statistic (branch=branch, daynum=daynum, type=type,
                               stat1=stat1, stat2=stat2, total=total)
 
+class VarFile (sql.SQLObject):
+    class sqlmeta:
+        table = 'VarFile'
+
+    filename = sql.StringCol ()
+    statistic = sql.IntCol ()
+    datetime = sql.DateTimeCol ()
+
 
 ################################################################################
 ## Relations
