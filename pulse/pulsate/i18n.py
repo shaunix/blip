@@ -77,7 +77,23 @@ def update_intltool (po, update=True, timestamps=True):
 def update_xml2po (po, update=True, timestamps=True):
     checkout = get_checkout (po.parent.parent, update=update)
     potfile = get_xml2po_potfile (po, checkout)
-    # FIXME: merge with potfile, stats
+    makedir = os.path.join (checkout.directory, os.path.dirname (po.scm_dir))
+    cmd = 'msgmerge "' + os.path.join (os.path.basename (po.scm_dir), po.scm_file) + '" "' + potfile + '" 2>&1'
+    owd = os.getcwd ()
+    try:
+        os.chdir (makedir)
+        popo = pulse.parsers.Po (os.popen (cmd))
+        stats = popo.get_stats()
+        total = stats[0] + stats[1] + stats[2]
+        pulse.db.Statistic.set_statistic (po, pulse.utils.daynum(), 'Messages',
+                                          stats[0], stats[1], total)
+        stats = popo.get_image_stats()
+        total = stats[0] + stats[1] + stats[2]
+        pulse.db.Statistic.set_statistic (po, pulse.utils.daynum(), 'ImageMessages',
+                                          stats[0], stats[1], total)
+    finally:
+        os.chdir (owd)
+    
     
 
 xml2po_potfiles = {}

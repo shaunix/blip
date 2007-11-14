@@ -115,10 +115,20 @@ class KeyFile (object):
         return self._data[group][key]
 
 class Po:
-    def __init__ (self, filename):
-        self._filename = filename
+    def __init__ (self, f):
+        if isinstance (f, basestring):
+            self._fd = codecs.open (f, 'r', 'utf-8')
+        else:
+            self._fd = f
         self._msgstrs = {}
         self._comments = {}
+        self._num_translated = 0
+        self._num_untranslated = 0
+        self._num_fuzzy = 0
+        self._num_images = 0
+        self._num_translated_images = 0
+        self._num_fuzzy_images = 0
+        self._num_untranslated_images = 0
         self.parse()
 
     def parse (self):
@@ -130,10 +140,21 @@ class Po:
                 key = (self._msg['msgid'], self._msg.get('msgctxt'))
                 self._comments[key] = self._msg.get('comment')
                 self._msgstrs[key] = self._msg.get('msgstr')
+                img = self._msg['msgid'].startswith ('@@image: ')
+                if img: self._num_images += 1
+                if self._msg.get('msgstr', '') == '':
+                    self._num_untranslated += 1
+                    if img: self._num_untranslated_images += 1
+                elif self._msg.get('fuzzy', False):
+                    self._num_fuzzy += 1
+                    if img: self._num_fuzzy_images += 1
+                else:
+                    self._num_translated += 1
+                    if img: self._num_translated_images += 1
             self._inkey = ''
             self._msg = {}
                 
-        for line in codecs.open (self._filename, 'r', 'utf-8'):
+        for line in self._fd:
             line = line.strip()
             if line.startswith ('#~'):
                 continue
@@ -162,6 +183,8 @@ class Po:
                     self._msg[self._inkey] += line[1:-1]
             elif self._inkey == 'comment':
                 self._msg.setdefault (self._inkey, '')
+                if line == '#, fuzzy':
+                    self._msg['fuzzy'] = True
                 if ' ' in line:
                     self._msg[self._inkey] += line[line.index(' ')+1:] + '\n'
                 else:
@@ -180,3 +203,9 @@ class Po:
 
     def get_num_messages (self):
         return len(self._msgstrs)
+
+    def get_stats (self):
+        return (self._num_translated, self._num_fuzzy, self._num_untranslated)
+
+    def get_image_stats (self):
+        return (self._num_translated_images, self._num_fuzzy_images, self._num_untranslated_images)

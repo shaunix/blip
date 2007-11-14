@@ -371,7 +371,10 @@ class GridBox (Block):
         for row in self._rows:
             p (fd, '<tr>')
             for i in range (cols):
-                p (fd, '<td>')
+                if i == 0:
+                    p (fd, '<td class="grid-td-first">')
+                else:
+                    p (fd, '<td class="grid-td">')
                 if i < len (row):
                     p (fd, row[i])
                 p (fd, '</td>')

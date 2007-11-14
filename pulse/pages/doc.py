@@ -18,6 +18,7 @@
 # Suite 330, Boston, MA  0211-1307  USA.
 #
 
+import math
 import os
 
 import pulse.config
@@ -199,10 +200,17 @@ def output_doc (doc, path=[], query=[], http=True, fd=None):
             else:
                 stat = stat[0]
                 untranslated = stat.total - stat.stat1 - stat.stat2
-                percent = math.floor(100 * (float(stat.stat1) / stat.total))
-                text = pulse.utils.gettext ('%i%% (%i/%i/%i)') % (
+                percent = math.floor (100 * (float(stat.stat1) / stat.total))
+                text = pulse.utils.gettext ('%i%% (%i.%i.%i)') % (
                     percent, stat.stat1, stat.stat2, untranslated)
-                grid.add_row (translation.scm_file[:-3], text)
+                row = [translation.scm_file[:-3], text]
+                imgstat = pulse.db.Statistic.select ((pulse.db.Statistic.q.branchID == translation.id) &
+                                                     (pulse.db.Statistic.q.type == 'ImageMessages'),
+                                                     orderBy='-daynum')
+                if imgstat.count() > 0:
+                    imgstat = imgstat[0]
+                    row.append ('%i/%i' % (imgstat.stat1, imgstat.total))
+                grid.add_row (*row)
 
     page.output(fd=fd)
 

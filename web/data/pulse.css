@@ -147,6 +147,8 @@ table.cols { width: 100%; }
 td.col { padding: 0 0 0 1em; }
 td.col-first { padding: 0; }
 
+.grid-td { padding: 0 0 0 1em; }
+
 .info {
   border: solid 1px #d3d7cf;
   margin: 1em 0 1em 0;
