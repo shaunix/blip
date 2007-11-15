@@ -28,6 +28,8 @@ import pulse.scm
 import pulse.parsers
 import pulse.utils
 
+from sqlobject.sqlbuilder import *
+
 synop = 'update information about translations'
 usage_extra = '[ident]'
 args = pulse.utils.odict()
@@ -46,6 +48,9 @@ def get_checkout (branch, update=True):
 
 def update_intltool (po, update=True, timestamps=True):
     checkout = get_checkout (po.parent.parent, update=update)
+    potfile = get_intltool_potfile (po, checkout)
+    return
+
     podir = os.path.join (checkout.directory, po.scm_dir)
     tmpfile = po.scm_file + '.pulse-tmp-file'
     cmd = 'intltool-update %s -o %s 2>&1' % (po.scm_file[:-3], tmpfile)
@@ -94,7 +99,46 @@ def update_xml2po (po, update=True, timestamps=True):
     finally:
         os.chdir (owd)
     
-    
+
+intltool_potfiles = {}
+def get_intltool_potfile (po, checkout):
+    podir = os.path.join (checkout.directory, po.scm_dir)
+    if intltool_potfiles.has_key (podir):
+        return intltool_potfiles[podir]
+    potdir_rel = os.path.join (*(['var', 'l10n'] + po.ident.split('/')[3:]))
+    potdir_abs = os.path.join (pulse.config.webdir, potdir_rel)
+    if po.scm_dir == 'po':
+        potname = po.parent.parent.scm_module
+    else:
+        potname = po.scm_dir
+    potfile = potname + '.pot'
+    potfile_rel = os.path.join (potdir_rel, potfile)
+    potfile_abs = os.path.join (potdir_abs, potfile)
+    if not os.path.exists (potdir_abs):
+        os.makedirs (potdir_abs)
+    cmd = 'intltool-update -p -g "%s" && mv "%s" "%s"' % (potname, potfile, potdir_abs)
+    owd = os.getcwd ()
+    try:
+        os.chdir (podir)
+        pulse.utils.log ('Creating POT file %s' % potfile_rel)
+        (status, output) = commands.getstatusoutput (cmd)
+    finally:
+        os.chdir (owd)
+    if status == 0:
+        popo = pulse.parsers.Po (potfile_abs)
+        num = popo.get_num_messages ()
+        vf = pulse.db.VarFile.selectBy (filename=potfile_rel)
+        try:
+            vf = vf[0]
+            vf.set(datetime=datetime.datetime.now(), statistic=num)
+        except IndexError:
+            pulse.db.VarFile (filename=potfile_rel, datetime=datetime.datetime.now(), statistic=num)
+        intltool_potfiles[podir] = potfile_abs
+        return potfile_abs
+    else:
+        # FIXME
+        raise "intltool-update failed"
+
 
 xml2po_potfiles = {}
 def get_xml2po_potfile (po, checkout):
@@ -114,6 +158,7 @@ def get_xml2po_potfile (po, checkout):
     owd = os.getcwd ()
     try:
         os.chdir (makedir)
+        pulse.utils.log ('Creating POT file %s' % potfile_rel)
         (status, output) = commands.getstatusoutput (cmd)
     finally:
         os.chdir (owd)
@@ -121,10 +166,10 @@ def get_xml2po_potfile (po, checkout):
         popo = pulse.parsers.Po (potfile_abs)
         num = popo.get_num_messages ()
         vf = pulse.db.VarFile.selectBy (filename=potfile_rel)
-        if vf.count() > 0:
+        try:
             vf = vf[0]
             vf.set(datetime=datetime.datetime.now(), statistic=num)
-        else:
+        except IndexError:
             pulse.db.VarFile (filename=potfile_rel, datetime=datetime.datetime.now(), statistic=num)
         xml2po_potfiles[makedir] = potfile_abs
         return potfile_abs
@@ -147,17 +192,23 @@ def main (argv, options={}):
     if prefix == None:
         pos = pulse.db.Branch.selectBy (type='Translation')
     elif prefix.startswith ('/i18n/'):
-        domains = pulse.db.Branch.select ((pulse.db.Branch.q.type == 'Domain') &
-                                          (pulse.db.Branch.q.ident.startswith (prefix)) )
-        pos = []
-        for domain in domains:
-            pos += list(pulse.db.Branch.selectBy (type='Translation', parent=domain))
+        BranchParent = Alias (pulse.db.Branch, 'BranchParent')
+        pos = pulse.db.Branch.select (
+            AND(pulse.db.Branch.q.type == 'Translation',
+                BranchParent.q.type == 'Domain',
+                BranchParent.q.ident.startswith (prefix)),
+            join=INNERJOINOn(None, BranchParent,
+                             pulse.db.Branch.q.parentID == BranchParent.q.id) )
+        pos = list(pos)
     elif prefix.startswith ('/doc/') or prefix.startswith ('/ref/'):
-        docs = pulse.db.Branch.select ((pulse.db.Branch.q.type == 'Document') &
-                                       (pulse.db.Branch.q.ident.startswith (prefix)) )
-        pos = []
-        for doc in docs:
-            pos += list(pulse.db.Branch.selectBy (type='Translation', parent=doc))
+        BranchParent = Alias (pulse.db.Branch, 'BranchParent')
+        pos = pulse.db.Branch.select (
+            AND(pulse.db.Branch.q.type == 'Translation',
+                BranchParent.q.type == 'Document',
+                BranchParent.q.ident.startswith (prefix)),
+            join=INNERJOINOn(None, BranchParent,
+                             pulse.db.Branch.q.parentID == BranchParent.q.id) )
+        pos = list(pos)
     else:
         pos = pulse.db.Branch.select ((pulse.db.Branch.q.type == 'Translation') &
                                       (pulse.db.Branch.q.ident.startswith (prefix)) )

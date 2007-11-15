@@ -19,6 +19,7 @@
 #
 
 import math
+import os
 
 import pulse.config
 import pulse.db
@@ -141,8 +142,33 @@ def output_branch (branch, path=[], query=[], http=True, fd=None):
                                           pulse.utils.gettext ('%s (%s)')
                                           % (domain.title, len(translations)))
             box.add_content (exp)
+            vbox = pulse.html.VBox()
+            exp.add_content (vbox)
+
+            potlst = ['var', 'l10n'] + domain.ident.split('/')[1:]
+            if domain.scm_dir == 'po':
+                potlst.append (domain.parent.scm_module + '.pot')
+            else:
+                potlst.append (domain.scm_dir + '.pot')
+            poturl = pulse.config.webroot + '/'.join (potlst)
+            potfile = os.path.join (*potlst)
+            vf = pulse.db.VarFile.selectBy (filename=potfile)
+            if vf.count() > 0:
+                linkspan = pulse.html.Span (divider=pulse.html.Span.SPACE)
+                vbox.add_content (linkspan)
+                vf = vf[0]
+                linkspan.add_content (pulse.html.Link (poturl,
+                                                       pulse.utils.gettext ('POT file'),
+                                                       icon='download' ))
+                # FIXME: i18n reordering
+                linkspan.add_content (pulse.utils.gettext ('(%i messages)') % vf.statistic)
+                linkspan.add_content (pulse.utils.gettext ('on %s') % str(vf.datetime))
+            else:
+                vbox.add_content (pulse.html.AdmonBox (pulse.html.AdmonBox.warning,
+                                                       pulse.utils.gettext ('No POT file') ))
+
             grid = pulse.html.GridBox ()
-            exp.add_content (grid)
+            vbox.add_content (grid)
             if len(translations) == 0:
                 grid.add_row (pulse.html.AdmonBox (pulse.html.AdmonBox.warning,
                                                    pulse.utils.gettext ('No translations') ))
