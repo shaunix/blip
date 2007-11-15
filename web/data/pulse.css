@@ -138,7 +138,7 @@ ul {
 }
 ul li { margin-left: 1.44em; }
 dl { 
-  margin: 0; pading: 0;
+  margin: 0 0 0.5em 0; pading: 0;
 }
 dt { margin: 0.5em 0 0 0; }
 dd { margin: 0 0 0 1.44em; }

@@ -23,6 +23,7 @@ import datetime
 import os
 import os.path
 
+import pulse.config
 import pulse.db
 import pulse.scm
 import pulse.parsers
@@ -87,6 +88,8 @@ def update_xml2po (po, update=True, timestamps=True):
     owd = os.getcwd ()
     try:
         os.chdir (makedir)
+        filepath = os.path.join (checkout.directory, po.scm_dir, po.scm_file)
+        pulse.utils.log ('Processing file ' + pulse.utils.relative_path (filepath, pulse.config.scmdir))
         popo = pulse.parsers.Po (os.popen (cmd))
         stats = popo.get_stats()
         total = stats[0] + stats[1] + stats[2]

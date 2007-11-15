@@ -158,6 +158,27 @@ def output_doc (doc, path=[], query=[], http=True, fd=None):
         box.add_content (pulse.html.AdmonBox (pulse.html.AdmonBox.warning,
                                               pulse.utils.gettext ('No developers') ))
 
+    # Files
+    box = pulse.html.InfoBox ('files', pulse.utils.gettext ('Files'))
+    columns.add_content (0, box)
+    dl = pulse.html.DefinitionList ()
+    box.add_content (dl)
+    for xmlfile in doc.data.get('xmlfiles', []):
+        dl.add_term (xmlfile)
+        commit = pulse.db.ScmCommit.select ((pulse.db.ScmCommit.q.branchID == doc.id) &
+                                            (pulse.db.ScmCommit.q.filename == xmlfile),
+                                            orderBy='-datetime')
+        try:
+            commit = commit[0]
+            span = pulse.html.Span(divider=pulse.html.Span.SPACE)
+            # FIXME: i18n, word order, but we want to link person
+            span.add_content (str(commit.datetime))
+            span.add_content (' by ')
+            span.add_content (pulse.html.Link (commit.person))
+            dl.add_entry (span)
+        except IndexError:
+            pass
+
     # Translations
     box = pulse.html.InfoBox ('translations', pulse.utils.gettext ('Translations'))
     columns.add_content (1, box)

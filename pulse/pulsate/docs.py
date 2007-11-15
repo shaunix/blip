@@ -76,9 +76,13 @@ def update_gdu_docbook (doc, update=True, timestamps=True):
 
     makedir = os.path.join (checkout.directory, os.path.dirname (doc.scm_dir))
     makefile = pulse.parsers.Automake (os.path.join (makedir, 'Makefile.am'))
-    for fname in ([makefile['DOC_MODULE']+'.xml']  +
-                  makefile.get('DOC_INCLUDES', '').split() +
-                  makefile.get('DOC_ENTITIES', '').split() ):
+    xmlfiles = []
+    fnames = ([makefile['DOC_MODULE']+'.xml']  +
+              makefile.get('DOC_INCLUDES', '').split() +
+              makefile.get('DOC_ENTITIES', '').split() )
+    pulse.utils.log ('Checking history for %i files for %s' % (len(fnames), doc.ident))
+    for fname in (fnames):
+        xmlfiles.append (fname)
         fullname = os.path.join (makedir, 'C', fname)
         rel_ch = pulse.utils.relative_path (fullname, checkout.directory)
         commits = pulse.db.ScmCommit.select ((pulse.db.ScmCommit.q.branchID == doc.id) &
@@ -95,6 +99,9 @@ def update_gdu_docbook (doc, update=True, timestamps=True):
             pulse.db.ScmCommit (branch=doc, person=pers, filename=fname, filetype='xml',
                                 revision=hist['revision'], datetime=hist['date'], comment=hist['comment'])
 
+    xmlfiles = sorted(xmlfiles)
+    if doc.data.get('xmlfiles') != xmlfiles:
+        data['xmlfiles'] = xmlfiles
     doc.update_name (name)
     doc.update_desc (desc)
     if len(data) > 0:
