@@ -18,15 +18,17 @@ def usage ():
 def main ():
     fd = None
     try:
-        (opts, args) = getopt.gnu_getopt (sys.argv[1:], 'o:', ['output=', 'debug', 'webroot='])
+        (opts, args) = getopt.gnu_getopt (sys.argv[1:], 'o:', ['output=', 'debug-db', 'webroot='])
     except getopt.GetoptError:
         usage ()
         sys.exit (1)
+    debugger = None
     for (opt, arg) in opts:
         if opt in ('-o', '--output'):
             fd = file (arg, 'w')
-        elif opt == '--debug':
+        elif opt == '--debug-db':
             pulse.db.conn.debug = True
+            debugger = pulse.db.conn.debugWriter = pulse.db.PulseDebugWriter()
         elif opt == '--webroot':
             pulse.config.webroot = arg
     if len(args) > 0:
@@ -59,6 +61,7 @@ def main ():
     else:
         query = {}
 
+    retcode = 0
     if len (path) == 0:
         page = pulse.html.Page (http=http)
         page.set_title (pulse.utils.gettext ('Pulse'))
@@ -71,11 +74,11 @@ def main ():
     else:
         if not http:
             mod = pulse.utils.import_ ('pulse.pages.' + path[0])
-            return mod.main (path=path, query=query, http=http, fd=fd)
+            retcode = mod.main (path=path, query=query, http=http, fd=fd)
         else:
             try:
                 mod = pulse.utils.import_ ('pulse.pages.' + path[0])
-                return mod.main (path=path, query=query, http=http, fd=fd)
+                retcode =  mod.main (path=path, query=query, http=http, fd=fd)
             except:
                 kw = {'http': http}
                 kw['title'] = pulse.utils.gettext ('Bad Monkeys')
@@ -84,7 +87,11 @@ def main ():
                     ' probably because some naughty little monkeys didn\'t finish' +
                     ' their programming assignment.'))
                 page.output(fd=fd)
-                return 500
+                retcode = 500
+    if debugger != None:
+        print '%i SELECTS, %i UPDATES' % (debugger.selects, debugger.updates)
+    return retcode
+
 
 if __name__ == "__main__":
     main ()

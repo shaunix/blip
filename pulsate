@@ -24,11 +24,13 @@ import os.path
 import sys
 from getopt import getopt
 
+import pulse.db
 import pulse.pulsate
 import pulse.utils
 
 args = pulse.utils.odict()
 args['log-file=']  = ('FILE', 'log updates to the file FILE')
+args['debug-db'] = (None, 'print database queries')
 
 def print_args (args, fd=sys.stderr):
     d = 0
@@ -111,6 +113,11 @@ if __name__ == "__main__":
         sys.exit (1)
     options = get_options (opts, args)
 
+    debugger = None
+    if options.get ('--debug-db', False):
+        pulse.db.conn.debug = True
+        debugger = pulse.db.conn.debugWriter = pulse.db.PulseDebugWriter()
+
     mod = pulse.utils.import_ ('pulse.pulsate.' + argv[0])
     if hasattr (mod, 'args'):
         mod_opts, mod_argv = getopt (argv[1:], '', mod.args)
@@ -118,4 +125,8 @@ if __name__ == "__main__":
         retcode = mod.main (mod_argv, mod_options)
     else:
         retcode = mod.main (argv[1:])
+
+    if debugger != None:
+        print '%i SELECTS, %i UPDATES' % (debugger.selects, debugger.updates)
+
     sys.exit (retcode)

@@ -31,6 +31,20 @@ conn = sql.connectionForURI (pulse.config.dbroot)
 sql.sqlhub.processConnection = conn
 sql.setDeprecationLevel (None)
 
+class PulseDebugWriter:
+    def __init__ (self):
+        self.selects = self.updates = 0
+
+    def write (self, text):
+        if text.startswith (' 1/QueryR '):
+            text = text[text.index(':')+1:].strip()
+            if text.startswith ('SELECT '):
+                i = text.index (' FROM ')
+                text = text[:7] + '...' + text[i:]
+                self.selects += 1
+            elif text.startswith ('UPDATE '):
+                self.updates += 1
+            print text
 
 ## Resource ident schemas per-type
 ## Branch idents have /<branch> appended
