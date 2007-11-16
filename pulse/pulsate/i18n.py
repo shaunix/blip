@@ -50,34 +50,21 @@ def get_checkout (branch, update=True):
 def update_intltool (po, update=True, timestamps=True):
     checkout = get_checkout (po.parent.parent, update=update)
     potfile = get_intltool_potfile (po, checkout)
-    return
-
     podir = os.path.join (checkout.directory, po.scm_dir)
-    tmpfile = po.scm_file + '.pulse-tmp-file'
-    cmd = 'intltool-update %s -o %s 2>&1' % (po.scm_file[:-3], tmpfile)
+    cmd = 'msgmerge "' + po.scm_file + '" "' + potfile + '" 2>&1'
     owd = os.getcwd ()
-    stats = [0, 0, 0]
     try:
         os.chdir (podir)
-        for line in os.popen (cmd):
-            if line.startswith ('.'): continue
-            line = line.strip()
-            if line.endswith ('.'):
-                line = line[:-1]
-            for field in line.split(','):
-                field = field.strip()
-                if field.endswith (' translated messages'):
-                    stats[0] = int(field.split()[0])
-                elif field.endswith (' fuzzy translations'):
-                    stats[1] = int(field.split()[0])
-                elif field.endswith (' untranslated messages'):
-                    stats[2] = int(field.split()[0])
+        filepath = os.path.join (checkout.directory, po.scm_dir, po.scm_file)
+        pulse.utils.log ('Processing file ' + pulse.utils.relative_path (filepath, pulse.config.scmdir))
+        popo = pulse.parsers.Po (os.popen (cmd))
+        stats = popo.get_stats()
         total = stats[0] + stats[1] + stats[2]
         pulse.db.Statistic.set_statistic (po, pulse.utils.daynum(), 'Messages',
                                           stats[0], stats[1], total)
-        if os.path.exists (tmpfile): os.remove (tmpfile)
     finally:
         os.chdir (owd)
+    do_history (po, checkout)
 
 
 def update_xml2po (po, update=True, timestamps=True):
@@ -101,6 +88,7 @@ def update_xml2po (po, update=True, timestamps=True):
                                           stats[0], stats[1], total)
     finally:
         os.chdir (owd)
+    do_history (po, checkout)
     
 
 intltool_potfiles = {}
@@ -180,6 +168,27 @@ def get_xml2po_potfile (po, checkout):
         # FIXME
         raise "xml2po failed"
     
+
+def do_history (po, checkout):
+    fullname = os.path.join (checkout.directory, po.scm_dir, po.scm_file)
+    rel_ch = pulse.utils.relative_path (fullname, checkout.directory)
+    rel_scm = pulse.utils.relative_path (fullname, pulse.config.scmdir)
+    pulse.utils.log ('Checking history for %s' % rel_scm)
+    commit = pulse.db.ScmCommit.select ((pulse.db.ScmCommit.q.branchID == po.id) &
+                                        (pulse.db.ScmCommit.q.filename == po.scm_file),
+                                        orderBy='-datetime')
+    try:
+        since = commit[0].revision
+    except IndexError:
+        since = None
+    serverid = '.'.join (pulse.scm.server_name (checkout.scm_type, checkout.scm_server).split('.')[-2:])
+    for hist in checkout.get_history (rel_ch, since=since):
+        pident = '/person/' + serverid + '/' + hist['userid']
+        pers = pulse.db.Entity.get_record (ident=pident, type='Person')
+        pulse.db.ScmCommit (branch=po, person=pers, filename=po.scm_file, filetype='po',
+                            revision=hist['revision'], datetime=hist['date'], comment=hist['comment'])
+    
+
 
 ################################################################################
 ## main

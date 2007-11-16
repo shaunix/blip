@@ -85,13 +85,13 @@ def update_gdu_docbook (doc, update=True, timestamps=True):
         xmlfiles.append (fname)
         fullname = os.path.join (makedir, 'C', fname)
         rel_ch = pulse.utils.relative_path (fullname, checkout.directory)
-        commits = pulse.db.ScmCommit.select ((pulse.db.ScmCommit.q.branchID == doc.id) &
-                                             (pulse.db.ScmCommit.q.filename == fname),
-                                             orderBy='-datetime')
-        if commits.count() == 0:
+        commit = pulse.db.ScmCommit.select ((pulse.db.ScmCommit.q.branchID == doc.id) &
+                                            (pulse.db.ScmCommit.q.filename == fname),
+                                            orderBy='-datetime')
+        try:
+            since = commit[0].revision
+        except IndexError:
             since = None
-        else:
-            since = commits[0].revision
         serverid = '.'.join (pulse.scm.server_name (checkout.scm_type, checkout.scm_server).split('.')[-2:])
         for hist in checkout.get_history (rel_ch, since=since):
             pident = '/person/' + serverid + '/' + hist['userid']
