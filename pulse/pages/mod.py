@@ -130,8 +130,8 @@ def output_branch (branch, path=[], query=[], http=True, fd=None):
                                               pulse.utils.gettext ('No developers') ))
     columns.add_content (0, box)
 
-    # Domains
-    box = pulse.html.InfoBox ('domains', pulse.utils.gettext ('Domains'))
+    # Translations
+    box = pulse.html.InfoBox ('translations', pulse.utils.gettext ('Translations'))
     columns.add_content (0, box)
     domains = pulse.db.Branch.selectBy (type='Domain', parent=branch)
     if domains.count() > 0:
@@ -230,3 +230,4 @@ def output_branch (branch, path=[], query=[], http=True, fd=None):
     page.output(fd=fd)
 
     return 0
+
