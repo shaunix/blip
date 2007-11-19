@@ -87,9 +87,10 @@ class FactsComponent (Block):
         self._facts.append (None)
 
     def output (self, fd=sys.stdout):
-        if len (self._divs) != 0:
-            for div in self._divs:
-                p (fd, '<div class="fact">%s</div>' % div)
+        for div in self._divs:
+            p (fd, '<div class="fact">')
+            p (fd, div)
+            p (fd, '</div>')
         if len (self._facts) == 0:
             return
         p (fd, '<table class="facts">')
@@ -482,6 +483,16 @@ class DefinitionList (Block):
 
 ################################################################################
 ## Other...
+
+class Graph (Block):
+    def __init__ (self, url, **kw):
+        Block.__init__ (self, **kw)
+        self._url = url
+
+    def output (self, fd=sys.stdout):
+        p (fd, '<div class="graph"><img src="%s"></div>' %
+           '/'.join ([pulse.config.webroot, 'var', 'graph', self._url]))
+
 
 class EllipsizedLabel (Block):
     def __init__ (self, label, size, **kw):

@@ -18,12 +18,15 @@
 # Suite 330, Boston, MA  0211-1307  USA.
 #
 
+import datetime
 import os
+import os.path
 import re
 import urllib
 import xml.dom.minidom
 
 import pulse.db
+import pulse.graphs
 import pulse.scm
 import pulse.parsers
 import pulse.utils
@@ -31,8 +34,9 @@ import pulse.utils
 synop = 'update information about documentation'
 usage_extra = '[ident]'
 args = pulse.utils.odict()
-args['no-update']  = (None, 'do not update SCM checkouts')
+args['no-history'] = (None, 'do not check SCM history')
 args['no-timestamps'] = (None, 'do not check timestamps before processing files')
+args['no-update']  = (None, 'do not update SCM checkouts')
 def help_extra (fd=None):
     print >>fd, 'If ident is passed, only documents with a matching identifier will be updated.'
 
@@ -44,8 +48,8 @@ def get_checkout (branch, update=True):
     return checkouts[branch.ident]
 
 
-def update_gdu_docbook (doc, update=True, timestamps=True):
-    checkout = get_checkout (doc.parent, update=update)
+def update_gdu_docbook (doc, **kw):
+    checkout = get_checkout (doc.parent, update=kw.get('update', True))
     name = {}
     desc = {}
     data = {}
@@ -59,7 +63,7 @@ def update_gdu_docbook (doc, update=True, timestamps=True):
         data['icon_dir'] = doc.parent.icon_dir
 
     docfile = os.path.join (checkout.directory, doc.scm_dir, doc.scm_file)
-    process_docbook_docfile (docfile, name, desc, data, timestamps=timestamps)
+    process_docbook_docfile (docfile, name, desc, data, timestamps=kw.get('timestamps', True))
 
     if data.has_key ('credits'):
         set_credits (doc, data.pop ('credits'))
@@ -72,7 +76,7 @@ def update_gdu_docbook (doc, update=True, timestamps=True):
     translations = pulse.db.Branch.selectBy (type='Translation', parent=doc)
     for translation in translations:
         pofile = os.path.join (checkout.directory, translation.scm_dir, translation.scm_file)
-        process_docbook_pofile (pofile, name, desc, data, timestamps=timestamps)
+        process_docbook_pofile (pofile, name, desc, data, timestamps=kw.get('timestamps', True))
 
     makedir = os.path.join (checkout.directory, os.path.dirname (doc.scm_dir))
     makefile = pulse.parsers.Automake (os.path.join (makedir, 'Makefile.am'))
@@ -80,24 +84,43 @@ def update_gdu_docbook (doc, update=True, timestamps=True):
     fnames = ([makefile['DOC_MODULE']+'.xml']  +
               makefile.get('DOC_INCLUDES', '').split() +
               makefile.get('DOC_ENTITIES', '').split() )
-    pulse.utils.log ('Checking history for %i files for %s' % (len(fnames), doc.ident))
+    if kw.get('history', True):
+        pulse.utils.log ('Checking history for %i files for %s' % (len(fnames), doc.ident))
     for fname in (fnames):
         xmlfiles.append (fname)
-        fullname = os.path.join (makedir, 'C', fname)
-        rel_ch = pulse.utils.relative_path (fullname, checkout.directory)
-        commit = pulse.db.ScmCommit.select ((pulse.db.ScmCommit.q.branchID == doc.id) &
-                                            (pulse.db.ScmCommit.q.filename == fname),
-                                            orderBy='-datetime')
-        try:
-            since = commit[0].revision
-        except IndexError:
-            since = None
-        serverid = '.'.join (pulse.scm.server_name (checkout.scm_type, checkout.scm_server).split('.')[-2:])
-        for hist in checkout.get_history (rel_ch, since=since):
-            pident = '/person/' + serverid + '/' + hist['userid']
-            pers = pulse.db.Entity.get_record (ident=pident, type='Person')
-            pulse.db.ScmCommit (branch=doc, person=pers, filename=fname, filetype='xml',
-                                revision=hist['revision'], datetime=hist['date'], comment=hist['comment'])
+        if kw.get('history', True):
+            fullname = os.path.join (makedir, 'C', fname)
+            rel_ch = pulse.utils.relative_path (fullname, checkout.directory)
+            commit = pulse.db.ScmCommit.select ((pulse.db.ScmCommit.q.branchID == doc.id) &
+                                                (pulse.db.ScmCommit.q.filename == fname),
+                                                orderBy='-datetime')
+            try:
+                since = commit[0].revision
+            except IndexError:
+                since = None
+            serverid = '.'.join (pulse.scm.server_name (checkout.scm_type, checkout.scm_server).split('.')[-2:])
+            for hist in checkout.get_history (rel_ch, since=since):
+                pident = '/person/' + serverid + '/' + hist['userid']
+                pers = pulse.db.Entity.get_record (ident=pident, type='Person')
+                pulse.db.ScmCommit (branch=doc, person=pers, filename=fname, filetype='xml',
+                                    revision=hist['revision'], datetime=hist['date'], comment=hist['comment'])
+
+    pulse.utils.log ('Creating commit graph for %s' % doc.ident)
+    now = datetime.datetime.now()
+    tendays = now - datetime.timedelta(days=10)
+    stats = [0] * 10
+    revs = pulse.db.ScmCommit.select ((pulse.db.ScmCommit.q.branchID == doc.id) &
+                                      (pulse.db.ScmCommit.q.datetime > tendays) )
+    for rev in list(revs):
+        idx = 9 - (now - rev.datetime).days
+        stats[idx] += 1
+    mx = float(max(stats))
+    if mx > 0:
+        stats = [i / mx for i in stats]
+    graphdir = os.path.join (*([pulse.config.webdir, 'var', 'graph'] + doc.ident.split('/')[1:]))
+    if not os.path.exists (graphdir):
+        os.makedirs (graphdir)
+    pulse.graphs.drawPulse (os.path.join (graphdir, 'commits.png'), stats)
 
     xmlfiles = sorted(xmlfiles)
     if doc.data.get('xmlfiles') != xmlfiles:
@@ -108,14 +131,14 @@ def update_gdu_docbook (doc, update=True, timestamps=True):
         doc.update (data)
 
 
-def update_gtk_doc (doc, update=True, timestamps=True):
-    checkout = get_checkout (doc.parent, update=update)
+def update_gtk_doc (doc, **kw):
+    checkout = get_checkout (doc.parent, update=kw.get('update', True))
     name = {}
     desc = {}
     data = {}
 
     docfile = os.path.join (checkout.directory, doc.scm_dir, doc.scm_file)
-    process_docbook_docfile (docfile, name, desc, data, timestamps=timestamps)
+    process_docbook_docfile (docfile, name, desc, data, timestamps=kw.get('timestamps', True))
 
     if data.has_key ('credits'):
         set_credits (doc, data.pop ('credits'))
@@ -319,6 +342,7 @@ def personname (node):
 def main (argv, options={}):
     update = not options.get ('--no-update', False)
     timestamps = not options.get ('--no-timestamps', False)
+    history = not options.get ('--no-history', False)
     if len(argv) == 0:
         prefix = None
     else:
@@ -332,8 +356,8 @@ def main (argv, options={}):
 
     for doc in docs:
         if doc.subtype == 'gdu-docbook':
-            update_gdu_docbook (doc, update=update, timestamps=timestamps)
+            update_gdu_docbook (doc, update=update, timestamps=timestamps, history=history)
         elif doc.subtype == 'gtk-doc':
-            update_gtk_doc (doc, update=update, timestamps=timestamps)
+            update_gtk_doc (doc, update=update, timestamps=timestamps, history=history)
         else:
             pulse.utils.log ('Skipping document %s with unknown type %s' % (doc.ident, doc.subtype))

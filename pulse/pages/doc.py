@@ -120,7 +120,7 @@ def output_doc (doc, path=[], query=[], http=True, fd=None):
 
     commits = pulse.db.ScmCommit.select (pulse.db.ScmCommit.q.branchID == doc.id,
                                          orderBy='-datetime')
-    if commits.count() > 0:
+    try:
         commit = commits[0]
         span = pulse.html.Span(divider=pulse.html.Span.SPACE)
         # FIXME: i18n, word order, but we want to link person
@@ -128,6 +128,8 @@ def output_doc (doc, path=[], query=[], http=True, fd=None):
         span.add_content (' by ')
         span.add_content (pulse.html.Link (commit.person))
         page.add_fact (pulse.utils.gettext ('Last Modified'), span)
+    except IndexError:
+        pass
 
     columns = pulse.html.ColumnBox (2)
     page.add_content (columns)
@@ -159,8 +161,9 @@ def output_doc (doc, path=[], query=[], http=True, fd=None):
                                               pulse.utils.gettext ('No developers') ))
 
     # Files
-    box = pulse.html.InfoBox ('files', pulse.utils.gettext ('Files'))
+    box = pulse.html.InfoBox ('activity', pulse.utils.gettext ('Activity'))
     columns.add_content (0, box)
+    box.add_content (pulse.html.Graph ('/'.join(doc.ident.split('/')[1:] + ['commits.png'])))
     dl = pulse.html.DefinitionList ()
     box.add_content (dl)
     for xmlfile in doc.data.get('xmlfiles', []):
