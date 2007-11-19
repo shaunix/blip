@@ -115,6 +115,10 @@ def output_branch (branch, path=[], query=[], http=True, fd=None):
     if branch.data.has_key ('tarname'):
         page.add_fact_sep ()
         page.add_fact (pulse.utils.gettext ('Tarball Name'), branch.data['tarname'])
+    if branch.data.has_key ('tarversion'):
+        if not branch.data.has_key ('tarname'):
+            page.add_fact_sep ()
+        page.add_fact (pulse.utils.gettext ('Version'), branch.data['tarversion'])
 
     columns = pulse.html.ColumnBox (2)
     page.add_content (columns)
