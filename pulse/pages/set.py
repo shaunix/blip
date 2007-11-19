@@ -198,17 +198,34 @@ def add_more_tabs (set, tabbed, path=[], query=[]):
             else:
                 docs['users'].append (doc)
         vbox = pulse.html.VBox()
-        for id, str in (('users', pulse.utils.gettext ('User Documentation (%i)')),
+        for id, txt in (('users', pulse.utils.gettext ('User Documentation (%i)')),
                         ('devels', pulse.utils.gettext ('Developer Documentation (%i)')) ):
             if len(docs[id]) > 0:
-                exp = pulse.html.ExpanderBox (id, str % len(docs[id]))
+                exp = pulse.html.ExpanderBox (id, txt % len(docs[id]))
                 vbox.add_content (exp)
                 columns = pulse.html.ColumnBox (2)
                 exp.add_content (columns)
                 clv = [columns.add_content (i, pulse.html.VBox()) for i in range(2)]
                 for i in range(len(docs[id])):
-                    rlink = pulse.html.ResourceLinkBox (docs[id][i])
+                    doc = docs[id][i]
+                    rlink = pulse.html.ResourceLinkBox (doc)
                     clv[int(i >= (len(docs[id]) / 2))].add_content (rlink)
+                    commits = pulse.db.ScmCommit.select (pulse.db.ScmCommit.q.branchID == doc.id,
+                                                         orderBy='-datetime')
+                    try:
+                        commit = commits[0]
+                        span = pulse.html.Span(divider=pulse.html.Span.SPACE)
+                        # FIXME: i18n, word order, but we want to link person
+                        span.add_content (pulse.utils.gettext ('modified'))
+                        span.add_content (str(commit.datetime.date()))
+                        span.add_content (pulse.utils.gettext ('by'))
+                        span.add_content (pulse.html.Link (commit.person))
+                        rlink.add_fact_div (span)
+                    except IndexError:
+                        pass
+
+
+                    
         tabbed.add_tab ('Documents (%i)' % cnt, True, vbox)
     else:
         tabbed.add_tab ('Documents (%i)' % cnt, False, set.pulse_url + '/doc')
