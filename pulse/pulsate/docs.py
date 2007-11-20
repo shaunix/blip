@@ -157,20 +157,24 @@ def update_gtk_doc (doc, **kw):
 def process_docbook_docfile (docfile, name, desc, data, **kw):
     rel_scm = pulse.utils.relative_path (docfile, pulse.config.scmdir)
     if not os.path.exists (docfile):
-        pulse.utils.log ('No such file %s' % rel_scm)
+        pulse.utils.warn ('No such file %s' % rel_scm)
         return
     mtime = os.stat(docfile).st_mtime
     if kw.get('timestamps', True):
         stamp = pulse.db.Timestamp.get_timestamp (rel_scm)
         if mtime <= stamp:
-            pulse.utils.log ('Skipping file %s' % rel_scm)
+            pulse.utils.warn ('Skipping file %s' % rel_scm)
             return
     pulse.utils.log ('Processing file %s' % rel_scm)
 
     title = None
     abstract = None
     credits = []
-    dom = xml.dom.minidom.parse (docfile)
+    try:
+        dom = xml.dom.minidom.parse (docfile)
+    except:
+        pulse.utils.warn ('Failed to load file %s' % rel_scm)
+        return
     for node in dom.documentElement.childNodes:
         if node.nodeType != node.ELEMENT_NODE:
             continue
