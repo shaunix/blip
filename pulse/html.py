@@ -166,7 +166,7 @@ class Page (Block, ContentComponent):
         p (fd, '  <title>%s</title>', self._title)
         p (fd, '  <meta http-equiv="Content-type" content="text/html; charset=utf-8">')
         p (fd, '  <link rel="stylesheet" href="%sdata/pulse.css">', pulse.config.webroot)
-        p (fd, '  <script language="javascript" type="text/javascript" src="%sdata/pulse.js">',
+        p (fd, '  <script language="javascript" type="text/javascript" src="%sdata/pulse.js"></script>',
            pulse.config.webroot)
         p (fd, '</head><body>')
         p (fd, '<ul id="general">')
