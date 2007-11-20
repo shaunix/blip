@@ -19,6 +19,7 @@
 # Suite 330, Boston, MA  0211-1307  USA.
 #
 
+import cgi
 import md5
 import sys
 
@@ -60,15 +61,15 @@ class SublinksComponent (Block):
 
     def output (self, fd=sys.stdout):
         if len(self._sublinks) > 0:
-            p (fd, '<div class="sublinks">')
+            p (fd, '<div class="sublinks">', None, False)
             for i in range(len(self._sublinks)):
-                str = (i != 0 and self._divider or '')
+                if i != 0:
+                    p (fd, None, self._divider, False)
                 if self._sublinks[i][0] != None:
-                    str += ('<a href="%s">%s</a>' %self._sublinks[i])
+                    p (fd, '<a href="%s">%s</a>', self._sublinks[i], False)
                 else:
-                    str += ('%s' %self._sublinks[i][1])
-                p (fd, str)
-            p (fd, '</div>\n')
+                    p (fd, None, self._sublinks[i][1], False)
+            p (fd, '</div>')
 
 
 class FactsComponent (Block):
@@ -98,17 +99,20 @@ class FactsComponent (Block):
             if fact == None:
                 p (fd, '<tr class="fact-sep"><td></td><td></td></tr>')
             else:
-                p (fd, '<tr><td class="fact-key">')
-                p (fd, pulse.utils.gettext ('%s:') % fact[0].replace(' ', '&nbsp;'))
-                p (fd, '</td><td class="fact-val">')
+                p (fd, '<tr><td class="fact-key">', None, False)
+                key = esc(fact[0]).replace(' ', '&nbsp;')
+                key = esc(pulse.utils.gettext ('%s:')) % key
+                p (fd, key, None, False)
+                p (fd, '</td>')
+                p (fd, '<td class="fact-val">', None, False)
                 def factout (f):
                     if isinstance (f, basestring) or isinstance (f, Block):
-                        p (fd, f)
+                        p (fd, None, f, False)
                     elif isinstance (f, pulse.db.Record):
                         p (fd, Link(f))
                     elif hasattr (f, '__getitem__'):
                         for ff in f:
-                            p (fd, '<div>')
+                            p (fd, '<div>', None, False)
                             factout (ff)
                             p (fd, '</div>')
                 factout (fact[1])
@@ -129,51 +133,20 @@ class ContentComponent (Block):
 
     def output (self, fd=sys.stdout):
         for s in self._content:
-            p (fd, s)
+            p (fd, None, s)
 
 
 ################################################################################
 ## Pages
 
 class Page (Block, ContentComponent):
-    # FIXME: i18n
-    _head_text = '''
-<html><head>
-  <title>%(_title)s</title>\n
-  <meta http-equiv="Content-type" content="text/html; charset=utf-8">
-  <link rel="stylesheet" href="%(_webroot)sdata/pulse.css">
-  <script language="javascript" type="text/javascript" src="%(_webroot)sdata/pulse.js">
-</head><body>
-<ul id="general">
-  <li id="siteaction-gnome_home" class="home"><a href="http://www.gnome.org/">Home</a></li>
-  <li id="siteaction-gnome_news"><a href="http://news.gnome.org">News</a></li>
-  <li id="siteaction-gnome_projects"><a href="http://www.gnome.org/projects/">Projects</a></li>
-  <li id="siteaction-gnome_art"><a href="http://art.gnome.org">Art</a></li>
-  <li id="siteaction-gnome_support"><a href="http://www.gnome.org/support/">Support</a></li>
-  <li id="siteaction-gnome_development"><a href="http://developer.gnome.org">Development</a></li>
-  <li id="siteaction-gnome_community"><a href="http://www.gnome.org/community/">Community</a></li>
-</ul>
-<div id="header">
-  <h1>Pulse</h1>
-  <div id="tabs"><ul id="portal-globalnav">
-    <li id="portaltab-root" class="selected"><a href="/"><span>Home</span></a></li>
-    <li id="portaltab-users"><a href="/users/"><span>Users</span></a></li>
-    <li id="portaltab-sysadmins"><a href="/admin/"><span>Administrators</span></a></li>
-    <li id="portaltab-developers"><a href="/devel/"><span>Developers</span></a></li>
-    <li id="portaltab-about"><a href="/about/about"><span>About</span></a></li>
-  </ul></div>
-</div>
-<div id="body">'''
-    _foot_text = '</div></body></html>'
-
     def __init__ (self, **kw):
         Block.__init__ (self, **kw)
         ContentComponent.__init__ (self, **kw)
-        self._http = kw.get ('http')
+        self._http = kw.get ('http', True)
         self._status = kw.get ('status')
         self._title = kw.get ('title')
         self._icon = kw.get ('icon')
-        self._webroot = pulse.config.webroot
 
     def set_title (self, title):
         self._title = title
@@ -184,20 +157,42 @@ class Page (Block, ContentComponent):
     def output_top (self, fd=sys.stdout):
         if self._http == True:
             if self._status == 404:
-                p (fd, 'Status: 404 Not found\n')
-            p (fd, 'Content-type: text/html; charset=utf-8\n\n')
-        p (fd, self._head_text % self.__dict__)
+                p (fd, 'Status: 404 Not found')
+            elif self._status == 500:
+                p (fd, 'Status: 500 Internal server error')
+            p (fd, 'Content-type: text/html; charset=utf-8\n')
+        p (fd, '<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">')
+        p (fd, '<html><head>')
+        p (fd, '  <title>%s</title>', self._title)
+        p (fd, '  <meta http-equiv="Content-type" content="text/html; charset=utf-8">')
+        p (fd, '  <link rel="stylesheet" href="%sdata/pulse.css">', pulse.config.webroot)
+        p (fd, '  <script language="javascript" type="text/javascript" src="%sdata/pulse.js">',
+           pulse.config.webroot)
+        p (fd, '</head><body>')
+        p (fd, '<ul id="general">')
+        p (fd, '  <li id="siteaction-gnome_home" class="home"><a href="http://www.gnome.org/">Home</a></li>')
+        p (fd, '  <li id="siteaction-gnome_news"><a href="http://news.gnome.org">News</a></li>')
+        p (fd, '  <li id="siteaction-gnome_projects"><a href="http://www.gnome.org/projects/">Projects</a></li>')
+        p (fd, '  <li id="siteaction-gnome_art"><a href="http://art.gnome.org">Art</a></li>')
+        p (fd, '  <li id="siteaction-gnome_support"><a href="http://www.gnome.org/support/">Support</a></li>')
+        p (fd, '  <li id="siteaction-gnome_development"><a href="http://developer.gnome.org">Development</a></li>')
+        p (fd, '  <li id="siteaction-gnome_community"><a href="http://www.gnome.org/community/">Community</a></li>')
+        p (fd, '</ul>')
+        p (fd, '<div id="header">')
+        p (fd, '  <h1>Pulse</h1>')
+        p (fd, '</div>')
+        p (fd, '<div id="body">')
         p (fd, '<h1>')
         if self._icon != None:
-            p (fd, '<img class="icon" src="%s" alt="%s">' % (self._icon, self._title))
-        p (fd, self._title)
+            p (fd, '<img class="icon" src="%s" alt="%s">', (self._icon, self._title), False)
+        p (fd, None, self._title)
         p (fd, '</h1>')
 
     def output_middle (self, fd=sys.stdout):
         ContentComponent.output (self, fd=fd)
 
     def output_bottom (self, fd=sys.stdout):
-        p (fd, self._foot_text % self.__dict__)
+        p (fd, '</div></body></html>')
 
 class ResourcePage (Page, SublinksComponent, FactsComponent):
     def __init__ (self, resource, **kw):
@@ -215,43 +210,39 @@ class ResourcePage (Page, SublinksComponent, FactsComponent):
 
 class PageNotFound (Page):
     def __init__ (self, message, **kw):
-        http = kw.get ('http', True)
-        pages = kw.get ('pages', [])
-        title = kw.get ('title', pulse.utils.gettext('Page Not Found'))
-        d = pulse.utils.attrdict ([pulse.config])
-        d['title'] = title
-        d['message'] = message
-        Page.__init__ (self,
-                       http=http,
-                       status=404,
-                       title=title)
-        self.add_content ('<div class="notfound">\n')
-        self.add_content ('<div class="message">%(message)s</div>' %d)
-        if len(pages) > 0:
-            self.add_content ('<div class="pages">' +
-                              pulse.utils.gettext ('The following pages might interest you:') +
-                              '<ul>\n')
-            for page in pages:
-                d['href'] = page[0]
-                d['name'] = page[1]
-                self.add_content ('<li><a href="%(webroot)s%(href)s">%(name)s</a></li>\n' %d)
-            self.add_content ('</ul></div>\n')
-        self.add_content ('</div>\n')
+        Page.__init__ (self, status=404, **kw)
+        if not kw.has_key ('title'):
+            self.set_title (pulse.utils.gettext('Page Not Found'))
+        self._pages = kw.get ('pages', [])
+        self._message = message
+
+    def output_middle (self, fd=sys.stdout):
+        p (fd, '<div class="notfound">')
+        p (fd, '<div class="message">%s</div>', self._message)
+        if len(self._pages) > 0:
+            p (fd, '<div class="pages">%s',
+               pulse.utils.gettext ('The following pages might interest you:'))
+            p (fd, '<ul>')
+            for page in self._pages:
+                p (fd, '<li><a href="%s%s">%s</a></li>' %
+                   (pulse.config.webroot, page[0], page[1]))
+            p (fd, '</ul></div>')
+        p (fd, '</div>')
+        ContentComponent.output (self, fd=fd)
 
 class PageError (Page):
     def __init__ (self, message, **kw):
-        http = kw.get ('http', True)
-        title = kw.get ('title', pulse.utils.gettext('Bad Monkeys'))
-        d = pulse.utils.attrdict ([pulse.config])
-        d['title'] = title
-        d['message'] = message
-        Page.__init__ (self,
-                       http=http,
-                       status=500,
-                       title=title)
-        self.add_content ('<div class="servererror">\n')
-        self.add_content ('<div class="message">%(message)s</div>' %d)
-        self.add_content ('</div>\n')
+        Page.__init__ (self, status=404, **kw)
+        if not kw.has_key ('title'):
+            self.set_title (pulse.utils.gettext('Page Not Found'))
+        self._pages = kw.get ('pages', [])
+        self._message = message
+    
+    def output_middle (self, fd=sys.stdout):
+        p (fd, '<div class="servererror">')
+        p (fd, '<div class="message">%s</div>', self._message)
+        p (fd, '</div>')
+        ContentComponent.output (self, fd=fd)
 
 
 ################################################################################
@@ -269,11 +260,12 @@ class InfoBox (ContentComponent):
         return reslink
 
     def output (self, fd=sys.stdout):
-        p (fd, '<div class="info" id="%s">' % self._id)
-        p (fd, '<div class="info-title">%s</div>' % self._title)
+        p (fd, '<div class="info" id="%s">', self._id)
+        p (fd, '<div class="info-title">%s</div>', self._title)
         p (fd, '<div class="info-content">')
         ContentComponent.output (self, fd=fd)
         p (fd, '</div></div>')
+
 
 class ResourceLinkBox (ContentComponent, FactsComponent):
     def __init__ (self, *args, **kw):
@@ -312,17 +304,17 @@ class ResourceLinkBox (ContentComponent, FactsComponent):
         p (fd, '<table class="rlink"><tr>')
         p (fd, '<td class="rlink-icon">')
         if self._icon != None:
-            p (fd, '<img class="icon" src="%(_icon)s" alt="%(_title)s">' % d)
+            p (fd, '<img class="icon" src="%s" alt="%s">', (self._icon, self._title))
         p (fd, '</td><td class="rlink-text">')
         p (fd, '<div class="rlink-title">')
         if self._url != None:
-            p (fd, '<a href="%(_url)s">%(_title)s</a>' %d)
+            p (fd, '<a href="%s">%s</a>', (self._url, self._title))
         else:
-            p (fd, self._title)
+            p (fd, None, self._title)
         if len(self._badges) > 0:
             p (fd, ' ')
             for badge in self._badges:
-                p (fd, '<img src="%sdata/badge-%s-16.png" width="16" height="16" alt="%s">' %
+                p (fd, '<img src="%sdata/badge-%s-16.png" width="16" height="16" alt="%s">',
                    (pulse.config.webroot, badge, badge))
         p (fd, '</div>')
         if self._desc != None:
@@ -333,6 +325,7 @@ class ResourceLinkBox (ContentComponent, FactsComponent):
         ContentComponent.output (self, fd=fd)
         p (fd, '</td></tr></table>')
         
+
 class ColumnBox (Block):
     def __init__ (self, num, **kw):
         Block.__init__ (self, **kw)
@@ -352,9 +345,10 @@ class ColumnBox (Block):
             else:
                 p (fd, '<td class="col" style="width: ' + width + '%">')
             for item in column:
-                p (fd, item)
+                p (fd, None, item)
             p (fd, '</td>')
         p (fd, '</tr></table>')
+
 
 class GridBox (Block):
     def __init__ (self, **kw):
@@ -377,10 +371,11 @@ class GridBox (Block):
                 else:
                     p (fd, '<td class="grid-td">')
                 if i < len (row):
-                    p (fd, row[i])
+                    p (fd, None, row[i])
                 p (fd, '</td>')
             p (fd, '</tr>')
         p (fd, '</table>')
+
 
 class VBox (ContentComponent):
     def __init__ (self, **kw):
@@ -395,9 +390,10 @@ class VBox (ContentComponent):
                 p (fd, '<div class="vbox-el-first">')
             else:
                 p (fd, '<div class="vbox-el">')
-            p (fd, s)
+            p (fd, None, s)
             p (fd, '</div>')
         p (fd, '</div>')
+
 
 class AdmonBox (Block):
     error = "error"
@@ -410,10 +406,10 @@ class AdmonBox (Block):
         self._title = title
 
     def output (self, fd=sys.stdout):
-        p (fd, '<div class="admon admon-%s">' % self._type)
-        p (fd, '<img src="%sdata/admon-%s-16.png" width="16" height="16">' %
+        p (fd, '<div class="admon admon-%s">', self._type)
+        p (fd, '<img src="%sdata/admon-%s-16.png" width="16" height="16">',
            (pulse.config.webroot, self._type))
-        p (fd, self._title)
+        p (fd, None, self._title)
         p (fd, '</div>')
 
 
@@ -424,14 +420,16 @@ class ExpanderBox (ContentComponent):
         self._title = title
 
     def output (self, fd=sys.stdout):
-        p (fd, '<div class="expander" id="%s">' % self._id)
-        p (fd, '<div class="expander-title"><a href="javascript:expander_toggle(\'%s\')"><img id="img-%s" class="expander-img" src="%sdata/expander-open.png"> %s</a></div>' %
-           (self._id, self._id, pulse.config.webroot, self._title))
+        p (fd, '<div class="expander" id="%s">', self._id)
+        p (fd, '<div class="expander-title">', None, False)
+        p (fd, '<a href="javascript:expander_toggle(\'%s\')">', self._id, False)
+        p (fd, '<img id="img-%s" class="expander-img" src="%sdata/expander-open.png"> %s</a></div>',
+           (self._id, pulse.config.webroot, self._title))
         p (fd, '<div class="expander-content">')
         ContentComponent.output (self, fd=fd)
         p (fd, '</div>')
 
-        
+
 class TabbedBox (Block):
     def __init__ (self, **kw):
         Block.__init__ (self, **kw)
@@ -445,12 +443,12 @@ class TabbedBox (Block):
         p (fd, '<div class="tabbed">')
         p (fd, '<div class="tabbed-tabs">')
         for tab in self._tabs:
-            title = tab[0].replace (' ', '&nbsp;')
+            title = esc(tab[0]).replace(' ', '&nbsp;')
             if tab[1]:
-                p (fd, '<span class="tabbed-tab-active">%s</span>' % title)
+                p (fd, '<span class="tabbed-tab-active">' + title + '</span>')
                 content = tab[2]
             else:
-                p (fd, '<span class="tabbed-tab-link"><a href="%s">%s</a></span>' % (tab[2], title))
+                p (fd, '<span class="tabbed-tab-link"><a href="%s">' + title + '</a></span>', tab[2])
         p (fd, '</div>')
         if content != None:
             p (fd, '<div class="tabbed-content">')
@@ -476,7 +474,7 @@ class DefinitionList (Block):
         p (fd, '<dl>')
         for d in self._all:
             p (fd, '<%s>' % d[0])
-            p (fd, d[1])
+            p (fd, None, d[1])
             p (fd, '</%s>' % d[0])
         p (fd, '</dl>')
 
@@ -490,7 +488,7 @@ class Graph (Block):
         self._url = url
 
     def output (self, fd=sys.stdout):
-        p (fd, '<div class="graph"><img src="%s"></div>' %
+        p (fd, '<div class="graph"><img src="%s"></div>',
            '/'.join ([pulse.config.webroot, 'var', 'graph', self._url]))
 
 
@@ -509,14 +507,16 @@ class EllipsizedLabel (Block):
                     break
                 i += 1
             if i == len(self._label):
-                p (fd, self._label)
+                p (fd, None, self._label)
             else:
                 id = md5.md5(self._label).hexdigest()[:6]
-                p (fd, self._label[:i])
-                p (fd, '<span class="elliplnk" id="elliplnk-%s">(<a href="javascript:ellip(\'%s\')">%s</a>)</span>' % (id, id, pulse.utils.gettext ('more')))
-                p (fd, '<span class="elliptxt" id="elliptxt-%s">%s</span>' % (id, self._label[i+1:]))
+                p (fd, None, self._label[:i])
+                p (fd, '<span class="elliplnk" id="elliplnk-%s">(<a href="javascript:ellip(\'%s\')">%s</a>)</span>',
+                   (id, id, pulse.utils.gettext ('more')))
+                p (fd, '<span class="elliptxt" id="elliptxt-%s">%s</span>', (id, self._label[i+1:]))
         else:
-            p (fd, self._label)
+            p (fd, None, self._label)
+
 
 class Span (ContentComponent):
     SPACE = ' '
@@ -537,9 +537,10 @@ class Span (ContentComponent):
         content = self.get_content()
         for i in range(len(self.get_content())):
             if i != 0 and self._divider != None:
-                p (fd, self._divider)
-            p (fd, content[i])
+                p (fd, None, self._divider)
+            p (fd, None, content[i])
         p (fd, '</span>')
+
 
 class Link (Block):
     def __init__ (self, *args, **kw):
@@ -556,220 +557,50 @@ class Link (Block):
     
     def output (self, fd=sys.stdout):
         if self._icon != None:
-            p (fd, '<a href="%s"><img src="%sdata/%s-16.png" height="16" width="16"> %s</a>' %
+            p (fd, '<a href="%s"><img src="%sdata/%s-16.png" height="16" width="16"> %s</a>',
                (self._href, pulse.config.webroot, self._icon, self._text))
         else:
-            p (fd, '<a href="%s">%s</a>' % (self._href, self._text))
+            p (fd, '<a href="%s">%s</a>', (self._href, self._text))
 
 
 ################################################################################
-## FIXME
+## Utility Functions
 
-class SynopsisDiv (Block):
-    def __init__ (self, resource, **kw):
-        Block.__init__ (self, **kw)
-        self._resource = resource
-        self._sublinks = []
-        self._affils = {}
-        self._graphs = []
-
-    def add_sublink (self, href, title):
-        self._sublinks.append ((href, title))
-
-    def add_affiliation (self, title, href, name, comment=None):
-        self._affils.setdefault (title, [])
-        self._affils[title].append ({'href': href,
-                                     'name': name,
-                                     'comment': comment})
-    
-    def add_graph (self, title, href, src, alt):
-        self._graphs.append ({'title': title,
-                              'href': href,
-                              'src': src,
-                              'alt': alt})
-
-    def output_middle (self, fd=sys.stdout):
-        def p (s):
-            if isinstance (s, Block):
-                s.output (fd=fd)
-            else:
-                # FIXME: we need to escape all incoming text
-                print >>fd, s.encode('utf-8')
-        d = pulse.utils.attrdict ([self._resource, pulse.config])
-
-        # FIXME: i18n
-        d['name'] = self._resource.localized_name
-
-        p ('<div class="%(type)s synopsis">' %d)
-        p ('<table class="%(type)s synopsis"><tr>\n' %d)
-
-        p ('<td class="icon">')
-        if d.has_val ('icon'):
-            p ('<img class="icon" src="%(icon_url)s" alt="%(name)s">' %d)
-        p ('</td>\n')
-
-        p ('<td class="info">\n')
-
-        p ('<div class="name">')
-        if len(self._sublinks) > 0:
-            name_ = d['name']
-        else:
-            name_ = ('<a href="%(pulse_url)s/">%(name)s</a>' %d)
-        if d.has_val ('nick'):
-            # FIXME: i18n
-            nick_ =  (' (%(nick)s)' %d)
-        else:
-            nick_ = ''
-        p ('%s%s</div>' %(name_, nick_))
-
-        if len(self._sublinks) > 0:
-            p ('<div class="sublinks">')
-            for i in range(len(self._sublinks)):
-                str = (i != 0 and ' • ' or '')
-                if self._sublinks[i][0] != None:
-                    str += ('<a href="%s">%s</a>' %self._sublinks[i])
-                else:
-                    str += ('%s' %self._sublinks[i][0])
-                p (str)
-            p ('</div>\n')
-        if d.has_val ('mail'):
-            p ('<div class="mail">')
-            p ('<a href="mailto:%(mail)s">%(mail)s</a></div>\n' %d)
-            if d.has_val ('list_info') or d.has_val ('list_archive'):
-                p ('<div class="sublinks">')
-                p ('<a href="%(list_info)s">Information</a> • ' %d)
-                p ('<a href="%(list_archive)s">Archives</a>' %d)
-                p ('</div>\n')
-        if d.has_val ('web'):
-            p ('<div class="web">')
-            p ('<a href="%(web)s">%(web)s</a></div>\n' %d)
-        if d.has_val ('blurb'):
-            p ('<p class="blurb">%(blurb)s</p>' %d)
-        if hasattr (self._resource, 'mail_lists'):
-            for list in self._resource.mail_lists:
-                d.prepend (list.resource)
-                p ('<div class="mail_list"><div class="mail">')
-                p ('<a href="mailto:%(mail)s">%(mail)s</a>' %d)
-                if list.resource.list_type == 'users': p (' (Users)')
-                if list.resource.list_type == 'devel': p (' (Developers)')
-                p ('</div><div class="sublinks">')
-                p ('<a href="%(url)s/">Pluse</a> • ' %d)
-                p ('<a href="%(list_info)s/">Information</a> • ' %d)
-                p ('<a href="%(list_archive)s/">Archive</a>' %d)
-                p ('</div></div>\n')
-                d.remove (list.resource)
-
-        for key in self._affils:
-            p ('<div class="affiliation">\n')
-            p ('<div class="title">%s</div><ul>\n' %key)
-            for affil in self._affils[key]:
-                p ('<li><a href="%(href)s/">%(name)s</a>' % affil)
-                if affil['comment'] != None:
-                    p (' %(comment)s' %affil)
-                p ('</li>\n')
-            p ('</ul></div>\n')
-        p ('</td>')
-
-        p ('<td class="graphs">\n')
-        for g in self._graphs:
-            p ('<div class="graph">')
-            p ('<div class="title">%(title)s</div>' %g)
-            p ('<img src="%(src)s" alt="%(alt)s">' %g)
-            p ('</div></div>\n')
-        p ('</td>')
-
-        p ('</tr></table></div>\n')
-
-class SummaryDiv (Block):
-    def __init__ (self, resource, **kw):
-        Block.__init__ (self, **kw)
-        self._resource = resource
-        self._blocks = []
-
-    def add_block (self, block):
-        self._blocks.append (block)
-    
-    def output (self, fd=sys.stdout):
-        def p (s):
-            if isinstance (s, Block):
-                s.output (fd=fd)
-            else:
-                # FIXME: we need to escape all incoming text
-                print >>fd, s.encode('utf-8')
-        p ('<div class="summary">')
-        p ('<div class="title"><a href="%s%s">%s</a></div>' % (pulse.config.webroot,
-                                                               self._resource.ident,
-                                                               self._resource.name))
-        for block in self._blocks:
-            p (block)
-        p ('</div>')
-
-class TabbedDiv (Block):
-    def __init__ (self, **kw):
-        Block.__init__ (self, **kw)
-        self._tabs = []
-
-    def add_tab (self, id, title, div, open=None):
-        if open:
-            for tab in self._tabs:
-                tab['open'] = False
-        elif open == None:
-            open = (len(self._tabs) == 0) and True or False
-        self._tabs.append ({'id': id, 'title': title, 'div': div, 'open': open})
-
-    def output (self, fd=sys.stdout):
-        def p (s):
-            if isinstance (s, Block):
-                s.output (fd=fd)
-            else:
-                # FIXME: we need to escape all incoming text
-                print >>fd, s.encode('utf-8')
-        p ('<div class="tabbed">')
-        p ('<div class="tabbed-tabs">')
-        p ('<table class="tabbed-tabs"><tr>')
-        for tab in self._tabs:
-            if tab['open']:
-               str = ('<td class="tabbed-tab-expanded" id="%(id)s--tab">' %tab)
-            else:
-               str = ('<td class="tabbed-tab-collapsed" id="%(id)s--tab">' %tab)
-            str += ('<div><a href="javascript:tab(\'%(id)s\')">' %tab)
-            str += ('%(title)s</a></div></td>' %tab)
-            p (str)
-        p ('<td class="tabbed-tab-fin"></td>')
-        p ('</tr></table></div>')
-        for tab in self._tabs:
-            if tab['open']:
-                p ('<div class="tabbed-expanded" id="%(id)s">' %tab)
-            else:
-                p ('<div class="tabbed-collapsed" id="%(id)s">' %tab)
-
-            if isinstance (tab['div'], Block):
-                tab['div'].output(fd)
-            else:
-                print >>fd, unicode(tab['div']).encode('utf-8')
-
-            p ('</div>')
-        p ('</div>')
-
-class Admonition (Block):
-    def __init__ (self, text, type, **kw):
-        Block.__init__ (self, **kw)
-        self._text = text
-        self._type = type
-
-    def output (self, fd=sys.stdout):
-        p (fd, '<div class="admonition %s">' % self._type)
-        p (fd, '<img src="%sdata/admon-%s-16.png" class="admonition"/>'
-           % (pulse.config.webroot, self._type))
-        p (fd, '%s</div>' % self._text)
-
-        
-
-def p (fd, s):
+def p (fd, s, arg=None, nl=True):
+    if fd == None:
+        fd = sys.stdout
     if isinstance (s, Block):
         s.output (fd=fd)
+    elif s == None and isinstance (arg, Block):
+        arg.output (fd=fd)
     else:
+        if s == None:
+            outstr = esc(arg)
+        elif arg == None:
+            outstr = s
+        else:
+            outstr = s % esc(arg)
+        if nl:
+            outstr += '\n'
         try:
-            print >>fd, s.encode('utf-8')
+            fd.write(outstr.encode('utf-8'))
         except:
-            print >>fd, s
+            fd.write(outstr)
+
+def esc (s):
+    if isinstance (s, basestring):
+        return cgi.escape (s, True)
+    elif isinstance (s, tuple):
+        return tuple (map (esc, s))
+    elif isinstance (s, dict):
+        return escdict (s)
+    else:
+        return s
+
+class escdict (dict):
+    def __init__ (self, *args):
+        dict.__init__ (self, *args)
+
+    def __getitem__ (self, key):
+        return esc (dict.__getitem__ (self, key))
+
