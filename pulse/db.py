@@ -38,7 +38,9 @@ class PulseDebugWriter:
     def write (self, text):
         if text.startswith (' 1/QueryR '):
             text = text[text.index(':')+1:].strip()
-            if text.startswith ('SELECT '):
+            if text.startswith ('SELECT COUNT'):
+                self.selects += 1
+            elif text.startswith ('SELECT '):
                 i = text.index (' FROM ')
                 text = text[:7] + '...' + text[i:]
                 self.selects += 1
