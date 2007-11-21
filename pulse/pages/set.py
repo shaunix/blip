@@ -31,7 +31,10 @@ def main (path=[], query={}, http=True, fd=None):
     
     ident = '/' + '/'.join(path[:2])
     sets = pulse.db.Record.selectBy (ident=ident)
-    if sets.count() == 0:
+    try:
+        set = sets[0]
+        return output_set (set, path, query, http, fd)
+    except IndexError:
         kw = {'http': http}
         kw['title'] = pulse.utils.gettext ('Set Not Found')
         kw['pages'] = [('set', pulse.utils.gettext ('Sets'))]
@@ -40,10 +43,6 @@ def main (path=[], query={}, http=True, fd=None):
             **kw)
         page.output(fd=fd)
         return 404
-
-    set = sets[0]
-
-    return output_set (set, path, query, http, fd)
 
 
 def output_top (path=[], query=[], http=True, fd=None):
@@ -133,12 +132,17 @@ def output_set (set, path=[], query=[], http=True, fd=None):
 
 
 def get_supersets (set):
-    supersets = pulse.db.RecordRelation.selectBy (pred=set, verb='SetSubset')
-    if supersets.count() > 0:
-        superset = supersets[0].subj
+    supersets=[]
+    supersets = pulse.db.Record.select (
+        pulse.db.RecordRelation.q.predID == set.id,
+        join=INNERJOINOn(None, pulse.db.RecordRelation,
+                         AND(pulse.db.RecordRelation.q.subjID == pulse.db.Record.q.id,
+                             pulse.db.RecordRelation.q.verb == 'SetSubset')) )
+    try:
+        superset = supersets[0]
         supers = get_supersets (superset)
         return supers + [superset]
-    else:
+    except IndexError:
         return []
     
 
