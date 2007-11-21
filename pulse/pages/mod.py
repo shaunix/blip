@@ -85,8 +85,9 @@ def output_branch (branch, path=[], query=[], http=True, fd=None):
     page = pulse.html.ResourcePage (branch, http=http)
 
     branches = pulse.db.Branch.selectBy (resource=module)
-    if branches.count() > 1:
-        for b in pulse.utils.attrsorted (branches[0:], 'scm_branch'):
+    branches = pulse.utils.attrsorted (list(branches), 'scm_branch')
+    if len(branches) > 1:
+        for b in branches:
             if b.ident != branch.ident:
                 page.add_sublink (b.pulse_url, b.ident.split('/')[-1])
             else:
@@ -100,6 +101,7 @@ def output_branch (branch, path=[], query=[], http=True, fd=None):
     except:
         pass
 
+    # FIXME: use a JOIN
     rels = pulse.db.RecordBranchRelation.selectBy (pred=branch, verb='SetModule')
     if rels.count() > 0:
         sets = pulse.utils.attrsorted ([rel.subj for rel in rels], 'title')
@@ -124,10 +126,12 @@ def output_branch (branch, path=[], query=[], http=True, fd=None):
     page.add_content (columns)
 
     # Developers
+    # FIXME: use a JOIN
     box = pulse.html.InfoBox ('developers', pulse.utils.gettext ('Developers'))
     developers = pulse.db.BranchEntityRelation.selectBy (subj=branch, verb='ModuleMaintainer')
-    if developers.count() > 0:
-        for rel in pulse.utils.attrsorted (developers[0:], 'pred', 'title'):
+    developers = pulse.utils.attrsorted (list(developers), 'pred', 'title')
+    if len(developers) > 0:
+        for rel in developers:
             box.add_resource_link (rel.pred)
     else:
         box.add_content (pulse.html.AdmonBox (pulse.html.AdmonBox.warning,
@@ -138,8 +142,9 @@ def output_branch (branch, path=[], query=[], http=True, fd=None):
     box = pulse.html.InfoBox ('translations', pulse.utils.gettext ('Translations'))
     columns.add_content (0, box)
     domains = pulse.db.Branch.selectBy (type='Domain', parent=branch)
-    if domains.count() > 0:
-        for domain in pulse.utils.attrsorted (domains[0:], 'title'):
+    domains = pulse.utils.attrsorted (list(domains), 'title')
+    if len(domains) > 0:
+        for domain in domains:
             translations = pulse.db.Branch.selectBy (type='Translation', parent=domain)
             translations = pulse.utils.attrsorted (list(translations), 'title')
             exp = pulse.html.ExpanderBox (domain.ident.split('/')[-2],
@@ -196,34 +201,38 @@ def output_branch (branch, path=[], query=[], http=True, fd=None):
 
     # Applications
     apps = pulse.db.Branch.selectBy (type='Application', parent=branch)
-    if apps.count() > 0:
+    apps = pulse.utils.attrsorted (list(apps), 'title')
+    if len(apps) > 0:
         box = pulse.html.InfoBox ('applications', pulse.utils.gettext ('Applications'))
         columns.add_content (1, box)
-        for app in pulse.utils.attrsorted (apps[0:], 'title'):
+        for app in apps:
             box.add_resource_link (app)
 
     # Applets
     applets = pulse.db.Branch.selectBy (type='Applet', parent=branch)
-    if applets.count() > 0:
+    applets = pulse.utils.attrsorted (list(applets), 'title')
+    if len(applets) > 0:
         box = pulse.html.InfoBox ('applets', pulse.utils.gettext ('Applets'))
         columns.add_content (1, box)
-        for applet in pulse.utils.attrsorted (applets[0:], 'title'):
+        for applet in applets:
             box.add_resource_link (applet)
 
     # Libraries
     libs = pulse.db.Branch.selectBy (type='Library', parent=branch)
-    if libs.count() > 0:
+    libs = pulse.utils.attrsorted (list(libs), 'title')
+    if len(libs) > 0:
         box = pulse.html.InfoBox ('libraries', pulse.utils.gettext ('Libraries'))
         columns.add_content (1, box)
-        for lib in pulse.utils.attrsorted (libs[0:], 'title'):
+        for lib in libs:
             box.add_resource_link (lib)
 
     # Documents
     box = pulse.html.InfoBox ('documents', pulse.utils.gettext ('Documents'))
     columns.add_content (1, box)
     docs = pulse.db.Branch.selectBy (type='Document', parent=branch)
-    if docs.count() > 0:
-        for doc in pulse.utils.attrsorted (docs[0:], 'title'):
+    docs = pulse.utils.attrsorted (list(docs), 'title')
+    if len(docs) > 0:
+        for doc in docs:
             rlink = box.add_resource_link (doc)
             res = pulse.db.Branch.selectBy (parent=doc, type='Translation')
             rlink.add_fact_div (pulse.utils.gettext ('%i translations') % res.count())
