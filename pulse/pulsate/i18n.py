@@ -50,6 +50,7 @@ def get_checkout (branch, update=True):
 def update_intltool (po, update=True, timestamps=True):
     checkout = get_checkout (po.parent.parent, update=update)
     potfile = get_intltool_potfile (po, checkout)
+    if potfile == None: return
     podir = os.path.join (checkout.directory, po.scm_dir)
     cmd = 'msgmerge "' + po.scm_file + '" "' + potfile + '" 2>&1'
     owd = os.getcwd ()
@@ -64,12 +65,13 @@ def update_intltool (po, update=True, timestamps=True):
                                           stats[0], stats[1], total)
     finally:
         os.chdir (owd)
-    do_history (po, checkout)
+    do_history (po, checkout, timestamps=timestamps)
 
 
 def update_xml2po (po, update=True, timestamps=True):
     checkout = get_checkout (po.parent.parent, update=update)
     potfile = get_xml2po_potfile (po, checkout)
+    if potfile == None: return
     makedir = os.path.join (checkout.directory, os.path.dirname (po.scm_dir))
     cmd = 'msgmerge "' + os.path.join (os.path.basename (po.scm_dir), po.scm_file) + '" "' + potfile + '" 2>&1'
     owd = os.getcwd ()
@@ -88,7 +90,7 @@ def update_xml2po (po, update=True, timestamps=True):
                                           stats[0], stats[1], total)
     finally:
         os.chdir (owd)
-    do_history (po, checkout)
+    do_history (po, checkout, timestamps=timestamps)
     
 
 intltool_potfiles = {}
@@ -127,8 +129,9 @@ def get_intltool_potfile (po, checkout):
         intltool_potfiles[podir] = potfile_abs
         return potfile_abs
     else:
-        # FIXME
-        raise "intltool-update failed"
+        pulse.utils.warn ('Failed to create POT file %s' % potfile_rel)
+        intltool_potfiles[podir] = None
+        return None
 
 
 xml2po_potfiles = {}
@@ -165,14 +168,21 @@ def get_xml2po_potfile (po, checkout):
         xml2po_potfiles[makedir] = potfile_abs
         return potfile_abs
     else:
-        # FIXME
-        raise "xml2po failed"
+        pulse.utils.warn ('Failed to create POT file %s' % potfile_rel)
+        xml2po_potfiles[makedir] = None
+        return None
     
 
-def do_history (po, checkout):
+def do_history (po, checkout, **kw):
     fullname = os.path.join (checkout.directory, po.scm_dir, po.scm_file)
     rel_ch = pulse.utils.relative_path (fullname, checkout.directory)
     rel_scm = pulse.utils.relative_path (fullname, pulse.config.scmdir)
+    mtime = os.stat(fullname).st_mtime
+    if kw.get('timestamps', True):
+        stamp = pulse.db.Timestamp.get_timestamp (rel_scm)
+        if mtime <= stamp:
+            pulse.utils.warn ('Skipping history for %s' % rel_scm)
+            return
     pulse.utils.log ('Checking history for %s' % rel_scm)
     commit = pulse.db.ScmCommit.select ((pulse.db.ScmCommit.q.branchID == po.id) &
                                         (pulse.db.ScmCommit.q.filename == po.scm_file),
@@ -187,6 +197,7 @@ def do_history (po, checkout):
         pers = pulse.db.Entity.get_record (ident=pident, type='Person')
         pulse.db.ScmCommit (branch=po, person=pers, filename=po.scm_file, filetype='po',
                             revision=hist['revision'], datetime=hist['date'], comment=hist['comment'])
+    pulse.db.Timestamp.set_timestamp (rel_scm, mtime)
     
 
 
