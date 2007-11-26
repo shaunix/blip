@@ -117,19 +117,14 @@ def output_doc (doc, path=[], query=[], http=True, fd=None):
             loc += '/branches/' + doc.scm_branch
         page.add_fact (pulse.utils.gettext ('SVN Location'), loc)
 
-
-    commits = pulse.db.ScmCommit.select (pulse.db.ScmCommit.q.branchID == doc.id,
-                                         orderBy='-datetime')
-    try:
-        commit = commits[0]
+    if doc.mod_datetime != None:
         span = pulse.html.Span(divider=pulse.html.Span.SPACE)
         # FIXME: i18n, word order, but we want to link person
-        span.add_content (str(commit.datetime))
-        span.add_content (' by ')
-        span.add_content (pulse.html.Link (commit.person))
+        span.add_content (str(doc.mod_datetime))
+        if doc.mod_person != None:
+            span.add_content (' by ')
+            span.add_content (pulse.html.Link (doc.mod_person))
         page.add_fact (pulse.utils.gettext ('Last Modified'), span)
-    except IndexError:
-        pass
 
     columns = pulse.html.ColumnBox (2)
     page.add_content (columns)
@@ -168,9 +163,9 @@ def output_doc (doc, path=[], query=[], http=True, fd=None):
     box.add_content (dl)
     for xmlfile in doc.data.get('xmlfiles', []):
         dl.add_term (xmlfile)
-        commit = pulse.db.ScmCommit.select ((pulse.db.ScmCommit.q.branchID == doc.id) &
-                                            (pulse.db.ScmCommit.q.filename == xmlfile),
-                                            orderBy='-datetime')
+        commit = pulse.db.Revision.select ((pulse.db.Revision.q.branchID == doc.id) &
+                                           (pulse.db.Revision.q.filename == xmlfile),
+                                           orderBy='-datetime')
         try:
             commit = commit[0]
             span = pulse.html.Span(divider=pulse.html.Span.SPACE)
