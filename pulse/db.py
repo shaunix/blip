@@ -223,6 +223,9 @@ class Branch (Record):
     scm_dir = sql.StringCol (default=None)
     scm_file = sql.StringCol (default=None)
 
+    mod_datetime = sql.DateTimeCol (default=None)
+    mod_person = sql.ForeignKey ('Entity', dbName='mod_person', default=None)
+
     def _ensure_default_branch (self):
         if getattr (self, 'scm_type', None) != None and getattr (self, 'scm_branch', None) != None:
             if pulse.scm.default_branches[self.scm_type] == self.scm_branch:
@@ -314,9 +317,9 @@ class Entity (Record):
 ################################################################################
 ## Extra Information
 
-class ScmCommit (sql.SQLObject):
+class Revision (sql.SQLObject):
     class sqlmeta:
-        table = 'ScmCommit'
+        table = 'Revision'
 
     branch =  sql.ForeignKey ('Branch', dbName='branch')
     person = sql.ForeignKey ('Entity', dbName='person')

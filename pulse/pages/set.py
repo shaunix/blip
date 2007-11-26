@@ -213,23 +213,16 @@ def add_more_tabs (set, tabbed, path=[], query=[]):
                 for i in range(len(docs[id])):
                     doc = docs[id][i]
                     rlink = pulse.html.ResourceLinkBox (doc)
-                    clv[int(i >= (len(docs[id]) / 2))].add_content (rlink)
-                    commits = pulse.db.ScmCommit.select (pulse.db.ScmCommit.q.branchID == doc.id,
-                                                         orderBy='-datetime')
-                    try:
-                        commit = commits[0]
+                    clv[int(i >= len(docs[id]) / 2 + 1)].add_content (rlink)
+                    if doc.mod_datetime != None:
                         span = pulse.html.Span(divider=pulse.html.Span.SPACE)
                         # FIXME: i18n, word order, but we want to link person
                         span.add_content (pulse.utils.gettext ('modified'))
-                        span.add_content (str(commit.datetime.date()))
-                        span.add_content (pulse.utils.gettext ('by'))
-                        span.add_content (pulse.html.Link (commit.person))
+                        span.add_content (str(doc.mod_datetime.date()))
+                        if doc.mod_person != None:
+                            span.add_content (pulse.utils.gettext ('by'))
+                            span.add_content (pulse.html.Link (doc.mod_person))
                         rlink.add_fact_div (span)
-                    except IndexError:
-                        pass
-
-
-                    
         tabbed.add_tab ('Documents (%i)' % cnt, True, vbox)
     else:
         tabbed.add_tab ('Documents (%i)' % cnt, False, set.pulse_url + '/doc')
@@ -246,14 +239,15 @@ def add_more_tabs (set, tabbed, path=[], query=[]):
             join=LEFTJOINOn(Module, pulse.db.RecordBranchRelation,
                             AND(pulse.db.Branch.q.parentID == Module.q.id,
                                 Module.q.id == pulse.db.RecordBranchRelation.q.predID)) )
-        cnt = rels.count()
         if len(path) > 2 and path[2] == ext:
+            rels = pulse.utils.attrsorted (list(rels), 'title')
             columns = pulse.html.ColumnBox (2)
-            tabbed.add_tab (txt % cnt, True, columns)
+            tabbed.add_tab (txt % len(rels), True, columns)
             clv = [columns.add_content (i, pulse.html.VBox()) for i in range(2)]
-            rels = pulse.utils.attrsorted (rels[0:], 'title')
-            for i in range(cnt):
+            for i in range(len(rels)):
                 rlink = pulse.html.ResourceLinkBox (rels[i])
-                clv[int(i >= (cnt / 2))].add_content (rlink)
-        elif cnt > 0:
-            tabbed.add_tab (txt % cnt, False, set.pulse_url + '/' + ext)
+                clv[int(i >= len(rels) / 2 + 1)].add_content (rlink)
+        else:
+            cnt = rels.count()
+            if cnt > 0:
+                tabbed.add_tab (txt % cnt, False, set.pulse_url + '/' + ext)

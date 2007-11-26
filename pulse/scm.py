@@ -332,5 +332,5 @@ def parse_date (d):
     delta = datetime.timedelta (hours=offhours, minutes=offmins)
     return dt - delta
 
-def parse_date_svn (datestr):
+def parse_date_svn (d):
     return parse_date (d.split('(')[0].strip())

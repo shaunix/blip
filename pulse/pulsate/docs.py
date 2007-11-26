@@ -31,6 +31,8 @@ import pulse.scm
 import pulse.parsers
 import pulse.utils
 
+from sqlobject.sqlbuilder import *
+
 synop = 'update information about documentation'
 usage_extra = '[ident]'
 args = pulse.utils.odict()
@@ -91,26 +93,33 @@ def update_gdu_docbook (doc, **kw):
         if kw.get('history', True):
             fullname = os.path.join (makedir, 'C', fname)
             rel_ch = pulse.utils.relative_path (fullname, checkout.directory)
-            commit = pulse.db.ScmCommit.select ((pulse.db.ScmCommit.q.branchID == doc.id) &
-                                                (pulse.db.ScmCommit.q.filename == fname),
-                                                orderBy='-datetime')
+            revision = pulse.db.Revision.select ((pulse.db.Revision.q.branchID == doc.id) &
+                                                 (pulse.db.Revision.q.filename == fname),
+                                                 orderBy='-datetime')
             try:
-                since = commit[0].revision
+                since = revision[0].revision
             except IndexError:
                 since = None
             serverid = '.'.join (pulse.scm.server_name (checkout.scm_type, checkout.scm_server).split('.')[-2:])
             for hist in checkout.get_history (rel_ch, since=since):
                 pident = '/person/' + serverid + '/' + hist['userid']
                 pers = pulse.db.Entity.get_record (ident=pident, type='Person')
-                pulse.db.ScmCommit (branch=doc, person=pers, filename=fname, filetype='xml',
-                                    revision=hist['revision'], datetime=hist['date'], comment=hist['comment'])
+                pulse.db.Revision (branch=doc, person=pers, filename=fname, filetype='xml',
+                                   revision=hist['revision'], datetime=hist['date'], comment=hist['comment'])
+    revision = pulse.db.Revision.select (pulse.db.Revision.q.branchID == doc.id, orderBy='-datetime')
+    try:
+        revision = revision[0]
+        data['mod_datetime'] = revision.datetime
+        data['mod_personID'] = revision.person.id
+    except IndexError:
+        pass
 
     pulse.utils.log ('Creating commit graph for %s' % doc.ident)
     now = datetime.datetime.now()
     tendays = now - datetime.timedelta(days=10)
     stats = [0] * 10
-    revs = pulse.db.ScmCommit.select ((pulse.db.ScmCommit.q.branchID == doc.id) &
-                                      (pulse.db.ScmCommit.q.datetime > tendays) )
+    revs = pulse.db.Revision.select ((pulse.db.Revision.q.branchID == doc.id) &
+                                     (pulse.db.Revision.q.datetime > tendays) )
     for rev in list(revs):
         idx = 9 - (now - rev.datetime).days
         stats[idx] += 1
@@ -352,11 +361,36 @@ def main (argv, options={}):
     else:
         prefix = argv[0]
 
-    if prefix != None:
+    if prefix == None:
+        docs = pulse.db.Branch.selectBy (type='Document')
+    elif prefix.startswith ('/mod/'):
+        BranchParent = Alias (pulse.db.Branch, 'BranchParent')
+        docs = pulse.db.Branch.select (
+            AND(pulse.db.Branch.q.type == 'Document',
+                BranchParent.q.type == 'Module',
+                BranchParent.q.ident.startswith (prefix)),
+            join=INNERJOINOn(None, BranchParent,
+                             pulse.db.Branch.q.parentID == BranchParent.q.id) )
+        docs = list(docs)
+    elif prefix.startswith ('/set'):
+        docs = []
+        sets = pulse.db.Record.select ((pulse.db.Record.q.type == 'Set') &
+                                       (pulse.db.Record.q.ident.startswith (prefix)) )
+        BranchParent = Alias (pulse.db.Branch, 'BranchParent')
+        for set in sets:
+            setdocs = pulse.db.Branch.select (
+                (pulse.db.Branch.q.type == 'Document') &
+                (BranchParent.q.type == 'Module') &
+                (pulse.db.RecordBranchRelation.q.verb == 'SetModule') &
+                (pulse.db.RecordBranchRelation.q.subjID == set.id),
+                join=INNERJOINOn (BranchParent,
+                                  pulse.db.RecordBranchRelation,
+                                  (pulse.db.Branch.q.parentID == BranchParent.q.id) &
+                                  (pulse.db.RecordBranchRelation.q.predID == BranchParent.q.id)) )
+            docs += list(setdocs)
+    else:
         docs = pulse.db.Branch.select ((pulse.db.Branch.q.type == 'Document') &
                                        (pulse.db.Branch.q.ident.startswith (prefix)) )
-    else:
-        docs = pulse.db.Branch.selectBy (type='Document')
 
     for doc in docs:
         if doc.subtype == 'gdu-docbook':

@@ -184,19 +184,19 @@ def do_history (po, checkout, **kw):
             pulse.utils.warn ('Skipping history for %s' % rel_scm)
             return
     pulse.utils.log ('Checking history for %s' % rel_scm)
-    commit = pulse.db.ScmCommit.select ((pulse.db.ScmCommit.q.branchID == po.id) &
-                                        (pulse.db.ScmCommit.q.filename == po.scm_file),
-                                        orderBy='-datetime')
+    revision = pulse.db.Revision.select ((pulse.db.Revision.q.branchID == po.id) &
+                                         (pulse.db.Revision.q.filename == po.scm_file),
+                                         orderBy='-datetime')
     try:
-        since = commit[0].revision
+        since = revision[0].revision
     except IndexError:
         since = None
     serverid = '.'.join (pulse.scm.server_name (checkout.scm_type, checkout.scm_server).split('.')[-2:])
     for hist in checkout.get_history (rel_ch, since=since):
         pident = '/person/' + serverid + '/' + hist['userid']
         pers = pulse.db.Entity.get_record (ident=pident, type='Person')
-        pulse.db.ScmCommit (branch=po, person=pers, filename=po.scm_file, filetype='po',
-                            revision=hist['revision'], datetime=hist['date'], comment=hist['comment'])
+        pulse.db.Revision (branch=po, person=pers, filename=po.scm_file, filetype='po',
+                           revision=hist['revision'], datetime=hist['date'], comment=hist['comment'])
     pulse.db.Timestamp.set_timestamp (rel_scm, mtime)
     
 
