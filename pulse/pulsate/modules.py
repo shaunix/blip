@@ -55,7 +55,8 @@ def update_branch (branch, update=True, timestamps=True):
     gdu_docs = []
     gtk_docs = []
     def visit (arg, dirname, names):
-        names.remove (checkout.ignoredir)
+        if checkout.ignoredir in names:
+            names.remove (checkout.ignoredir)
         for name in names:
             filename = os.path.join (dirname, name)
             if not os.path.isfile (filename):

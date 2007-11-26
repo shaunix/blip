@@ -232,6 +232,17 @@ def main (argv, options={}):
             join=INNERJOINOn(None, BranchParent,
                              pulse.db.Branch.q.parentID == BranchParent.q.id) )
         pos = list(pos)
+    elif prefix.startswith ('/mod'):
+        BranchParent = Alias (pulse.db.Branch, 'BranchParent')
+        BranchGrand = Alias (pulse.db.Branch, 'BranchGrand')
+        pos = pulse.db.Branch.select (
+            AND(pulse.db.Branch.q.type == 'Translation',
+                BranchGrand.q.type == 'Module',
+                BranchGrand.q.ident.startswith (prefix)),
+            join=INNERJOINOn(BranchParent, BranchGrand,
+                             AND(pulse.db.Branch.q.parentID == BranchParent.q.id,
+                                 BranchParent.q.parentID == BranchGrand.q.id)) )
+        pos = list(pos)
     else:
         pos = pulse.db.Branch.select ((pulse.db.Branch.q.type == 'Translation') &
                                       (pulse.db.Branch.q.ident.startswith (prefix)) )

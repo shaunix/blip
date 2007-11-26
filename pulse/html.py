@@ -234,7 +234,7 @@ class PageError (Page):
     def __init__ (self, message, **kw):
         Page.__init__ (self, status=404, **kw)
         if not kw.has_key ('title'):
-            self.set_title (pulse.utils.gettext('Page Not Found'))
+            self.set_title (pulse.utils.gettext('Bad Monkeys'))
         self._pages = kw.get ('pages', [])
         self._message = message
     

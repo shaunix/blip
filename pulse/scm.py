@@ -64,7 +64,6 @@ class Checkout (object):
         checkoutQ = kw.get ('checkout', True)
 
         if not kw.has_key ('scm_type'):
-            print kw.keys()
             raise CheckoutError (
                 'Checkout could not determine the type of SCM server to use')
 
@@ -180,10 +179,12 @@ class Checkout (object):
         self._co = 'svn co ' + url + ' ' + self.scm_branch
         self._up = 'svn up'
         
+
     directory = property (lambda self: os.path.join (pulse.config.scmdir,
                                                      self._server_dir,
                                                      self._module_dir,
                                                      self._branch_dir))
+
 
     def get_location (self, scm_dir=None, scm_file=None):
         if scm_dir == None:
@@ -192,8 +193,8 @@ class Checkout (object):
             return self._location_dir % scm_dir
         else:
             return self._location_dirfile % (scm_dir, scm_file)
-
     location = property (get_location)
+
 
     def checkout (self):
         pulse.utils.log ('Checking out %s from %s' % (self._name, self._server_dir))
@@ -203,12 +204,12 @@ class Checkout (object):
         owd = os.getcwd ()
         try:
             os.chdir (topdir)
-            print self._co
             (status, output) = commands.getstatusoutput (self._co)
             # FIXME: check status, log output if error
         finally:
             os.chdir (owd)
         
+
     def update (self):
         pulse.utils.log ('Updating %s from %s' % (self._name, self._server_dir))
         owd = os.getcwd ()
@@ -218,6 +219,7 @@ class Checkout (object):
             # FIXME: check status, log output if error
         finally:
             os.chdir (owd)
+
 
     def get_revision (self, filename):
         if hasattr (Checkout, '_get_revision_' + self.scm_type) and self.scm_type in default_branches:
@@ -243,7 +245,18 @@ class Checkout (object):
                 return (revnumber, datetime.datetime(*datelist))
         return None
 
-    #def _get_revision_git (self, filename):
+    def _get_revision_git (self, filename):
+        owd = os.getcwd ()
+        retval = None
+        try:
+            os.chdir (self.directory)
+            cmd = 'git log -1 --pretty="format:%H/%ci" "%s"' % filename
+            (status, output) = commands.getstatusoutput (self._co)
+            revhash, revdate = output.split('/')
+            retval = (revhash, parse_date (revdate))
+        finally:
+            os.chdir (owd)
+        return retval
 
     def _get_revision_svn (self, filename):
         owd = os.getcwd ()
@@ -261,6 +274,7 @@ class Checkout (object):
         finally:
             os.chdir (owd)
         return retval
+
 
     def get_history (self, filename, since=None):
         if hasattr (Checkout, '_get_history_' + self.scm_type) and self.scm_type in default_branches:
@@ -310,11 +324,13 @@ class Checkout (object):
             os.chdir (owd)
         return retval
 
-def parse_date_svn (datestr):
-    d = datestr.split('(')[0].strip()
+def parse_date (d):
     dt = datetime.datetime (*time.strptime(d[:19], '%Y-%m-%d %H:%M:%S')[:6])
     off = d[20:25]
     offhours = int(off[:3])
     offmins = int(off[0] + off[3:])
     delta = datetime.timedelta (hours=offhours, minutes=offmins)
     return dt - delta
+
+def parse_date_svn (datestr):
+    return parse_date (d.split('(')[0].strip())
