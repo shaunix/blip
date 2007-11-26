@@ -263,7 +263,7 @@ class Checkout (object):
         retval = None
         try:
             os.chdir (os.path.join (self.directory, os.path.dirname (filename)))
-            cmd = 'svn info "%s"' % os.path.basename (filename)
+            cmd = 'svn info "%s@"' % os.path.basename (filename)
             for line in os.popen (cmd):
                 if line.startswith ('Last Changed Rev: '):
                     revnumber = line[18:].strip()
