@@ -296,7 +296,7 @@ class Checkout (object):
             cmd = 'svn log '
             if since != None:
                 cmd += '-r' + since + ':HEAD '
-            cmd += '"' + os.path.basename (filename) + '"'
+            cmd += '"' + os.path.basename (filename) + '@"'
             fd = os.popen (cmd)
             line = fd.readline()
             while line:
