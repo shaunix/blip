@@ -34,8 +34,9 @@ from sqlobject.sqlbuilder import *
 synop = 'update information about translations'
 usage_extra = '[ident]'
 args = pulse.utils.odict()
-args['no-update']  = (None, 'do not update SCM checkouts')
+args['no-history'] = (None, 'do not check SCM history')
 args['no-timestamps'] = (None, 'do not check timestamps before processing files')
+args['no-update']  = (None, 'do not update SCM checkouts')
 def help_extra (fd=None):
     print >>fd, 'If ident is passed, only translations with a matching identifier will be updated.'
 
@@ -47,8 +48,8 @@ def get_checkout (branch, update=True):
     return checkouts[branch.ident]
 
 
-def update_intltool (po, update=True, timestamps=True):
-    checkout = get_checkout (po.parent.parent, update=update)
+def update_intltool (po, **kw):
+    checkout = get_checkout (po.parent.parent, update=kw.get('update', True))
     potfile = get_intltool_potfile (po, checkout)
     if potfile == None: return
     podir = os.path.join (checkout.directory, po.scm_dir)
@@ -65,11 +66,12 @@ def update_intltool (po, update=True, timestamps=True):
                                           stats[0], stats[1], total)
     finally:
         os.chdir (owd)
-    do_history (po, checkout, timestamps=timestamps)
+    if kw.get('history', True):
+        do_history (po, checkout, **kw)
 
 
-def update_xml2po (po, update=True, timestamps=True):
-    checkout = get_checkout (po.parent.parent, update=update)
+def update_xml2po (po, **kw):
+    checkout = get_checkout (po.parent.parent, update=kw.get('update', True))
     potfile = get_xml2po_potfile (po, checkout)
     if potfile == None: return
     makedir = os.path.join (checkout.directory, os.path.dirname (po.scm_dir))
@@ -90,7 +92,8 @@ def update_xml2po (po, update=True, timestamps=True):
                                           stats[0], stats[1], total)
     finally:
         os.chdir (owd)
-    do_history (po, checkout, timestamps=timestamps)
+    if kw.get('history', True):
+        do_history (po, checkout, **kw)
     
 
 intltool_potfiles = {}
@@ -207,6 +210,7 @@ def do_history (po, checkout, **kw):
 def main (argv, options={}):
     update = not options.get ('--no-update', False)
     timestamps = not options.get ('--no-timestamps', False)
+    history = not options.get ('--no-history', False)
     if len(argv) == 0:
         prefix = None
     else:
@@ -249,9 +253,9 @@ def main (argv, options={}):
 
     for po in pos:
         if po.subtype == 'intltool':
-            update_intltool (po, update=update, timestamps=timestamps)
+            update_intltool (po, update=update, timestamps=timestamps, history=history)
         elif po.subtype == 'xml2po':
-            update_xml2po (po, update=update, timestamps=timestamps)
+            update_xml2po (po, update=update, timestamps=timestamps, history=history)
         else:
             pulse.utils.log ('Skipping translation %s with unknown type %s' %
                              (po.ident, po.subtype))
