@@ -91,7 +91,7 @@ def output_set (set, path=[], query=[], http=True, fd=None):
             dls = [columns.add_content (i, pulse.html.DefinitionList()) for i in range(2)]
             for i in range(len(subsets)):
                 subset = subsets[i].pred
-                dl = dls[int(i >= (len(subsets) / 2))]
+                dl = dls[int(i > len(subsets) / 2 + 1)]
                 dl.add_term (pulse.html.Link (subset))
                 add_set_entries (subset, dl)
         else:
@@ -121,7 +121,7 @@ def output_set (set, path=[], query=[], http=True, fd=None):
         clv = [columns.add_content (i, pulse.html.VBox()) for i in range(2)]
         for i in range(modcnt):
             rlink = pulse.html.ResourceLinkBox (mods[i])
-            clv[int(i >= (modcnt / 2))].add_content (rlink)
+            clv[int(i > modcnt / 2 + 1)].add_content (rlink)
 
     if modcnt > 0:
         add_more_tabs (set, tabbed, path=path, query=query)
@@ -247,6 +247,16 @@ def add_more_tabs (set, tabbed, path=[], query=[]):
             for i in range(len(rels)):
                 rlink = pulse.html.ResourceLinkBox (rels[i])
                 clv[int(i >= len(rels) / 2 + 1)].add_content (rlink)
+                doc = pulse.db.Branch.select (
+                    (pulse.db.BranchRelation.q.verb == (type + 'Document')) &
+                    (pulse.db.BranchRelation.q.subjID == rels[i].id),
+                    join=INNERJOINOn (None, pulse.db.BranchRelation,
+                                      pulse.db.BranchRelation.q.predID == pulse.db.Branch.q.id) )
+                try:
+                    doc = doc[0]
+                    rlink.add_fact ('Documentation', doc)
+                except IndexError:
+                    pass
         else:
             cnt = rels.count()
             if cnt > 0:

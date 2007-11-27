@@ -458,7 +458,6 @@ def process_keyfile (branch, checkout, filename, **kw):
 
     data = {}
     data['scm_dir'], data['scm_file'] = os.path.split (rel_ch)
-    app.update (data)
 
     app.update_name (name)
     if desc != None:
@@ -469,7 +468,24 @@ def process_keyfile (branch, checkout, filename, **kw):
                      kw.get ('images', []))
 
     if keyfile.has_key ('Desktop Entry', 'Exec'):
-        app.update_data ({'exec' : keyfile.get_value ('Desktop Entry', 'Exec')})
+        data['exec'] = keyfile.get_value ('Desktop Entry', 'Exec')
+
+    app.update (data)
+
+    if keyfile.has_key ('Desktop Entry', 'X-GNOME-DocPath'):
+        docid = keyfile.get_value ('Desktop Entry', 'X-GNOME-DocPath')
+        docid = docid.split('/')[0]
+        if docid != '':
+            docident = '/'.join(['/doc', bserver, bmodule, docid, bbranch])
+            doc = pulse.db.Branch.selectBy (ident=docident, type='Document')
+            try:
+                doc = doc[0]
+                rel = pulse.db.BranchRelation.set_related (subj=app,
+                                                           verb='ApplicationDocument',
+                                                           pred=doc)
+                app.set_relations (pulse.db.BranchRelation, 'ApplicationDocument', [rel])
+            except IndexError:
+                pass
 
     pulse.db.Timestamp.set_timestamp (rel_scm, mtime)
 

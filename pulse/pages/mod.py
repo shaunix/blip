@@ -27,6 +27,8 @@ import pulse.html
 import pulse.scm
 import pulse.utils
 
+from sqlobject.sqlbuilder import *
+
 def main (path=[], query={}, http=True, fd=None):
     if len(path) == 3:
         modules = pulse.db.Resource.selectBy (ident=('/' + '/'.join(path)))
@@ -206,7 +208,17 @@ def output_branch (branch, path=[], query=[], http=True, fd=None):
         box = pulse.html.InfoBox ('applications', pulse.utils.gettext ('Applications'))
         columns.add_content (1, box)
         for app in apps:
-            box.add_resource_link (app)
+            rlink = box.add_resource_link (app)
+            doc = pulse.db.Branch.select (
+                (pulse.db.BranchRelation.q.verb == 'ApplicationDocument') &
+                (pulse.db.BranchRelation.q.subjID == app.id),
+                join=INNERJOINOn (None, pulse.db.BranchRelation,
+                                  pulse.db.BranchRelation.q.predID == pulse.db.Branch.q.id) )
+            try:
+                doc = doc[0]
+                rlink.add_fact ('Documentaion', doc)
+            except IndexError:
+                pass
 
     # Applets
     applets = pulse.db.Branch.selectBy (type='Applet', parent=branch)
