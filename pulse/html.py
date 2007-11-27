@@ -273,7 +273,8 @@ class ResourceLinkBox (ContentComponent, FactsComponent):
         ContentComponent.__init__ (self, **kw)
         self._url = self._title = self._icon = self._desc = None
         if isinstance (args[0], pulse.db.Record):
-            self._url = args[0].pulse_url
+            if args[0].linkable:
+                self._url = args[0].pulse_url
             self._title = args[0].title
             self._desc = args[0].localized_desc
             self._icon = args[0].icon_url
@@ -545,8 +546,10 @@ class Span (ContentComponent):
 class Link (Block):
     def __init__ (self, *args, **kw):
         Block.__init__ (self, **kw)
+        self._href = self._text = None
         if isinstance (args[0], pulse.db.Record):
-            self._href = args[0].pulse_url
+            if args[0].linkable:
+                self._href = args[0].pulse_url
             self._text = args[0].title
         elif len(args) > 1:
             self._href = args[0]
@@ -556,11 +559,16 @@ class Link (Block):
         self._icon = kw.get('icon', None)
     
     def output (self, fd=sys.stdout):
-        if self._icon != None:
+        if self._icon == None and self._href == None:
+            p (fd, None, self._text)
+        elif self._icon == None:
+            p (fd, '<a href="%s">%s</a>', (self._href, self._text))
+        elif self._href == None:
+            p (fd, '<img src="%sdata/%s-16.png" height="16" width="16"> %s',
+               (pulse.config.webroot, self._icon, self._text))
+        else:
             p (fd, '<a href="%s"><img src="%sdata/%s-16.png" height="16" width="16"> %s</a>',
                (self._href, pulse.config.webroot, self._icon, self._text))
-        else:
-            p (fd, '<a href="%s">%s</a>', (self._href, self._text))
 
 
 ################################################################################

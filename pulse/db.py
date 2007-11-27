@@ -88,6 +88,8 @@ class Record (sql.SQLObject):
         pulse.utils.log ('Creating %s %s' % (kw['type'], kw['ident']))
         sql.SQLObject._create (self, *args, **kw)
 
+    linkable = True
+
     @ classmethod
     def get_record (cls, ident, type):
         record = cls.selectBy (ident=ident, type=type)
@@ -302,6 +304,10 @@ class Entity (Record):
         else:
             return self.localized_name
     name_nick = property (get_name_nick)
+
+    def _is_linkable (self):
+        return self.type != 'Ghost'
+    linkable = property (_is_linkable)
 
     def remove_relations (self):
         for rel in ResourceEntityRelation.selectBy (pred=self):
