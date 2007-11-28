@@ -68,7 +68,10 @@ def main (path=[], query={}, http=True, fd=None):
         # FIXME: redirect to /set or something
         pass
 
-    return output_doc (doc, path, query, http, fd)
+    if query.has_key ('ajax'):
+        return output_ajax (doc, path, query, http, fd)
+    else:
+        return output_doc (doc, path, query, http, fd)
 
 
 def output_doc (doc, path=[], query=[], http=True, fd=None):
@@ -147,23 +150,17 @@ def output_doc (doc, path=[], query=[], http=True, fd=None):
     box = pulse.html.InfoBox ('activity', pulse.utils.gettext ('Activity'))
     columns.add_content (0, box)
     box.add_content (pulse.html.Graph ('/'.join(doc.ident.split('/')[1:] + ['commits.png'])))
-    dl = pulse.html.DefinitionList ()
-    box.add_content (dl)
-    for xmlfile in doc.data.get('xmlfiles', []):
-        dl.add_term (xmlfile)
-        commit = pulse.db.Revision.select ((pulse.db.Revision.q.branchID == doc.id) &
-                                           (pulse.db.Revision.q.filename == xmlfile),
-                                           orderBy='-datetime')
-        try:
-            commit = commit[0]
-            span = pulse.html.Span(divider=pulse.html.Span.SPACE)
-            # FIXME: i18n, word order, but we want to link person
-            span.add_content (str(commit.datetime))
-            span.add_content (' by ')
-            span.add_content (pulse.html.Link (commit.person))
-            dl.add_entry (span)
-        except IndexError:
-            pass
+    div = pulse.html.Div (id='actfiles')
+    box.add_content (div)
+    xmlfiles = doc.data.get('xmlfiles', [])
+    if len(xmlfiles) > 10:
+        jslink = 'javascript:replace_content(\'actfiles\', '
+        jslink += '\'%s%s?ajax=activity\'' % (pulse.config.webroot, doc.ident[1:])
+        jslink += ')'
+        div.add_content (pulse.html.Link (jslink,
+                                          pulse.utils.gettext ('View all %i files') % len(xmlfiles)))
+    else:
+        div.add_content (get_activity (doc, xmlfiles))
 
     # Translations
     box = pulse.html.InfoBox ('translations', pulse.utils.gettext ('Translations'))
@@ -222,3 +219,30 @@ def output_doc (doc, path=[], query=[], http=True, fd=None):
     page.output(fd=fd)
 
     return 0
+
+
+def output_ajax (doc, path, query, http, fd):
+    page = pulse.html.HttpContainer ()
+    xmlfiles = doc.data.get('xmlfiles', [])
+    page.add_content (get_activity (doc, xmlfiles))
+    page.output(fd=fd)
+    return 0
+
+def get_activity (doc, xmlfiles):
+    dl = pulse.html.DefinitionList ()
+    for xmlfile in xmlfiles:
+        dl.add_term (xmlfile)
+        commit = pulse.db.Revision.select ((pulse.db.Revision.q.branchID == doc.id) &
+                                           (pulse.db.Revision.q.filename == xmlfile),
+                                           orderBy='-datetime')
+        try:
+            commit = commit[0]
+            span = pulse.html.Span(divider=pulse.html.Span.SPACE)
+            # FIXME: i18n, word order, but we want to link person
+            span.add_content (str(commit.datetime))
+            span.add_content (' by ')
+            span.add_content (pulse.html.Link (commit.person))
+            dl.add_entry (span)
+        except IndexError:
+            pass
+    return dl

@@ -137,12 +137,26 @@ class ContentComponent (Block):
 ################################################################################
 ## Pages
 
-class Page (Block, ContentComponent):
+class HttpContainer (Block, ContentComponent):
     def __init__ (self, **kw):
-        Block.__init__ (self, **kw)
         ContentComponent.__init__ (self, **kw)
         self._http = kw.get ('http', True)
         self._status = kw.get ('status')
+
+    def output_top (self, fd=sys.stdout):
+        if self._http == True:
+            if self._status == 404:
+                p (fd, 'Status: 404 Not found')
+            elif self._status == 500:
+                p (fd, 'Status: 500 Internal server error')
+            p (fd, 'Content-type: text/html; charset=utf-8\n')
+
+    def output_middle (self, fd=sys.stdout):
+        ContentComponent.output (self, fd=fd)
+
+class Page (HttpContainer):
+    def __init__ (self, **kw):
+        HttpContainer.__init__ (self, **kw)
         self._title = kw.get ('title')
         self._icon = kw.get ('icon')
 
@@ -153,12 +167,7 @@ class Page (Block, ContentComponent):
         self._icon = icon
 
     def output_top (self, fd=sys.stdout):
-        if self._http == True:
-            if self._status == 404:
-                p (fd, 'Status: 404 Not found')
-            elif self._status == 500:
-                p (fd, 'Status: 500 Internal server error')
-            p (fd, 'Content-type: text/html; charset=utf-8\n')
+        HttpContainer.output_top (self, fd=fd)
         p (fd, '<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">')
         p (fd, '<html><head>')
         p (fd, '  <title>%s</title>', self._title)
@@ -185,9 +194,6 @@ class Page (Block, ContentComponent):
             p (fd, '<img class="icon" src="%s" alt="%s">', (self._icon, self._title), False)
         p (fd, None, self._title)
         p (fd, '</h1>')
-
-    def output_middle (self, fd=sys.stdout):
-        ContentComponent.output (self, fd=fd)
 
     def output_bottom (self, fd=sys.stdout):
         p (fd, '</div></body></html>')
@@ -230,7 +236,7 @@ class PageNotFound (Page):
 
 class PageError (Page):
     def __init__ (self, message, **kw):
-        Page.__init__ (self, status=404, **kw)
+        Page.__init__ (self, status=500, **kw)
         if not kw.has_key ('title'):
             self.set_title (pulse.utils.gettext('Bad Monkeys'))
         self._pages = kw.get ('pages', [])
@@ -461,6 +467,7 @@ class TabbedBox (Block):
 class DefinitionList (Block):
     def __init__ (self, **kw):
         Block.__init__ (self, **kw)
+        self._id = kw.get('id', None)
         self._all = []
 
     def add_term (self, term):
@@ -470,7 +477,10 @@ class DefinitionList (Block):
         self._all.append (('dd', entry))
         
     def output (self, fd=sys.stdout):
-        p (fd, '<dl>')
+        if self._id != None:
+            p (fd, '<dl id="%s">', self._id)
+        else:
+            p (fd, '<dl>')
         for d in self._all:
             p (fd, '<%s>' % d[0])
             p (fd, None, d[1])
@@ -539,6 +549,22 @@ class Span (ContentComponent):
                 p (fd, None, self._divider)
             p (fd, None, content[i])
         p (fd, '</span>')
+
+
+class Div (ContentComponent):
+    def __init__ (self, *args, **kw):
+        ContentComponent.__init__ (self, **kw)
+        self._id = kw.get('id', None)
+        for arg in args:
+            self.add_content (arg)
+
+    def output (self, fd=sys.stdout):
+        if self._id != None:
+            p (fd, '<div id="%s">', self._id)
+        else:
+            p (fd, '<div>')
+        ContentComponent.output (self, fd=fd)
+        p (fd, '</div>')
 
 
 class Link (Block):

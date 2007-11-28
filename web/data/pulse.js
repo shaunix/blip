@@ -59,3 +59,31 @@ function tab (id) {
     }
   }
 }
+
+function replace_content (id, url) {
+  var httpreq = false;
+  if (window.XMLHttpRequest) {
+    httpreq = new XMLHttpRequest();
+  }
+  else if (window.ActiveXObject) {
+    try {
+      httpreq = new ActiveXObject("Msxml2.XMLHTTP");
+    } catch (e) {
+      try {
+        httpreq = new ActiveXObject("Microsoft.XMLHTTP");
+      } catch (e) {}
+    }
+  }
+
+  /* we should show some sort of activity thingy */
+  httpreq.onreadystatechange = function() {
+    if (httpreq.readyState == 4) {
+      if (httpreq.status == 200) {
+        el = document.getElementById (id);
+        el.innerHTML = httpreq.responseText;
+      }
+    }
+  }
+  httpreq.open('GET', url, true);
+  httpreq.send(null);
+}
