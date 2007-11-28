@@ -95,8 +95,8 @@ function replace_content (id, url) {
   /* we should show some sort of activity thingy */
   httpreq.onreadystatechange = function() {
     if (httpreq.readyState == 4) {
+      par.parentNode.removeChild(mask);
       if (httpreq.status == 200) {
-        par.parentNode.removeChild(mask);
         el.innerHTML = httpreq.responseText;
       }
     }
