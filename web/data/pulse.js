@@ -75,11 +75,28 @@ function replace_content (id, url) {
     }
   }
 
+  var el = document.getElementById (id);
+  for (var par = el.parentNode; par; par = par.parentNode) {
+    if (par.className == 'info') {
+      break
+    }
+  }
+  var mask = null;
+  if (par) {
+    mask = document.createElement('div');
+    /* FIXME: i18n */
+    mask.appendChild(document.createTextNode('Please wait'));
+    mask.className = 'infomask';
+    mask.style.width = par.clientWidth + 'px';
+    mask.style.height = par.clientHeight + 'px';
+    par.parentNode.insertBefore(mask, par);
+  }
+
   /* we should show some sort of activity thingy */
   httpreq.onreadystatechange = function() {
     if (httpreq.readyState == 4) {
       if (httpreq.status == 200) {
-        el = document.getElementById (id);
+        par.parentNode.removeChild(mask);
         el.innerHTML = httpreq.responseText;
       }
     }

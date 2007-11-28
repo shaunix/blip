@@ -161,6 +161,16 @@ td.col-first { padding: 0; }
   border-bottom: solid 1px #d3d7cf;
 }
 .info-content { padding: 0.2em 0.5em 0.2em 0.5em; }
+.infomask {
+  text-align: center;
+  font-weight: bold;
+  position: absolute;
+  border: solid 1px #d3d7cf;
+  background-color: #2e3436;
+  color: #eeeeec;
+  opacity: 0.6;
+  margin: 1em 0 1em 0;
+}
 
 table.rlink { margin: 0.2em 0 0.2em 0; }
 td.rlink-icon { width: 24px; }
