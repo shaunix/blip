@@ -105,18 +105,6 @@ def output_doc (doc, path=[], query=[], http=True, fd=None):
     
     page.add_fact (pulse.utils.gettext ('Location'), checkout.get_location (doc.scm_dir, doc.scm_file))
 
-    if doc.scm_type == 'cvs':
-        page.add_fact (pulse.utils.gettext ('CVS Server'), doc.scm_server)
-        page.add_fact (pulse.utils.gettext ('CVS Module'), doc.scm_module)
-        page.add_fact (pulse.utils.gettext ('CVS Branch'), doc.scm_branch)
-    elif doc.scm_type == 'svn':
-        loc = doc.scm_server + doc.scm_module
-        if doc.scm_branch == 'trunk':
-            loc += '/trunk'
-        else:
-            loc += '/branches/' + doc.scm_branch
-        page.add_fact (pulse.utils.gettext ('SVN Location'), loc)
-
     if doc.mod_datetime != None:
         span = pulse.html.Span(divider=pulse.html.Span.SPACE)
         # FIXME: i18n, word order, but we want to link person

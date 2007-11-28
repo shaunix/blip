@@ -174,14 +174,15 @@ div.rlink-desc {
 div.graph {
   margin: 0.5em;
 }
-div.fact {
-  margin: 0 0 0 1.44em;
-  color: #555753;
-}
 table.facts {
   border-top: solid 1px #d3d7cf;
   border-bottom: solid 1px #d3d7cf;
   margin: 1em 1.44em 0 1.44em;
+}
+table.rlink table.facts {
+  border-top: none;
+  border-bottom: none;
+  margin: 0 0 0 1.44em;
 }
 tr.fact-sep td { border-bottom: solid 1px #d3d7cf; }
 td.fact-key { margin: 0; padding: 0.1em 0.5em 0.1em 0; color: #555753; }

@@ -78,20 +78,14 @@ class FactsComponent (Block):
         self._divs = []
         self._facts = []
 
-    def add_fact_div (self, value):
-        self._divs.append (value)
-
-    def add_fact (self, key, value):
-        self._facts.append ((key, value))
+    def add_fact (self, label, content, **kw):
+        fact = {'label' : label, 'content' : content, 'badge' : kw.get('badge', None)}
+        self._facts.append (fact)
 
     def add_fact_sep (self):
         self._facts.append (None)
 
     def output (self, fd=sys.stdout):
-        for div in self._divs:
-            p (fd, '<div class="fact">')
-            p (fd, div)
-            p (fd, '</div>')
         if len (self._facts) == 0:
             return
         p (fd, '<table class="facts">')
@@ -99,12 +93,16 @@ class FactsComponent (Block):
             if fact == None:
                 p (fd, '<tr class="fact-sep"><td></td><td></td></tr>')
             else:
-                p (fd, '<tr><td class="fact-key">', None, False)
-                key = esc(fact[0]).replace(' ', '&nbsp;')
-                key = esc(pulse.utils.gettext ('%s:')) % key
-                p (fd, key, None, False)
-                p (fd, '</td>')
-                p (fd, '<td class="fact-val">', None, False)
+                p (fd, '<tr>', None, False)
+                if fact['label'] != None:
+                    p (fd, '<td class="fact-key">', None, False)
+                    key = esc(fact['label']).replace(' ', '&nbsp;')
+                    key = esc(pulse.utils.gettext ('%s:')) % key
+                    p (fd, key, None, False)
+                    p (fd, '</td>')
+                    p (fd, '<td class="fact-val">', None, False)
+                else:
+                    p (fd, '<td class="fact-val" colspan="2">', None, False)
                 def factout (f):
                     if isinstance (f, basestring) or isinstance (f, Block):
                         p (fd, None, f, False)
@@ -115,7 +113,7 @@ class FactsComponent (Block):
                             p (fd, '<div>', None, False)
                             factout (ff)
                             p (fd, '</div>')
-                factout (fact[1])
+                factout (fact['content'])
                 p (fd, '</td></tr>')
         p (fd, '</table>')
 

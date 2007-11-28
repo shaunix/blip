@@ -222,7 +222,7 @@ def add_more_tabs (set, tabbed, path=[], query=[]):
                         if doc.mod_person != None:
                             span.add_content (pulse.utils.gettext ('by'))
                             span.add_content (pulse.html.Link (doc.mod_person))
-                        rlink.add_fact_div (span)
+                        rlink.add_fact (None, span)
         tabbed.add_tab ('Documents (%i)' % cnt, True, vbox)
     else:
         tabbed.add_tab ('Documents (%i)' % cnt, False, set.pulse_url + '/doc')
@@ -254,7 +254,7 @@ def add_more_tabs (set, tabbed, path=[], query=[]):
                                       pulse.db.BranchRelation.q.predID == pulse.db.Branch.q.id) )
                 try:
                     doc = doc[0]
-                    rlink.add_fact ('Documentation', doc)
+                    rlink.add_fact (pulse.utils.gettext ('Documentation'), doc)
                 except IndexError:
                     pass
         else:
