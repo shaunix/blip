@@ -84,24 +84,24 @@ function replace_content (id, url) {
   var mask = null;
   if (par) {
     mask = document.createElement('div');
-    /* FIXME: i18n */
-    mask.appendChild(document.createTextNode('Please wait'));
     mask.className = 'infomask';
     mask.style.width = par.clientWidth + 'px';
     mask.style.height = par.clientHeight + 'px';
     par.parentNode.insertBefore(mask, par);
+    /* FIXME: i18n */
+    el.innerHTML = 'Loading...';
   }
 
   /* we should show some sort of activity thingy */
   httpreq.onreadystatechange = function() {
     if (httpreq.readyState == 4) {
-      par.parentNode.removeChild(mask);
       if (httpreq.status == 200) {
         el.innerHTML = httpreq.responseText;
       } else {
         /* FIXME: i18n */
         el.innerHTML = 'Could not load content';
       }
+      par.parentNode.removeChild(mask);
     }
   }
   httpreq.open('GET', url, true);
