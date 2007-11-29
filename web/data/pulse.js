@@ -98,6 +98,9 @@ function replace_content (id, url) {
       par.parentNode.removeChild(mask);
       if (httpreq.status == 200) {
         el.innerHTML = httpreq.responseText;
+      } else {
+        /* FIXME: i18n */
+        el.innerHTML = 'Could not load content';
       }
     }
   }
