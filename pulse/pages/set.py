@@ -202,6 +202,7 @@ def add_more_tabs (set, tabbed, path=[], query=[]):
             else:
                 docs['users'].append (doc)
         vbox = pulse.html.VBox()
+        vbox.add_content (pulse.html.Link('javascript:sort(\'docusers\', \'mtime\')', 'sort by mtime'))
         for id, txt in (('users', pulse.utils.gettext ('User Documentation (%i)')),
                         ('devels', pulse.utils.gettext ('Developer Documentation (%i)')) ):
             if len(docs[id]) > 0:
@@ -212,13 +213,13 @@ def add_more_tabs (set, tabbed, path=[], query=[]):
                 clv = [columns.add_content (i, pulse.html.VBox()) for i in range(2)]
                 for i in range(len(docs[id])):
                     doc = docs[id][i]
-                    rlink = pulse.html.ResourceLinkBox (doc)
+                    rlink = pulse.html.ResourceLinkBox (doc, klass=('doc' + id))
                     clv[int(i >= len(docs[id]) / 2 + 1)].add_content (rlink)
                     if doc.mod_datetime != None:
                         span = pulse.html.Span(divider=pulse.html.Span.SPACE)
                         # FIXME: i18n, word order, but we want to link person
                         span.add_content (pulse.utils.gettext ('modified'))
-                        span.add_content (str(doc.mod_datetime.date()))
+                        span.add_content (pulse.html.Span(str(doc.mod_datetime.date()), klass='mtime'))
                         if doc.mod_person != None:
                             span.add_content (pulse.utils.gettext ('by'))
                             span.add_content (pulse.html.Link (doc.mod_person))

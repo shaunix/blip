@@ -172,11 +172,11 @@ td.col-first { padding: 0; }
   margin: 1em 0 1em 0;
 }
 
-table.rlink { margin: 0.2em 0 0.2em 0; }
-td.rlink-icon { width: 24px; }
-td.rlink-icon img { width: 24px; }
-td.rlink-text { padding: 0 0.5em 0 0.5em; }
-div.rlink-desc {
+table.lbox { margin: 0.2em 0 0.2em 0; }
+td.lbox-icon { width: 24px; }
+td.lbox-icon img { width: 24px; }
+td.lbox-text { padding: 0 0.5em 0 0.5em; }
+div.lbox-desc {
   font-style: italic;
   color: #555753;
 }
@@ -189,7 +189,7 @@ table.facts {
   border-bottom: solid 1px #d3d7cf;
   margin: 1em 1.44em 0 1.44em;
 }
-table.rlink table.facts {
+table.lbox table.facts {
   border-top: none;
   border-bottom: none;
   margin: 0 0 0 1.44em;

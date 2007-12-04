@@ -107,3 +107,73 @@ function replace_content (id, url) {
   httpreq.open('GET', url, true);
   httpreq.send(null);
 }
+
+function KeyedThing (key, thing) {
+  this.key = key;
+  this.thing = thing;
+}
+function KeyedThingNumSort (thing1, thing2) {
+  if (thing1 == false) {
+    return true;
+  }
+  else if (thing2 == false) {
+    return false;
+  }
+  else {
+    return thing1.key - thing2.key
+  }
+}
+function KeyedThingLexSort (thing1, thing2) {
+  if (thing1 == false) {
+    return -1;
+  }
+  else if (thing2 == false) {
+    return 1;
+  }
+  else if (thing1.key == thing2.key) {
+    return 0;
+  }
+  else if (thing1.key < thing2.key) {
+    return -1;
+  }
+  else {
+    return 1;
+  }
+}
+function sort (cls, key) {
+  var things = []
+  var els = document.getElementsByTagName ('table');
+  for (var i = 0; i < els.length; i++) {
+    if (has_class (els[i], cls)) {
+      var spans = els[i].getElementsByTagName ('span');
+      var el_key = false;
+      for (var k = 0; k < spans.length; k++) {
+        if (has_class (spans[k], key)) {
+          el_key = spans[k].innerHTML;
+          break;
+        }
+      }
+      keyed = new KeyedThing (el_key, els[i]);
+      things.push (keyed);
+    }
+  }
+  dummies = []
+  for (var i = 0; i < things.length; i++) {
+    dummy = document.createElement ('div');
+    dummies.push (dummy);
+    things[i].thing.parentNode.replaceChild (dummy, things[i].thing);
+  }
+  things.sort (KeyedThingLexSort);
+  for (var i = 0; i < things.length; i++) {
+    dummies[i].parentNode.replaceChild (things[i].thing, dummies[i]);
+  }
+}
+function has_class (el, cls) {
+  var el_cls = el.className.split(' ');
+  for (var i = 0; i < el_cls.length; i++) {
+    if (cls == el_cls[i]) {
+      return true;
+    }
+  }
+  return false;
+}

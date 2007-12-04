@@ -288,6 +288,7 @@ class ResourceLinkBox (ContentComponent, FactsComponent):
         else:
             self._href = self._text = args[0]
         self._badges = []
+        self._klass = kw.get('klass', None)
 
     def set_url (self, url):
         self._url = url
@@ -301,17 +302,23 @@ class ResourceLinkBox (ContentComponent, FactsComponent):
     def set_description (self, description):
         self._desc = description
 
+    def set_klass (self, klass):
+        self._klass = klass
+
     def add_badge (self, badge):
         self._badges.append (badge)
 
     def output (self, fd=sys.stdout):
         d = pulse.utils.attrdict ([self, pulse.config])
-        p (fd, '<table class="rlink"><tr>')
-        p (fd, '<td class="rlink-icon">')
+        if self._klass != None:
+            p (fd, '<table class="lbox %s"><tr>', self._klass)
+        else:
+            p (fd, '<table class="lbox"><tr>')
+        p (fd, '<td class="lbox-icon">')
         if self._icon != None:
             p (fd, '<img class="icon" src="%s" alt="%s">', (self._icon, self._title))
-        p (fd, '</td><td class="rlink-text">')
-        p (fd, '<div class="rlink-title">')
+        p (fd, '</td><td class="lbox-text">')
+        p (fd, '<div class="lbox-title">')
         if self._url != None:
             p (fd, '<a href="%s">%s</a>', (self._url, self._title))
         else:
@@ -323,7 +330,7 @@ class ResourceLinkBox (ContentComponent, FactsComponent):
                    (pulse.config.webroot, badge, badge))
         p (fd, '</div>')
         if self._desc != None:
-            p (fd, '<div class="rlink-desc">')
+            p (fd, '<div class="lbox-desc">')
             p (fd, EllipsizedLabel (self._desc, 130))
             p (fd, '</div>')
         FactsComponent.output (self, fd=fd)
@@ -341,7 +348,7 @@ class ColumnBox (Block):
         return content
 
     def output (self, fd=sys.stdout):
-        p (fd, '<table class="cols"><tr>')
+        p (fd, '<table class="cols"><tr>', None)
         width = str (100 / len(self._columns))
         for i in range(len(self._columns)):
             column = self._columns[i]
@@ -537,17 +544,24 @@ class Span (ContentComponent):
         for arg in args:
             self.add_content (arg)
         self._divider = kw.get('divider', None)
+        self._klass = kw.get('klass', None)
 
     def set_divider (self, divider):
         self._divider = divider
 
+    def set_klass (self, klass):
+        self._klass = klass
+
     def output (self, fd=sys.stdout):
-        p (fd, '<span>')
+        if self._klass != None:
+            p (fd, '<span class="%s">', self._klass, False)
+        else:
+            p (fd, '<span>', None, False)
         content = self.get_content()
         for i in range(len(self.get_content())):
             if i != 0 and self._divider != None:
-                p (fd, None, self._divider)
-            p (fd, None, content[i])
+                p (fd, None, self._divider, False)
+            p (fd, None, content[i], False)
         p (fd, '</span>')
 
 
