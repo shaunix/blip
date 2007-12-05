@@ -184,10 +184,11 @@ div.lcont-title { color: black; }
 div.lcont-title a { color: black; }
 div.lcont-title img { vertical-align: -10%; }
 table.lcont-title { width: 100%; }
-td.lcont-sortlinks { text-align: right; color: #555753; padding-right: 2em; }
-td.lcont-sortlinks a { color: #204a87; }
 div.lcont-content { padding-left: 1em; }
 div.lcont-hidden { display: none; }
+
+td.slinks { text-align: right; color: #555753; padding-right: 2em; }
+td.slinks a.slink { color: #204a87; }
 
 div.graph {
   margin: 0.5em;

@@ -108,19 +108,29 @@ function replace_content (id, url) {
   httpreq.send(null);
 }
 
-function KeyedThing (key, thing) {
+function KeyedThing (key, title, thing) {
   this.key = key;
+  this.title = title;
   this.thing = thing;
 }
 function KeyedThingNumSort (thing1, thing2) {
   if (thing1 == false) {
-    return true;
+    return -1;
   }
   else if (thing2 == false) {
-    return false;
+    return 1;
+  }
+  else if (thing1.key - thing2.key != 0) {
+    return thing1.key - thing2.key
+  }
+  else if (thing1.title < thing2.title) {
+    return -1;
+  }
+  else if (thing1.title > thing2.title) {
+    return 1;
   }
   else {
-    return thing1.key - thing2.key
+    return 0;
   }
 }
 function KeyedThingLexSort (thing1, thing2) {
@@ -130,14 +140,20 @@ function KeyedThingLexSort (thing1, thing2) {
   else if (thing2 == false) {
     return 1;
   }
-  else if (thing1.key == thing2.key) {
-    return 0;
-  }
   else if (thing1.key < thing2.key) {
     return -1;
   }
-  else {
+  else if (thing1.key > thing2.key) {
     return 1;
+  }
+  else if (thing1.title < thing2.title) {
+    return -1;
+  }
+  else if (thing1.title > thing2.title) {
+    return 1;
+  }
+  else {
+    return 0;
   }
 }
 function sort (cls, key) {
@@ -147,13 +163,17 @@ function sort (cls, key) {
     if (has_class (els[i], cls)) {
       var spans = els[i].getElementsByTagName ('span');
       var el_key = false;
+      var el_title = false;
       for (var k = 0; k < spans.length; k++) {
         if (has_class (spans[k], key)) {
           el_key = spans[k].innerHTML;
           break;
         }
+        else if (has_class (spans[k], 'title')) {
+          el_title = spans[k].innerHTML;
+        }
       }
-      keyed = new KeyedThing (el_key, els[i]);
+      keyed = new KeyedThing (el_key, el_title, els[i]);
       things.push (keyed);
     }
   }
@@ -166,6 +186,32 @@ function sort (cls, key) {
   things.sort (KeyedThingLexSort);
   for (var i = 0; i < things.length; i++) {
     dummies[i].parentNode.replaceChild (things[i].thing, dummies[i]);
+  }
+  td = document.getElementById ('slink-' + cls);
+  for (var i = 0; i < td.childNodes.length; i++) {
+    child = td.childNodes[i];
+    if (child.className == 'slink') {
+      if (child.id == ('slink-' + cls + '-' + key)) {
+        if (child.tagName == 'A') {
+          span = document.createElement('span');
+          span.id = child.id;
+          span.className = child.className;
+          span.innerHTML = child.innerHTML;
+          child.parentNode.replaceChild (span, child);
+        }
+      }
+      else {
+        if (child.tagName == 'SPAN') {
+          a = document.createElement('a');
+          a.id = child.id;
+          a.className = child.className;
+          a.innerHTML = child.innerHTML;
+          dat = child.id.split('-');
+          a.href = 'javascript:sort(\'' + dat[1] + '\', \'' + dat[2] + '\')'
+          child.parentNode.replaceChild (a, child);
+        }
+      }
+    }
   }
 }
 function has_class (el, cls) {

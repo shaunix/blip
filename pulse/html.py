@@ -278,6 +278,7 @@ class LinkBoxContainer (Block):
         self._columns = kw.get('columns', 1)
         self._id = kw.get('id', None)
         self._title = kw.get('title', None)
+        self._sortlinkclass = 'lbox'
         self._sortlinks = []
 
     def add_link_box (self, *args, **kw):
@@ -294,8 +295,11 @@ class LinkBoxContainer (Block):
     def set_columns (self, columns):
         self._columns = columns
 
-    def add_sort_link (self, cls, key, txt, on=True):
-        self._sortlinks.append ((cls, key, txt, on))
+    def set_sort_link_class (self, cls):
+        self._sortlinkclass = cls
+
+    def add_sort_link (self, key, txt, on=True):
+        self._sortlinks.append ((key, txt, on))
 
     def output (self, fd=sys.stdout):
         if self._title != None or self._id != None:
@@ -313,12 +317,19 @@ class LinkBoxContainer (Block):
                 p (fd, '<img id="img-%s" class="lcont-img" src="%sdata/expander-open.png"> %s</a></div>',
                    (self._id, pulse.config.webroot, self._title))
             if len(self._sortlinks) > 0:
-                p (fd, '</td><td class="lcont-sortlinks">')
+                p (fd, '</td><td class="slinks" id="slink-%s">', self._sortlinkclass)
                 p (fd, None, pulse.utils.gettext ('sort by: '), False)
                 for i in range(len(self._sortlinks)):
-                    if i != 0: p (fd, ' | ')
-                    p (fd, '<a href="javascript:sort(\'%s\', \'%s\')">%s</a>',
-                       self._sortlinks[i][:3], False)
+                    if i != 0: p (fd, u' • ')
+                    slink = self._sortlinks[i]
+                    if slink[2]:
+                        p (fd, '<a class="slink" id="slink-%s-%s" href="javascript:sort(\'%s\', \'%s\')">%s</a>',
+                           (self._sortlinkclass, slink[0], self._sortlinkclass, slink[0], slink[1]),
+                           False)
+                    else:
+                        p (fd, '<span class="slink" id="slink-%s-%s">%s</span>',
+                           (self._sortlinkclass, slink[0], slink[1]),
+                           False)
                 p (fd, '</td></tr></table>')
             p (fd, '</div>')
             if self._title != None:

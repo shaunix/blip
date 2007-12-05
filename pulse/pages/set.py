@@ -118,8 +118,8 @@ def output_set (set, path=[], query=[], http=True, fd=None):
         modcnt = len(mods)
         lcont = pulse.html.LinkBoxContainer ()
         lcont.set_columns (2)
-        lcont.add_sort_link ('lbox', 'title', pulse.utils.gettext ('title'), False)
-        lcont.add_sort_link ('lbox', 'mtime', pulse.utils.gettext ('mtime'))
+        lcont.add_sort_link ('title', pulse.utils.gettext ('title'), False)
+        lcont.add_sort_link ('mtime', pulse.utils.gettext ('mtime'))
         tabbed.add_tab (pulse.utils.gettext ('Modules (%i)') % modcnt, True, lcont)
         for i in range(modcnt):
             lcont.add_link_box (mods[i])
@@ -209,8 +209,9 @@ def add_more_tabs (set, tabbed, path=[], query=[]):
                 lcont = pulse.html.LinkBoxContainer (id=id)
                 lcont.set_title (txt % len(docs[id]))
                 lcont.set_columns (2)
-                lcont.add_sort_link ('doc' + id, 'title', pulse.utils.gettext ('title'), False)
-                lcont.add_sort_link ('doc' + id, 'mtime', pulse.utils.gettext ('mtime'))
+                lcont.set_sort_link_class ('doc' + id)
+                lcont.add_sort_link ('title', pulse.utils.gettext ('title'), False)
+                lcont.add_sort_link ('mtime', pulse.utils.gettext ('mtime'))
                 vbox.add_content (lcont)
                 for doc in docs[id]:
                     lbox = lcont.add_link_box (doc)
