@@ -258,9 +258,9 @@ class InfoBox (ContentComponent):
         self._id = id
         self._title = title
 
-    def add_resource_link (self, resource, superlative=False):
-        reslink = ResourceLinkBox (resource, superlative=superlative)
-        self.add_content (reslink)
+    def add_link_box (self, *args):
+        lbox = LinkBox (*args)
+        self.add_content (lbox)
         return reslink
 
     def output (self, fd=sys.stdout):
@@ -271,7 +271,86 @@ class InfoBox (ContentComponent):
         p (fd, '</div></div>')
 
 
-class ResourceLinkBox (ContentComponent, FactsComponent):
+class LinkBoxContainer (Block):
+    def __init__ (self, **kw):
+        Block.__init__ (self, **kw)
+        self._boxes = []
+        self._columns = kw.get('columns', 1)
+        self._id = kw.get('id', None)
+        self._title = kw.get('title', None)
+        self._sortlinks = []
+
+    def add_link_box (self, *args, **kw):
+        lbox = LinkBox (*args, **kw)
+        self._boxes.append (lbox)
+        return lbox
+
+    def set_id (self, id):
+        self._id = id
+
+    def set_title (self, title):
+        self._title = title
+
+    def set_columns (self, columns):
+        self._columns = columns
+
+    def add_sort_link (self, cls, key, txt, on=True):
+        self._sortlinks.append ((cls, key, txt, on))
+
+    def output (self, fd=sys.stdout):
+        if self._title != None or self._id != None:
+            if self._id == None:
+                self._id = md5.md5(self._title).hexdigest()
+            p (fd, '<div class="lcont" id="%s">', self._id)
+        else:
+            p (fd, '<div class="lcont">')
+        if self._title != None or len(self._sortlinks) > 0:
+            p (fd, '<div class="lcont-title">', None, False)
+            if len(self._sortlinks) > 0:
+                p (fd, '<table class="lcont-title"><tr><td>')
+            if self._title != None:
+                p (fd, '<a href="javascript:lcont_toggle(\'%s\')">', self._id, False)
+                p (fd, '<img id="img-%s" class="lcont-img" src="%sdata/expander-open.png"> %s</a></div>',
+                   (self._id, pulse.config.webroot, self._title))
+            if len(self._sortlinks) > 0:
+                p (fd, '</td><td class="lcont-sortlinks">')
+                p (fd, None, pulse.utils.gettext ('sort by: '), False)
+                for i in range(len(self._sortlinks)):
+                    if i != 0: p (fd, ' | ')
+                    p (fd, '<a href="javascript:sort(\'%s\', \'%s\')">%s</a>',
+                       self._sortlinks[i][:3], False)
+                p (fd, '</td></tr></table>')
+            p (fd, '</div>')
+            if self._title != None:
+                p (fd, '<div class="lcont-content">')
+        if self._columns > 1:
+            p (fd, '<table class="cols"><tr>')
+            width = str(100 // self._columns)
+            each = len(self._boxes) // self._columns
+            ext = len(self._boxes) % self._columns
+            i = start = 0
+            while start < len(self._boxes):
+                end = start + each + (i < ext)
+                if i == 0:
+                    p (fd, '<td class="col col-first">')
+                else:
+                    p (fd, '<td class="col" style="width: ' + width + '%">')
+                for i in range(start, end):
+                    if i != start: p (fd, '<div class="pad"></div>')
+                    p (fd, self._boxes[i])
+                p (fd, '</td>')
+                start = end
+                i += 1
+            p (fd, '</tr></table>')
+        else:
+            for i in range(len(self._boxes)):
+                if i != 0: p (fd, '<div class="pad"></div>')
+                p (fd, self._boxes[i])
+        if self._title != None:
+            p (fd, '</div>')
+        p (fd, '</div>')
+
+class LinkBox (ContentComponent, FactsComponent):
     def __init__ (self, *args, **kw):
         FactsComponent.__init__ (self, **kw)
         ContentComponent.__init__ (self, **kw)
@@ -288,7 +367,7 @@ class ResourceLinkBox (ContentComponent, FactsComponent):
         else:
             self._href = self._text = args[0]
         self._badges = []
-        self._klass = kw.get('klass', None)
+        self._classes = []
 
     def set_url (self, url):
         self._url = url
@@ -302,18 +381,16 @@ class ResourceLinkBox (ContentComponent, FactsComponent):
     def set_description (self, description):
         self._desc = description
 
-    def set_klass (self, klass):
-        self._klass = klass
+    def add_class (self, cls):
+        self._classes.append (cls)
 
     def add_badge (self, badge):
         self._badges.append (badge)
 
     def output (self, fd=sys.stdout):
         d = pulse.utils.attrdict ([self, pulse.config])
-        if self._klass != None:
-            p (fd, '<table class="lbox %s"><tr>', self._klass)
-        else:
-            p (fd, '<table class="lbox"><tr>')
+        cls = ' '.join(['lbox'] + self._classes)
+        p (fd, '<table class="%s"><tr>', cls)
         p (fd, '<td class="lbox-icon">')
         if self._icon != None:
             p (fd, '<img class="icon" src="%s" alt="%s">', (self._icon, self._title))
@@ -337,6 +414,7 @@ class ResourceLinkBox (ContentComponent, FactsComponent):
         ContentComponent.output (self, fd=fd)
         p (fd, '</td></tr></table>')
         
+ResourceLinkBox = LinkBox
 
 class ColumnBox (Block):
     def __init__ (self, num, **kw):

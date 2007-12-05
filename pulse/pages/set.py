@@ -116,12 +116,13 @@ def output_set (set, path=[], query=[], http=True, fd=None):
     else:
         mods = pulse.utils.attrsorted (list(mods), 'title')
         modcnt = len(mods)
-        columns = pulse.html.ColumnBox (2)
-        tabbed.add_tab (pulse.utils.gettext ('Modules (%i)') % modcnt, True, columns)
-        clv = [columns.add_content (i, pulse.html.VBox()) for i in range(2)]
+        lcont = pulse.html.LinkBoxContainer ()
+        lcont.set_columns (2)
+        lcont.add_sort_link ('lbox', 'title', pulse.utils.gettext ('title'), False)
+        lcont.add_sort_link ('lbox', 'mtime', pulse.utils.gettext ('mtime'))
+        tabbed.add_tab (pulse.utils.gettext ('Modules (%i)') % modcnt, True, lcont)
         for i in range(modcnt):
-            rlink = pulse.html.ResourceLinkBox (mods[i])
-            clv[int(i > modcnt / 2 + 1)].add_content (rlink)
+            lcont.add_link_box (mods[i])
 
     if modcnt > 0:
         add_more_tabs (set, tabbed, path=path, query=query)
@@ -202,19 +203,18 @@ def add_more_tabs (set, tabbed, path=[], query=[]):
             else:
                 docs['users'].append (doc)
         vbox = pulse.html.VBox()
-        vbox.add_content (pulse.html.Link('javascript:sort(\'docusers\', \'mtime\')', 'sort by mtime'))
         for id, txt in (('users', pulse.utils.gettext ('User Documentation (%i)')),
                         ('devels', pulse.utils.gettext ('Developer Documentation (%i)')) ):
             if len(docs[id]) > 0:
-                exp = pulse.html.ExpanderBox (id, txt % len(docs[id]))
-                vbox.add_content (exp)
-                columns = pulse.html.ColumnBox (2)
-                exp.add_content (columns)
-                clv = [columns.add_content (i, pulse.html.VBox()) for i in range(2)]
-                for i in range(len(docs[id])):
-                    doc = docs[id][i]
-                    rlink = pulse.html.ResourceLinkBox (doc, klass=('doc' + id))
-                    clv[int(i >= len(docs[id]) / 2 + 1)].add_content (rlink)
+                lcont = pulse.html.LinkBoxContainer (id=id)
+                lcont.set_title (txt % len(docs[id]))
+                lcont.set_columns (2)
+                lcont.add_sort_link ('doc' + id, 'title', pulse.utils.gettext ('title'), False)
+                lcont.add_sort_link ('doc' + id, 'mtime', pulse.utils.gettext ('mtime'))
+                vbox.add_content (lcont)
+                for doc in docs[id]:
+                    lbox = lcont.add_link_box (doc)
+                    lbox.add_class ('doc' + id)
                     if doc.mod_datetime != None:
                         span = pulse.html.Span(divider=pulse.html.Span.SPACE)
                         # FIXME: i18n, word order, but we want to link person
@@ -223,7 +223,7 @@ def add_more_tabs (set, tabbed, path=[], query=[]):
                         if doc.mod_person != None:
                             span.add_content (pulse.utils.gettext ('by'))
                             span.add_content (pulse.html.Link (doc.mod_person))
-                        rlink.add_fact (None, span)
+                        lbox.add_fact (None, span)
         tabbed.add_tab ('Documents (%i)' % cnt, True, vbox)
     else:
         tabbed.add_tab ('Documents (%i)' % cnt, False, set.pulse_url + '/doc')
@@ -242,12 +242,13 @@ def add_more_tabs (set, tabbed, path=[], query=[]):
                                 Module.q.id == pulse.db.RecordBranchRelation.q.predID)) )
         if len(path) > 2 and path[2] == ext:
             rels = pulse.utils.attrsorted (list(rels), 'title')
-            columns = pulse.html.ColumnBox (2)
-            tabbed.add_tab (txt % len(rels), True, columns)
-            clv = [columns.add_content (i, pulse.html.VBox()) for i in range(2)]
+            lcont = pulse.html.LinkBoxContainer ()
+            lcont.set_columns (2)
+            lcont.add_sort_link ('lbox', 'title', pulse.utils.gettext ('title'), False)
+            lcont.add_sort_link ('lbox', 'mtime', pulse.utils.gettext ('mtime'))
+            tabbed.add_tab (txt % len(rels), True, lcont)
             for i in range(len(rels)):
-                rlink = pulse.html.ResourceLinkBox (rels[i])
-                clv[int(i >= len(rels) / 2 + 1)].add_content (rlink)
+                lbox = lcont.add_link_box (rels[i])
                 doc = pulse.db.Branch.select (
                     (pulse.db.BranchRelation.q.verb == (type + 'Document')) &
                     (pulse.db.BranchRelation.q.subjID == rels[i].id),
@@ -255,7 +256,7 @@ def add_more_tabs (set, tabbed, path=[], query=[]):
                                       pulse.db.BranchRelation.q.predID == pulse.db.Branch.q.id) )
                 try:
                     doc = doc[0]
-                    rlink.add_fact (pulse.utils.gettext ('Documentation'), doc)
+                    lbox.add_fact (pulse.utils.gettext ('Documentation'), doc)
                 except IndexError:
                     pass
         else:

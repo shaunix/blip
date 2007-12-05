@@ -1,17 +1,17 @@
-function expander_toggle (id) {
+function lcont_toggle (id) {
   var el = document.getElementById (id);
   open = true;
   for (var div = el.firstChild; div; div = div.nextSibling) {
-    if (div.className == 'expander-content') {
-      div.className = 'expander-hidden';
+    if (div.className == 'lcont-content') {
+      div.className = 'lcont-hidden';
       open = false;
     }
-    else if (div.className == 'expander-hidden') {
-      div.className = 'expander-content';
+    else if (div.className == 'lcont-hidden') {
+      div.className = 'lcont-content';
     }
   }
   img = document.getElementById ('img-' + id);
-  if (img.className == 'expander-img') {
+  if (img.className == 'lcont-img') {
     if (open) {
       img.src = img.src.replace('closed', 'open');
     } else {
