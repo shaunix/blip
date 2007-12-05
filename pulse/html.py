@@ -397,9 +397,9 @@ class LinkBox (ContentComponent, FactsComponent):
         p (fd, '</td><td class="lbox-text">')
         p (fd, '<div class="lbox-title">')
         if self._url != None:
-            p (fd, '<a href="%s">%s</a>', (self._url, self._title))
+            p (fd, '<a href="%s"><span class="title">%s</span></a>', (self._url, self._title))
         else:
-            p (fd, None, self._title)
+            p (fd, '<span class="title">%s</span>', self._title)
         if len(self._badges) > 0:
             p (fd, ' ')
             for badge in self._badges:
