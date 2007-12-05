@@ -67,10 +67,15 @@ def output_person (person, path=[], query=[], http=True, fd=None):
     columns = pulse.html.ColumnBox (2)
     page.add_content (columns)
 
-    modules = pulse.html.InfoBox ('modules', pulse.utils.gettext ('Modules'))
-    documents = pulse.html.InfoBox ('documents', pulse.utils.gettext ('Documents'))
-    columns.add_content (0, modules)
-    columns.add_content (1, documents)
+    box = pulse.html.InfoBox ('modules', pulse.utils.gettext ('Modules'))
+    columns.add_content (0, box)
+    modules = pulse.html.LinkBoxContainer()
+    box.add_content (modules)
+
+    box = pulse.html.InfoBox ('documents', pulse.utils.gettext ('Documents'))
+    columns.add_content (1, box)
+    documents = pulse.html.LinkBoxContainer()
+    box.add_content (documents)
 
     resources = []
     for branch in branches:
@@ -80,9 +85,9 @@ def output_person (person, path=[], query=[], http=True, fd=None):
         else:
             resources.append (branch.resourceID)
         if branch.type == 'Module':
-            modules.add_resource_link (branch)
+            modules.add_link_box (branch)
         elif branch.type == 'Document':
-            documents.add_resource_link (branch)
+            documents.add_link_box (branch)
         # FIXME: more
 
     page.output(fd=fd)

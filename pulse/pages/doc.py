@@ -133,15 +133,17 @@ def output_doc (doc, path=[], query=[], http=True, fd=None):
             people.setdefault (cr.pred, [])
             people[cr.pred].append(t)
     if len(people) > 0:
+        lcont = pulse.html.LinkBoxContainer()
+        box.add_content (lcont)
         for person in pulse.utils.attrsorted (people.keys(), 'title'):
-            reslink = box.add_resource_link (person)
+            lbox = lcont.add_link_box (person)
             badges = people[person]
             if 'maint' in badges:
-                reslink.add_badge ('maintainer')
+                lbox.add_badge ('maintainer')
             if 'author' in badges:
-                reslink.add_badge ('author')
+                lbox.add_badge ('author')
             if 'editor' in badges:
-                reslink.add_badge ('editor')
+                lbox.add_badge ('editor')
     else:
         box.add_content (pulse.html.AdmonBox (pulse.html.AdmonBox.warning,
                                               pulse.utils.gettext ('No developers') ))

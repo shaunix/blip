@@ -133,8 +133,10 @@ def output_branch (branch, path=[], query=[], http=True, fd=None):
     developers = pulse.db.BranchEntityRelation.selectBy (subj=branch, verb='ModuleMaintainer')
     developers = pulse.utils.attrsorted (list(developers), 'pred', 'title')
     if len(developers) > 0:
+        lcont = pulse.html.LinkBoxContainer()
+        box.add_content (lcont)
         for rel in developers:
-            box.add_resource_link (rel.pred)
+            lcont.add_link_box (rel.pred)
     else:
         box.add_content (pulse.html.AdmonBox (pulse.html.AdmonBox.warning,
                                               pulse.utils.gettext ('No developers') ))
@@ -207,8 +209,10 @@ def output_branch (branch, path=[], query=[], http=True, fd=None):
     if len(apps) > 0:
         box = pulse.html.InfoBox ('applications', pulse.utils.gettext ('Applications'))
         columns.add_content (1, box)
+        lcont = pulse.html.LinkBoxContainer()
+        box.add_content (lcont)
         for app in apps:
-            rlink = box.add_resource_link (app)
+            lbox = lcont.add_link_box (app)
             doc = pulse.db.Branch.select (
                 (pulse.db.BranchRelation.q.verb == 'ApplicationDocument') &
                 (pulse.db.BranchRelation.q.subjID == app.id),
@@ -216,7 +220,7 @@ def output_branch (branch, path=[], query=[], http=True, fd=None):
                                   pulse.db.BranchRelation.q.predID == pulse.db.Branch.q.id) )
             try:
                 doc = doc[0]
-                rlink.add_fact (pulse.utils.gettext ('Documentaion'), doc)
+                lbox.add_fact (pulse.utils.gettext ('Documentaion'), doc)
             except IndexError:
                 pass
 
@@ -226,8 +230,10 @@ def output_branch (branch, path=[], query=[], http=True, fd=None):
     if len(applets) > 0:
         box = pulse.html.InfoBox ('applets', pulse.utils.gettext ('Applets'))
         columns.add_content (1, box)
+        lcont = pulse.html.LinkBoxContainer()
+        box.add_content (lcont)
         for applet in applets:
-            box.add_resource_link (applet)
+            lcont.add_link_box (applet)
 
     # Libraries
     libs = pulse.db.Branch.selectBy (type='Library', parent=branch)
@@ -235,8 +241,10 @@ def output_branch (branch, path=[], query=[], http=True, fd=None):
     if len(libs) > 0:
         box = pulse.html.InfoBox ('libraries', pulse.utils.gettext ('Libraries'))
         columns.add_content (1, box)
+        lcont = pulse.html.LinkBoxContainer()
+        box.add_content (lcont)
         for lib in libs:
-            box.add_resource_link (lib)
+            lcont.add_link_box (lib)
 
     # Documents
     box = pulse.html.InfoBox ('documents', pulse.utils.gettext ('Documents'))
@@ -244,10 +252,12 @@ def output_branch (branch, path=[], query=[], http=True, fd=None):
     docs = pulse.db.Branch.selectBy (type='Document', parent=branch)
     docs = pulse.utils.attrsorted (list(docs), 'title')
     if len(docs) > 0:
+        lcont = pulse.html.LinkBoxContainer()
+        box.add_content (lcont)
         for doc in docs:
-            rlink = box.add_resource_link (doc)
+            lbox = lcont.add_link_box (doc)
             res = pulse.db.Branch.selectBy (parent=doc, type='Translation')
-            rlink.add_fact (None, pulse.utils.gettext ('%i translations') % res.count())
+            lbox.add_fact (None, pulse.utils.gettext ('%i translations') % res.count())
     else:
         box.add_content (pulse.html.AdmonBox (pulse.html.AdmonBox.warning,
                                               pulse.utils.gettext ('No documents') ))

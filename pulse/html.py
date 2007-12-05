@@ -344,7 +344,6 @@ class LinkBoxContainer (Block):
             p (fd, '</tr></table>')
         else:
             for i in range(len(self._boxes)):
-                if i != 0: p (fd, '<div class="pad"></div>')
                 p (fd, self._boxes[i])
         if self._title != None:
             p (fd, '</div>')
