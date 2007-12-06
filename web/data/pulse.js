@@ -114,30 +114,41 @@ function KeyedThing (key, title, thing) {
   this.thing = thing;
 }
 function KeyedThingNumSort (thing1, thing2) {
-  if (thing1 == false) {
+  if (thing1.key == thing2.key) {
+    if (thing1.title < thing2.title) {
+      return -1;
+    }
+    else if (thing1.title > thing2.title) {
+      return 1;
+    }
+    else {
+      return 0;
+    }
+  }
+  else if (thing1.key == false) {
     return -1;
   }
-  else if (thing2 == false) {
+  else if (thing2.key == false) {
     return 1;
   }
-  else if (thing1.key - thing2.key != 0) {
-    return thing1.key - thing2.key
-  }
-  else if (thing1.title < thing2.title) {
-    return -1;
-  }
-  else if (thing1.title > thing2.title) {
-    return 1;
-  }
-  else {
-    return 0;
-  }
+  return thing1.key - thing2.key
 }
 function KeyedThingLexSort (thing1, thing2) {
-  if (thing1 == false) {
+  if (thing1.key == thing2.key) {
+    if (thing1.title < thing2.title) {
+      return -1;
+    }
+    else if (thing1.title > thing2.title) {
+      return 1;
+    }
+    else {
+      return 0;
+    }
+  }
+  else if (thing1.key == false) {
     return -1;
   }
-  else if (thing2 == false) {
+  else if (thing2.key == false) {
     return 1;
   }
   else if (thing1.key < thing2.key) {
@@ -146,15 +157,7 @@ function KeyedThingLexSort (thing1, thing2) {
   else if (thing1.key > thing2.key) {
     return 1;
   }
-  else if (thing1.title < thing2.title) {
-    return -1;
-  }
-  else if (thing1.title > thing2.title) {
-    return 1;
-  }
-  else {
-    return 0;
-  }
+  return 0;
 }
 function sort (cls, key) {
   var things = []

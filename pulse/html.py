@@ -632,17 +632,17 @@ class Span (ContentComponent):
         for arg in args:
             self.add_content (arg)
         self._divider = kw.get('divider', None)
-        self._klass = kw.get('klass', None)
+        self._classes = []
 
     def set_divider (self, divider):
         self._divider = divider
 
-    def set_klass (self, klass):
-        self._klass = klass
+    def add_class (self, cls):
+        self._classes.append (cls)
 
     def output (self, fd=sys.stdout):
-        if self._klass != None:
-            p (fd, '<span class="%s">', self._klass, False)
+        if len(self._classes) > 0:
+            p (fd, '<span class="%s">', ' '.join(self._classes), False)
         else:
             p (fd, '<span>', None, False)
         content = self.get_content()
@@ -685,16 +685,15 @@ class Link (Block):
         self._icon = kw.get('icon', None)
     
     def output (self, fd=sys.stdout):
-        if self._icon == None and self._href == None:
-            p (fd, None, self._text)
-        elif self._icon == None:
-            p (fd, '<a href="%s">%s</a>', (self._href, self._text))
-        elif self._href == None:
-            p (fd, '<img src="%sdata/%s-16.png" height="16" width="16"> %s',
-               (pulse.config.webroot, self._icon, self._text))
-        else:
-            p (fd, '<a href="%s"><img src="%sdata/%s-16.png" height="16" width="16"> %s</a>',
-               (self._href, pulse.config.webroot, self._icon, self._text))
+        if self._href != None:
+            p (fd, '<a href="%s">', self._href, False)
+        if self._icon != None:
+            p (fd, '<img src="%sdata/%s-16.png" height="16" width="16"> ',
+               (pulse.config.webroot, self._icon),
+               False)
+        p (fd, None, self._text, False)
+        if (self._href != None):
+            p (fd, '</a>')
 
 
 ################################################################################

@@ -258,6 +258,10 @@ class Branch (Record):
             return pulse.utils.gettext ('Core Translations')
         return id
 
+    def get_branch_module (self):
+        return pulse.utils.gettext ('%s (%s)') % (self.scm_module, self.scm_branch)
+    branch_module = property (get_branch_module)
+
     def get_branch_title (self):
         return pulse.utils.gettext ('%s (%s)') % (self.title, self.scm_branch)
     branch_title = property (get_branch_title)
