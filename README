@@ -7,6 +7,9 @@ Here's some basic instructions for running Pulse on your machine:
 *) Install sqlobject.  (On Fedora, the package is python-sqlobject.)  For
    your own sanity, I recommend sqlobject >= 0.9.
 
+*) Make sure you have python-sqlite installed.  There seem to be problems
+   when using PySqlite2.
+
 *) Edit pulse/config.py.  It's just a bunch of file and URL paths.  The
    necessary edits should be fairly obvious.
 
