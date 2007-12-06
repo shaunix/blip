@@ -278,8 +278,8 @@ class Branch (Record):
             rel.remove ()
         for rel in BranchRelation.selectBy (pred=self):
             rel.remove ()
-        for commit in Commits.selectBy (branch=self):
-            commit.remove ()
+        for rev in Revision.selectBy (branch=self):
+            rev.remove ()
 
     def set_children (self, type, children):
         old = Branch.selectBy (type=type, parent=self)
