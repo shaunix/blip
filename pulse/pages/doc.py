@@ -172,7 +172,7 @@ def output_doc (doc, path=[], query=[], http=True, fd=None):
     box.add_content (vbox)
 
     potlst = ['var', 'l10n'] + doc.ident.split('/')[1:] + [doc.ident.split('/')[-2] + '.pot']
-    poturl = pulse.config.webroot + '/'.join (potlst)
+    poturl = pulse.config.varroot + '/'.join (potlst[1:])
     potfile = os.path.join (*potlst)
     vf = pulse.db.VarFile.selectBy (filename=potfile)
     if vf.count() > 0:

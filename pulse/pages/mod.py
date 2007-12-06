@@ -163,7 +163,7 @@ def output_branch (branch, path=[], query=[], http=True, fd=None):
                 potlst.append (domain.parent.scm_module + '.pot')
             else:
                 potlst.append (domain.scm_dir + '.pot')
-            poturl = pulse.config.webroot + '/'.join (potlst)
+            poturl = pulse.config.varroot + '/'.join (potlst[1:])
             potfile = os.path.join (*potlst)
             vf = pulse.db.VarFile.selectBy (filename=potfile)
             if vf.count() > 0:

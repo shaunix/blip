@@ -28,9 +28,11 @@ scmdir = os.path.join (vardir, 'scm')
 
 webdir = '/home/shaunm/Projects/pulse/web/'
 webroot = 'http://localhost/'
+dataroot = webroot + 'data/'
+varroot = webroot + 'var/'
 
 icondir = os.path.join (webdir, 'var', 'icons')
-iconroot = webroot + 'var/icons/'
+iconroot = varroot + 'icons/'
 
 # need dir2url to make this use vardir
 dbroot = 'sqlite:/home/shaunm/Projects/pulse/var/pulse.db'

@@ -172,9 +172,9 @@ class Page (HttpContainer):
         p (fd, '<html><head>')
         p (fd, '  <title>%s</title>', self._title)
         p (fd, '  <meta http-equiv="Content-type" content="text/html; charset=utf-8">')
-        p (fd, '  <link rel="stylesheet" href="%sdata/pulse.css">', pulse.config.webroot)
-        p (fd, '  <script language="javascript" type="text/javascript" src="%sdata/pulse.js"></script>',
-           pulse.config.webroot)
+        p (fd, '  <link rel="stylesheet" href="%spulse.css">', pulse.config.dataroot)
+        p (fd, '  <script language="javascript" type="text/javascript" src="%spulse.js"></script>',
+           pulse.config.dataroot)
         p (fd, '</head><body>')
         p (fd, '<ul id="general">')
         p (fd, '  <li id="siteaction-gnome_home" class="home"><a href="http://www.gnome.org/">Home</a></li>')
@@ -314,8 +314,8 @@ class LinkBoxContainer (Block):
                 p (fd, '<table class="lcont-title"><tr><td>')
             if self._title != None:
                 p (fd, '<a href="javascript:lcont_toggle(\'%s\')">', self._id, False)
-                p (fd, '<img id="img-%s" class="lcont-img" src="%sdata/expander-open.png"> %s</a></div>',
-                   (self._id, pulse.config.webroot, self._title))
+                p (fd, '<img id="img-%s" class="lcont-img" src="%sexpander-open.png"> %s</a></div>',
+                   (self._id, pulse.config.dataroot, self._title))
             if len(self._sortlinks) > 0:
                 p (fd, '</td><td class="slinks" id="slink-%s">', self._sortlinkclass)
                 p (fd, None, pulse.utils.gettext ('sort by: '), False)
@@ -413,8 +413,8 @@ class LinkBox (ContentComponent, FactsComponent):
         if len(self._badges) > 0:
             p (fd, ' ')
             for badge in self._badges:
-                p (fd, '<img src="%sdata/badge-%s-16.png" width="16" height="16" alt="%s">',
-                   (pulse.config.webroot, badge, badge))
+                p (fd, '<img src="%sbadge-%s-16.png" width="16" height="16" alt="%s">',
+                   (pulse.config.dataroot, badge, badge))
         p (fd, '</div>')
         if self._desc != None:
             p (fd, '<div class="lbox-desc">')
@@ -507,8 +507,8 @@ class AdmonBox (Block):
 
     def output (self, fd=sys.stdout):
         p (fd, '<div class="admon admon-%s">', self._type)
-        p (fd, '<img src="%sdata/admon-%s-16.png" width="16" height="16">',
-           (pulse.config.webroot, self._type))
+        p (fd, '<img src="%sadmon-%s-16.png" width="16" height="16">',
+           (pulse.config.dataroot, self._type))
         p (fd, None, self._title)
         p (fd, '</div>')
 
@@ -523,8 +523,8 @@ class ExpanderBox (ContentComponent):
         p (fd, '<div class="expander" id="%s">', self._id)
         p (fd, '<div class="expander-title">', None, False)
         p (fd, '<a href="javascript:expander_toggle(\'%s\')">', self._id, False)
-        p (fd, '<img id="img-%s" class="expander-img" src="%sdata/expander-open.png"> %s</a></div>',
-           (self._id, pulse.config.webroot, self._title))
+        p (fd, '<img id="img-%s" class="expander-img" src="%sexpander-open.png"> %s</a></div>',
+           (self._id, pulse.config.dataroot, self._title))
         p (fd, '<div class="expander-content">')
         ContentComponent.output (self, fd=fd)
         p (fd, '</div>')
@@ -593,7 +593,7 @@ class Graph (Block):
 
     def output (self, fd=sys.stdout):
         p (fd, '<div class="graph"><img src="%s"></div>',
-           '/'.join ([pulse.config.webroot, 'var', 'graph', self._url]))
+           '/'.join ([pulse.config.varroot, 'graph', self._url]))
 
 
 class EllipsizedLabel (Block):
@@ -688,8 +688,8 @@ class Link (Block):
         if self._href != None:
             p (fd, '<a href="%s">', self._href, False)
         if self._icon != None:
-            p (fd, '<img src="%sdata/%s-16.png" height="16" width="16"> ',
-               (pulse.config.webroot, self._icon),
+            p (fd, '<img src="%s%s-16.png" height="16" width="16"> ',
+               (pulse.config.dataroot, self._icon),
                False)
         p (fd, None, self._text, False)
         if (self._href != None):
