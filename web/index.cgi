@@ -65,11 +65,12 @@ def main ():
     if len (path) == 0:
         page = pulse.html.Page (http=http)
         page.set_title (pulse.utils.gettext ('Pulse'))
+        lcont = pulse.html.LinkBoxContainer()
+        page.add_content (lcont)
         for type in pulse.pages.__all__:
             mod = pulse.utils.import_ ('pulse.pages.' + type)
             if hasattr (mod, 'main'):
-                rlink = pulse.html.ResourceLinkBox (pulse.config.webroot + type, type)
-                page.add_content (rlink)
+                lcont.add_link_box (pulse.config.webroot + type, type)
         page.output (fd=fd)
     else:
         if not http:
