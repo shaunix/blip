@@ -167,7 +167,6 @@ def output_doc (doc, path=[], query=[], http=True, fd=None):
     # Translations
     box = pulse.html.InfoBox ('translations', pulse.utils.gettext ('Translations'))
     columns.add_content (1, box)
-
     vbox = pulse.html.VBox()
     box.add_content (vbox)
 
@@ -189,34 +188,49 @@ def output_doc (doc, path=[], query=[], http=True, fd=None):
         vbox.add_content (pulse.html.AdmonBox (pulse.html.AdmonBox.warning,
                                                pulse.utils.gettext ('No POT file') ))
 
-    grid = pulse.html.GridBox ()
-    vbox.add_content (grid)
     translations = pulse.db.Branch.selectBy (parent=doc, type='Translation')
     translations = pulse.utils.attrsorted (list(translations), 'title')
     if len(translations) == 0:
-        grid.add_row (pulse.html.AdmonBox (pulse.html.AdmonBox.warning,
-                                           pulse.utils.gettext ('No translations') ))
+        vbox.add_content (pulse.html.AdmonBox (pulse.html.AdmonBox.warning,
+                                               pulse.utils.gettext ('No translations') ))
     else:
+        slinks = pulse.html.SortLinkComponent ('tr', 'po')
+        slinks.add_sort_link ('lang', pulse.utils.gettext ('lang'), False)
+        slinks.add_sort_link ('percent', pulse.utils.gettext ('percent'))
+        slinks.add_sort_link ('img', pulse.utils.gettext ('images'))
+        vbox.add_content (slinks)
+        grid = pulse.html.GridBox ()
+        vbox.add_content (grid)
         for translation in translations:
             stat = pulse.db.Statistic.select ((pulse.db.Statistic.q.branchID == translation.id) &
                                               (pulse.db.Statistic.q.type == 'Messages'),
                                               orderBy='-daynum')
-            if stat.count() == 0:
-                grid.add_row (translation.scm_file[:-3])
-            else:
+            span = pulse.html.Span (translation.scm_file[:-3])
+            span.add_class ('lang')
+            row = [span]
+            try:
                 stat = stat[0]
                 untranslated = stat.total - stat.stat1 - stat.stat2
                 percent = math.floor (100 * (float(stat.stat1) / stat.total))
-                text = pulse.utils.gettext ('%i%% (%i.%i.%i)') % (
-                    percent, stat.stat1, stat.stat2, untranslated)
-                row = [translation.scm_file[:-3], text]
+                span = pulse.html.Span ('%i%%' % percent)
+                span.add_class ('percent')
+                row.append (span)
+
+                row.append (pulse.utils.gettext ('%i.%i.%i') %
+                            (stat.stat1, stat.stat2, untranslated))
                 imgstat = pulse.db.Statistic.select ((pulse.db.Statistic.q.branchID == translation.id) &
                                                      (pulse.db.Statistic.q.type == 'ImageMessages'),
                                                      orderBy='-daynum')
                 if imgstat.count() > 0:
                     imgstat = imgstat[0]
-                    row.append ('%i/%i' % (imgstat.stat1, imgstat.total))
-                grid.add_row (*row)
+                    span = pulse.html.Span(str(imgstat.stat1))
+                    span.add_class ('img')
+                    fspan = pulse.html.Span (span, '/', str(imgstat.total), divider=pulse.html.Span.SPACE)
+                    row.append (fspan)
+            except IndexError:
+                pass
+            idx = grid.add_row (*row)
+            grid.set_row_class (idx, 'po')
 
     page.output(fd=fd)
 

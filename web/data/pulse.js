@@ -113,7 +113,7 @@ function KeyedThing (key, title, thing) {
   this.title = title;
   this.thing = thing;
 }
-function KeyedThingNumSort (thing1, thing2) {
+function KeyedThingCmp (thing1, thing2) {
   if (thing1.key == thing2.key) {
     if (thing1.title < thing2.title) {
       return -1;
@@ -131,25 +131,10 @@ function KeyedThingNumSort (thing1, thing2) {
   else if (thing2.key == false) {
     return 1;
   }
-  return thing1.key - thing2.key
-}
-function KeyedThingLexSort (thing1, thing2) {
-  if (thing1.key == thing2.key) {
-    if (thing1.title < thing2.title) {
-      return -1;
-    }
-    else if (thing1.title > thing2.title) {
-      return 1;
-    }
-    else {
-      return 0;
-    }
-  }
-  else if (thing1.key == false) {
-    return -1;
-  }
-  else if (thing2.key == false) {
-    return 1;
+  n1 = parseInt(thing1.key);
+  n2 = parseInt(thing2.key);
+  if (!isNaN(n1) && !isNaN(n2)) {
+    return n1 - n2;
   }
   else if (thing1.key < thing2.key) {
     return -1;
@@ -159,9 +144,9 @@ function KeyedThingLexSort (thing1, thing2) {
   }
   return 0;
 }
-function sort (cls, key) {
+function sort (tag, cls, key) {
   var things = []
-  var els = document.getElementsByTagName ('table');
+  var els = document.getElementsByTagName (tag);
   for (var i = 0; i < els.length; i++) {
     if (has_class (els[i], cls)) {
       var spans = els[i].getElementsByTagName ('span');
@@ -182,11 +167,11 @@ function sort (cls, key) {
   }
   dummies = []
   for (var i = 0; i < things.length; i++) {
-    dummy = document.createElement ('div');
+    dummy = document.createElement (tag);
     dummies.push (dummy);
     things[i].thing.parentNode.replaceChild (dummy, things[i].thing);
   }
-  things.sort (KeyedThingLexSort);
+  things.sort (KeyedThingCmp);
   for (var i = 0; i < things.length; i++) {
     dummies[i].parentNode.replaceChild (things[i].thing, dummies[i]);
   }
@@ -194,7 +179,7 @@ function sort (cls, key) {
   for (var i = 0; i < td.childNodes.length; i++) {
     child = td.childNodes[i];
     if (child.className == 'slink') {
-      if (child.id == ('slink-' + cls + '-' + key)) {
+      if (child.id == ('slink-' + tag + '-' + cls + '-' + key)) {
         if (child.tagName == 'A') {
           span = document.createElement('span');
           span.id = child.id;
@@ -210,7 +195,7 @@ function sort (cls, key) {
           a.className = child.className;
           a.innerHTML = child.innerHTML;
           dat = child.id.split('-');
-          a.href = 'javascript:sort(\'' + dat[1] + '\', \'' + dat[2] + '\')'
+          a.href = 'javascript:sort(\'' + dat[1] + '\', \'' + dat[2]+ '\', \'' + dat[3] + '\')'
           child.parentNode.replaceChild (a, child);
         }
       }

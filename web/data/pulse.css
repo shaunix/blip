@@ -186,10 +186,11 @@ div.exp-title a { color: black; }
 div.exp-title img { vertical-align: -10%; }
 div.exp-content { padding-left: 1em; }
 div.exp-hidden { display: none; }
+div.exp-title table { width: 100%; }
 
-table.slinks { width: 100%; }
-td.slinks { text-align: right; color: #555753; padding-right: 2em; }
-td.slinks a.slink { color: #204a87; }
+div.slinks { text-align: right; color: #555753; padding-right: 2em; }
+span.slinks { background-color: #eeeeec; padding: 0 0.5em 0 0.5em; }
+div.slinks a.slink { color: #204a87; }
 
 div.graph {
   margin: 0.5em;

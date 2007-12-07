@@ -134,6 +134,55 @@ class ContentComponent (Block):
             p (fd, None, s)
 
 
+class SortLinkComponent (Block):
+    def __init__ (self, *args, **kw):
+        Block.__init__ (self, **kw)
+        if len(args) > 0:
+            self._sortlinktag = args[0]
+        else:
+            self._sortlinktag = None
+        if len(args) > 1:
+            self._sortlinkclass = args[1]
+        else:
+            self._sortlinkclass = None
+        self._sortlinks = []
+
+    def set_sort_link_tag (self, tag):
+        self._sortlinktag = tag
+
+    def get_sort_link_tag (self):
+        return self._sortlinktag
+
+    def set_sort_link_class (self, cls):
+        self._sortlinkclass = cls
+
+    def get_sort_link_class (self):
+        return self._sortlinkclass
+
+    def add_sort_link (self, key, txt, on=True):
+        self._sortlinks.append ((key, txt, on))
+
+    def get_sort_links (self):
+        return self._sortlinks
+
+    def output (self, fd=sys.stdout):
+        p (fd, '<div class="slinks"><span class="slinks" id="slink-%s">', self._sortlinkclass)
+        for i in range(len(self._sortlinks)):
+            if i != 0: p (fd, u' • ')
+            slink = self._sortlinks[i]
+            if slink[2]:
+                p (fd, '<a class="slink" id="slink-%s-%s-%s" href="javascript:sort(\'%s\', \'%s\', \'%s\')">%s</a>',
+                   (self._sortlinktag, self._sortlinkclass, slink[0],
+                    self._sortlinktag, self._sortlinkclass, slink[0], slink[1]),
+                   False)
+            else:
+                p (fd, '<span class="slink" id="slink-%s-%s-%s">%s</span>',
+                   (self._sortlinktag, self._sortlinkclass, slink[0], slink[1]),
+                   False)
+        p (fd, '</span></div>')
+
+
+
 ################################################################################
 ## Pages
 
@@ -271,15 +320,13 @@ class InfoBox (ContentComponent):
         p (fd, '</div></div>')
 
 
-class LinkBoxContainer (Block):
+class LinkBoxContainer (Block, SortLinkComponent):
     def __init__ (self, **kw):
-        Block.__init__ (self, **kw)
+        SortLinkComponent.__init__ (self, **kw)
         self._boxes = []
         self._columns = kw.get('columns', 1)
         self._id = kw.get('id', None)
         self._title = kw.get('title', None)
-        self._sortlinkclass = 'lbox'
-        self._sortlinks = []
 
     def add_link_box (self, *args, **kw):
         lbox = LinkBox (*args, **kw)
@@ -295,12 +342,6 @@ class LinkBoxContainer (Block):
     def set_columns (self, columns):
         self._columns = columns
 
-    def set_sort_link_class (self, cls):
-        self._sortlinkclass = cls
-
-    def add_sort_link (self, key, txt, on=True):
-        self._sortlinks.append ((key, txt, on))
-
     def output (self, fd=sys.stdout):
         if self._title != None or self._id != None:
             if self._id == None:
@@ -308,31 +349,27 @@ class LinkBoxContainer (Block):
             p (fd, '<div class="lcont" id="%s">', self._id)
         else:
             p (fd, '<div class="lcont">')
-        if self._title != None or len(self._sortlinks) > 0:
-            p (fd, '<div class="exp-title">', None, False)
-            if len(self._sortlinks) > 0:
-                p (fd, '<table class="slinks"><tr><td>')
+        slinks = self.get_sort_links()
+        if self._title != None or len(slinks) > 0:
+            self.set_sort_link_tag ('table')
+            if self.get_sort_link_class() == None:
+                self.set_sort_link_class ('lbox')
+            if self._title != None:
+                p (fd, '<div class="exp-title">', None, False)
+            if self._title != None and len(slinks) > 0:
+                p (fd, '<table><tr><td>')
             if self._title != None:
                 p (fd, '<a href="javascript:exp_toggle(\'%s\')">', self._id, False)
                 p (fd, '<img id="img-%s" class="exp-img" src="%sexpander-open.png"> %s</a></div>',
                    (self._id, pulse.config.dataroot, self._title))
-            if len(self._sortlinks) > 0:
-                p (fd, '</td><td class="slinks" id="slink-%s">', self._sortlinkclass)
-                p (fd, None, pulse.utils.gettext ('sort by: '), False)
-                for i in range(len(self._sortlinks)):
-                    if i != 0: p (fd, u' • ')
-                    slink = self._sortlinks[i]
-                    if slink[2]:
-                        p (fd, '<a class="slink" id="slink-%s-%s" href="javascript:sort(\'%s\', \'%s\')">%s</a>',
-                           (self._sortlinkclass, slink[0], self._sortlinkclass, slink[0], slink[1]),
-                           False)
-                    else:
-                        p (fd, '<span class="slink" id="slink-%s-%s">%s</span>',
-                           (self._sortlinkclass, slink[0], slink[1]),
-                           False)
+            if self._title != None and len(slinks) > 0:
+                p (fd, '</td><td>')
+            if len(slinks) > 0:
+                SortLinkComponent.output (self, fd=fd)
+            if self._title != None and len(slinks) > 0:
                 p (fd, '</td></tr></table>')
-            p (fd, '</div>')
             if self._title != None:
+                p (fd, '</div>')
                 p (fd, '<div class="exp-content">')
         if self._columns > 1:
             p (fd, '<table class="cols"><tr>')
@@ -430,8 +467,6 @@ class LinkBox (ContentComponent, FactsComponent):
         ContentComponent.output (self, fd=fd)
         p (fd, '</td></tr></table>')
         
-ResourceLinkBox = LinkBox
-
 class ColumnBox (Block):
     def __init__ (self, num, **kw):
         Block.__init__ (self, **kw)
@@ -462,22 +497,30 @@ class GridBox (Block):
         self._rows = []
 
     def add_row (self, *row):
-        self._rows.append (row)
+        self._rows.append ({'data': row})
+        return len(self._rows) - 1
+
+    def set_row_class (self, idx, cls):
+        self._rows[idx]['class'] = cls
 
     def output (self, fd=sys.stdout):
         if len (self._rows) == 0:
             return
         p (fd, '<table class="grid">')
-        cols = max (map (len, self._rows))
+        cols = max (map (lambda x: len(x['data']), self._rows))
         for row in self._rows:
-            p (fd, '<tr>')
+            cls = row.get('class', None)
+            if cls != None:
+                p (fd, '<tr class="%s">', cls)
+            else:
+                p (fd, '<tr>')
             for i in range (cols):
                 if i == 0:
                     p (fd, '<td class="grid-td-first">')
                 else:
                     p (fd, '<td class="grid-td">')
-                if i < len (row):
-                    p (fd, None, row[i])
+                if i < len (row['data']):
+                    p (fd, None, row['data'][i])
                 p (fd, '</td>')
             p (fd, '</tr>')
         p (fd, '</table>')
