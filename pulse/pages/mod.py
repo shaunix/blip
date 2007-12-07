@@ -180,25 +180,38 @@ def output_branch (branch, path=[], query=[], http=True, fd=None):
                 vbox.add_content (pulse.html.AdmonBox (pulse.html.AdmonBox.warning,
                                                        pulse.utils.gettext ('No POT file') ))
 
-            grid = pulse.html.GridBox ()
-            vbox.add_content (grid)
             if len(translations) == 0:
-                grid.add_row (pulse.html.AdmonBox (pulse.html.AdmonBox.warning,
-                                                   pulse.utils.gettext ('No translations') ))
+                vbox.add_content (pulse.html.AdmonBox (pulse.html.AdmonBox.warning,
+                                                       pulse.utils.gettext ('No translations') ))
             else:
+                slinks = pulse.html.SortLinkComponent ('tr', 'po')
+                slinks.add_sort_link ('lang', pulse.utils.gettext ('lang'), False)
+                slinks.add_sort_link ('percent', pulse.utils.gettext ('percent'))
+                vbox.add_content (slinks)
+                grid = pulse.html.GridBox ()
+                vbox.add_content (grid)
                 for translation in translations:
                     stat = pulse.db.Statistic.select ((pulse.db.Statistic.q.branchID == translation.id) &
                                                       (pulse.db.Statistic.q.type == 'Messages'),
                                                       orderBy='-daynum')
-                    if stat.count() == 0:
-                        grid.add_row (translation.scm_file[:-3])
-                    else:
+
+                    span = pulse.html.Span (translation.scm_file[:-3])
+                    span.add_class ('lang')
+                    row = [span]
+                    try:
                         stat = stat[0]
                         untranslated = stat.total - stat.stat1 - stat.stat2
-                        percent = math.floor(100 * (float(stat.stat1) / stat.total))
-                        text = pulse.utils.gettext ('%i%% (%i/%i/%i)') % (
-                            percent, stat.stat1, stat.stat2, untranslated)
-                        grid.add_row (translation.scm_file[:-3], text)
+                        percent = math.floor (100 * (float(stat.stat1) / stat.total))
+                        span = pulse.html.Span ('%i%%' % percent)
+                        span.add_class ('percent')
+                        row.append (span)
+
+                        row.append (pulse.utils.gettext ('%i.%i.%i') %
+                                    (stat.stat1, stat.stat2, untranslated))
+                    except IndexError:
+                        pass
+                    idx = grid.add_row (*row)
+                    grid.set_row_class (idx, 'po')
     else:
         box.add_content (pulse.html.AdmonBox (pulse.html.AdmonBox.warning,
                                               pulse.utils.gettext ('No domains') ))
