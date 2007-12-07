@@ -252,3 +252,4 @@ div.pad { margin: 1em; }
 .po { background-color: #eeeeec; }
 .po80 { background-color: #d9ebff; }
 .po50 { background-color: #fff9cf; }
+.po td { padding: 0 0.5em 0 0.5em; }
