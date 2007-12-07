@@ -33,14 +33,22 @@ def isorted (list):
     return sorted (list, lambda x, y: cmp (x.lower(), y.lower()))
 
 def attrsorted (list, *attrs):
-    def get (obj, attrs):
-        if len(attrs) > 0:
-            return get (getattr (obj, attrs[0]), attrs[1:])
+    def attrget (obj, attr):
+        if isinstance (attr, basestring):
+            return getattr (obj, attr)
+        elif len(attr) > 0:
+            return attrget (getattr (obj, attr[0]), attr[1:])
         elif isinstance (obj, basestring):
             return obj.lower()
         else:
             return obj
-    return sorted (list, lambda x, y: cmp (get(x, attrs), get(y, attrs)))
+    def attrcmp (x, y, attrs):
+        v = cmp (attrget(x, attrs[0]), attrget(y, attrs[0]))
+        if v == 0 and len(attrs) > 1:
+            return attrcmp (x, y, attrs[1:])
+        else:
+            return v
+    return sorted (list, lambda x, y: attrcmp (x, y, attrs))
 
 def relative_path (path, base):
     spath = os.path.abspath (path).split (os.sep)

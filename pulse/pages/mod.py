@@ -131,7 +131,7 @@ def output_branch (branch, path=[], query=[], http=True, fd=None):
     # FIXME: use a JOIN
     box = pulse.html.InfoBox ('developers', pulse.utils.gettext ('Developers'))
     developers = pulse.db.BranchEntityRelation.selectBy (subj=branch, verb='ModuleMaintainer')
-    developers = pulse.utils.attrsorted (list(developers), 'pred', 'title')
+    developers = pulse.utils.attrsorted (list(developers), ['pred', 'title'])
     if len(developers) > 0:
         lcont = pulse.html.LinkBoxContainer()
         box.add_content (lcont)

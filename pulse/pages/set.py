@@ -83,7 +83,7 @@ def output_set (set, path=[], query=[], http=True, fd=None):
         page.add_sublink (super.pulse_url, super.title)
 
     subsets = pulse.db.RecordRelation.selectBy (subj=set, verb='SetSubset')
-    subsets = pulse.utils.attrsorted (list(subsets), 'pred', 'title')
+    subsets = pulse.utils.attrsorted (list(subsets), ['pred', 'title'])
     if len(subsets) > 0:
         if len(path) < 3 or path[2] == 'set':
             columns = pulse.html.ColumnBox (2)
@@ -152,7 +152,7 @@ def get_supersets (set):
 
 def add_set_entries (set, dl):
     rels = pulse.db.RecordRelation.selectBy (subj=set, verb='SetSubset')
-    rels = pulse.utils.attrsorted (rels[0:], 'pred', 'title')
+    rels = pulse.utils.attrsorted (rels[0:], ['pred', 'title'])
     if len(rels) > 0:
         for rel in rels:
             subset = rel.pred
@@ -249,7 +249,7 @@ def add_more_tabs (set, tabbed, path=[], query=[]):
                             AND(pulse.db.Branch.q.parentID == Module.q.id,
                                 Module.q.id == pulse.db.RecordBranchRelation.q.predID)) )
         if len(path) > 2 and path[2] == ext:
-            rels = pulse.utils.attrsorted (list(rels), 'title')
+            rels = pulse.utils.attrsorted (list(rels), 'title', ['parent', 'scm_module'])
             lcont = pulse.html.LinkBoxContainer ()
             lcont.set_columns (2)
             slink_mtime = False
