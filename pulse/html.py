@@ -365,6 +365,7 @@ class LinkBox (ContentComponent, FactsComponent):
         FactsComponent.__init__ (self, **kw)
         ContentComponent.__init__ (self, **kw)
         self._url = self._title = self._icon = self._desc = None
+        self._show_icon = True
         if isinstance (args[0], pulse.db.Record):
             if args[0].linkable:
                 self._url = args[0].pulse_url
@@ -388,6 +389,9 @@ class LinkBox (ContentComponent, FactsComponent):
     def set_icon (self, icon):
         self._icon = icon
 
+    def set_show_icon (self, show):
+        self._show_icon = show
+
     def set_description (self, description):
         self._desc = description
 
@@ -401,10 +405,12 @@ class LinkBox (ContentComponent, FactsComponent):
         d = pulse.utils.attrdict ([self, pulse.config])
         cls = ' '.join(['lbox'] + self._classes)
         p (fd, '<table class="%s"><tr>', cls)
-        p (fd, '<td class="lbox-icon">')
-        if self._icon != None:
-            p (fd, '<img class="icon" src="%s" alt="%s">', (self._icon, self._title))
-        p (fd, '</td><td class="lbox-text">')
+        if self._show_icon:
+            p (fd, '<td class="lbox-icon">')
+            if self._icon != None:
+                p (fd, '<img class="icon" src="%s" alt="%s">', (self._icon, self._title))
+            p (fd, '</td>')
+        p (fd, '<td class="lbox-text">')
         p (fd, '<div class="lbox-title">')
         if self._url != None:
             p (fd, '<a href="%s"><span class="title">%s</span></a>', (self._url, self._title))

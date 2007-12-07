@@ -231,9 +231,15 @@ def output_ajax (doc, path, query, http, fd):
     return 0
 
 def get_activity (doc, xmlfiles):
-    dl = pulse.html.DefinitionList ()
+    lcont = pulse.html.LinkBoxContainer()
+    if len(xmlfiles) > 1:
+        lcont.set_sort_link_class ('actfile')
+        lcont.add_sort_link ('title', pulse.utils.gettext ('name'), False)
+        lcont.add_sort_link ('mtime', pulse.utils.gettext ('mtime'))
     for xmlfile in xmlfiles:
-        dl.add_term (xmlfile)
+        lbox = lcont.add_link_box (None, xmlfile)
+        lbox.add_class ('actfile')
+        lbox.set_show_icon (False)
         commit = pulse.db.Revision.select ((pulse.db.Revision.q.branchID == doc.id) &
                                            (pulse.db.Revision.q.filename == xmlfile),
                                            orderBy='-datetime')
@@ -241,10 +247,13 @@ def get_activity (doc, xmlfiles):
             commit = commit[0]
             span = pulse.html.Span(divider=pulse.html.Span.SPACE)
             # FIXME: i18n, word order, but we want to link person
-            span.add_content (str(commit.datetime))
+            mspan = pulse.html.Span()
+            mspan.add_content (str(commit.datetime))
+            mspan.add_class ('mtime')
+            span.add_content (mspan)
             span.add_content (' by ')
             span.add_content (pulse.html.Link (commit.person))
-            dl.add_entry (span)
+            lbox.add_fact (None, span)
         except IndexError:
             pass
-    return dl
+    return lcont
