@@ -309,12 +309,12 @@ class LinkBoxContainer (Block):
         else:
             p (fd, '<div class="lcont">')
         if self._title != None or len(self._sortlinks) > 0:
-            p (fd, '<div class="lcont-title">', None, False)
+            p (fd, '<div class="exp-title">', None, False)
             if len(self._sortlinks) > 0:
-                p (fd, '<table class="lcont-title"><tr><td>')
+                p (fd, '<table class="slinks"><tr><td>')
             if self._title != None:
-                p (fd, '<a href="javascript:lcont_toggle(\'%s\')">', self._id, False)
-                p (fd, '<img id="img-%s" class="lcont-img" src="%sexpander-open.png"> %s</a></div>',
+                p (fd, '<a href="javascript:exp_toggle(\'%s\')">', self._id, False)
+                p (fd, '<img id="img-%s" class="exp-img" src="%sexpander-open.png"> %s</a></div>',
                    (self._id, pulse.config.dataroot, self._title))
             if len(self._sortlinks) > 0:
                 p (fd, '</td><td class="slinks" id="slink-%s">', self._sortlinkclass)
@@ -333,7 +333,7 @@ class LinkBoxContainer (Block):
                 p (fd, '</td></tr></table>')
             p (fd, '</div>')
             if self._title != None:
-                p (fd, '<div class="lcont-content">')
+                p (fd, '<div class="exp-content">')
         if self._columns > 1:
             p (fd, '<table class="cols"><tr>')
             width = str(100 // self._columns)
@@ -520,12 +520,12 @@ class ExpanderBox (ContentComponent):
         self._title = title
 
     def output (self, fd=sys.stdout):
-        p (fd, '<div class="expander" id="%s">', self._id)
-        p (fd, '<div class="expander-title">', None, False)
-        p (fd, '<a href="javascript:expander_toggle(\'%s\')">', self._id, False)
-        p (fd, '<img id="img-%s" class="expander-img" src="%sexpander-open.png"> %s</a></div>',
+        p (fd, '<div class="exp" id="%s">', self._id)
+        p (fd, '<div class="exp-title">', None, False)
+        p (fd, '<a href="javascript:exp_toggle(\'%s\')">', self._id, False)
+        p (fd, '<img id="img-%s" class="exp-img" src="%sexpander-open.png"> %s</a></div>',
            (self._id, pulse.config.dataroot, self._title))
-        p (fd, '<div class="expander-content">')
+        p (fd, '<div class="exp-content">')
         ContentComponent.output (self, fd=fd)
         p (fd, '</div>')
 

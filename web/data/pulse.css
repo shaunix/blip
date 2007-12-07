@@ -180,13 +180,14 @@ div.lbox-desc {
   font-style: italic;
   color: #555753;
 }
-div.lcont-title { color: black; }
-div.lcont-title a { color: black; }
-div.lcont-title img { vertical-align: -10%; }
-table.lcont-title { width: 100%; }
-div.lcont-content { padding-left: 1em; }
-div.lcont-hidden { display: none; }
 
+div.exp-title { color: black; }
+div.exp-title a { color: black; }
+div.exp-title img { vertical-align: -10%; }
+div.exp-content { padding-left: 1em; }
+div.exp-hidden { display: none; }
+
+table.slinks { width: 100%; }
 td.slinks { text-align: right; color: #555753; padding-right: 2em; }
 td.slinks a.slink { color: #204a87; }
 
@@ -198,14 +199,16 @@ table.facts {
   border-bottom: solid 1px #d3d7cf;
   margin: 1em 1.44em 0 1.44em;
 }
+tr.fact-sep td { border-bottom: solid 1px #d3d7cf; }
+td.fact-key { margin: 0; padding: 0.1em 0.5em 0.1em 0; color: #555753; }
+td.fact-val { margin: 0; padding: 0.1em 1em 0.1em 0; }
 table.lbox table.facts {
   border-top: none;
   border-bottom: none;
   margin: 0 0 0 1.44em;
 }
-tr.fact-sep td { border-bottom: solid 1px #d3d7cf; }
-td.fact-key { margin: 0; padding: 0.1em 0.5em 0.1em 0; color: #555753; }
-td.fact-val { margin: 0; padding: 0.1em 1em 0.1em 0; }
+table.lbox table.facts td.fact-key { padding: 0 1em 0 0; }
+table.lbox table.facts td.fact-val { padding: 0 1em 0 0; }
 
 .admon { font-style: italic; }
 .admon img { vertical-align: middle; }
@@ -238,10 +241,6 @@ td.fact-val { margin: 0; padding: 0.1em 1em 0.1em 0; }
   padding: 1em;
 }
 .vbox-el { margin-top: 1em; }
-.expander-title a { color: black; }
-.expander-title img { vertical-align: -10%; }
-.expander-content { padding-left: 1em; }
-.expander-hidden { display: none; }
 span.elliplnk {
   font-style: normal;
 }
