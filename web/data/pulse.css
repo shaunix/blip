@@ -248,3 +248,7 @@ span.elliplnk {
 span.elliptxt { display: none; }
 
 div.pad { margin: 1em; }
+
+.po { background-color: #eeeeec; }
+.po80 { background-color: #d9ebff; }
+.po50 { background-color: #fff9cf; }

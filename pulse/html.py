@@ -500,8 +500,9 @@ class GridBox (Block):
         self._rows.append ({'data': row})
         return len(self._rows) - 1
 
-    def set_row_class (self, idx, cls):
-        self._rows[idx]['class'] = cls
+    def add_row_class (self, idx, cls):
+        self._rows[idx].setdefault ('classes', [])
+        self._rows[idx]['classes'].append (cls)
 
     def output (self, fd=sys.stdout):
         if len (self._rows) == 0:
@@ -509,9 +510,9 @@ class GridBox (Block):
         p (fd, '<table class="grid">')
         cols = max (map (lambda x: len(x['data']), self._rows))
         for row in self._rows:
-            cls = row.get('class', None)
+            cls = row.get('classes', None)
             if cls != None:
-                p (fd, '<tr class="%s">', cls)
+                p (fd, '<tr class="%s">', ' '.join(cls))
             else:
                 p (fd, '<tr>')
             for i in range (cols):

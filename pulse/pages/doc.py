@@ -208,6 +208,7 @@ def output_doc (doc, path=[], query=[], http=True, fd=None):
             span = pulse.html.Span (translation.scm_file[:-3])
             span.add_class ('lang')
             row = [span]
+            percent = 0
             try:
                 stat = stat[0]
                 untranslated = stat.total - stat.stat1 - stat.stat2
@@ -230,7 +231,11 @@ def output_doc (doc, path=[], query=[], http=True, fd=None):
             except IndexError:
                 pass
             idx = grid.add_row (*row)
-            grid.set_row_class (idx, 'po')
+            grid.add_row_class (idx, 'po')
+            if percent >= 80:
+                grid.add_row_class (idx, 'po80')
+            elif percent >= 50:
+                grid.add_row_class (idx, 'po50')
 
     page.output(fd=fd)
 
