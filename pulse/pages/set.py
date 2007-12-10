@@ -255,7 +255,7 @@ def add_more_tabs (set, tabbed, path=[], query=[]):
                             AND(pulse.db.Branch.q.parentID == Module.q.id,
                                 Module.q.id == pulse.db.RecordBranchRelation.q.predID)) )
         if len(path) > 2 and path[2] == ext:
-            rels = pulse.utils.attrsorted (list(rels), 'title', ['parent', 'scm_module'])
+            rels = pulse.utils.attrsorted (list(rels), 'title', 'scm_module')
             lcont = pulse.html.LinkBoxContainer ()
             lcont.set_columns (2)
             slink_mtime = False
