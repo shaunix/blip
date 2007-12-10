@@ -51,7 +51,7 @@ def get_checkout (branch, update=True):
 
 
 def update_gdu_docbook (doc, **kw):
-    checkout = get_checkout (doc.parent, update=kw.get('update', True))
+    checkout = get_checkout (doc, update=kw.get('update', True))
     name = {}
     desc = {}
     data = {}
@@ -141,7 +141,7 @@ def update_gdu_docbook (doc, **kw):
 
 
 def update_gtk_doc (doc, **kw):
-    checkout = get_checkout (doc.parent, update=kw.get('update', True))
+    checkout = get_checkout (doc, update=kw.get('update', True))
     name = {}
     desc = {}
     data = {}

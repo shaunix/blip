@@ -49,7 +49,7 @@ def get_checkout (branch, update=True):
 
 
 def update_intltool (po, **kw):
-    checkout = get_checkout (po.parent.parent, update=kw.get('update', True))
+    checkout = get_checkout (po, update=kw.get('update', True))
     potfile = get_intltool_potfile (po, checkout)
     if potfile == None: return
     podir = os.path.join (checkout.directory, po.scm_dir)
@@ -71,7 +71,7 @@ def update_intltool (po, **kw):
 
 
 def update_xml2po (po, **kw):
-    checkout = get_checkout (po.parent.parent, update=kw.get('update', True))
+    checkout = get_checkout (po, update=kw.get('update', True))
     potfile = get_xml2po_potfile (po, checkout)
     if potfile == None: return
     makedir = os.path.join (checkout.directory, os.path.dirname (po.scm_dir))
@@ -104,7 +104,7 @@ def get_intltool_potfile (po, checkout):
     potdir_rel = os.path.join (*(['var', 'l10n'] + po.ident.split('/')[3:]))
     potdir_abs = os.path.join (pulse.config.webdir, potdir_rel)
     if po.scm_dir == 'po':
-        potname = po.parent.parent.scm_module
+        potname = po.scm_module
     else:
         potname = po.scm_dir
     potfile = potname + '.pot'

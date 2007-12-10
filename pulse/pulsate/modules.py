@@ -272,7 +272,9 @@ def process_podir (branch, checkout, podir, **kw):
     ident = '/'.join(['/i18n', bserver, bmodule, os.path.basename (podir), bbranch])
     domain = pulse.db.Branch.get_record (ident=ident, type='Domain')
 
-    data = {'scm_dir' : pulse.utils.relative_path (podir, checkout.directory)}
+    data = {}
+    for key in ('scm_type', 'scm_server', 'scm_module', 'scm_branch'): data[key] = getattr(branch, key)
+    data['scm_dir'] = pulse.utils.relative_path (podir, checkout.directory)
     domain.update (data)
 
     linguas = os.path.join (podir, 'LINGUAS')
@@ -302,6 +304,7 @@ def process_podir (branch, checkout, podir, **kw):
         translation = pulse.db.Branch.get_record (ident=lident, type='Translation')
         translations.append (translation)
         ldata = {}
+        for key in ('scm_type', 'scm_server', 'scm_module', 'scm_branch'): ldata[key] = data[key]
         ldata['subtype'] = 'intltool'
         ldata['scm_dir'] = data['scm_dir']
         ldata['scm_file'] = lang + '.po'
@@ -320,6 +323,7 @@ def process_gdu_docdir (branch, checkout, docdir, makefile, **kw):
     relpath = pulse.utils.relative_path (docdir, checkout.directory)
 
     data = {}
+    for key in ('scm_type', 'scm_server', 'scm_module', 'scm_branch'): data[key] = getattr(branch, key)
     data['subtype'] = 'gdu-docbook'
     data['scm_dir'] = os.path.join (relpath, 'C')
     data['scm_file'] = doc_module + '.xml'
@@ -332,6 +336,7 @@ def process_gdu_docdir (branch, checkout, docdir, makefile, **kw):
             translation = pulse.db.Branch.get_record (ident=lident, type='Translation')
             translations.append (translation)
             ldata = {}
+            for key in ('scm_type', 'scm_server', 'scm_module', 'scm_branch'): ldata[key] = data[key]
             ldata['subtype'] = 'xml2po'
             ldata['scm_dir'] = os.path.join (pulse.utils.relative_path (docdir, checkout.directory), lang)
             ldata['scm_file'] = lang + '.po'
@@ -347,6 +352,7 @@ def process_gtk_docdir (branch, checkout, docdir, makefile, **kw):
     relpath = pulse.utils.relative_path (docdir, checkout.directory)
 
     data = {}
+    for key in ('scm_type', 'scm_server', 'scm_module', 'scm_branch'): data[key] = getattr(branch, key)
     data['subtype'] = 'gtk-doc'
     data['scm_dir'] = relpath
     scm_file = makefile['DOC_MAIN_SGML_FILE']
@@ -398,6 +404,7 @@ def process_pkgconfig (branch, checkout, filename, **kw):
     lib.update_desc ({'C' : libdesc})
 
     data = {}
+    for key in ('scm_type', 'scm_server', 'scm_module', 'scm_branch'): data[key] = getattr(branch, key)
     data['scm_dir'], data['scm_file'] = os.path.split (rel_ch)
     lib.update (data)
 
@@ -457,6 +464,7 @@ def process_keyfile (branch, checkout, filename, **kw):
     app = pulse.db.Branch.get_record (ident=ident, type='Application')
 
     data = {}
+    for key in ('scm_type', 'scm_server', 'scm_module', 'scm_branch'): data[key] = getattr(branch, key)
     data['scm_dir'], data['scm_file'] = os.path.split (rel_ch)
 
     app.update_name (name)
@@ -565,6 +573,7 @@ def process_oafserver (branch, checkout, filename, **kw):
             locate_icon (applet, applet_icon, kw.get ('images', []))
 
         data = {}
+        for key in ('scm_type', 'scm_server', 'scm_module', 'scm_branch'): data[key] = getattr(branch, key)
         data['scm_dir'], data['scm_file'] = os.path.split (rel_ch)
         applet.update (data)
 

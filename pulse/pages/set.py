@@ -195,16 +195,18 @@ def add_more_tabs (set, tabbed, path=[], query=[]):
         join=LEFTJOINOn(Module, pulse.db.RecordBranchRelation,
                         AND(pulse.db.Branch.q.parentID == Module.q.id,
                             Module.q.id == pulse.db.RecordBranchRelation.q.predID)) )
-    cnt = rels.count()
     if len(path) > 2 and path[2] == 'doc':
         docs = {'users' : [], 'devels' : []}
         user_docs = []
         devel_docs = []
+        cnt = 0
         for doc in pulse.utils.attrsorted (rels, 'title'):
             if doc.subtype == 'gtk-doc':
                 docs['devels'].append (doc)
+                cnt += 1
             else:
                 docs['users'].append (doc)
+                cnt += 1
         vbox = pulse.html.VBox()
         for id, txt in (('users', pulse.utils.gettext ('User Documentation (%i)')),
                         ('devels', pulse.utils.gettext ('Developer Documentation (%i)')) ):
@@ -229,12 +231,16 @@ def add_more_tabs (set, tabbed, path=[], query=[]):
                             span.add_content (pulse.utils.gettext ('by'))
                             span.add_content (pulse.html.Link (doc.mod_person))
                         lbox.add_fact (pulse.utils.gettext ('modified'), span)
-                    span = pulse.html.Span (doc.parent.branch_module)
+                    span = pulse.html.Span (doc.branch_module)
                     span.add_class ('module')
-                    lbox.add_fact ('module', pulse.html.Link (doc.parent.pulse_url, span))
+                    # FIXME: munge ident to avoid this extra parent SELECT
+                    url = doc.ident.split('/')
+                    url = '/'.join(['mod'] + url[2:4] + [url[5]])
+                    url = pulse.config.webroot + url
+                    lbox.add_fact ('module', pulse.html.Link (url, span))
         tabbed.add_tab ('Documents (%i)' % cnt, True, vbox)
     else:
-        tabbed.add_tab ('Documents (%i)' % cnt, False, set.pulse_url + '/doc')
+        tabbed.add_tab ('Documents (%i)' % rels.count(), False, set.pulse_url + '/doc')
 
     things = (('Domain', pulse.utils.gettext ('Domains (%i)'), 'i18n'),
               ('Application', pulse.utils.gettext ('Applications (%i)'), 'app'),
@@ -258,9 +264,12 @@ def add_more_tabs (set, tabbed, path=[], query=[]):
             for i in range(len(rels)):
                 rel = rels[i]
                 lbox = lcont.add_link_box (rel)
-                span = pulse.html.Span (rel.parent.branch_module)
+                span = pulse.html.Span (rel.branch_module)
                 span.add_class ('module')
-                lbox.add_fact ('module', pulse.html.Link (rel.parent.pulse_url, span))
+                url = rel.ident.split('/')
+                url = '/'.join(['mod'] + url[2:4] + [url[5]])
+                url = pulse.config.webroot + url
+                lbox.add_fact ('module', pulse.html.Link (url, span))
                 doc = pulse.db.Branch.select (
                     (pulse.db.BranchRelation.q.verb == (type + 'Document')) &
                     (pulse.db.BranchRelation.q.subjID == rel.id),

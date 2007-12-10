@@ -160,7 +160,7 @@ def output_branch (branch, path=[], query=[], http=True, fd=None):
 
             potlst = ['var', 'l10n'] + domain.ident.split('/')[1:]
             if domain.scm_dir == 'po':
-                potlst.append (domain.parent.scm_module + '.pot')
+                potlst.append (domain.scm_module + '.pot')
             else:
                 potlst.append (domain.scm_dir + '.pot')
             poturl = pulse.config.varroot + '/'.join (potlst[1:])
