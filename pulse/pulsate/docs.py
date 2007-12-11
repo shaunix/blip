@@ -129,7 +129,8 @@ def update_gdu_docbook (doc, **kw):
     graphdir = os.path.join (*([pulse.config.webdir, 'var', 'graph'] + doc.ident.split('/')[1:]))
     if not os.path.exists (graphdir):
         os.makedirs (graphdir)
-    pulse.graphs.drawPulse (os.path.join (graphdir, 'commits.png'), stats)
+    graph = pulse.graphs.PulseGraph (stats)
+    graph.save (os.path.join (graphdir, 'commits.png'))
 
     xmlfiles = sorted(xmlfiles)
     if doc.data.get('xmlfiles') != xmlfiles:

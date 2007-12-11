@@ -22,74 +22,96 @@ from math import pi
 
 import cairo
 
-def drawPulse (file, stats, width=200, height=40):
-    surface = cairo.ImageSurface (cairo.FORMAT_ARGB32,
-                                  width, height)
-    ctx = cairo.Context (surface)
-    ctx.set_antialias (cairo.ANTIALIAS_GRAY)
+class Graph:
+    def __init__ (self, width=200, height=40):
+        self.width = width
+        self.height = height
+        self.surface = cairo.ImageSurface (cairo.FORMAT_ARGB32, self.width, self.height)
+        self.context = cairo.Context (self.surface)
+        # FIXME: make the whole thing white first
+        #self.context.set_source_rgb (1.0, 1.0, 1.0)
+        #self.context.fill_preserve ()
 
-    border = 2
-    _drawBorder (ctx, width=width, height=height,
-                 lineWidth=2, radius=6)
+    def draw_border (self, thickness=2, radius=6):
+        self.context.new_path ()
+        self.context.set_line_width (thickness)
+        offset = thickness + 1
+        self.context.move_to (offset, offset + radius)
+        self.context.arc (offset + radius,
+                          offset + radius,
+                          radius, pi, 3 * pi / 2)
 
-    width_ = width - (border * 2)
-    height_ = height - (border * 2)
-    
-    ctx.new_path ()
+        self.context.line_to (self.width - offset - radius, offset)
+        self.context.arc (self.width - offset - radius,
+                          offset + radius,
+                          radius, 3 * pi / 2, 2 * pi)
 
-    cellWidth = (width_ * 1.0) / len(stats)
-    tickWidth = cellWidth / 9.0
+        self.context.line_to (self.width - offset, self.height - offset - radius)
+        self.context.arc (self.width - offset - radius,
+                          self.height - offset - radius,
+                          radius, 2 * pi, pi / 2)
 
-    y = (height_ * 3.0) / 4.0
-    x = border
-    ctx.move_to (x, y)
+        self.context.line_to (offset + radius, self.height - offset)
+        self.context.arc (offset + radius,
+                          self.height - offset - radius,
+                          radius, pi / 2, pi)
 
-    for stat in stats:
-        amp = y * stat
-        x += tickWidth
-        ctx.line_to (x, y)
-        x += tickWidth
-        ctx.line_to (x, y + (amp / 4))
-        x += 2 * tickWidth
-        ctx.line_to (x, y - amp)
-        x += 2 * tickWidth
-        ctx.line_to (x, y + (amp / 3))
-        x += tickWidth
-        ctx.line_to (x, y)
-        x += 2 * tickWidth
-        ctx.line_to (x, y)
+        self.context.close_path ()
+        self.context.set_source_rgb (0.180392, 0.203922, 0.211765)
+        self.context.stroke ()
 
-    ctx.set_line_cap (cairo.LINE_CAP_ROUND)
-    ctx.set_line_join (cairo.LINE_JOIN_ROUND)
+    def save (self, filename):
+        self.surface.write_to_png (filename)
 
-    ctx.set_line_width (2)
-    ctx.set_source_rgb (0.6, 0.6, 0.6)
-    ctx.stroke_preserve ()
+class BarGraph (Graph):
+    def __init__ (self, stats, width=200, height=40):
+        Graph.__init__ (self, width=width, height=height)
+        self.context.set_antialias (cairo.ANTIALIAS_GRAY)
+        # FIXME: do stuff
+        self.draw_border (thickness=1, radius=1)
 
-    ctx.set_line_width (1)
-    ctx.set_source_rgb (0.6, 0.4, 0.4)
-    ctx.stroke ()
+class PulseGraph (Graph):
+    def __init__ (self, stats, width=200, height=40):
+        Graph.__init__ (self, width=width, height=height)
+        self.context.set_antialias (cairo.ANTIALIAS_GRAY)
 
-    surface.write_to_png (file)
+        border_thickness = 1
+        inner_width = self.width - (2 * border_thickness) - 2
+        inner_height = self.height - (2 * border_thickness) - 4
 
-def _drawBorder (ctx, width, height, lineWidth=2, radius=6):
-    ctx.new_path ()
-    ctx.set_line_width (lineWidth)
-    ctx.move_to (lineWidth / 2.0, radius)
-    ctx.arc (radius + 1,
-             radius + 1,
-             radius, pi, 3 * pi / 2)
-    ctx.arc (width - radius - 1,
-             radius + 1,
-             radius, 3 * pi / 2, 2 * pi)
-    ctx.arc (width - radius - 1,
-             height - radius - 1,
-             radius, 2 * pi, pi / 2)
-    ctx.arc (radius + 1,
-             height - radius - 1,
-             radius, pi / 2, pi)
-    ctx.close_path ()
-    ctx.set_source_rgb (1.0, 1.0, 1.0)
-    ctx.fill_preserve ()
-    ctx.set_source_rgb (0.6, 0.6, 0.6)
-    ctx.stroke ()
+        self.context.new_path ()
+
+        cellWidth = (inner_width * 1.0) / len(stats)
+        tickWidth = cellWidth / 9.0
+
+        baseline = (3.0 / 4.0) * inner_height
+        x = border_thickness + 1
+        self.context.move_to (x, baseline)
+
+        for stat in stats:
+            amp = (baseline - border_thickness - 2) * stat
+            x += tickWidth
+            self.context.line_to (x, baseline)
+            x += tickWidth
+            self.context.line_to (x, baseline + (amp / 4))
+            x += 2 * tickWidth
+            self.context.line_to (x, baseline - amp)
+            x += 2 * tickWidth
+            self.context.line_to (x, baseline + (amp / 3))
+            x += tickWidth
+            self.context.line_to (x, baseline)
+            x += 2 * tickWidth
+            self.context.line_to (x, baseline)
+
+        self.context.set_line_cap (cairo.LINE_CAP_ROUND)
+        self.context.set_line_join (cairo.LINE_JOIN_ROUND)
+
+        self.context.set_line_width (2)
+        self.context.set_source_rgb (0.6, 0.6, 0.6)
+        self.context.stroke_preserve ()
+
+        self.context.set_line_width (1)
+        self.context.set_source_rgb (0.6, 0.4, 0.4)
+        self.context.stroke ()
+
+        self.draw_border (thickness=border_thickness, radius=4)
