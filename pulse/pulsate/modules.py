@@ -33,14 +33,19 @@ import pulse.utils
 synop = 'update information from module and branch checkouts'
 usage_extra = '[ident]'
 args = pulse.utils.odict()
-args['no-update']  = (None, 'do not update SCM checkouts')
+args['no-history'] = (None, 'do not check SCM history')
 args['no-timestamps'] = (None, 'do not check timestamps before processing files')
+args['no-update']  = (None, 'do not update SCM checkouts')
 def help_extra (fd=None):
     print >>fd, 'If ident is passed, only modules and branches with a matching identifier will be updated.'
 
 
-def update_branch (branch, update=True, timestamps=True):
+def update_branch (branch, update=True, timestamps=True, history=True):
     checkout = pulse.scm.Checkout.from_record (branch, update=update)
+
+    if history:
+        check_history (branch, checkout)
+
     # FIXME: what do we want to know?
     # find maintainers
     # find document (in documents.py?)
@@ -151,6 +156,31 @@ def update_branch (branch, update=True, timestamps=True):
         branch.icon_dir = default_resource.icon_dir
         branch.icon_name = default_resource.icon_name
     
+
+def check_history (branch, checkout):
+    pulse.utils.log ('Checking history for %s' % branch.ident)
+    revision = pulse.db.Revision.select ((pulse.db.Revision.q.branchID == branch.id) &
+                                         (pulse.db.Revision.q.filename == None),
+                                         orderBy='-datetime')
+    try:
+        since = revision[0].revision
+    except IndexError:
+        since = None
+    serverid = '.'.join (pulse.scm.server_name (checkout.scm_type, checkout.scm_server).split('.')[-2:])
+    for hist in checkout.get_history (since=since):
+        pident = '/person/' + serverid + '/' + hist['userid']
+        pers = pulse.db.Entity.get_record (ident=pident, type='Person')
+        pulse.db.Revision (branch=branch, person=pers,
+                           revision=hist['revision'], datetime=hist['date'], comment=hist['comment'])
+
+    revision = pulse.db.Revision.select (pulse.db.Revision.q.branchID == branch.id, orderBy='-datetime')
+    try:
+        revision = revision[0]
+        branch.update({'mod_datetime' : revision.datetime,
+                       'mod_personID' : revision.person.id})
+    except IndexError:
+        pass
+
 
 def process_maintainers (branch, checkout, **kw):
     maintfile = os.path.join (checkout.directory, 'MAINTAINERS')
@@ -612,6 +642,7 @@ def locate_icon (resource, icon, images):
 def main (argv, options={}):
     update = not options.get ('--no-update', False)
     timestamps = not options.get ('--no-timestamps', False)
+    history = not options.get ('--no-history', False)
     if len(argv) == 0:
         prefix = None
     else:
@@ -633,4 +664,4 @@ def main (argv, options={}):
         branches = pulse.db.Branch.selectBy (type='Module')
 
     for branch in branches:
-        update_branch (branch, update=update, timestamps=timestamps)
+        update_branch (branch, update=update, timestamps=timestamps, history=history)

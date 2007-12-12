@@ -116,6 +116,15 @@ def output_branch (branch, path=[], query=[], http=True, fd=None):
 
     page.add_fact (pulse.utils.gettext ('Location'), checkout.location)
 
+    if branch.mod_datetime != None:
+        span = pulse.html.Span(divider=pulse.html.Span.SPACE)
+        # FIXME: i18n, word order, but we want to link person
+        span.add_content (str(branch.mod_datetime))
+        if branch.mod_person != None:
+            span.add_content (' by ')
+            span.add_content (pulse.html.Link (branch.mod_person))
+        page.add_fact (pulse.utils.gettext ('Last Modified'), span)
+
     if branch.data.has_key ('tarname'):
         page.add_fact_sep ()
         page.add_fact (pulse.utils.gettext ('Tarball Name'), branch.data['tarname'])

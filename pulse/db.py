@@ -333,7 +333,7 @@ class Revision (sql.SQLObject):
 
     branch =  sql.ForeignKey ('Branch', dbName='branch')
     person = sql.ForeignKey ('Entity', dbName='person')
-    filename = sql.StringCol ()
+    filename = sql.StringCol (default=None)
     filetype = sql.StringCol (default=None)
     revision = sql.StringCol ()
     datetime = sql.DateTimeCol ()

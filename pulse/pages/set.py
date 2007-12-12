@@ -119,13 +119,24 @@ def output_set (set, path=[], query=[], http=True, fd=None):
         lcont = pulse.html.LinkBoxContainer ()
         lcont.set_columns (2)
         lcont.add_sort_link ('title', pulse.utils.gettext ('title'), False)
+        lcont.add_sort_link ('mtime', pulse.utils.gettext ('mtime'))
         lcont.add_sort_link ('module', pulse.utils.gettext ('module'))
         tabbed.add_tab (pulse.utils.gettext ('Modules (%i)') % modcnt, True, lcont)
         for i in range(modcnt):
-            lbox = lcont.add_link_box (mods[i])
-            span = pulse.html.Span (mods[i].branch_module)
+            mod = mods[i]
+            lbox = lcont.add_link_box (mod)
+            span = pulse.html.Span (mod.branch_module)
             span.add_class ('module')
-            lbox.add_fact ('module', pulse.html.Link (mods[i].pulse_url, span))
+            lbox.add_fact ('module', pulse.html.Link (mod.pulse_url, span))
+            if mod.mod_datetime != None:
+                span = pulse.html.Span (divider=pulse.html.Span.SPACE)
+                # FIXME: i18n, word order, but we want to link person
+                span.add_content (pulse.html.Span(str(mod.mod_datetime.date())))
+                span.add_class ('mtime')
+                if mod.mod_person != None:
+                    span.add_content (pulse.utils.gettext ('by'))
+                    span.add_content (pulse.html.Link (mod.mod_person))
+                lbox.add_fact (pulse.utils.gettext ('modified'), span)
 
     if modcnt > 0:
         add_more_tabs (set, tabbed, path=path, query=query)

@@ -101,7 +101,7 @@ def update_gdu_docbook (doc, **kw):
             except IndexError:
                 since = None
             serverid = '.'.join (pulse.scm.server_name (checkout.scm_type, checkout.scm_server).split('.')[-2:])
-            for hist in checkout.get_history (rel_ch, since=since):
+            for hist in checkout.get_file_history (rel_ch, since=since):
                 pident = '/person/' + serverid + '/' + hist['userid']
                 pers = pulse.db.Entity.get_record (ident=pident, type='Person')
                 pulse.db.Revision (branch=doc, person=pers, filename=fname, filetype='xml',

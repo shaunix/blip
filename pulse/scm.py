@@ -221,15 +221,37 @@ class Checkout (object):
             os.chdir (owd)
 
 
-    def get_revision (self, filename):
-        if hasattr (Checkout, '_get_revision_' + self.scm_type) and self.scm_type in default_branches:
-            func = getattr (Checkout, '_get_revision_' + self.scm_type)
+    def get_history (self, since=None):
+        if hasattr (Checkout, '_get_history_' + self.scm_type) and self.scm_type in default_branches:
+            func = getattr (Checkout, '_get_history_' + self.scm_type)
         else:
             raise CheckoutError (
-                'get_revision got unknown SCM type "%s"' % self.scm_type)
+                'get_history got unknown SCM type "%s"' % self.scm_type)
+        return func (self, since=since)
+
+    def _get_history_svn (self, since=None):
+        owd = os.getcwd ()
+        retval = []
+        try:
+            os.chdir (self.directory)
+            cmd = 'svn log '
+            if since != None:
+                cmd += '-r' + since + ':HEAD'
+            retval = self._process_svn_history (cmd, since)
+        finally:
+            os.chdir (owd)
+        return retval
+
+
+    def get_file_revision (self, filename):
+        if hasattr (Checkout, '_get_file_revision_' + self.scm_type) and self.scm_type in default_branches:
+            func = getattr (Checkout, '_get_file_revision_' + self.scm_type)
+        else:
+            raise CheckoutError (
+                'get_file_revision got unknown SCM type "%s"' % self.scm_type)
         return func (self, filename)
 
-    def _get_revision_cvs (self, filename):
+    def _get_file_revision_cvs (self, filename):
         entries = os.path.join (self.directory, os.path.dirname (filename), 'CVS', 'Entries')
         for line in open(entries):
             if line.startswith ('/' + os.path.basename (filename) + '/'):
@@ -245,7 +267,7 @@ class Checkout (object):
                 return (revnumber, datetime.datetime(*datelist))
         return None
 
-    def _get_revision_git (self, filename):
+    def _get_file_revision_git (self, filename):
         owd = os.getcwd ()
         retval = None
         try:
@@ -258,7 +280,7 @@ class Checkout (object):
             os.chdir (owd)
         return retval
 
-    def _get_revision_svn (self, filename):
+    def _get_file_revision_svn (self, filename):
         owd = os.getcwd ()
         retval = None
         try:
@@ -276,19 +298,19 @@ class Checkout (object):
         return retval
 
 
-    def get_history (self, filename, since=None):
-        if hasattr (Checkout, '_get_history_' + self.scm_type) and self.scm_type in default_branches:
-            func = getattr (Checkout, '_get_history_' + self.scm_type)
+    def get_file_history (self, filename, since=None):
+        if hasattr (Checkout, '_get_file_history_' + self.scm_type) and self.scm_type in default_branches:
+            func = getattr (Checkout, '_get_file_history_' + self.scm_type)
         else:
             raise CheckoutError (
-                'get_history got unknown SCM type "%s"' % self.scm_type)
+                'get_file_history got unknown SCM type "%s"' % self.scm_type)
         return func (self, filename, since=since)
 
-    #def _get_history_cvs (self, filename, since=None)
+    #def _get_file_history_cvs (self, filename, since=None)
     
-    #def _get_history_git (self, filename, since=None)
+    #def _get_file_history_git (self, filename, since=None)
     
-    def _get_history_svn (self, filename, since=None):
+    def _get_file_history_svn (self, filename, since=None):
         owd = os.getcwd ()
         retval = []
         try:
@@ -297,31 +319,37 @@ class Checkout (object):
             if since != None:
                 cmd += '-r' + since + ':HEAD '
             cmd += '"' + os.path.basename (filename) + '@"'
-            fd = os.popen (cmd)
-            line = fd.readline()
-            while line:
-                if line == '-' * 72 + '\n':
-                    line = fd.readline()
-                    if not line: break
-                    (rev, who, date, diff) = line.split('|')
-                    rev = rev[1:].strip()
-                    who = who.strip()
-                    date = parse_date_svn (date)
-                    comment = ''
-                    line = fd.readline()
-                    if line == '\n': line = fd.readline()
-                    while line:
-                        if line == '-' * 72 + '\n':
-                            break
-                        comment += line
-                        line = fd.readline()
-                    if rev != since:
-                        retval.append ({'revision' : rev, 'date' : date,
-                                        'userid' : who, 'comment' : comment})
-                else:
-                    line = fd.readline()
+            retval = self._process_svn_history (cmd, since)
         finally:
             os.chdir (owd)
+        return retval
+
+
+    def _process_svn_history (self, cmd, since):
+        retval = []
+        fd = os.popen (cmd)
+        line = fd.readline()
+        while line:
+            if line == '-' * 72 + '\n':
+                line = fd.readline()
+                if not line: break
+                (rev, who, date, diff) = line.split('|')
+                rev = rev[1:].strip()
+                who = who.strip()
+                date = parse_date_svn (date)
+                comment = ''
+                line = fd.readline()
+                if line == '\n': line = fd.readline()
+                while line:
+                    if line == '-' * 72 + '\n':
+                        break
+                    comment += line
+                    line = fd.readline()
+                if rev != since:
+                    retval.append ({'revision' : rev, 'date' : date,
+                                    'userid' : who, 'comment' : comment})
+            else:
+                line = fd.readline()
         return retval
 
 def parse_date (d):
