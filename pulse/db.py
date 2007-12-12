@@ -337,7 +337,7 @@ class Revision (sql.SQLObject):
     filetype = sql.StringCol (default=None)
     revision = sql.StringCol ()
     datetime = sql.DateTimeCol ()
-    comment = sql.StringCol ()
+    comment = sql.UnicodeCol ()
 
 class Statistic (sql.SQLObject):
     class sqlmeta:

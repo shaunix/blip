@@ -58,25 +58,46 @@ def output_person (person, path=[], query=[], http=True, fd=None):
     if person.web != None:
         page.add_fact (pulse.utils.gettext ('Website'), pulse.html.Link (person.web))
 
+    columns = pulse.html.ColumnBox (2)
+    page.add_content (columns)
+
+    # Activity
+    box = pulse.html.InfoBox ('activity', pulse.utils.gettext ('Activity'))
+    columns.add_content (0, box)
+    revs = pulse.db.Revision.selectBy (person=person, filename=None)
+    box.add_content ('Showing 10 of %s commits:' % str(revs.count()))
+    dl = pulse.html.DefinitionList()
+    box.add_content (dl)
+    for rev in revs[:10]:
+        # FIXME: i18n word order
+        span = pulse.html.Span (divider=pulse.html.Span.SPACE)
+        span.add_content (pulse.html.Link (rev.branch.pulse_url, rev.branch.branch_module))
+        span.add_content ('on')
+        span.add_content (str(rev.datetime))
+        dl.add_term (span)
+        comment = rev.comment
+        while comment[-1] == '\n':
+            comment = comment[:-1]
+        comment = comment + '\n'
+        pre = pulse.html.Pre (comment)
+        dl.add_entry (pre)
+
+    # Modules and Documents
     branches = pulse.db.Branch.select (
         pulse.db.BranchEntityRelation.q.predID == person.id,
         join=INNERJOINOn(None, pulse.db.BranchEntityRelation,
                          pulse.db.BranchEntityRelation.q.subjID == pulse.db.Branch.q.id) )
     branches = pulse.utils.attrsorted (list(branches), 'title')
 
-    columns = pulse.html.ColumnBox (2)
-    page.add_content (columns)
-
-    box = pulse.html.InfoBox ('modules', pulse.utils.gettext ('Modules'))
-    columns.add_content (0, box)
+    mod_box = pulse.html.InfoBox ('modules', pulse.utils.gettext ('Modules'))
     modules = pulse.html.LinkBoxContainer()
-    box.add_content (modules)
+    mod_box.add_content (modules)
 
-    box = pulse.html.InfoBox ('documents', pulse.utils.gettext ('Documents'))
-    columns.add_content (1, box)
+    doc_box = pulse.html.InfoBox ('documents', pulse.utils.gettext ('Documents'))
     documents = pulse.html.LinkBoxContainer()
-    box.add_content (documents)
+    doc_box.add_content (documents)
 
+    mod_add = doc_add = False
     resources = []
     for branch in branches:
         # FIXME: this gives random results, do it better
@@ -85,10 +106,15 @@ def output_person (person, path=[], query=[], http=True, fd=None):
         else:
             resources.append (branch.resourceID)
         if branch.type == 'Module':
+            mod_add = True
             modules.add_link_box (branch)
         elif branch.type == 'Document':
+            doc_add = True
             documents.add_link_box (branch)
         # FIXME: more
+
+    if mod_add: columns.add_content (1, mod_box)
+    if doc_add: columns.add_content (1, doc_box)
 
     page.output(fd=fd)
 

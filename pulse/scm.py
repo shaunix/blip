@@ -19,6 +19,7 @@
 #
 
 import commands
+import codecs
 import datetime
 import os
 import time
@@ -327,7 +328,7 @@ class Checkout (object):
 
     def _process_svn_history (self, cmd, since):
         retval = []
-        fd = os.popen (cmd)
+        fd = codecs.getreader('utf-8')(os.popen (cmd))
         line = fd.readline()
         while line:
             if line == '-' * 72 + '\n':
