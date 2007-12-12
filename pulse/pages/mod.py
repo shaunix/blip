@@ -151,9 +151,92 @@ def output_branch (branch, path=[], query=[], http=True, fd=None):
                                               pulse.utils.gettext ('No developers') ))
     columns.add_content (0, box)
 
+    # Activity
+    box = pulse.html.InfoBox ('activity', pulse.utils.gettext ('Activity'))
+    columns.add_content (0, box)
+    box.add_content (pulse.html.Graph ('/'.join(branch.ident.split('/')[1:] + ['commits.png'])))
+    revs = pulse.db.Revision.selectBy (branch = branch)
+    box.add_content ('Showing 10 of %s commits:' % str(revs.count()))
+    dl = pulse.html.DefinitionList()
+    box.add_content (dl)
+    for rev in revs[:10]:
+        # FIXME: i18n word order
+        span = pulse.html.Span (divider=pulse.html.Span.SPACE)
+        span.add_content (rev.revision)
+        span.add_content ('on')
+        span.add_content (str(rev.datetime))
+        span.add_content ('by')
+        span.add_content (pulse.html.Link (rev.person))
+        dl.add_term (span)
+        comment = rev.comment
+        while comment[-1] == '\n':
+            comment = comment[:-1]
+        comment = comment + '\n'
+        pre = pulse.html.Pre (comment)
+        dl.add_entry (pre)
+
+    # Applications
+    apps = pulse.db.Branch.selectBy (type='Application', parent=branch)
+    apps = pulse.utils.attrsorted (list(apps), 'title')
+    if len(apps) > 0:
+        box = pulse.html.InfoBox ('applications', pulse.utils.gettext ('Applications'))
+        columns.add_content (1, box)
+        lcont = pulse.html.LinkBoxContainer()
+        box.add_content (lcont)
+        for app in apps:
+            lbox = lcont.add_link_box (app)
+            doc = pulse.db.Branch.select (
+                (pulse.db.BranchRelation.q.verb == 'ApplicationDocument') &
+                (pulse.db.BranchRelation.q.subjID == app.id),
+                join=INNERJOINOn (None, pulse.db.BranchRelation,
+                                  pulse.db.BranchRelation.q.predID == pulse.db.Branch.q.id) )
+            try:
+                doc = doc[0]
+                lbox.add_fact (pulse.utils.gettext ('Documentaion'), doc)
+            except IndexError:
+                pass
+
+    # Applets
+    applets = pulse.db.Branch.selectBy (type='Applet', parent=branch)
+    applets = pulse.utils.attrsorted (list(applets), 'title')
+    if len(applets) > 0:
+        box = pulse.html.InfoBox ('applets', pulse.utils.gettext ('Applets'))
+        columns.add_content (1, box)
+        lcont = pulse.html.LinkBoxContainer()
+        box.add_content (lcont)
+        for applet in applets:
+            lcont.add_link_box (applet)
+
+    # Libraries
+    libs = pulse.db.Branch.selectBy (type='Library', parent=branch)
+    libs = pulse.utils.attrsorted (list(libs), 'title')
+    if len(libs) > 0:
+        box = pulse.html.InfoBox ('libraries', pulse.utils.gettext ('Libraries'))
+        columns.add_content (1, box)
+        lcont = pulse.html.LinkBoxContainer()
+        box.add_content (lcont)
+        for lib in libs:
+            lcont.add_link_box (lib)
+
+    # Documents
+    box = pulse.html.InfoBox ('documents', pulse.utils.gettext ('Documents'))
+    columns.add_content (1, box)
+    docs = pulse.db.Branch.selectBy (type='Document', parent=branch)
+    docs = pulse.utils.attrsorted (list(docs), 'title')
+    if len(docs) > 0:
+        lcont = pulse.html.LinkBoxContainer()
+        box.add_content (lcont)
+        for doc in docs:
+            lbox = lcont.add_link_box (doc)
+            res = pulse.db.Branch.selectBy (parent=doc, type='Translation')
+            lbox.add_fact (None, pulse.utils.gettext ('%i translations') % res.count())
+    else:
+        box.add_content (pulse.html.AdmonBox (pulse.html.AdmonBox.warning,
+                                              pulse.utils.gettext ('No documents') ))
+
     # Translations
     box = pulse.html.InfoBox ('translations', pulse.utils.gettext ('Translations'))
-    columns.add_content (0, box)
+    columns.add_content (1, box)
     domains = pulse.db.Branch.selectBy (type='Domain', parent=branch)
     domains = pulse.utils.attrsorted (list(domains), 'title')
     if len(domains) > 0:
@@ -229,65 +312,6 @@ def output_branch (branch, path=[], query=[], http=True, fd=None):
     else:
         box.add_content (pulse.html.AdmonBox (pulse.html.AdmonBox.warning,
                                               pulse.utils.gettext ('No domains') ))
-
-    # Applications
-    apps = pulse.db.Branch.selectBy (type='Application', parent=branch)
-    apps = pulse.utils.attrsorted (list(apps), 'title')
-    if len(apps) > 0:
-        box = pulse.html.InfoBox ('applications', pulse.utils.gettext ('Applications'))
-        columns.add_content (1, box)
-        lcont = pulse.html.LinkBoxContainer()
-        box.add_content (lcont)
-        for app in apps:
-            lbox = lcont.add_link_box (app)
-            doc = pulse.db.Branch.select (
-                (pulse.db.BranchRelation.q.verb == 'ApplicationDocument') &
-                (pulse.db.BranchRelation.q.subjID == app.id),
-                join=INNERJOINOn (None, pulse.db.BranchRelation,
-                                  pulse.db.BranchRelation.q.predID == pulse.db.Branch.q.id) )
-            try:
-                doc = doc[0]
-                lbox.add_fact (pulse.utils.gettext ('Documentaion'), doc)
-            except IndexError:
-                pass
-
-    # Applets
-    applets = pulse.db.Branch.selectBy (type='Applet', parent=branch)
-    applets = pulse.utils.attrsorted (list(applets), 'title')
-    if len(applets) > 0:
-        box = pulse.html.InfoBox ('applets', pulse.utils.gettext ('Applets'))
-        columns.add_content (1, box)
-        lcont = pulse.html.LinkBoxContainer()
-        box.add_content (lcont)
-        for applet in applets:
-            lcont.add_link_box (applet)
-
-    # Libraries
-    libs = pulse.db.Branch.selectBy (type='Library', parent=branch)
-    libs = pulse.utils.attrsorted (list(libs), 'title')
-    if len(libs) > 0:
-        box = pulse.html.InfoBox ('libraries', pulse.utils.gettext ('Libraries'))
-        columns.add_content (1, box)
-        lcont = pulse.html.LinkBoxContainer()
-        box.add_content (lcont)
-        for lib in libs:
-            lcont.add_link_box (lib)
-
-    # Documents
-    box = pulse.html.InfoBox ('documents', pulse.utils.gettext ('Documents'))
-    columns.add_content (1, box)
-    docs = pulse.db.Branch.selectBy (type='Document', parent=branch)
-    docs = pulse.utils.attrsorted (list(docs), 'title')
-    if len(docs) > 0:
-        lcont = pulse.html.LinkBoxContainer()
-        box.add_content (lcont)
-        for doc in docs:
-            lbox = lcont.add_link_box (doc)
-            res = pulse.db.Branch.selectBy (parent=doc, type='Translation')
-            lbox.add_fact (None, pulse.utils.gettext ('%i translations') % res.count())
-    else:
-        box.add_content (pulse.html.AdmonBox (pulse.html.AdmonBox.warning,
-                                              pulse.utils.gettext ('No documents') ))
 
     page.output(fd=fd)
 

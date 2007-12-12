@@ -142,6 +142,11 @@ dl {
 }
 dt { margin: 0.5em 0 0 0; }
 dd { margin: 0 0 0 1.44em; }
+pre {
+  margin: 0; padding: 0;
+  font-size: 0.83em;
+  overflow: auto;
+}
 
 table.cols { width: 100%; }
 td.col { padding: 0 0 0 1em; }

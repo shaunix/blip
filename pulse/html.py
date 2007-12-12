@@ -719,6 +719,22 @@ class Div (ContentComponent):
         p (fd, '</div>')
 
 
+class Pre (ContentComponent):
+    def __init__ (self, *args, **kw):
+        ContentComponent.__init__ (self, **kw)
+        self._id = kw.get('id', None)
+        for arg in args:
+            self.add_content (arg)
+
+    def output (self, fd=sys.stdout):
+        if self._id != None:
+            p (fd, '<pre id="%s">', self._id)
+        else:
+            p (fd, '<pre>')
+        ContentComponent.output (self, fd=fd)
+        p (fd, '</pre>')
+
+
 class Link (Block):
     def __init__ (self, *args, **kw):
         Block.__init__ (self, **kw)

@@ -18,6 +18,7 @@
 # Suite 330, Boston, MA  0211-1307  USA.
 #
 
+import datetime
 import os
 import os.path
 import shutil
@@ -26,6 +27,7 @@ import sys
 import xml.dom.minidom
 
 import pulse.db
+import pulse.graphs
 import pulse.scm
 import pulse.parsers
 import pulse.utils
@@ -45,6 +47,24 @@ def update_branch (branch, update=True, timestamps=True, history=True):
 
     if history:
         check_history (branch, checkout)
+
+    pulse.utils.log ('Creating commit graph for %s' % branch.ident)
+    now = datetime.datetime.now()
+    tendays = now - datetime.timedelta(days=10)
+    stats = [0] * 10
+    revs = pulse.db.Revision.select ((pulse.db.Revision.q.branchID == branch.id) &
+                                     (pulse.db.Revision.q.datetime > tendays) )
+    for rev in list(revs):
+        idx = 9 - (now - rev.datetime).days
+        stats[idx] += 1
+    mx = float(max(stats))
+    if mx > 0:
+        stats = [i / mx for i in stats]
+    graphdir = os.path.join (*([pulse.config.webdir, 'var', 'graph'] + branch.ident.split('/')[1:]))
+    if not os.path.exists (graphdir):
+        os.makedirs (graphdir)
+    graph = pulse.graphs.PulseGraph (stats)
+    graph.save (os.path.join (graphdir, 'commits.png'))
 
     # FIXME: what do we want to know?
     # find maintainers
