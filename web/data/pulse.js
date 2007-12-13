@@ -33,6 +33,13 @@ function plink (id) {
     }
     else {
       el.style.display = 'block';
+      bot = el.offsetTop + el.clientHeight;
+      if (bot > window.innerHeight) {
+        newy = bot - window.innerHeight + 10
+        if (newy > window.pageYOffset) {
+          window.scrollTo (0, bot - window.innerHeight + 10);
+        }
+      }
     }
     i++;
     el = document.getElementById ('plink' + i);
