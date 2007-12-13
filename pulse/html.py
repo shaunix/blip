@@ -672,6 +672,36 @@ class EllipsizedLabel (Block):
             p (fd, None, self._label)
 
 
+class PopupLink (Block):
+    _count = 0
+
+    def __init__ (self, txt, **kw):
+        Block.__init__ (self, **kw)
+        self._txt = txt
+
+    def output (self, fd=sys.stdout):
+        PopupLink._count += 1
+        while self._txt[-1] == '\n':
+            self._txt = self._txt[:-1]
+        for line in self._txt.split('\n'):
+            if line.strip() != '':
+                break
+        line = line.strip()
+        if len(line) > 40:
+            i = 30
+            while i < len(line):
+                if line[i] == ' ':
+                    break
+                i += 1
+            if i < len(self._txt):
+                line = line[:i] + '...'
+        p (fd, '<a class="plink" href="javascript:plink(\'%i\')">%s</a>',
+           (PopupLink._count, line))
+        p (fd, '<div class="plink" id="plink%i">', PopupLink._count)
+        p (fd, '<pre>%s</pre>', self._txt)
+        p (fd, '</div>')
+
+
 class Span (ContentComponent):
     SPACE = ' '
     BULLET = u' • '

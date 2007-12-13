@@ -168,12 +168,7 @@ def output_branch (branch, path=[], query=[], http=True, fd=None):
         span.add_content ('by')
         span.add_content (pulse.html.Link (rev.person))
         dl.add_term (span)
-        comment = rev.comment
-        while comment[-1] == '\n':
-            comment = comment[:-1]
-        comment = comment + '\n'
-        pre = pulse.html.Pre (comment)
-        dl.add_entry (pre)
+        dl.add_entry (pulse.html.PopupLink (rev.comment))
 
     # Applications
     apps = pulse.db.Branch.selectBy (type='Application', parent=branch)

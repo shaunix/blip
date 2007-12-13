@@ -20,6 +20,25 @@ function exp_toggle (id) {
   }
 }
 
+function plink (id) {
+  i = 1;
+  el = document.getElementById ('plink' + i);
+  while (el) {
+    if (i != id) {
+      el.style.display = 'none';
+    }
+    else if (el.style.display == 'block') {
+      el.style.display = 'none';
+      break;
+    }
+    else {
+      el.style.display = 'block';
+    }
+    i++;
+    el = document.getElementById ('plink' + i);
+  }
+}
+
 function ellip (id) {
   var lnk = document.getElementById ('elliplnk-' + id);
   lnk.parentNode.removeChild (lnk);

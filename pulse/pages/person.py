@@ -76,11 +76,7 @@ def output_person (person, path=[], query=[], http=True, fd=None):
         span.add_content (str(rev.datetime))
         dl.add_term (span)
         comment = rev.comment
-        while comment[-1] == '\n':
-            comment = comment[:-1]
-        comment = comment + '\n'
-        pre = pulse.html.Pre (comment)
-        dl.add_entry (pre)
+        dl.add_entry (pulse.html.PopupLink (rev.comment))
 
     # Modules and Documents
     branches = pulse.db.Branch.select (
