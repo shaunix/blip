@@ -122,7 +122,7 @@ def update_gdu_docbook (doc, **kw):
                                      (pulse.db.Revision.q.datetime > tendays) )
     for rev in list(revs):
         idx = 9 - (now - rev.datetime).days
-        stats[idx] += 1
+        if idx < 10: stats[idx] += 1
     mx = float(max(stats))
     if mx > 0:
         stats = [i / mx for i in stats]
