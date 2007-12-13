@@ -200,9 +200,15 @@ a.plink:hover { text-decoration: none; }
 div.plink {
   position: absolute;
   display: none;
-  padding: 6px;
+  padding: 0;
   background-color: #eeeeec;
-  border: solid 1px #d3d7cf;
+  border: solid 2px #ffffff;
+  opacity: 0.9;
+}
+div.plink pre {
+  padding: 1em;
+  border: solid 2px #729fcf;
+  color: #000000;
 }
 
 div.graph {
