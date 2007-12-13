@@ -156,7 +156,8 @@ def output_branch (branch, path=[], query=[], http=True, fd=None):
     columns.add_content (0, box)
     box.add_content (pulse.html.Graph ('/'.join(branch.ident.split('/')[1:] + ['commits.png'])))
     revs = pulse.db.Revision.selectBy (branch = branch)
-    box.add_content ('Showing 10 of %s commits:' % str(revs.count()))
+    cnt = revs.count()
+    box.add_content ('Showing %i of %i commits:' % (min(10, cnt), cnt))
     dl = pulse.html.DefinitionList()
     box.add_content (dl)
     for rev in revs[:10]:
