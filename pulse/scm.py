@@ -238,6 +238,9 @@ class Checkout (object):
             cmd = 'svn log '
             if since != None:
                 cmd += '-r' + since + ':HEAD'
+            else:
+                # Since the beginning of time, to give us oldest first
+                cmd += '-r\'{1970-01-01}\':HEAD'
             retval = self._process_svn_history (cmd, since)
         finally:
             os.chdir (owd)
@@ -319,6 +322,9 @@ class Checkout (object):
             cmd = 'svn log '
             if since != None:
                 cmd += '-r' + since + ':HEAD '
+            else:
+                # Since the beginning of time, to give us oldest first
+                cmd += '-r\'{1970-01-01}\':HEAD '
             cmd += '"' + os.path.basename (filename) + '@"'
             retval = self._process_svn_history (cmd, since)
         finally:
