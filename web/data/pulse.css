@@ -176,7 +176,7 @@ td.col-first { padding: 0; }
   margin: 1em 0 1em 0;
 }
 
-table.lbox { margin: 0.2em 0 0.2em 0; }
+table.lbox { margin: 0.2em 0 0.2em 0; width: 100%;}
 td.lbox-icon { width: 24px; }
 td.lbox-icon img { width: 24px; }
 td.lbox-text { padding: 0 0.5em 0 0.5em; }
@@ -184,6 +184,7 @@ div.lbox-desc {
   font-style: italic;
   color: #555753;
 }
+td.lbox-graph { vertical-align: top; text-align: right; }
 
 div.exp-title { color: black; }
 div.exp-title a { color: black; }

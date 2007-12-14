@@ -117,7 +117,6 @@ def output_set (set, path=[], query=[], http=True, fd=None):
         mods = pulse.utils.attrsorted (list(mods), 'title')
         modcnt = len(mods)
         lcont = pulse.html.LinkBoxContainer ()
-        lcont.set_columns (2)
         lcont.add_sort_link ('title', pulse.utils.gettext ('title'), False)
         lcont.add_sort_link ('mtime', pulse.utils.gettext ('mtime'))
         lcont.add_sort_link ('module', pulse.utils.gettext ('module'))
@@ -125,6 +124,7 @@ def output_set (set, path=[], query=[], http=True, fd=None):
         for i in range(modcnt):
             mod = mods[i]
             lbox = lcont.add_link_box (mod)
+            lbox.add_graph ('/'.join(mod.ident.split('/')[1:] + ['commits.png']))
             span = pulse.html.Span (mod.branch_module)
             span.add_class ('module')
             lbox.add_fact ('module', pulse.html.Link (mod.pulse_url, span))
@@ -224,7 +224,6 @@ def add_more_tabs (set, tabbed, path=[], query=[]):
             if len(docs[id]) > 0:
                 lcont = pulse.html.LinkBoxContainer (id=id)
                 lcont.set_title (txt % len(docs[id]))
-                lcont.set_columns (2)
                 lcont.set_sort_link_class ('doc' + id)
                 lcont.add_sort_link ('title', pulse.utils.gettext ('title'), False)
                 lcont.add_sort_link ('mtime', pulse.utils.gettext ('mtime'))
@@ -233,6 +232,7 @@ def add_more_tabs (set, tabbed, path=[], query=[]):
                 for doc in docs[id]:
                     lbox = lcont.add_link_box (doc)
                     lbox.add_class ('doc' + id)
+                    lbox.add_graph ('/'.join(doc.ident.split('/')[1:] + ['commits.png']))
                     if doc.mod_datetime != None:
                         span = pulse.html.Span (divider=pulse.html.Span.SPACE)
                         # FIXME: i18n, word order, but we want to link person
