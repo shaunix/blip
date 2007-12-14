@@ -171,7 +171,7 @@ def output_branch (branch, path=[], query=[], http=True, fd=None):
         span.add_content ('by')
         span.add_content (pulse.html.Link (rev.person))
         dl.add_term (span)
-        dl.add_entry (pulse.html.PopupLink (rev.comment))
+        dl.add_entry (pulse.html.RevisionPopupLink (rev.comment))
 
     # Applications
     apps = pulse.db.Branch.selectBy (type='Application', parent=branch)

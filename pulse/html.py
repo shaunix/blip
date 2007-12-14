@@ -21,6 +21,7 @@
 
 import cgi
 import md5
+import re
 import sys
 
 import pulse.config
@@ -392,6 +393,7 @@ class LinkBoxContainer (Block, SortLinkComponent):
             p (fd, '</tr></table>')
         else:
             for i in range(len(self._boxes)):
+                if i != 0: p (fd, '<div class="pad"></div>')
                 p (fd, self._boxes[i])
         if self._title != None:
             p (fd, '</div>')
@@ -416,6 +418,7 @@ class LinkBox (ContentComponent, FactsComponent):
             self._href = self._text = args[0]
         self._badges = []
         self._classes = []
+        self._graphs = []
 
     def set_url (self, url):
         self._url = url
@@ -437,6 +440,9 @@ class LinkBox (ContentComponent, FactsComponent):
 
     def add_badge (self, badge):
         self._badges.append (badge)
+
+    def add_graph (self, url):
+        self._graphs.append (url)
 
     def output (self, fd=sys.stdout):
         d = pulse.utils.attrdict ([self, pulse.config])
@@ -465,7 +471,13 @@ class LinkBox (ContentComponent, FactsComponent):
             p (fd, '</div>')
         FactsComponent.output (self, fd=fd)
         ContentComponent.output (self, fd=fd)
-        p (fd, '</td></tr></table>')
+        p (fd, '</td>')
+        if len(self._graphs) > 0:
+            p (fd, '<td class="lbox-graph">')
+            for graph in self._graphs:
+                pulse.html.Graph(graph).output(fd=fd)
+            p (fd, '</td>')
+        p (fd, '</tr></table>')
         
 class ColumnBox (Block):
     def __init__ (self, num, **kw):
@@ -675,31 +687,50 @@ class EllipsizedLabel (Block):
 class PopupLink (Block):
     _count = 0
 
-    def __init__ (self, txt, **kw):
+    def __init__ (self, short, full, **kw):
         Block.__init__ (self, **kw)
-        self._txt = txt
+        self._short = short
+        self._full = full
 
     def output (self, fd=sys.stdout):
         PopupLink._count += 1
-        while self._txt[-1] == '\n':
-            self._txt = self._txt[:-1]
-        for line in self._txt.split('\n'):
-            if line.strip() != '':
-                break
-        line = line.strip()
+        p (fd, '<a class="plink" href="javascript:plink(\'%i\')">%s</a>',
+           (PopupLink._count, self._short))
+        p (fd, '<div class="plink" id="plink%i">', PopupLink._count)
+        while self._full[-1] == '\n': self._full = self._full[:-1]
+        p (fd, '<pre>%s\n</pre>', self._full)
+        p (fd, '</div>')
+
+
+class RevisionPopupLink (PopupLink):
+    def __init__ (self, comment, **kw):
+        datere = re.compile ('^\d\d\d\d-\d\d-\d\d ')
+        colonre = re.compile ('^\* [^:]*:(.*)')
+        maybe = ''
+        for line in comment.split('\n'):
+            line = line.strip()
+            if line == '':
+                pass
+            elif datere.match(line):
+                maybe = line
+            else:
+                cm = colonre.match(line)
+                if cm:
+                    line = cm.group(1).strip()
+                    if line != '':
+                        break
+                else:
+                    break
+        if line == '': line = maybe
         if len(line) > 40:
             i = 30
             while i < len(line):
                 if line[i] == ' ':
                     break
                 i += 1
-            if i < len(self._txt):
+            if i < len(comment):
                 line = line[:i] + '...'
-        p (fd, '<a class="plink" href="javascript:plink(\'%i\')">%s</a>',
-           (PopupLink._count, line))
-        p (fd, '<div class="plink" id="plink%i">', PopupLink._count)
-        p (fd, '<pre>%s</pre>', self._txt)
-        p (fd, '</div>')
+        PopupLink.__init__ (self, line, comment, **kw)
 
 
 class Span (ContentComponent):
