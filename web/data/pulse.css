@@ -127,6 +127,7 @@ h1 img { vertical-align: middle; }
 a { color: #204a87; text-decoration: none; }
 a:visited { color: #5c3566; }
 a:hover { text-decoration: underline; }
+img { border: none; }
 a img { border: none; vertical-align: middle; }
 table { margin: 0; padding: 0; border-collapse: collapse; }
 tr { margin: 0; padding: 0; }
@@ -212,9 +213,16 @@ div.plink pre {
   color: #000000;
 }
 
-div.graph {
-  margin: 0.5em;
+div.graph { margin: 0.5em; }
+div.comment {
+  display: none;
+  position: absolute;
+  background-color: #fce94f;
+  border: solid 2px #ffffff;
+  padding: 0 6px 0 6px;
+  opacity: 0.9;
 }
+
 table.facts {
   border-top: solid 1px #d3d7cf;
   border-bottom: solid 1px #d3d7cf;

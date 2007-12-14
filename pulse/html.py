@@ -649,13 +649,40 @@ class DefinitionList (Block):
 ## Other...
 
 class Graph (Block):
+    _count = 0
+
     def __init__ (self, url, **kw):
         Block.__init__ (self, **kw)
         self._url = url
+        self._comments = []
+
+    def add_comment (self, coords, comment):
+        self._comments.append ((coords, comment))
 
     def output (self, fd=sys.stdout):
-        p (fd, '<div class="graph"><img src="%s"></div>',
-           '/'.join ([pulse.config.varroot, 'graph', self._url]))
+        if len(self._comments) == 0:
+            p (fd, '<div class="graph"><img src="%s"></div>',
+               '/'.join ([pulse.config.varroot, 'graph', self._url]))
+        else:
+            Graph._count += 1
+            p (fd, '<div class="graph" id="graph-%i"><img src="%s" usemap="#graphmap%i" ismap>',
+               (Graph._count, '/'.join ([pulse.config.varroot, 'graph', self._url]), Graph._count))
+            p (fd, '<map name="graphmap%i">', Graph._count)
+            i = 0
+            for comment in self._comments:
+                i += 1
+                p (fd, '<area shape="rect" coords="%s"', ','.join(map(str, comment[0])), False)
+                p (fd, ' onmouseover="javascript:showcomment(%i, %i, %i)"', (Graph._count, i, comment[0][0]), False)
+                p (fd, ' onmouseout="javascript:hidecomment(%i, %i)"', (Graph._count, i), False)
+                p (fd, '>')
+            p (fd, '</map>')
+            i = 0
+            p (fd, '<div class="comments">')
+            for comment in self._comments:
+                i += 1
+                p (fd, '<div class="comment" id="comment-%i-%i">%s</div>',
+                   (Graph._count, i, comment[1]))
+            p (fd, '</div></div>')
 
 
 class EllipsizedLabel (Block):

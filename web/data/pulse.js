@@ -46,6 +46,26 @@ function plink (id) {
   }
 }
 
+function get_offsetLeft (el) {
+  if (el) {
+    return el.offsetLeft + get_offsetLeft (el.offsetParent);
+  } else {
+    return 0;
+  }
+}
+
+function showcomment (i, j, x) {
+  gr = document.getElementById ('graph-' + i);
+  el = document.getElementById ('comment-' + i + '-' + j);
+  left = get_offsetLeft(gr) + x - 10;
+  el.style.left = left + 'px';
+  el.style.display = 'block';
+}
+function hidecomment (i, j) {
+  el = document.getElementById ('comment-' + i + '-' + j);
+  el.style.display = 'none';
+}
+
 function ellip (id) {
   var lnk = document.getElementById ('elliplnk-' + id);
   lnk.parentNode.removeChild (lnk);

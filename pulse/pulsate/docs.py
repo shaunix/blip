@@ -124,11 +124,10 @@ def update_gdu_docbook (doc, **kw):
         idx = (now - rev.datetime).days
         idx = 23 - (idx // 7)
         if idx < 24: stats[idx] += 1
-    stats = [i / 10.0 for i in stats]
     graphdir = os.path.join (*([pulse.config.webdir, 'var', 'graph'] + doc.ident.split('/')[1:]))
     if not os.path.exists (graphdir):
         os.makedirs (graphdir)
-    graph = pulse.graphs.BarGraph (stats)
+    graph = pulse.graphs.BarGraph (stats, 10)
     graph.save (os.path.join (graphdir, 'commits.png'))
 
     xmlfiles = sorted(xmlfiles)

@@ -58,12 +58,12 @@ def update_branch (branch, update=True, timestamps=True, history=True):
         idx = (now - rev.datetime).days
         idx = 23 - (idx // 7)
         if idx < 24: stats[idx] += 1
-    stats = [i / 30.0 for i in stats]
     graphdir = os.path.join (*([pulse.config.webdir, 'var', 'graph'] + branch.ident.split('/')[1:]))
     if not os.path.exists (graphdir):
         os.makedirs (graphdir)
-    graph = pulse.graphs.BarGraph (stats)
+    graph = pulse.graphs.BarGraph (stats, 30)
     graph.save (os.path.join (graphdir, 'commits.png'))
+    graph.save_data (os.path.join (graphdir, 'commits.imap'))
 
     # FIXME: what do we want to know?
     # mailing list

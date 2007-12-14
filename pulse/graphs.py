@@ -21,6 +21,8 @@
 from math import pi
 
 import colorsys
+import os
+import re
 
 import cairo
 
@@ -67,15 +69,16 @@ class Graph:
 
 
 class BarGraph (Graph):
-    def __init__ (self, stats, width=None, height=40):
+    def __init__ (self, stats, top, width=None, height=40):
         if width == None:
             width = 6 * len(stats) + 2
         Graph.__init__ (self, width=width, height=height)
+        self._stats = stats
         self.context.set_antialias (cairo.ANTIALIAS_GRAY)
         alum_rgb = [0.729412, 0.741176, 0.713725]
         alum_hsv = colorsys.rgb_to_hsv (*alum_rgb)
         for i in range(len(stats)):
-            stat = stats[i]
+            stat = stats[i] / (top * 1.0) 
             self.context.new_path ()
             self.context.set_line_width (2)
             self.context.move_to (6*i + 2.5, self.height)
@@ -87,6 +90,18 @@ class BarGraph (Graph):
             else:
                 self.context.set_source_rgb (*alum_rgb)
             self.context.stroke ()
+
+    def save_data (self, filename, data=[]):
+        fd = open(filename, 'w')
+        for i in range(len(self._stats)):
+            stat = self._stats[i]
+            coords = [6*i, 0, 6*i + 2, self.height]
+            fd.write(','.join(map(str, coords)))
+            fd.write(':' + str(stat) + ':')
+            if i < len(data):
+                fd.write(str(data[i]))
+            fd.write('\n')
+        fd.close()
 
 
 class PulseGraph (Graph):
@@ -134,3 +149,16 @@ class PulseGraph (Graph):
         self.context.stroke ()
 
         self.draw_border (thickness=border_thickness, radius=4)
+
+
+def load_graph_data (filename):
+    if not os.path.exists(filename):
+        return []
+    pat = re.compile('^([^:]*):([^:]*):(.*)$')
+    data = []
+    for line in open(filename):
+        m = pat.match(line)
+        if m:
+            coords = map(int, m.group(1).split(','))
+            data.append((coords, int(m.group(2)), m.group(3)))
+    return data

@@ -23,6 +23,7 @@ import os
 
 import pulse.config
 import pulse.db
+import pulse.graphs
 import pulse.html
 import pulse.scm
 import pulse.utils
@@ -154,7 +155,18 @@ def output_branch (branch, path=[], query=[], http=True, fd=None):
     # Activity
     box = pulse.html.InfoBox ('activity', pulse.utils.gettext ('Activity'))
     columns.add_content (0, box)
-    box.add_content (pulse.html.Graph ('/'.join(branch.ident.split('/')[1:] + ['commits.png'])))
+    graph = pulse.html.Graph ('/'.join(branch.ident.split('/')[1:] + ['commits.png']))
+    graphdir = os.path.join (*([pulse.config.webdir, 'var', 'graph'] + branch.ident.split('/')[1:]))
+    graphdata = pulse.graphs.load_graph_data (os.path.join (graphdir, 'commits.imap'))
+    for i in range(len(graphdata)):
+        datum = graphdata[i]
+        ago = len(graphdata) - i - 1
+        if ago > 0:
+            cmt = pulse.utils.gettext ('%i weeks ago: %i commits') % (ago, datum[1])
+        else:
+            cmt = pulse.utils.gettext ('this week: %i commits') % datum[1]
+        graph.add_comment (datum[0], cmt)
+    box.add_content (graph)
     revs = pulse.db.Revision.select ((pulse.db.Revision.q.branchID == branch.id) &
                                      (pulse.db.Revision.q.filename == None),
                                      orderBy='-datetime')
