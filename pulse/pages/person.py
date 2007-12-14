@@ -64,7 +64,9 @@ def output_person (person, path=[], query=[], http=True, fd=None):
     # Activity
     box = pulse.html.InfoBox ('activity', pulse.utils.gettext ('Activity'))
     columns.add_content (0, box)
-    revs = pulse.db.Revision.selectBy (person=person, filename=None)
+    revs = pulse.db.Revision.select ((pulse.db.Revision.q.personID == person.id) &
+                                     (pulse.db.Revision.q.filename == None),
+                                     orderBy='-datetime')
     cnt = revs.count()
     box.add_content ('Showing %i of %i commits:' % (min(10, cnt), cnt))
     dl = pulse.html.DefinitionList()

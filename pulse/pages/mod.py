@@ -155,7 +155,9 @@ def output_branch (branch, path=[], query=[], http=True, fd=None):
     box = pulse.html.InfoBox ('activity', pulse.utils.gettext ('Activity'))
     columns.add_content (0, box)
     box.add_content (pulse.html.Graph ('/'.join(branch.ident.split('/')[1:] + ['commits.png'])))
-    revs = pulse.db.Revision.selectBy (branch = branch)
+    revs = pulse.db.Revision.select ((pulse.db.Revision.q.branchID == branch.id) &
+                                     (pulse.db.Revision.q.filename == None),
+                                     orderBy='-datetime')
     cnt = revs.count()
     box.add_content ('Showing %i of %i commits:' % (min(10, cnt), cnt))
     dl = pulse.html.DefinitionList()
