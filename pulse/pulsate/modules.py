@@ -50,26 +50,22 @@ def update_branch (branch, update=True, timestamps=True, history=True):
 
     pulse.utils.log ('Creating commit graph for %s' % branch.ident)
     now = datetime.datetime.now()
-    tendays = now - datetime.timedelta(days=10)
-    stats = [0] * 10
+    threshhold = now - datetime.timedelta(days=168)
+    stats = [0] * 24
     revs = pulse.db.Revision.select ((pulse.db.Revision.q.branchID == branch.id) &
-                                     (pulse.db.Revision.q.datetime > tendays) )
+                                     (pulse.db.Revision.q.datetime > threshhold) )
     for rev in list(revs):
-        idx = 9 - (now - rev.datetime).days
-        if idx < 10: stats[idx] += 1
-    mx = float(max(stats))
-    if mx > 0:
-        stats = [i / mx for i in stats]
+        idx = (now - rev.datetime).days
+        idx = 23 - (idx // 7)
+        if idx < 24: stats[idx] += 1
+    stats = [i / 30.0 for i in stats]
     graphdir = os.path.join (*([pulse.config.webdir, 'var', 'graph'] + branch.ident.split('/')[1:]))
     if not os.path.exists (graphdir):
         os.makedirs (graphdir)
-    graph = pulse.graphs.PulseGraph (stats)
+    graph = pulse.graphs.BarGraph (stats)
     graph.save (os.path.join (graphdir, 'commits.png'))
 
     # FIXME: what do we want to know?
-    # find maintainers
-    # find document (in documents.py?)
-    # find human-readable names for the module
     # mailing list
     # bug information
     podirs = []

@@ -20,6 +20,8 @@
 
 from math import pi
 
+import colorsys
+
 import cairo
 
 class Graph:
@@ -63,12 +65,29 @@ class Graph:
     def save (self, filename):
         self.surface.write_to_png (filename)
 
+
 class BarGraph (Graph):
-    def __init__ (self, stats, width=200, height=40):
+    def __init__ (self, stats, width=None, height=40):
+        if width == None:
+            width = 6 * len(stats) + 2
         Graph.__init__ (self, width=width, height=height)
         self.context.set_antialias (cairo.ANTIALIAS_GRAY)
-        # FIXME: do stuff
-        self.draw_border (thickness=1, radius=1)
+        alum_rgb = [0.729412, 0.741176, 0.713725]
+        alum_hsv = colorsys.rgb_to_hsv (*alum_rgb)
+        for i in range(len(stats)):
+            stat = stats[i]
+            self.context.new_path ()
+            self.context.set_line_width (2)
+            self.context.move_to (6*i + 2.5, self.height)
+            self.context.rel_line_to (0, -0.5 - (self.height * min(stat,1)))
+            self.context.close_path ()
+            if stat > 1:
+                v = alum_hsv[2] / stat
+                self.context.set_source_rgb (*colorsys.hsv_to_rgb (alum_hsv[0], alum_hsv[1], v))
+            else:
+                self.context.set_source_rgb (*alum_rgb)
+            self.context.stroke ()
+
 
 class PulseGraph (Graph):
     def __init__ (self, stats, width=200, height=40):
