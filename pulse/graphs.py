@@ -95,7 +95,7 @@ class BarGraph (Graph):
         fd = open(filename, 'w')
         for i in range(len(self._stats)):
             stat = self._stats[i]
-            coords = [6*i, 0, 6*i + 2, self.height]
+            coords = [6*i, 0, 6*i + 5, self.height]
             fd.write(','.join(map(str, coords)))
             fd.write(':' + str(stat) + ':')
             if i < len(data):
