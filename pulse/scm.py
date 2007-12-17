@@ -230,6 +230,13 @@ class Checkout (object):
                 'get_history got unknown SCM type "%s"' % self.scm_type)
         return func (self, since=since)
 
+    def _get_history_cvs (self, since=None):
+        # I don't feel like writing per-file to per-repo stuff, and we don't
+        # want to count each file commit, otherwise we drastically inflate
+        # the module's statistics.  So we're just going to require ChangeLog
+        # files for CVS modules.
+        return self.get_file_history ('ChangeLog', since=since)
+
     def _get_history_svn (self, since=None):
         owd = os.getcwd ()
         retval = []
@@ -310,7 +317,55 @@ class Checkout (object):
                 'get_file_history got unknown SCM type "%s"' % self.scm_type)
         return func (self, filename, since=since)
 
-    #def _get_file_history_cvs (self, filename, since=None)
+    def _get_file_history_cvs (self, filename, since=None):
+        owd = os.getcwd ()
+        retval = []
+        try:
+            os.chdir (self.directory)
+            cmd = 'cvs log -N'
+            if since != None:
+                cmd += ' -r' + since + '::'
+            elif self.scm_branch == 'HEAD':
+                cmd += ' -b'
+            else:
+                cmd += ' -r' + self.scm_branch
+            cmd += ' "' + filename + '"'
+            fd = codecs.getreader('utf-8')(os.popen (cmd), 'ignore')
+            line = fd.readline()
+            while line:
+                if line == '-' * 28 + '\n':
+                    line = fd.readline()
+                    if not line: break
+                    lnum = 0
+                    comment = ''
+                    while line:
+                        if not line or line == '-' * 28 + '\n' or line == '=' * 77 + '\n':
+                            break
+                        if lnum == 0:
+                            # revision x.y
+                            rev = line[9:].strip()
+                        elif lnum == 1:
+                            # date: <date>; author: <author>; state: ...; lines: ...
+                            parts = map(lambda s: s.strip(), line.split(';'))
+                            for part in parts:
+                                if part.startswith ('date: '):
+                                    date = parse_date (part[6:].strip())
+                                elif part.startswith ('author: '):
+                                    who = part[8:].strip()
+                            pass
+                        elif lnum == 2 and line.startswith ('branches: '):
+                            pass
+                        else:
+                            comment += line
+                        line = fd.readline()
+                        lnum += 1
+                    retval.insert (0, {'revision' : rev, 'date' : date,
+                                       'userid' : who, 'comment' : comment})
+                else:
+                    line = fd.readline()
+        finally:
+            os.chdir (owd)
+        return retval
     
     #def _get_file_history_git (self, filename, since=None)
     
@@ -334,7 +389,7 @@ class Checkout (object):
 
     def _process_svn_history (self, cmd, since):
         retval = []
-        fd = codecs.getreader('utf-8')(os.popen (cmd))
+        fd = codecs.getreader('utf-8')(os.popen (cmd), 'ignore')
         line = fd.readline()
         while line:
             if line == '-' * 72 + '\n':
