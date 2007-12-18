@@ -207,7 +207,7 @@ def output_doc (doc, path=[], query=[], http=True, fd=None):
                                                pulse.utils.gettext ('No translations') ))
     else:
         slinks = pulse.html.SortLinkComponent ('tr', 'po')
-        slinks.add_sort_link ('lang', pulse.utils.gettext ('lang'), False)
+        slinks.add_sort_link ('title', pulse.utils.gettext ('lang'), False)
         slinks.add_sort_link ('percent', pulse.utils.gettext ('percent'))
         slinks.add_sort_link ('img', pulse.utils.gettext ('images'))
         vbox.add_content (slinks)
@@ -218,7 +218,7 @@ def output_doc (doc, path=[], query=[], http=True, fd=None):
                                               (pulse.db.Statistic.q.type == 'Messages'),
                                               orderBy='-daynum')
             span = pulse.html.Span (translation.scm_file[:-3])
-            span.add_class ('lang')
+            span.add_class ('title')
             row = [span]
             percent = 0
             try:

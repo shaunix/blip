@@ -287,7 +287,7 @@ def output_branch (branch, path=[], query=[], http=True, fd=None):
                                                        pulse.utils.gettext ('No translations') ))
             else:
                 slinks = pulse.html.SortLinkComponent ('tr', 'po')
-                slinks.add_sort_link ('lang', pulse.utils.gettext ('lang'), False)
+                slinks.add_sort_link ('title', pulse.utils.gettext ('lang'), False)
                 slinks.add_sort_link ('percent', pulse.utils.gettext ('percent'))
                 vbox.add_content (slinks)
                 grid = pulse.html.GridBox ()
@@ -298,7 +298,7 @@ def output_branch (branch, path=[], query=[], http=True, fd=None):
                                                       orderBy='-daynum')
 
                     span = pulse.html.Span (translation.scm_file[:-3])
-                    span.add_class ('lang')
+                    span.add_class ('title')
                     row = [span]
                     percent = 0
                     try:
