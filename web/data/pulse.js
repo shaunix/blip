@@ -35,9 +35,13 @@ function plink (id) {
       el.style.display = 'block';
       bot = el.offsetTop + el.clientHeight;
       if (bot > window.innerHeight) {
-        newy = bot - window.innerHeight + 10
+        if (el.clientHeight > window.innerHeight) {
+          newy = el.offsetTop;
+        } else {
+          newy = bot - window.innerHeight + 10
+        }
         if (newy > window.pageYOffset) {
-          window.scrollTo (0, bot - window.innerHeight + 10);
+          window.scrollTo (0, newy);
         }
       }
     }
