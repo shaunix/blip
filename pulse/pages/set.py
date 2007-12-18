@@ -118,9 +118,9 @@ def output_set (set, path=[], query=[], http=True, fd=None):
         modcnt = len(mods)
         lcont = pulse.html.LinkBoxContainer ()
         lcont.add_sort_link ('title', pulse.utils.gettext ('title'), False)
-        lcont.add_sort_link ('mtime', pulse.utils.gettext ('mtime'))
-        lcont.add_sort_link ('score', pulse.utils.gettext ('score'))
         lcont.add_sort_link ('module', pulse.utils.gettext ('module'))
+        lcont.add_sort_link ('mtime', pulse.utils.gettext ('modified'))
+        lcont.add_sort_link ('score', pulse.utils.gettext ('score'))
         tabbed.add_tab (pulse.utils.gettext ('Modules (%i)') % modcnt, True, lcont)
         for i in range(modcnt):
             mod = mods[i]
@@ -231,13 +231,20 @@ def add_more_tabs (set, tabbed, path=[], query=[]):
                 lcont.set_title (txt % len(docs[id]))
                 lcont.set_sort_link_class ('doc' + id)
                 lcont.add_sort_link ('title', pulse.utils.gettext ('title'), False)
-                lcont.add_sort_link ('mtime', pulse.utils.gettext ('mtime'))
                 lcont.add_sort_link ('module', pulse.utils.gettext ('module'))
+                lcont.add_sort_link ('mtime', pulse.utils.gettext ('modified'))
+                lcont.add_sort_link ('score', pulse.utils.gettext ('score'))
                 vbox.add_content (lcont)
                 for doc in docs[id]:
                     lbox = lcont.add_link_box (doc)
                     lbox.add_class ('doc' + id)
                     lbox.add_graph ('/'.join(doc.ident.split('/')[1:] + ['commits.png']))
+                    span = pulse.html.Span (doc.branch_module)
+                    span.add_class ('module')
+                    url = doc.ident.split('/')
+                    url = '/'.join(['mod'] + url[2:4] + [url[5]])
+                    url = pulse.config.webroot + url
+                    lbox.add_fact ('module', pulse.html.Link (url, span))
                     if doc.mod_datetime != None:
                         span = pulse.html.Span (divider=pulse.html.Span.SPACE)
                         # FIXME: i18n, word order, but we want to link person
@@ -247,13 +254,10 @@ def add_more_tabs (set, tabbed, path=[], query=[]):
                             span.add_content (pulse.utils.gettext ('by'))
                             span.add_content (pulse.html.Link (doc.mod_person))
                         lbox.add_fact (pulse.utils.gettext ('modified'), span)
-                    span = pulse.html.Span (doc.branch_module)
-                    span.add_class ('module')
-                    # FIXME: munge ident to avoid this extra parent SELECT
-                    url = doc.ident.split('/')
-                    url = '/'.join(['mod'] + url[2:4] + [url[5]])
-                    url = pulse.config.webroot + url
-                    lbox.add_fact ('module', pulse.html.Link (url, span))
+                    if doc.mod_score != None:
+                        span = pulse.html.Span(str(doc.mod_score))
+                        span.add_class ('score')
+                        lbox.add_fact (pulse.utils.gettext ('score'), span)
         tabbed.add_tab ('Documents (%i)' % cnt, True, vbox)
     else:
         tabbed.add_tab ('Documents (%i)' % rels.count(), False, set.pulse_url + '/doc')
@@ -301,11 +305,11 @@ def add_more_tabs (set, tabbed, path=[], query=[]):
                 except IndexError:
                     pass
             lcont.add_sort_link ('title', pulse.utils.gettext ('title'), False)
-            if slink_mtime:
-                lcont.add_sort_link ('mtime', pulse.utils.gettext ('mtime'))
             lcont.add_sort_link ('module', pulse.utils.gettext ('module'))
             if slink_documentation:
                 lcont.add_sort_link ('docs', pulse.utils.gettext ('docs'))
+            if slink_mtime:
+                lcont.add_sort_link ('mtime', pulse.utils.gettext ('modified'))
         else:
             cnt = rels.count()
             if cnt > 0:
