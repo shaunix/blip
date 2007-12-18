@@ -164,40 +164,50 @@ function KeyedThing (key, title, thing) {
   this.thing = thing;
 }
 intre = /^-?\d+%?$/;
-function KeyedThingCmp (thing1, thing2) {
-  if (thing1.key == thing2.key) {
-    if (thing1.title < thing2.title) {
-      return -1;
-    }
-    else if (thing1.title > thing2.title) {
-      return 1;
-    }
-    else {
-      return 0;
-    }
-  }
-  else if (thing1.key == null) {
-    return 1;
-  }
-  else if (thing2.key == null) {
+function lowercmp (s1, s2) {
+  t1 = s1.toLowerCase();
+  t2 = s2.toLowerCase();
+  if (t1 < t2)
     return -1;
-  }
-  else if (intre.exec(thing1.key) && intre.exec(thing2.key)) {
-    n1 = parseInt(thing1.key);
-    n2 = parseInt(thing2.key);
+  else if (t2 < t1)
+    return 1;
+  else
+    return 0;
+}
+function titlecmp (thing1, thing2) {
+  k1 = thing1.title;
+  k2 = thing2.title;
+  if (k1 == k2)
+    return 0;
+  else if (k1 == null)
+    return 1;
+  else if (k2 == null)
+    return -1;
+  else
+    return lowercmp(k1, k2);
+}
+function keycmp (thing1, thing2) {
+  k1 = thing1.key;
+  k2 = thing2.key;
+  if (k1 == k2)
+    return titlecmp (thing1, thing2)
+  else if (k1 == null)
+    return 1;
+  else if (k2 == null)
+    return -1;
+  else if (intre.exec(k1) && intre.exec(k2)) {
+    n1 = parseInt(k1);
+    n2 = parseInt(k2);
     return n2 - n1;
   }
-  else if (thing1.key < thing2.key) {
-    return -1;
-  }
-  else if (thing1.key > thing2.key) {
-    return 1;
-  }
+  else
+    return lowercmp(k1, k2);
   return 0;
 }
 function sort (tag, cls, key) {
   var things = []
   var els = document.getElementsByTagName (tag);
+
   for (var i = 0; i < els.length; i++) {
     el = els[i];
     if (has_class (el, cls)) {
@@ -236,7 +246,7 @@ function sort (tag, cls, key) {
     dummies.push (dummy);
     things[i].thing.parentNode.replaceChild (dummy, things[i].thing);
   }
-  things.sort (KeyedThingCmp);
+  things.sort (keycmp);
   for (var i = 0; i < things.length; i++) {
     dummies[i].parentNode.replaceChild (things[i].thing, dummies[i]);
   }
