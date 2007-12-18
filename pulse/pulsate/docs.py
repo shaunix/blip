@@ -134,6 +134,7 @@ def update_gdu_docbook (doc, **kw):
         os.makedirs (graphdir)
     graph = pulse.graphs.BarGraph (stats, 10)
     graph.save (os.path.join (graphdir, 'commits.png'))
+    graph.save_data (os.path.join (graphdir, 'commits.imap'))
 
     xmlfiles = sorted(xmlfiles)
     if doc.data.get('xmlfiles') != xmlfiles:
