@@ -19,6 +19,7 @@
 #
 
 import datetime
+import math
 import os
 import os.path
 import shutil
@@ -58,6 +59,10 @@ def update_branch (branch, update=True, timestamps=True, history=True):
         idx = (now - rev.datetime).days
         idx = 23 - (idx // 7)
         if idx < 24: stats[idx] += 1
+    score = 0;
+    for i in range(len(stats)):
+        score += (math.sqrt(i + 1) / 5) * stats[i]
+    branch.mod_score = int(score)
     graphdir = os.path.join (*([pulse.config.webdir, 'var', 'graph'] + branch.ident.split('/')[1:]))
     if not os.path.exists (graphdir):
         os.makedirs (graphdir)

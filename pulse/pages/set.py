@@ -119,6 +119,7 @@ def output_set (set, path=[], query=[], http=True, fd=None):
         lcont = pulse.html.LinkBoxContainer ()
         lcont.add_sort_link ('title', pulse.utils.gettext ('title'), False)
         lcont.add_sort_link ('mtime', pulse.utils.gettext ('mtime'))
+        lcont.add_sort_link ('score', pulse.utils.gettext ('score'))
         lcont.add_sort_link ('module', pulse.utils.gettext ('module'))
         tabbed.add_tab (pulse.utils.gettext ('Modules (%i)') % modcnt, True, lcont)
         for i in range(modcnt):
@@ -137,6 +138,10 @@ def output_set (set, path=[], query=[], http=True, fd=None):
                     span.add_content (pulse.utils.gettext ('by'))
                     span.add_content (pulse.html.Link (mod.mod_person))
                 lbox.add_fact (pulse.utils.gettext ('modified'), span)
+            if mod.mod_score != None:
+                span = pulse.html.Span(str(mod.mod_score))
+                span.add_class ('score')
+                lbox.add_fact (pulse.utils.gettext ('score'), span)
 
     if modcnt > 0:
         add_more_tabs (set, tabbed, path=path, query=query)

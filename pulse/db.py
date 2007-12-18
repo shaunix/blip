@@ -225,6 +225,7 @@ class Branch (Record):
     scm_dir = sql.StringCol (default=None)
     scm_file = sql.StringCol (default=None)
 
+    mod_score = sql.IntCol (default=None)
     mod_datetime = sql.DateTimeCol (default=None)
     mod_person = sql.ForeignKey ('Entity', dbName='mod_person', default=None)
 
