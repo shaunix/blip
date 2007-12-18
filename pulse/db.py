@@ -301,6 +301,7 @@ class Entity (Record):
         table = 'Entity'
 
     nick = sql.StringCol (default=None)
+    mod_score = sql.IntCol (default=None)
 
     def get_name_nick (self):
         # FIXME: latinized names

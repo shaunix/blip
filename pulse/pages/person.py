@@ -31,6 +31,8 @@ from sqlobject.sqlbuilder import *
 
 def main (path=[], query={}, http=True, fd=None):
     person = None
+    if len(path) == 1:
+        return output_top (path, query, http, fd)
     if len(path) == 3:
         person = pulse.db.Entity.selectBy (ident=('/' + '/'.join(path)), type='Person')
         if person.count() == 0:
@@ -47,6 +49,20 @@ def main (path=[], query={}, http=True, fd=None):
         return 404
 
     return output_person (person, path, query, http, fd)
+
+
+def output_top (path=[], query={}, http=True, fd=None):
+    page = pulse.html.Page (http=http)
+    page.set_title (pulse.utils.gettext ('People'))
+    people = pulse.db.Entity.select (pulse.db.Entity.q.type == 'Person',
+                                     orderBy='-mod_score')
+    page.add_content(pulse.html.Div(pulse.utils.gettext('42 most active people:')))
+    for person in people[:42]:
+        lbox = pulse.html.LinkBox (person)
+        lbox.add_fact (pulse.utils.gettext ('score'), str(person.mod_score))
+        lbox.add_graph ('/'.join(person.ident.split('/')[1:] + ['commits.png']))
+        page.add_content (lbox)
+    page.output (fd=fd)
 
 
 def output_person (person, path=[], query=[], http=True, fd=None):
