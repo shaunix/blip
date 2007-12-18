@@ -199,8 +199,9 @@ function sort (tag, cls, key) {
   var things = []
   var els = document.getElementsByTagName (tag);
   for (var i = 0; i < els.length; i++) {
-    if (has_class (els[i], cls)) {
-      var spans = els[i].getElementsByTagName ('span');
+    el = els[i];
+    if (has_class (el, cls)) {
+      var spans = el.getElementsByTagName ('span');
       var el_key = null;
       var el_title = null;
       for (var k = 0; k < spans.length; k++) {
@@ -212,7 +213,20 @@ function sort (tag, cls, key) {
           el_title = spans[k].innerHTML;
         }
       }
-      keyed = new KeyedThing (el_key, el_title, els[i]);
+      if (el_key == null) {
+        el.className = el.className + ' nokey';
+      }
+      else if (has_class (el, 'nokey')) {
+        oldcls = el.className.split(' ');
+        newcls = [];
+        for (var ci = 0; ci < oldcls.length; ci++) {
+          if (oldcls[ci] != 'nokey') {
+            newcls.push(oldcls[ci])
+          }
+        }
+        el.className = newcls.join(' ');
+      }
+      keyed = new KeyedThing (el_key, el_title, el);
       things.push (keyed);
     }
   }
