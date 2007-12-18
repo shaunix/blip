@@ -163,6 +163,7 @@ function KeyedThing (key, title, thing) {
   this.title = title;
   this.thing = thing;
 }
+intre = /^-?\d+%?$/;
 function KeyedThingCmp (thing1, thing2) {
   if (thing1.key == thing2.key) {
     if (thing1.title < thing2.title) {
@@ -181,9 +182,9 @@ function KeyedThingCmp (thing1, thing2) {
   else if (thing2.key == null) {
     return -1;
   }
-  n1 = parseInt(thing1.key);
-  n2 = parseInt(thing2.key);
-  if (!isNaN(n1) && !isNaN(n2)) {
+  else if (intre.exec(thing1.key) && intre.exec(thing2.key)) {
+    n1 = parseInt(thing1.key);
+    n2 = parseInt(thing2.key);
     return n2 - n1;
   }
   else if (thing1.key < thing2.key) {
