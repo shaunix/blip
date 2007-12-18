@@ -175,16 +175,16 @@ function KeyedThingCmp (thing1, thing2) {
       return 0;
     }
   }
-  else if (thing1.key == false) {
-    return -1;
-  }
-  else if (thing2.key == false) {
+  else if (thing1.key == null) {
     return 1;
+  }
+  else if (thing2.key == null) {
+    return -1;
   }
   n1 = parseInt(thing1.key);
   n2 = parseInt(thing2.key);
   if (!isNaN(n1) && !isNaN(n2)) {
-    return n1 - n2;
+    return n2 - n1;
   }
   else if (thing1.key < thing2.key) {
     return -1;
@@ -200,8 +200,8 @@ function sort (tag, cls, key) {
   for (var i = 0; i < els.length; i++) {
     if (has_class (els[i], cls)) {
       var spans = els[i].getElementsByTagName ('span');
-      var el_key = false;
-      var el_title = false;
+      var el_key = null;
+      var el_title = null;
       for (var k = 0; k < spans.length; k++) {
         if (has_class (spans[k], key)) {
           el_key = spans[k].innerHTML;
