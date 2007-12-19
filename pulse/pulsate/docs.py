@@ -45,10 +45,11 @@ def help_extra (fd=None):
 
 
 checkouts = {}
-def get_checkout (branch, update=True):
-    if not checkouts.has_key (branch.ident):
-        checkouts[branch.ident] = pulse.scm.Checkout.from_record (branch, update=update)
-    return checkouts[branch.ident]
+def get_checkout (record, update=True):
+    key = '::'.join(map(str, [record.scm_type, record.scm_server, record.scm_module, record.scm_branch, record.scm_path]))
+    if not checkouts.has_key (key):
+        checkouts[key] = pulse.scm.Checkout.from_record (record, update=update)
+    return checkouts[key]
 
 
 def update_gdu_docbook (doc, **kw):
