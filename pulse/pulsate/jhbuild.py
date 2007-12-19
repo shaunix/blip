@@ -148,9 +148,11 @@ def update_set (data, update=True):
 
     # Sets may contain either other sets or modules, not both
     if data.has_key ('set'):
+        rels = []
         for subset in data['set'].keys():
             subrecord = update_set (data['set'][subset], update=update)
-            pulse.db.RecordRelation.set_related (record, 'SetSubset', subrecord)
+            rels.append (pulse.db.RecordRelation.set_related (record, 'SetSubset', subrecord))
+        record.set_relations (pulse.db.RecordRelation, 'SetSubset', rels)
     elif (data.has_key ('jhbuild_scm_type')   and
           data.has_key ('jhbuild_scm_server') and
           data.has_key ('jhbuild_scm_module') and
@@ -190,10 +192,12 @@ def update_set (data, update=True):
                     continue
                 packages += moduleset.get_metamodule (module)
 
+        rels = []
         for pkg in packages:
             branch = update_branch (moduleset, pkg, update=update)
             if branch != None:
-                pulse.db.RecordBranchRelation.set_related (record, 'SetModule', branch)
+                rels.append (pulse.db.RecordBranchRelation.set_related (record, 'SetModule', branch))
+        record.set_relations (pulse.db.RecordBranchRelation, 'SubModule', rels)
 
     return record
 
