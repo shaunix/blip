@@ -29,6 +29,7 @@ import pulse.xmldata
 
 synop = 'update information from Gnome\'s jhbuild module'
 args = pulse.utils.odict()
+args['no-deps'] = (None, 'do not check dependencies')
 args['no-update']  = (None, 'do not update SCM checkouts')
 
 modulesets = {}
@@ -209,19 +210,43 @@ def update_set (data, update=True):
 
     return record
 
-def update_deps (moduleset):
+def update_deps (modulekey):
+    moduleset = modulesets[modulekey]
     for pkg in moduleset.get_packages():
         pkgdata = moduleset.get_package (pkg)
         if not pkgdata.has_key ('__record__'): continue
         pkgrec = pkgdata['__record__']
+        deps = get_deps (modulekey, pkg)
         pkgrels = []
-        for dep in pkgdata.get('deps', []):
-            if not moduleset.has_package (dep): continue
+        for dep in deps:
             depdata = moduleset.get_package (dep)
             if not depdata.has_key ('__record__'): continue
             deprec = depdata['__record__']
-            pkgrels.append (pulse.db.BranchRelation.set_related (pkgrec, 'ModuleDependency', deprec))
-        pkgrec.set_relations (pulse.db.BranchRelation, 'ModuleDependency', pkgrels)
+            if deprec.resource == None: continue
+            deprec = deprec.resource
+            pkgrels.append (pulse.db.BranchResourceRelation.set_related (pkgrec, 'ModuleDependency', deprec))
+        pkgrec.set_relations (pulse.db.BranchResourceRelation, 'ModuleDependency', pkgrels)
+
+known_deps = {}
+def get_deps (modulekey, pkg, seen=[]):
+    depskey = modulekey + ':' + pkg
+    if known_deps.has_key (depskey):
+        return known_deps[depskey]
+    moduleset = modulesets[modulekey]
+    pkgdata = moduleset.get_package (pkg)
+    deps = []
+    for dep in pkgdata.get('deps', []):
+        # Prevent infinite loops for circular dependencies
+        if dep in seen: continue
+        if not moduleset.has_package (dep): continue
+        depdata = moduleset.get_package (dep)
+        if not dep in deps:
+            deps.append (dep)
+            for depdep in get_deps (modulekey, dep, seen + [pkg]):
+                if not depdep in deps:
+                    deps.append (depdep)
+    known_deps[depskey] = deps
+    return deps
 
 def main (argv, options={}):
     update = not options.get ('--no-update', False)
@@ -231,5 +256,7 @@ def main (argv, options={}):
     for key in data.keys():
         if data[key]['__type__'] == 'set':
             update_set (data[key], update=update)
-    for moduleset in modulesets:
-        update_deps (modulesets[moduleset])
+
+    if not options.get ('--no-deps', False):
+        for modulekey in modulesets:
+            update_deps (modulekey)

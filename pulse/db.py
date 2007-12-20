@@ -25,6 +25,7 @@ import sys
 import sqlobject as sql
 
 import pulse.config
+import pulse.scm
 import pulse.utils
 
 conn = sql.connectionForURI (pulse.config.dbroot)
@@ -198,6 +199,9 @@ class Resource (Record):
     class sqlmeta:
         table = 'Resource'
 
+    scm_type = sql.StringCol (default=None)
+    scm_server = sql.StringCol (default=None)
+    scm_module = sql.StringCol (default=None)
     default_branch = sql.ForeignKey ('Branch', dbName='default_branch', default=None)
 
     def remove_relations (self):
@@ -229,16 +233,39 @@ class Branch (Record):
     mod_datetime = sql.DateTimeCol (default=None)
     mod_person = sql.ForeignKey ('Entity', dbName='mod_person', default=None)
 
-    def _ensure_default_branch (self):
+    def _check_default_branch (self):
         if getattr (self, 'scm_type', None) != None and getattr (self, 'scm_branch', None) != None:
             if pulse.scm.default_branches[self.scm_type] == self.scm_branch:
                 self.resource.default_branch = self
+                return True
+        return False
     def _set_scm_type (self, value):
-        self._ensure_default_branch ()
+        if self._check_default_branch ():
+            self.resource.scm_type = value
         self._SO_set_scm_type (value)
+    def _set_scm_server (self, value):
+        if self._check_default_branch ():
+            self.resource.scm_server = value
+        self._SO_set_scm_server (value)
+    def _set_scm_module (self, value):
+        if self._check_default_branch ():
+            self.resource.scm_module = value
+        self._SO_set_scm_module (value)
     def _set_scm_branch (self, value):
-        self._ensure_default_branch ()
+        self._check_default_branch ()
         self._SO_set_scm_branch (value)
+    def _set_scm_path (self, value):
+        if self._check_default_branch ():
+            self.resource.scm_path = value
+        self._SO_set_scm_path (value)
+    def _set_scm_dir (self, value):
+        if self._check_default_branch ():
+            self.resource.scm_dir = value
+        self._SO_set_scm_dir (value)
+    def _set_scm_file (self, value):
+        if self._check_default_branch ():
+            self.resource.scm_file = value
+        self._SO_set_scm_file (value)
 
     @ classmethod
     def get_record (cls, ident, type):
@@ -426,6 +453,13 @@ class BranchRelation (PulseRelation, sql.SQLObject):
         table = 'BranchRelation'
     subj = sql.ForeignKey ('Branch', dbName='subj')
     pred = sql.ForeignKey ('Branch', dbName='pred')
+    verb = sql.StringCol ()
+
+class BranchResourceRelation (PulseRelation, sql.SQLObject):
+    class sqlmeta:
+        table = 'BranchResourceRelation'
+    subj = sql.ForeignKey ('Branch', dbName='subj')
+    pred = sql.ForeignKey ('Resource', dbName='pred')
     verb = sql.StringCol ()
 
 class EntityRelation (PulseRelation, sql.SQLObject):
