@@ -85,28 +85,35 @@ class ModuleSet:
                     default_repo = repo_data
             elif node.tagName == 'autotools':
                 pkg_data = {'id' : node.getAttribute ('id')}
-                for branch in node.childNodes:
-                    if branch.nodeType == branch.ELEMENT_NODE and branch.tagName == 'branch':
-                        if branch.hasAttribute ('repo'):
-                            repo_data = repos.get (branch.getAttribute ('repo'), None)
+                for child in node.childNodes:
+                    if child.nodeType != child.ELEMENT_NODE:
+                        continue
+                    if child.tagName == 'branch':
+                        if child.hasAttribute ('repo'):
+                            repo_data = repos.get (child.getAttribute ('repo'), None)
                         else:
                             repo_data = default_repo
                         if repo_data != None:
                             pkg_data['scm_type'] = repo_data['scm_type']
                             pkg_data['scm_server'] = repo_data['scm_server']
-                        if branch.hasAttribute ('module'):
-                            pkg_data['scm_path'] = branch.getAttribute ('module')
-                            if branch.hasAttribute ('checkoutdir'):
-                                pkg_data['scm_module'] = branch.getAttribute ('checkoutdir')
+                        if child.hasAttribute ('module'):
+                            pkg_data['scm_path'] = child.getAttribute ('module')
+                            if child.hasAttribute ('checkoutdir'):
+                                pkg_data['scm_module'] = child.getAttribute ('checkoutdir')
                             else:
                                 pkg_data['scm_module'] = pkg_data['id']
                         else:
                             pkg_data['scm_module'] = pkg_data['id']
-                        if branch.hasAttribute ('revision'):
-                            pkg_data['scm_branch'] = branch.getAttribute ('revision')
+                        if child.hasAttribute ('revision'):
+                            pkg_data['scm_branch'] = child.getAttribute ('revision')
                         else:
                             pkg_data['scm_branch'] = pulse.scm.default_branches.get(pkg_data['scm_type'])
-                        break
+                    elif child.tagName == 'dependencies':
+                        deps = []
+                        for dep in child.childNodes:
+                            if dep.nodeType == dep.ELEMENT_NODE and dep.tagName == 'dep':
+                                deps.append (dep.getAttribute ('package'))
+                        pkg_data['deps'] = deps
                 if pkg_data.has_key ('scm_type'):
                     self._packages[pkg_data['id']] = pkg_data
                     self._metas.setdefault (base, [])
@@ -140,6 +147,7 @@ def update_branch (moduleset, key, update=True):
 
     record = pulse.db.Branch.get_record (ident=ident, type='Module')
     record.update (data)
+    pkg_data['__record__'] = record
     return record
 
 def update_set (data, update=True):
@@ -201,6 +209,20 @@ def update_set (data, update=True):
 
     return record
 
+def update_deps (moduleset):
+    for pkg in moduleset.get_packages():
+        pkgdata = moduleset.get_package (pkg)
+        if not pkgdata.has_key ('__record__'): continue
+        pkgrec = pkgdata['__record__']
+        pkgrels = []
+        for dep in pkgdata.get('deps', []):
+            if not moduleset.has_package (dep): continue
+            depdata = moduleset.get_package (dep)
+            if not depdata.has_key ('__record__'): continue
+            deprec = depdata['__record__']
+            pkgrels.append (pulse.db.BranchRelation.set_related (pkgrec, 'ModuleDependency', deprec))
+        pkgrec.set_relations (pulse.db.BranchRelation, 'ModuleDependency', pkgrels)
+
 def main (argv, options={}):
     update = not options.get ('--no-update', False)
 
@@ -209,3 +231,5 @@ def main (argv, options={}):
     for key in data.keys():
         if data[key]['__type__'] == 'set':
             update_set (data[key], update=update)
+    for moduleset in modulesets:
+        update_deps (modulesets[moduleset])

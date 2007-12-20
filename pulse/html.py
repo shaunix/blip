@@ -311,7 +311,7 @@ class InfoBox (ContentComponent):
     def add_link_box (self, *args):
         lbox = LinkBox (*args)
         self.add_content (lbox)
-        return reslink
+        return lbox
 
     def output (self, fd=sys.stdout):
         p (fd, '<div class="info" id="%s">', self._id)

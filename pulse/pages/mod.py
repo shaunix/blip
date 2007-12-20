@@ -185,6 +185,18 @@ def output_branch (branch, path=[], query=[], http=True, fd=None):
         dl.add_term (span)
         dl.add_entry (pulse.html.RevisionPopupLink (rev.comment))
 
+    # Dependencies
+    box = pulse.html.InfoBox ('dependencies', pulse.utils.gettext ('Dependencies'))
+    columns.add_content (0, box)
+    deps = pulse.db.Branch.select (
+        (pulse.db.BranchRelation.q.verb == 'ModuleDependency') &
+        (pulse.db.BranchRelation.q.subjID == branch.id),
+        join=INNERJOINOn (None, pulse.db.BranchRelation,
+                          pulse.db.BranchRelation.q.predID == pulse.db.Branch.q.id) )
+    deps = pulse.utils.attrsorted (list(deps), 'title')
+    for dep in deps:
+        box.add_link_box (dep)
+
     # Applications
     apps = pulse.db.Branch.selectBy (type='Application', parent=branch)
     apps = pulse.utils.attrsorted (list(apps), 'title')
