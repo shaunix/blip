@@ -42,8 +42,11 @@ def attrsorted (list, *attrs):
             return obj.lower()
         else:
             return obj
+    def lcmp (x, y):
+        return cmp (isinstance(x, basestring) and x.lower() or x,
+                    isinstance(y, basestring) and y.lower() or y)
     def attrcmp (x, y, attrs):
-        v = cmp (attrget(x, attrs[0]), attrget(y, attrs[0]))
+        v = lcmp (attrget(x, attrs[0]), attrget(y, attrs[0]))
         if v == 0 and len(attrs) > 1:
             return attrcmp (x, y, attrs[1:])
         else:
