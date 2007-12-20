@@ -206,7 +206,7 @@ def update_set (data, update=True):
             branch = update_branch (moduleset, pkg, update=update)
             if branch != None:
                 rels.append (pulse.db.RecordBranchRelation.set_related (record, 'SetModule', branch))
-        record.set_relations (pulse.db.RecordBranchRelation, 'SubModule', rels)
+        record.set_relations (pulse.db.RecordBranchRelation, 'SetModule', rels)
 
     return record
 
