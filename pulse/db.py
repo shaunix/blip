@@ -202,6 +202,9 @@ class Resource (Record):
     scm_type = sql.StringCol (default=None)
     scm_server = sql.StringCol (default=None)
     scm_module = sql.StringCol (default=None)
+    scm_path = sql.StringCol (default=None)
+    scm_dir = sql.StringCol (default=None)
+    scm_file = sql.StringCol (default=None)
     default_branch = sql.ForeignKey ('Branch', dbName='default_branch', default=None)
 
     def remove_relations (self):
@@ -237,34 +240,35 @@ class Branch (Record):
         if getattr (self, 'scm_type', None) != None and getattr (self, 'scm_branch', None) != None:
             if pulse.scm.default_branches[self.scm_type] == self.scm_branch:
                 self.resource.default_branch = self
+                data = {}
+                # FIXME: this happens needlessly many times, but it ensures it's right
+                for key in ('type', 'server', 'module', 'path', 'dir', 'file'):
+                    if getattr(self.resource, 'scm_' + key) != getattr(self, 'scm_' + key):
+                        data['scm_' + key] = getattr(self, 'scm_' + key)
+                    if len(data) > 0:
+                        self.resource.update (data)
                 return True
         return False
     def _set_scm_type (self, value):
-        if self._check_default_branch ():
-            self.resource.scm_type = value
+        self._check_default_branch ()
         self._SO_set_scm_type (value)
     def _set_scm_server (self, value):
-        if self._check_default_branch ():
-            self.resource.scm_server = value
+        self._check_default_branch ()
         self._SO_set_scm_server (value)
     def _set_scm_module (self, value):
-        if self._check_default_branch ():
-            self.resource.scm_module = value
+        self._check_default_branch ()
         self._SO_set_scm_module (value)
     def _set_scm_branch (self, value):
         self._check_default_branch ()
         self._SO_set_scm_branch (value)
     def _set_scm_path (self, value):
-        if self._check_default_branch ():
-            self.resource.scm_path = value
+        self._check_default_branch ()
         self._SO_set_scm_path (value)
     def _set_scm_dir (self, value):
-        if self._check_default_branch ():
-            self.resource.scm_dir = value
+        self._check_default_branch ()
         self._SO_set_scm_dir (value)
     def _set_scm_file (self, value):
-        if self._check_default_branch ():
-            self.resource.scm_file = value
+        self._check_default_branch ()
         self._SO_set_scm_file (value)
 
     @ classmethod
@@ -277,7 +281,7 @@ class Branch (Record):
         if record.resource == None:
             ident = '/'.join(record.ident.split('/')[:-1])
             record.resource = Resource.get_record (ident=ident, type=record.type)
-        record._ensure_default_branch ()
+        record._check_default_branch ()
         return record
 
     def get_title_default (self):
