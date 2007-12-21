@@ -10,6 +10,8 @@ Here's some basic instructions for running Pulse on your machine:
 *) Make sure you have python-sqlite installed.  There seem to be problems
    when using PySqlite2.
 
+*) To generate charts and such, you need to have pycairo installed.
+
 *) Edit pulse/config.py.  It's just a bunch of file and URL paths.  The
    necessary edits should be fairly obvious.
 
@@ -40,7 +42,9 @@ Here's some basic instructions for running Pulse on your machine:
      web/index.cgi  ->  $(webroot)/index.cgi
      web/htaccess   ->  $(webroot)/.htaccess
    Note that htaccess should become .htaccess.  I just prefer not to work
-   on hidden files in the repository.
+   on hidden files in the repository.  You also need to edit web/index.cgi.
+   It calls 'sys.path.append' so it can locate pulse.  Edit that path to
+   reflect your directory layout.
 
 *) Alternatively, if you don't want to muck with rewrite rules, change
    pulse.config.webroot to include index.cgi.  If you do this, you also
