@@ -218,14 +218,17 @@ def update_deps (modulekey):
         pkgrec = pkgdata['__record__']
         deps = get_deps (modulekey, pkg)
         pkgrels = []
+        pkgdrels = []
         for dep in deps:
             depdata = moduleset.get_package (dep)
             if not depdata.has_key ('__record__'): continue
             deprec = depdata['__record__']
             if deprec.resource == None: continue
-            deprec = deprec.resource
-            pkgrels.append (pulse.db.BranchResourceRelation.set_related (pkgrec, 'ModuleDependency', deprec))
-        pkgrec.set_relations (pulse.db.BranchResourceRelation, 'ModuleDependency', pkgrels)
+            pkgrels.append (pulse.db.BranchRelation.set_related (pkgrec, 'ModuleDependency', deprec))
+            if dep in pkgdata['deps']:
+                pkgdrels.append (pulse.db.BranchRelation.set_related (pkgrec, 'ModuleDirectDependency', deprec))
+        pkgrec.set_relations (pulse.db.BranchRelation, 'ModuleDependency', pkgrels)
+        pkgrec.set_relations (pulse.db.BranchRelation, 'ModuleDirectDependency', pkgdrels)
 
 known_deps = {}
 def get_deps (modulekey, pkg, seen=[]):

@@ -188,11 +188,11 @@ def output_branch (branch, path=[], query=[], http=True, fd=None):
     # Dependencies
     box = pulse.html.InfoBox ('dependencies', pulse.utils.gettext ('Dependencies'))
     columns.add_content (0, box)
-    deps = pulse.db.Resource.select (
-        (pulse.db.BranchResourceRelation.q.verb == 'ModuleDependency') &
-        (pulse.db.BranchResourceRelation.q.subjID == branch.id),
-        join=INNERJOINOn (None, pulse.db.BranchResourceRelation,
-                          pulse.db.BranchResourceRelation.q.predID == pulse.db.Resource.q.id) )
+    deps = pulse.db.Branch.select (
+        (pulse.db.BranchRelation.q.verb == 'ModuleDependency') &
+        (pulse.db.BranchRelation.q.subjID == branch.id),
+        join=INNERJOINOn (None, pulse.db.BranchRelation,
+                          pulse.db.BranchRelation.q.predID == pulse.db.Branch.q.id) )
     deps = pulse.utils.attrsorted (list(deps), 'scm_module')
     for dep in deps:
         box.add_link_box (dep.pulse_url, dep.scm_module)

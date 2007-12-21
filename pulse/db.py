@@ -210,6 +210,8 @@ class Resource (Record):
     def remove_relations (self):
         for branch in Branch.selectBy (resource=self):
             branch.remove ()
+        for rel in BranchResourceRelation.selectyBy (pred=self):
+            rel.remove ()
         for rel in ResourceRelation.selectBy (subj=self):
             rel.remove ()
         for rel in ResourceRelation.selectBy (pred=self):
@@ -305,6 +307,8 @@ class Branch (Record):
             self.resource = None
             resource.remove ()
         for rel in RecordBranchRelation.selectBy (pred=self):
+            rel.remove ()
+        for rel in BranchResourceRelation.selectyBy (subj=self):
             rel.remove ()
         for rel in BranchRelation.selectBy (subj=self):
             rel.remove ()
