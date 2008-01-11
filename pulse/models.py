@@ -555,6 +555,34 @@ class Revision (models.Model):
     datetime = models.DateTimeField ()
     comment = models.TextField ()
 
+    @classmethod
+    def get_last_revision (cls, branch, filename):
+        revs = cls.select_revisions (branch, filename)
+        try:
+            return revs[0]
+        except IndexError:
+            return None
+
+    @classmethod
+    def select_revisions (cls, branch, filename):
+        if isinstance (filename, basestring):
+            revs = cls.objects.filter (branch=branch, filename=filename)
+        elif filename == False:
+            revs = cls.objects.filter (branch=branch)
+        else:
+            revs = cls.objects.filter (branch=branch, filename__isnull=True)
+        return revs.order_by ('-datetime')
+
+    @classmethod
+    def select_revisions_since (cls, branch, filename, since):
+        if isinstance (filename, basestring):
+            revs = cls.objects.filter (branch=branch, filename=filename, datetime__gt=since)
+        elif filename == False:
+            revs = cls.objects.filter (branch=branch, datetime__gt=since)
+        else:
+            revs = cls.objects.filter (branch=branch, filename__isnull=True, datetime__gt=since)
+        return revs.order_by ('-datetime')
+
 
 class Statistic (models.Model):
     __metaclass__ = PulseModelBase
@@ -565,6 +593,11 @@ class Statistic (models.Model):
     stat1 = models.IntegerField ()
     stat2 = models.IntegerField ()
     total = models.IntegerField ()
+
+    @classmethod
+    def select_statistic (cls, branch, type):
+        stat = cls.objects.filter (branch=branch, type=type)
+        return stat.order_by ('-daynum')
 
     @classmethod
     def set_statistic (cls, branch, daynum, type, stat1, stat2, total):

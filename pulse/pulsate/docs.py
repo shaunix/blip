@@ -93,11 +93,9 @@ def update_gdu_docbook (doc, **kw):
         if kw.get('history', True):
             fullname = os.path.join (makedir, 'C', fname)
             rel_ch = pulse.utils.relative_path (fullname, checkout.directory)
-            revision = db.Revision.objects.filter (branch=doc, filename=fname).order_by ('-datetime')
-            try:
-                since = revision[0].revision
-            except IndexError:
-                since = None
+            since = db.Revision.get_last_revision (doc, fname)
+            if since != None:
+                since = since.revision
             serverid = '.'.join (pulse.scm.server_name (checkout.scm_type, checkout.scm_server).split('.')[-2:])
             for hist in checkout.get_file_history (rel_ch, since=since):
                 pident = '/person/' + serverid + '/' + hist['userid']
@@ -105,19 +103,16 @@ def update_gdu_docbook (doc, **kw):
                 rev = db.Revision (branch=doc, person=pers, filename=fname, filetype='xml',
                                    revision=hist['revision'], datetime=hist['date'], comment=hist['comment'])
                 rev.save()
-    revision = db.Revision.objects.filter (branch=doc).order_by ('-datetime')
-    try:
-        revision = revision[0]
+    revision = db.Revision.get_last_revision (doc, False)
+    if revision != None:
         data['mod_datetime'] = revision.datetime
-        data['mod_personID'] = revision.person.id
-    except IndexError:
-        pass
+        data['mod_person'] = revision.person
 
     pulse.utils.log ('Creating commit graph for %s' % doc.ident)
     now = datetime.datetime.now()
     threshhold = now - datetime.timedelta(days=168)
     stats = [0] * 24
-    revs = db.Revision.objects.filter (branch=doc, datetime__gt=threshhold)
+    revs = db.Revision.select_revisions_since (doc, False, threshhold)
     for rev in list(revs):
         idx = (now - rev.datetime).days
         idx = 23 - (idx // 7)

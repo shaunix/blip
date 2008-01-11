@@ -165,8 +165,7 @@ def output_branch (branch, path=[], query=[], http=True, fd=None):
             cmt = pulse.utils.gettext ('this week: %i commits') % datum[1]
         graph.add_comment (datum[0], cmt)
     box.add_content (graph)
-    revs = db.Revision.objects.filter (branch=branch, filename__isnull=True)
-    revs = revs.order_by ('-datetime')
+    revs = db.Revision.select_revisions (branch, None)
     cnt = revs.count()
     box.add_content ('Showing %i of %i commits:' % (min(10, cnt), cnt))
     dl = pulse.html.DefinitionList()
@@ -295,9 +294,7 @@ def output_branch (branch, path=[], query=[], http=True, fd=None):
                 grid = pulse.html.GridBox ()
                 vbox.add_content (grid)
                 for translation in translations:
-                    stat = db.Statistic.objects.filter (branch=translation, type='Messages')
-                    stat = stat.order_by ('-daynum')
-
+                    stat = db.Statistic.select_statistic (translation, 'Messages')
                     span = pulse.html.Span (translation.scm_file[:-3])
                     span.add_class ('title')
                     row = [span]

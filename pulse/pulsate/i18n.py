@@ -189,12 +189,9 @@ def do_history (po, checkout, **kw):
             pulse.utils.warn ('Skipping history for %s' % rel_scm)
             return
     pulse.utils.log ('Checking history for %s' % rel_scm)
-    revision = db.Revision.objects.filter (branch=po, filename=po.scm_file)
-    revision = revision.order_by ('-datetime')
-    try:
-        since = revision[0].revision
-    except IndexError:
-        since = None
+    since = db.Revision.get_last_revision (po, po.scm_file)
+    if since != None:
+        since = since.revision
     serverid = '.'.join (pulse.scm.server_name (checkout.scm_type, checkout.scm_server).split('.')[-2:])
     for hist in checkout.get_file_history (rel_ch, since=since):
         pident = '/person/' + serverid + '/' + hist['userid']

@@ -53,7 +53,7 @@ def update_branch (branch, update=True, timestamps=True, history=True):
     now = datetime.datetime.now()
     threshhold = now - datetime.timedelta(days=168)
     stats = [0] * 24
-    revs = db.Revision.objects.filter (branch=branch, datetime__gt=threshhold)
+    revs = db.Revision.select_revisions_since (branch, False, threshhold)
     for rev in list(revs):
         idx = (now - rev.datetime).days
         idx = 23 - (idx // 7)
@@ -182,12 +182,9 @@ def update_branch (branch, update=True, timestamps=True, history=True):
 
 def check_history (branch, checkout):
     pulse.utils.log ('Checking history for %s' % branch.ident)
-    revision = db.Revision.objects.filter (branch=branch, filename__isnull=True)
-    revision = revision.order_by ('-datetime')
-    try:
-        since = revision[0].revision
-    except IndexError:
-        since = None
+    since = db.Revision.get_last_revision (branch, None)
+    if since != None:
+        since = since.revision
     serverid = '.'.join (pulse.scm.server_name (checkout.scm_type, checkout.scm_server).split('.')[-2:])
     for hist in checkout.get_history (since=since):
         pident = '/person/' + serverid + '/' + hist['userid']
@@ -196,15 +193,11 @@ def check_history (branch, checkout):
                            revision=hist['revision'], datetime=hist['date'], comment=hist['comment'])
         rev.save()
 
-    revision = db.Revision.objects.filter (branch=branch, filename__isnull=True)
-    revision = revision.order_by ('-datetime')
-    try:
-        revision = revision[0]
-        branch.update ({'mod_datetime' : revision.datetime,
-                        'mod_personID' : revision.person.id})
+    revision = db.Revision.get_last_revision (branch, None)
+    if revision != None:
+        branch.mod_datetime = revision.datetime
+        branch.mod_person = revision.person
         branch.save()
-    except IndexError:
-        pass
 
 
 def process_maintainers (branch, checkout, **kw):

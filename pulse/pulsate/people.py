@@ -36,7 +36,7 @@ def update_person (person, **kw):
     now = datetime.datetime.now()
     threshhold = now - datetime.timedelta(days=168)
     stats = [0] * 24
-    revs = db.Revision.objects.filter (person=person, datetime__gt=threshhold)
+    revs = db.Revision.select_revisions_since (person, False, threshhold)
     for rev in list(revs):
         idx = (now - rev.datetime).days
         idx = 23 - (idx // 7)

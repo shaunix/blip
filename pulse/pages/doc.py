@@ -212,8 +212,7 @@ def output_doc (doc, path=[], query=[], http=True, fd=None):
         grid = pulse.html.GridBox ()
         vbox.add_content (grid)
         for translation in translations:
-            stat = db.Statistic.objects.filter (branch=translation, type='Messages')
-            stat = stat.order_by ('-daynum')
+            stat = db.Statistic.select_statistic (translation, 'Messages')
             span = pulse.html.Span (translation.scm_file[:-3])
             span.add_class ('title')
             row = [span]
@@ -228,8 +227,7 @@ def output_doc (doc, path=[], query=[], http=True, fd=None):
 
                 row.append (pulse.utils.gettext ('%i.%i.%i') %
                             (stat.stat1, stat.stat2, untranslated))
-                imgstat = db.Statistic.objects.filter (branch=translation, type='ImageMessages')
-                imgstat = imgstat.order_by ('-daynum')
+                imgstat = db.Statistic.select_statistic (translation, 'ImageMessages')
                 try:
                     imgstat = imgstat[0]
                     span = pulse.html.Span(str(imgstat.stat1))
@@ -269,10 +267,8 @@ def get_activity (doc, xmlfiles):
         lbox = lcont.add_link_box (None, xmlfile)
         lbox.add_class ('actfile')
         lbox.set_show_icon (False)
-        commit = db.Revision.objects.filter (branch=doc, filename=xmlfile)
-        commit = commit.order_by ('-datetime')
-        try:
-            commit = commit[0]
+        commit = db.Revision.get_last_revision (doc, xmlfile)
+        if commit != None:
             span = pulse.html.Span(divider=pulse.html.Span.SPACE)
             # FIXME: i18n, word order, but we want to link person
             mspan = pulse.html.Span()
@@ -282,6 +278,4 @@ def get_activity (doc, xmlfiles):
             span.add_content (' by ')
             span.add_content (pulse.html.Link (commit.person))
             lbox.add_fact (None, span)
-        except IndexError:
-            pass
     return lcont
