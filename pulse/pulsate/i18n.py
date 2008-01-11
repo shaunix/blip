@@ -222,10 +222,10 @@ def main (argv, options={}):
         pos = db.Branch.objects.filter (type='Translation')
     elif prefix.startswith ('/i18n/'):
         pos = db.Branch.objects.filter (type='Translation',
-                                        parent__ident__starswith=prefix)
+                                        parent__ident__startswith=prefix)
     elif prefix.startswith ('/doc/') or prefix.startswith ('/ref/'):
         pos = db.Branch.objects.filter (type='Translation',
-                                        parent__ident__starswith=prefix)
+                                        parent__ident__startswith=prefix)
     elif prefix.startswith ('/mod'):
         pos = db.Branch.objects.filter (type='Translation',
                                         parent__parent__ident__startswith=prefix)
