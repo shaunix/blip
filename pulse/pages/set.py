@@ -19,18 +19,16 @@
 #
 
 import pulse.config
-import pulse.db
 import pulse.html
+import pulse.models as db
 import pulse.utils
-
-from sqlobject.sqlbuilder import *
 
 def main (path=[], query={}, http=True, fd=None):
     if len(path) == 1:
         return output_top (path=path, query=query, http=http, fd=fd)
     
     ident = '/' + '/'.join(path[:2])
-    sets = pulse.db.Record.selectBy (ident=ident)
+    sets = db.Record.objects.filter (ident=ident)
     try:
         set = sets[0]
         return output_set (set, path, query, http, fd)
@@ -49,11 +47,10 @@ def output_top (path=[], query=[], http=True, fd=None):
     page = pulse.html.Page (http=http)
     page.set_title (pulse.utils.gettext ('Sets'))
 
-    sets = pulse.db.Record.select (
-        pulse.db.RecordRelation.q.subjID == None,
-        join=LEFTJOINOn(None, pulse.db.RecordRelation,
-                        AND (pulse.db.RecordRelation.q.predID == pulse.db.Record.q.id,
-                             pulse.db.RecordRelation.q.verb == 'SetSubset')) )
+    # FIXME: this doesn't work.  what does?
+    sets = db.Record.objects.filter (type='Set').extra (
+        select={'parent_count' : 'SELECT COUNT(*) FROM SetSubset where pred_ID = Record.id'},
+        where=['parent_count=0'])
     sets = pulse.utils.attrsorted (list(sets), 'title')
     # We should probably max this a 3 if we get more sets
     columns = pulse.html.ColumnBox (len(sets))
@@ -82,8 +79,8 @@ def output_set (set, path=[], query=[], http=True, fd=None):
     for super in get_supersets (set):
         page.add_sublink (super.pulse_url, super.title)
 
-    subsets = pulse.db.RecordRelation.selectBy (subj=set, verb='SetSubset')
-    subsets = pulse.utils.attrsorted (list(subsets), ['pred', 'title'])
+    subsets = db.SetSubset.get_related (subj=set)
+    subsets = pulse.utils.attrsorted (subsets, ['pred', 'title'])
     if len(subsets) > 0:
         if len(path) < 3 or path[2] == 'set':
             columns = pulse.html.ColumnBox (2)
@@ -91,17 +88,13 @@ def output_set (set, path=[], query=[], http=True, fd=None):
             dls = [columns.add_content (i, pulse.html.DefinitionList()) for i in range(2)]
             for i in range(len(subsets)):
                 subset = subsets[i].pred
-                dl = dls[int(i > len(subsets) / 2 + 1)]
+                dl = dls[int(i > len(subsets) / 2)]
                 dl.add_term (pulse.html.Link (subset))
                 add_set_entries (subset, dl)
         else:
             tabbed.add_tab (pulse.utils.gettext ('Subsets (%i)') % len(subsets),
                             False, set.pulse_url + '/set')
 
-    mods = pulse.db.Branch.select (
-        pulse.db.RecordBranchRelation.q.subjID == set.id,
-        join=INNERJOINOn(None, pulse.db.RecordBranchRelation,
-                         pulse.db.Branch.q.id == pulse.db.RecordBranchRelation.q.predID))
     count = False
     if len(path) == 2:
         if len(subsets) > 0:
@@ -110,11 +103,12 @@ def output_set (set, path=[], query=[], http=True, fd=None):
         count = True
 
     if count:
-        modcnt = mods.count()
+        modcnt = db.SetModule.count_related (subj=set)
         if modcnt > 0 or len(subsets) == 0:
             tabbed.add_tab (pulse.utils.gettext ('Modules (%i)') % modcnt, False, set.pulse_url + '/mod')
     else:
-        mods = pulse.utils.attrsorted (list(mods), 'title')
+        mods = [mod.pred for mod in db.SetModule.get_related (subj=set)]
+        mods = pulse.utils.attrsorted (mods, 'title')
         modcnt = len(mods)
         lcont = pulse.html.LinkBoxContainer ()
         lcont.add_sort_link ('title', pulse.utils.gettext ('title'), False)
@@ -152,23 +146,17 @@ def output_set (set, path=[], query=[], http=True, fd=None):
 
 
 def get_supersets (set):
-    supersets=[]
-    supersets = pulse.db.Record.select (
-        pulse.db.RecordRelation.q.predID == set.id,
-        join=INNERJOINOn(None, pulse.db.RecordRelation,
-                         AND(pulse.db.RecordRelation.q.subjID == pulse.db.Record.q.id,
-                             pulse.db.RecordRelation.q.verb == 'SetSubset')) )
-    try:
-        superset = supersets[0]
-        supers = get_supersets (superset)
-        return supers + [superset]
-    except IndexError:
+    superset = db.SetSubset.get_one_related (pred=set)
+    if superset == None:
         return []
+    else:
+        supers = get_supersets (superset.subj)
+        return supers + [superset.subj]
     
 
 def add_set_entries (set, dl):
-    rels = pulse.db.RecordRelation.selectBy (subj=set, verb='SetSubset')
-    rels = pulse.utils.attrsorted (rels[0:], ['pred', 'title'])
+    rels = db.SetSubset.get_related (subj=set)
+    rels = pulse.utils.attrsorted (rels, ['pred', 'title'])
     if len(rels) > 0:
         for rel in rels:
             subset = rel.pred
@@ -178,12 +166,10 @@ def add_set_entries (set, dl):
             dl.add_entry (subdl)
         return
 
-    cnt = pulse.db.RecordBranchRelation.selectBy (subj=set, verb='SetModule')
-    cnt = cnt.count()
+    cnt = db.SetModule.count_related (subj=set)
     dl.add_entry (pulse.utils.gettext ('%i modules') % cnt)
     if cnt == 0: return
 
-    Module = Alias (pulse.db.Branch, 'Module')
     things = (('Document', pulse.utils.gettext ('%i documents'), 'doc'),
               ('Domain', pulse.utils.gettext ('%i domains'), 'i18n'),
               ('Application', pulse.utils.gettext ('%i applications'), 'app'),
@@ -191,51 +177,39 @@ def add_set_entries (set, dl):
               ('Applet', pulse.utils.gettext ('%i applets'), 'applet')
               )
     for type, txt, ext in things:
-        cnt = pulse.db.Branch.select (
-            AND(pulse.db.Branch.q.type == type,
-                pulse.db.RecordBranchRelation.q.subjID == set.id),
-            join=LEFTJOINOn(Module, pulse.db.RecordBranchRelation,
-                            AND(pulse.db.Branch.q.parentID == Module.q.id,
-                                Module.q.id == pulse.db.RecordBranchRelation.q.predID)) )
+        cnt = db.Branch.objects.filter (type=type, parent__set_module_subjs__subj=set)
         cnt = cnt.count()
         if cnt > 0:
             dl.add_entry (pulse.html.Link (set.pulse_url + '/' + ext, txt % cnt))
 
 
 def add_more_tabs (set, tabbed, path=[], query=[]):
-    Module = Alias (pulse.db.Branch, 'Module')
-
-    rels = pulse.db.Branch.select (
-        AND(pulse.db.Branch.q.type == 'Document',
-            pulse.db.RecordBranchRelation.q.subjID == set.id),
-        join=LEFTJOINOn(Module, pulse.db.RecordBranchRelation,
-                        AND(pulse.db.Branch.q.parentID == Module.q.id,
-                            Module.q.id == pulse.db.RecordBranchRelation.q.predID)) )
+    docs = db.Branch.objects.filter (type='Document', parent__set_module_subjs__subj=set)
     if len(path) > 2 and path[2] == 'doc':
-        docs = {'users' : [], 'devels' : []}
+        buckets = {'users' : [], 'devels' : []}
         user_docs = []
         devel_docs = []
         cnt = 0
-        for doc in pulse.utils.attrsorted (rels, 'title'):
+        for doc in pulse.utils.attrsorted (list(docs), 'title'):
             if doc.subtype == 'gtk-doc':
-                docs['devels'].append (doc)
+                buckets['devels'].append (doc)
                 cnt += 1
             else:
-                docs['users'].append (doc)
+                buckets['users'].append (doc)
                 cnt += 1
         vbox = pulse.html.VBox()
         for id, txt in (('users', pulse.utils.gettext ('User Documentation (%i)')),
                         ('devels', pulse.utils.gettext ('Developer Documentation (%i)')) ):
-            if len(docs[id]) > 0:
+            if len(buckets[id]) > 0:
                 lcont = pulse.html.LinkBoxContainer (id=id)
-                lcont.set_title (txt % len(docs[id]))
+                lcont.set_title (txt % len(buckets[id]))
                 lcont.set_sort_link_class ('doc' + id)
                 lcont.add_sort_link ('title', pulse.utils.gettext ('title'), False)
                 lcont.add_sort_link ('module', pulse.utils.gettext ('module'))
                 lcont.add_sort_link ('mtime', pulse.utils.gettext ('modified'))
                 lcont.add_sort_link ('score', pulse.utils.gettext ('score'))
                 vbox.add_content (lcont)
-                for doc in docs[id]:
+                for doc in buckets[id]:
                     lbox = lcont.add_link_box (doc)
                     lbox.add_class ('doc' + id)
                     lbox.add_graph ('/'.join(doc.ident.split('/')[1:] + ['commits.png']))
@@ -260,7 +234,7 @@ def add_more_tabs (set, tabbed, path=[], query=[]):
                         lbox.add_fact (pulse.utils.gettext ('score'), span)
         tabbed.add_tab ('Documents (%i)' % cnt, True, vbox)
     else:
-        tabbed.add_tab ('Documents (%i)' % rels.count(), False, set.pulse_url + '/doc')
+        tabbed.add_tab ('Documents (%i)' % docs.count(), False, set.pulse_url + '/doc')
 
     things = (('Domain', pulse.utils.gettext ('Domains (%i)'), 'i18n'),
               ('Application', pulse.utils.gettext ('Applications (%i)'), 'app'),
@@ -268,42 +242,31 @@ def add_more_tabs (set, tabbed, path=[], query=[]):
               ('Applet', pulse.utils.gettext ('Applets (%i)'), 'applet')
               )
     for type, txt, ext in things:
-        rels = pulse.db.Branch.select (
-            AND(pulse.db.Branch.q.type == type,
-                pulse.db.RecordBranchRelation.q.subjID == set.id),
-            join=LEFTJOINOn(Module, pulse.db.RecordBranchRelation,
-                            AND(pulse.db.Branch.q.parentID == Module.q.id,
-                                Module.q.id == pulse.db.RecordBranchRelation.q.predID)) )
+        objs = db.Branch.objects.filter (type=type, parent__set_module_subjs__subj=set)
         if len(path) > 2 and path[2] == ext:
-            rels = pulse.utils.attrsorted (list(rels), 'title', 'scm_module')
+            objs = pulse.utils.attrsorted (list(objs), 'title', 'scm_module')
             lcont = pulse.html.LinkBoxContainer ()
             lcont.set_columns (2)
             slink_mtime = False
             slink_documentation = False
-            tabbed.add_tab (txt % len(rels), True, lcont)
-            for i in range(len(rels)):
-                rel = rels[i]
-                lbox = lcont.add_link_box (rel)
-                span = pulse.html.Span (rel.branch_module)
+            tabbed.add_tab (txt % len(objs), True, lcont)
+            for i in range(len(objs)):
+                obj = objs[i]
+                lbox = lcont.add_link_box (obj)
+                span = pulse.html.Span (obj.branch_module)
                 span.add_class ('module')
-                url = rel.ident.split('/')
+                url = obj.ident.split('/')
                 url = '/'.join(['mod'] + url[2:4] + [url[5]])
                 url = pulse.config.webroot + url
                 lbox.add_fact ('module', pulse.html.Link (url, span))
-                doc = pulse.db.Branch.select (
-                    (pulse.db.BranchRelation.q.verb == (type + 'Document')) &
-                    (pulse.db.BranchRelation.q.subjID == rel.id),
-                    join=INNERJOINOn (None, pulse.db.BranchRelation,
-                                      pulse.db.BranchRelation.q.predID == pulse.db.Branch.q.id) )
-                try:
-                    doc = doc[0]
+                docs = db.Documentation.get_related (subj=obj)
+                for doc in docs:
+                    doc = doc.pred
                     span = pulse.html.Span(doc.title)
                     span.add_class ('docs')
                     lbox.add_fact (pulse.utils.gettext ('docs'),
                                    pulse.html.Link (doc.pulse_url, span))
                     slink_documentation = True
-                except IndexError:
-                    pass
             lcont.add_sort_link ('title', pulse.utils.gettext ('title'), False)
             lcont.add_sort_link ('module', pulse.utils.gettext ('module'))
             if slink_documentation:
@@ -311,6 +274,6 @@ def add_more_tabs (set, tabbed, path=[], query=[]):
             if slink_mtime:
                 lcont.add_sort_link ('mtime', pulse.utils.gettext ('modified'))
         else:
-            cnt = rels.count()
+            cnt = objs.count()
             if cnt > 0:
                 tabbed.add_tab (txt % cnt, False, set.pulse_url + '/' + ext)
