@@ -28,8 +28,6 @@ import pulse.html
 import pulse.scm
 import pulse.utils
 
-from sqlobject.sqlbuilder import *
-
 def main (path=[], query={}, http=True, fd=None):
     if len(path) == 3:
         modules = db.Branchable.objects.filter(ident=('/' + '/'.join(path)))
@@ -200,7 +198,7 @@ def output_branch (branch, path=[], query=[], http=True, fd=None):
         box.add_content (lcont)
         for app in apps:
             lbox = lcont.add_link_box (app)
-            doc = db.ApplicationDocument.get_related (subj=app)
+            doc = db.Documentation.get_related (subj=app)
             try:
                 doc = doc[0]
                 lbox.add_fact (pulse.utils.gettext ('Documentaion'), doc.pred)

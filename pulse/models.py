@@ -372,6 +372,32 @@ class PulseRelation (object):
         else:
             return None
 
+    @classmethod
+    def get_one_related (cls, subj=None, pred=None):
+        if subj != None and pred != None:
+            rel = cls.objects.filter (subj=subj, pred=pred)
+        elif subj != None:
+            rel = cls.objects.filter (subj=subj)
+        elif pred != None:
+            rel = cls.objects.filter (pred=pred)
+        else:
+            return None
+        try:
+            return rel.select_related()[0]
+        except IndexError:
+            return None
+
+    @classmethod
+    def count_related (cls, subj=None, pred=None):
+        if subj != None and pred != None:
+            return cls.objects.filter (subj=subj, pred=pred).count()
+        elif subj != None:
+            return cls.objects.filter (subj=subj).count()
+        elif pred != None:
+            return cls.objects.filter (pred=pred).count()
+        else:
+            return 0
+
 
 ################################################################################
 ## Records
@@ -504,10 +530,10 @@ class Entity (PulseRecord, models.Model):
 ################################################################################
 ## Relations
 
-class ApplicationDocument (PulseRelation, models.Model):
+class Documentation (PulseRelation, models.Model):
     __metaclass__ = PulseModelBase
-    subj = models.ForeignKey (Branch, related_name='application_document_preds')
-    pred = models.ForeignKey (Branch, related_name='application_document_subjs')
+    subj = models.ForeignKey (Branch, related_name='documentation_preds')
+    pred = models.ForeignKey (Branch, related_name='documentation_subjs')
 
 class DocumentEntity (PulseRelation, models.Model):
     __metaclass__ = PulseModelBase

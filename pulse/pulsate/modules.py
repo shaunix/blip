@@ -557,8 +557,8 @@ def process_keyfile (branch, checkout, filename, **kw):
             doc = db.Branch.objects.filter (ident=docident, type='Document')
             try:
                 doc = doc[0]
-                rel = db.ApplicationDocument.set_related (app, doc)
-                app.set_relations (db.ApplicationDocument, [rel])
+                rel = db.Documentation.set_related (app, doc)
+                app.set_relations (db.Documentation, [rel])
             except IndexError:
                 pass
 
