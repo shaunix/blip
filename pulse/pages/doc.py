@@ -22,16 +22,18 @@ import math
 import os
 
 import pulse.config
-import pulse.db
 import pulse.graphs
 import pulse.html
+import pulse.models as db
 import pulse.scm
 import pulse.utils
 
 def main (path=[], query={}, http=True, fd=None):
     if len(path) == 4:
-        modules = pulse.db.Resource.selectBy (ident=('/' + '/'.join(path)))
-        if modules.count() == 0:
+        modules = db.Branchable.objects.filter (ident=('/' + '/'.join(path)))
+        try:
+            module = modules[0]
+        except IndexError:
             kw = {'http': http}
             kw['title'] = pulse.utils.gettext ('Document Not Found')
             # FIXME: this is not a good place to redirect
@@ -41,21 +43,24 @@ def main (path=[], query={}, http=True, fd=None):
                 **kw)
             page.output(fd=fd)
             return 404
-        else:
-            doc = modules[0].default_branch
-            if doc == None:
-                kw = {'http': http}
-                kw['title'] = pulse.utils.gettext ('Default Branch Not Found')
-                # FIXME: this is not a good place to redirect
-                kw['pages'] = [('mod', pulse.utils.gettext ('All Modules'))]
-                page = pulse.html.PageNotFound (
-                    pulse.utils.gettext ('Pulse could not find a default branch for the document %s') % path[3],
-                    **kw)
-                page.output(fd=fd)
-                return 404
+
+        doc = module.default
+        if doc == None:
+            kw = {'http': http}
+            kw['title'] = pulse.utils.gettext ('Default Branch Not Found')
+            # FIXME: this is not a good place to redirect
+            kw['pages'] = [('mod', pulse.utils.gettext ('All Modules'))]
+            page = pulse.html.PageNotFound (
+                pulse.utils.gettext ('Pulse could not find a default branch for the document %s') % path[3],
+                **kw)
+            page.output(fd=fd)
+            return 404
+
     elif len(path) == 5:
-        docs = pulse.db.Branch.selectBy (ident=('/' + '/'.join(path)))
-        if docs.count() == 0:
+        docs = db.Branch.objects.filter (ident=('/' + '/'.join(path)))
+        try:
+            doc = docs[0]
+        except IndexError:
             kw = {'http': http}
             kw['title'] = pulse.utils.gettext ('Document Not Found')
             page = pulse.html.PageNotFound (
@@ -63,8 +68,6 @@ def main (path=[], query={}, http=True, fd=None):
                 **kw)
             page.output(fd=fd)
             return 404
-        else:
-            doc = docs[0]
     else:
         # FIXME: redirect to /set or something
         pass
@@ -77,11 +80,11 @@ def main (path=[], query={}, http=True, fd=None):
 
 def output_doc (doc, path=[], query=[], http=True, fd=None):
     page = pulse.html.ResourcePage (doc, http=http)
-    checkout = pulse.scm.Checkout.from_record (doc.parent, checkout=False, update=False)
+    checkout = pulse.scm.Checkout.from_record (doc, checkout=False, update=False)
 
-    branches = pulse.db.Branch.selectBy (resource=doc.resource)
-    if branches.count() > 1:
-        for b in pulse.utils.attrsorted (branches[0:], 'scm_branch'):
+    branches = pulse.utils.attrsorted (list(doc.branchable.branches.all()), 'scm_branch')
+    if len(branches) > 1:
+        for b in branches:
             if b.ident != doc.ident:
                 page.add_sublink (b.pulse_url, b.ident.split('/')[-1])
             else:
@@ -95,8 +98,8 @@ def output_doc (doc, path=[], query=[], http=True, fd=None):
     except:
         pass
 
-    rels = pulse.db.RecordBranchRelation.selectBy (pred=doc.parent, verb='SetModule')
-    if rels.count() > 0:
+    rels = db.SetModule.get_related (pred=doc.parent)
+    if len(rels) > 0:
         sets = pulse.utils.attrsorted ([rel.subj for rel in rels], 'title')
         span = pulse.html.Span (*[pulse.html.Link(rel.subj.pulse_url + '/doc', rel.subj.title) for rel in rels])
         span.set_divider (span.BULLET)
@@ -124,27 +127,22 @@ def output_doc (doc, path=[], query=[], http=True, fd=None):
     # Developers
     box = pulse.html.InfoBox ('developers', pulse.utils.gettext ('Developers'))
     columns.add_content (0, box)
-    authors = pulse.db.BranchEntityRelation.selectBy (subj=doc, verb='DocumentAuthor')
-    editors = pulse.db.BranchEntityRelation.selectBy (subj=doc, verb='DocumentEditor')
-    credits = pulse.db.BranchEntityRelation.selectBy (subj=doc, verb='DocumentCredit')
-    maints = pulse.db.BranchEntityRelation.selectBy (subj=doc, verb='DocumentMaintainer')
-    people = {}
-    for t, l in (('author', authors), ('editor', editors), ('credit', credits), ('maint', maints)):
-        for cr in l:
-            people.setdefault (cr.pred, [])
-            people[cr.pred].append(t)
-    if len(people) > 0:
-        lcont = pulse.html.LinkBoxContainer()
-        box.add_content (lcont)
+    rels = db.DocumentEntity.get_related (subj=doc)
+    if len(rels) > 0:
+        people = {}
+        for rel in rels:
+            people[rel.pred] = rel
         for person in pulse.utils.attrsorted (people.keys(), 'title'):
             lbox = lcont.add_link_box (person)
-            badges = people[person]
-            if 'maint' in badges:
+            rel = people[person]
+            if rel.maintainer:
                 lbox.add_badge ('maintainer')
-            if 'author' in badges:
+            if rel.author:
                 lbox.add_badge ('author')
-            if 'editor' in badges:
+            if rel.editor:
                 lbox.add_badge ('editor')
+            if rel.publisher:
+                lbox.add_badge ('publisher')
     else:
         box.add_content (pulse.html.AdmonBox (pulse.html.AdmonBox.warning,
                                               pulse.utils.gettext ('No developers') ))
@@ -185,22 +183,22 @@ def output_doc (doc, path=[], query=[], http=True, fd=None):
     potlst = ['var', 'l10n'] + doc.ident.split('/')[1:] + [doc.ident.split('/')[-2] + '.pot']
     poturl = pulse.config.varroot + '/'.join (potlst[1:])
     potfile = os.path.join (*potlst)
-    vf = pulse.db.VarFile.selectBy (filename=potfile)
-    if vf.count() > 0:
+    vf = db.VarFile.objects.filter (filename=potfile)
+    try:
+        vf = vf[0]
         linkspan = pulse.html.Span (divider=pulse.html.Span.SPACE)
         vbox.add_content (linkspan)
-        vf = vf[0]
         linkspan.add_content (pulse.html.Link (poturl,
                                                pulse.utils.gettext ('POT file'),
                                                icon='download' ))
         # FIXME: i18n reordering
         linkspan.add_content (pulse.utils.gettext ('(%i messages)') % vf.statistic)
         linkspan.add_content (pulse.utils.gettext ('on %s') % str(vf.datetime))
-    else:
+    except IndexError:
         vbox.add_content (pulse.html.AdmonBox (pulse.html.AdmonBox.warning,
                                                pulse.utils.gettext ('No POT file') ))
 
-    translations = pulse.db.Branch.selectBy (parent=doc, type='Translation')
+    translations = doc.select_children ('Translation')
     translations = pulse.utils.attrsorted (list(translations), 'title')
     if len(translations) == 0:
         vbox.add_content (pulse.html.AdmonBox (pulse.html.AdmonBox.warning,
@@ -214,9 +212,8 @@ def output_doc (doc, path=[], query=[], http=True, fd=None):
         grid = pulse.html.GridBox ()
         vbox.add_content (grid)
         for translation in translations:
-            stat = pulse.db.Statistic.select ((pulse.db.Statistic.q.branchID == translation.id) &
-                                              (pulse.db.Statistic.q.type == 'Messages'),
-                                              orderBy='-daynum')
+            stat = db.Statistic.objects.filter (branch=translation, type='Messages')
+            stat = stat.order_by ('-daynum')
             span = pulse.html.Span (translation.scm_file[:-3])
             span.add_class ('title')
             row = [span]
@@ -231,15 +228,16 @@ def output_doc (doc, path=[], query=[], http=True, fd=None):
 
                 row.append (pulse.utils.gettext ('%i.%i.%i') %
                             (stat.stat1, stat.stat2, untranslated))
-                imgstat = pulse.db.Statistic.select ((pulse.db.Statistic.q.branchID == translation.id) &
-                                                     (pulse.db.Statistic.q.type == 'ImageMessages'),
-                                                     orderBy='-daynum')
-                if imgstat.count() > 0:
+                imgstat = db.Statistic.objects.filter (branch=translation, type='ImageMessages')
+                imgstat = imgstat.order_by ('-daynum')
+                try:
                     imgstat = imgstat[0]
                     span = pulse.html.Span(str(imgstat.stat1))
                     span.add_class ('img')
                     fspan = pulse.html.Span (span, '/', str(imgstat.total), divider=pulse.html.Span.SPACE)
                     row.append (fspan)
+                except IndexError:
+                    pass
             except IndexError:
                 pass
             idx = grid.add_row (*row)
@@ -271,9 +269,8 @@ def get_activity (doc, xmlfiles):
         lbox = lcont.add_link_box (None, xmlfile)
         lbox.add_class ('actfile')
         lbox.set_show_icon (False)
-        commit = pulse.db.Revision.select ((pulse.db.Revision.q.branchID == doc.id) &
-                                           (pulse.db.Revision.q.filename == xmlfile),
-                                           orderBy='-datetime')
+        commit = db.Revision.objects.filter (branch=doc, filename=xmlfile)
+        commit = commit.order_by ('-datetime')
         try:
             commit = commit[0]
             span = pulse.html.Span(divider=pulse.html.Span.SPACE)
