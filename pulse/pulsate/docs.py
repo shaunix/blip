@@ -270,10 +270,10 @@ def set_credits (doc, credits):
     for cr_name, cr_email, cr_type, cr_maint in credits:
         ent = None
         if cr_email != None:
-            ent = pulse.db.Entity.selectBy (email=cr_email)
-            if ent.count() > 0:
+            ent = db.Entity.objects.filter (email=cr_email)
+            try:
                 ent = ent[0]
-            else:
+            except IndexError:
                 ent = None
         if ent == None:
             ident = '/ghost/' + urllib.quote (cr_name.encode('utf-8'))

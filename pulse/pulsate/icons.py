@@ -24,7 +24,7 @@ import shutil
 import sys
 import xml.dom.minidom
 
-import pulse.db
+import pulse.models as db
 import pulse.scm
 import pulse.xmldata
 
@@ -70,6 +70,8 @@ def get_naming_links (data, links, update=True):
 
 def update_installed_icons (icons, links):
     icondir = os.path.join (pulse.config.icondir, 'apps')
+    if not os.path.exists (icondir):
+        return
     for f in os.listdir (icondir):
         full = os.path.join (icondir, f)
         if not (os.path.isfile (full) and f.endswith ('.png')):
@@ -87,10 +89,13 @@ def update_installed_icons (icons, links):
             shutil.copyfile (icons[iconsrc], full)
 
 def update_uninstalled_icons (icons, links):
-    for table in inspect.getmembers (pulse.db):
+    icondir = os.path.join (pulse.config.icondir, 'apps')
+    if not os.path.exists (icondir):
+        os.makedirs (icondir)
+    for table in inspect.getmembers (db):
         cls = table[1]
-        if inspect.isclass (cls) and hasattr (cls, 'icon_dir'):
-            recs = cls.selectBy (icon_dir='__icon__:apps')
+        if inspect.isclass (cls) and issubclass (cls, db.models.Model) and hasattr (cls, 'icon_dir'):
+            recs = cls.objects.filter (icon_dir='__icon__:apps')
             for rec in recs:
                 if rec.icon_name == None:
                     continue
@@ -103,8 +108,9 @@ def update_uninstalled_icons (icons, links):
                 else:
                     continue
                 shutil.copyfile (icons[iconsrc],
-                                 os.path.join (pulse.config.icondir, 'apps', rec.icon_name + '.png'))
+                                 os.path.join (icondir, rec.icon_name + '.png'))
                 rec.icon_dir = 'apps'
+                rec.save()
 
 def main (argv, options={}):
     update = not options.get ('--no-update', False)

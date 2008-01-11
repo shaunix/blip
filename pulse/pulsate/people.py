@@ -22,8 +22,8 @@ import datetime
 import math
 import os
 
-import pulse.db
 import pulse.graphs
+import pulse.models as db
 
 synop = 'update information about people'
 usage_extra = '[ident]'
@@ -36,8 +36,7 @@ def update_person (person, **kw):
     now = datetime.datetime.now()
     threshhold = now - datetime.timedelta(days=168)
     stats = [0] * 24
-    revs = pulse.db.Revision.select ((pulse.db.Revision.q.personID == person.id) &
-                                     (pulse.db.Revision.q.datetime > threshhold) )
+    revs = db.Revision.objects.filter (person=person, datetime__gt=threshhold)
     for rev in list(revs):
         idx = (now - rev.datetime).days
         idx = 23 - (idx // 7)
@@ -46,6 +45,7 @@ def update_person (person, **kw):
     for i in range(len(stats)):
         score += (math.sqrt(i + 1) / 5) * stats[i]
     person.mod_score = int(score)
+    person.save()
     graphdir = os.path.join (*([pulse.config.webdir, 'var', 'graph'] + person.ident.split('/')[1:]))
     if not os.path.exists (graphdir):
         os.makedirs (graphdir)
@@ -64,9 +64,8 @@ def main (argv, options={}):
         prefix = argv[0]
 
     if prefix == None:
-        people = pulse.db.Entity.selectBy (type='Person')
+        people = db.Entity.objects.filter (type='Person')
     else:
-        people = pulse.db.Entity.select ((pulse.db.Entity.q.type == 'Person') &
-                                         (pulse.db.Entity.q.ident.startswith (prefix)) )
+        people = db.Entity.objects.filter (type='Person', ident__startswith=prefix)
     for person in people:
         update_person (person)
