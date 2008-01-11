@@ -23,7 +23,9 @@ import os.path
 import sys
 
 import pulse.config
-import pulse.db
+import pulse.models
+
+import django.core.management
 
 synop = 'initialize the Pulse database'
 
@@ -31,4 +33,4 @@ def main (argv, options={}):
     for dir in (pulse.config.vardir, pulse.config.icondir):
         if not os.path.exists (dir):
             os.makedirs (dir)
-    pulse.db.create_tables()
+    django.core.management.syncdb (0, False)

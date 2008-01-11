@@ -20,20 +20,37 @@
 
 import os
 
-datadir = '/home/shaunm/Projects/pulse/data/'
-vardir = '/home/shaunm/Projects/pulse/var/'
 
+## Pulse Settings
+
+basedir = '/home/shaunm/Projects/pulse/'
+
+datadir = os.path.join (basedir, 'data')
+vardir = os.path.join (basedir, 'var')
 potdir = os.path.join (vardir, 'pot')
 scmdir = os.path.join (vardir, 'scm')
+webdir = os.path.join (basedir, 'web')
+icondir = os.path.join (webdir, 'var', 'icons')
 
-webdir = '/home/shaunm/Projects/pulse/web/'
 webroot = 'http://localhost/'
 dataroot = webroot + 'data/'
 varroot = webroot + 'var/'
-
-icondir = os.path.join (webdir, 'var', 'icons')
 iconroot = varroot + 'icons/'
 
-# need dir2url to make this use vardir
-dbroot = 'sqlite:/home/shaunm/Projects/pulse/var/pulse.db'
-#dbroot = _url( 'mysql://user:pass@localhost/pulse')
+
+## Django Settings
+
+DATABASE_ENGINE = 'sqlite3'
+DATABASE_NAME = os.path.join (vardir, 'pulse.db')
+
+# Uncomment these lines to use MySQL
+# DATABASE_ENGINE = 'mysql'
+# DATABASE_HOST = '/var/run/mysql'
+# DATABASE_NAME = 'Pulse'
+# DATABASE_USER = ''
+# DATABASE_PASSWORD = ''
+
+INSTALLED_APPS = 'pulse'
+
+# Do not change this.  We hook into Django's debugging stuff to do logging.
+DEBUG = True

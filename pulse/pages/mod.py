@@ -22,8 +22,8 @@ import math
 import os
 
 import pulse.config
-import pulse.db
 import pulse.graphs
+import pulse.models as db
 import pulse.html
 import pulse.scm
 import pulse.utils
@@ -32,7 +32,7 @@ from sqlobject.sqlbuilder import *
 
 def main (path=[], query={}, http=True, fd=None):
     if len(path) == 3:
-        modules = pulse.db.Resource.selectBy (ident=('/' + '/'.join(path)))
+        modules = db.Branchable.objects.filter(ident=('/' + '/'.join(path)))
         if modules.count() == 0:
             kw = {'http': http}
             kw['title'] = pulse.utils.gettext ('Module Not Found')
@@ -44,7 +44,7 @@ def main (path=[], query={}, http=True, fd=None):
             page.output(fd=fd)
             return 404
         else:
-            branch = modules[0].default_branch
+            branch = modules[0].default
             if branch == None:
                 kw = {'http': http}
                 kw['title'] = pulse.utils.gettext ('Default Branch Not Found')
@@ -56,11 +56,11 @@ def main (path=[], query={}, http=True, fd=None):
                 page.output(fd=fd)
                 return 404
     elif len(path) == 4:
-        branches = pulse.db.Branch.selectBy (ident=('/' + '/'.join(path)))
+        branches = db.Branch.objects.filter (ident=('/' + '/'.join(path)))
         if branches.count() == 0:
             kw = {'http': http}
             kw['title'] = pulse.utils.gettext ('Branch Not Found')
-            modules = pulse.db.Resource.selectBy (ident=('/' + '/'.join(path[:-1])))
+            modules = db.Branchable.objects.filter (ident=('/' + '/'.join(path[:-1])))
             if modules.count() > 0:
                 module = modules[0]
                 # FIXME: i18n
@@ -82,13 +82,12 @@ def main (path=[], query={}, http=True, fd=None):
 
 
 def output_branch (branch, path=[], query=[], http=True, fd=None):
-    module = branch.resource
+    module = branch.branchable
     checkout = pulse.scm.Checkout.from_record (branch, checkout=False, update=False)
 
     page = pulse.html.ResourcePage (branch, http=http)
 
-    branches = pulse.db.Branch.selectBy (resource=module)
-    branches = pulse.utils.attrsorted (list(branches), 'scm_branch')
+    branches = pulse.utils.attrsorted (list(module.branches.all()), 'scm_branch')
     if len(branches) > 1:
         for b in branches:
             if b.ident != branch.ident:
@@ -104,9 +103,8 @@ def output_branch (branch, path=[], query=[], http=True, fd=None):
     except:
         pass
 
-    # FIXME: use a JOIN
-    rels = pulse.db.RecordBranchRelation.selectBy (pred=branch, verb='SetModule')
-    if rels.count() > 0:
+    rels = db.SetModule.get_related (pred=branch)
+    if len(rels) > 0:
         sets = pulse.utils.attrsorted ([rel.subj for rel in rels], 'title')
         span = pulse.html.Span (*[pulse.html.Link(rel.subj) for rel in rels])
         span.set_divider (span.BULLET)
@@ -140,7 +138,7 @@ def output_branch (branch, path=[], query=[], http=True, fd=None):
     # Developers
     # FIXME: use a JOIN
     box = pulse.html.InfoBox ('developers', pulse.utils.gettext ('Developers'))
-    developers = pulse.db.BranchEntityRelation.selectBy (subj=branch, verb='ModuleMaintainer')
+    developers = db.ModuleEntity.get_related (subj=branch)
     developers = pulse.utils.attrsorted (list(developers), ['pred', 'title'])
     if len(developers) > 0:
         lcont = pulse.html.LinkBoxContainer()
@@ -167,9 +165,8 @@ def output_branch (branch, path=[], query=[], http=True, fd=None):
             cmt = pulse.utils.gettext ('this week: %i commits') % datum[1]
         graph.add_comment (datum[0], cmt)
     box.add_content (graph)
-    revs = pulse.db.Revision.select ((pulse.db.Revision.q.branchID == branch.id) &
-                                     (pulse.db.Revision.q.filename == None),
-                                     orderBy='-datetime')
+    revs = db.Revision.objects.filter (branch=branch, filename__isnull=True)
+    revs = revs.order_by ('-datetime')
     cnt = revs.count()
     box.add_content ('Showing %i of %i commits:' % (min(10, cnt), cnt))
     dl = pulse.html.DefinitionList()
@@ -188,17 +185,14 @@ def output_branch (branch, path=[], query=[], http=True, fd=None):
     # Dependencies
     box = pulse.html.InfoBox ('dependencies', pulse.utils.gettext ('Dependencies'))
     columns.add_content (0, box)
-    deps = pulse.db.Branch.select (
-        (pulse.db.BranchRelation.q.verb == 'ModuleDependency') &
-        (pulse.db.BranchRelation.q.subjID == branch.id),
-        join=INNERJOINOn (None, pulse.db.BranchRelation,
-                          pulse.db.BranchRelation.q.predID == pulse.db.Branch.q.id) )
+    deps = db.ModuleDependency.get_related (subj=branch)
+    deps = [rel.pred for rel in list(deps)]
     deps = pulse.utils.attrsorted (list(deps), 'scm_module')
     for dep in deps:
         box.add_link_box (dep.pulse_url, dep.scm_module)
 
     # Applications
-    apps = pulse.db.Branch.selectBy (type='Application', parent=branch)
+    apps = branch.select_children ('Application')
     apps = pulse.utils.attrsorted (list(apps), 'title')
     if len(apps) > 0:
         box = pulse.html.InfoBox ('applications', pulse.utils.gettext ('Applications'))
@@ -207,19 +201,15 @@ def output_branch (branch, path=[], query=[], http=True, fd=None):
         box.add_content (lcont)
         for app in apps:
             lbox = lcont.add_link_box (app)
-            doc = pulse.db.Branch.select (
-                (pulse.db.BranchRelation.q.verb == 'ApplicationDocument') &
-                (pulse.db.BranchRelation.q.subjID == app.id),
-                join=INNERJOINOn (None, pulse.db.BranchRelation,
-                                  pulse.db.BranchRelation.q.predID == pulse.db.Branch.q.id) )
+            doc = db.ApplicationDocument.get_related (subj=app)
             try:
                 doc = doc[0]
-                lbox.add_fact (pulse.utils.gettext ('Documentaion'), doc)
+                lbox.add_fact (pulse.utils.gettext ('Documentaion'), doc.pred)
             except IndexError:
                 pass
 
     # Applets
-    applets = pulse.db.Branch.selectBy (type='Applet', parent=branch)
+    applets = branch.select_children ('Applet')
     applets = pulse.utils.attrsorted (list(applets), 'title')
     if len(applets) > 0:
         box = pulse.html.InfoBox ('applets', pulse.utils.gettext ('Applets'))
@@ -230,7 +220,7 @@ def output_branch (branch, path=[], query=[], http=True, fd=None):
             lcont.add_link_box (applet)
 
     # Libraries
-    libs = pulse.db.Branch.selectBy (type='Library', parent=branch)
+    libs = branch.select_children ('Library')
     libs = pulse.utils.attrsorted (list(libs), 'title')
     if len(libs) > 0:
         box = pulse.html.InfoBox ('libraries', pulse.utils.gettext ('Libraries'))
@@ -243,14 +233,14 @@ def output_branch (branch, path=[], query=[], http=True, fd=None):
     # Documents
     box = pulse.html.InfoBox ('documents', pulse.utils.gettext ('Documents'))
     columns.add_content (1, box)
-    docs = pulse.db.Branch.selectBy (type='Document', parent=branch)
+    docs = branch.select_children ('Document')
     docs = pulse.utils.attrsorted (list(docs), 'title')
     if len(docs) > 0:
         lcont = pulse.html.LinkBoxContainer()
         box.add_content (lcont)
         for doc in docs:
             lbox = lcont.add_link_box (doc)
-            res = pulse.db.Branch.selectBy (parent=doc, type='Translation')
+            res = doc.select_children ('Translation')
             lbox.add_fact (None, pulse.utils.gettext ('%i translations') % res.count())
     else:
         box.add_content (pulse.html.AdmonBox (pulse.html.AdmonBox.warning,
@@ -259,11 +249,11 @@ def output_branch (branch, path=[], query=[], http=True, fd=None):
     # Translations
     box = pulse.html.InfoBox ('translations', pulse.utils.gettext ('Translations'))
     columns.add_content (1, box)
-    domains = pulse.db.Branch.selectBy (type='Domain', parent=branch)
+    domains = branch.select_children ('Domain')
     domains = pulse.utils.attrsorted (list(domains), 'title')
     if len(domains) > 0:
         for domain in domains:
-            translations = pulse.db.Branch.selectBy (type='Translation', parent=domain)
+            translations = domain.select_children ('Translation')
             translations = pulse.utils.attrsorted (list(translations), 'title')
             exp = pulse.html.ExpanderBox (domain.ident.split('/')[-2],
                                           pulse.utils.gettext ('%s (%s)')
@@ -279,7 +269,7 @@ def output_branch (branch, path=[], query=[], http=True, fd=None):
                 potlst.append (domain.scm_dir + '.pot')
             poturl = pulse.config.varroot + '/'.join (potlst[1:])
             potfile = os.path.join (*potlst)
-            vf = pulse.db.VarFile.selectBy (filename=potfile)
+            vf = db.VarFile.objects.filter (filename=potfile)
             if vf.count() > 0:
                 linkspan = pulse.html.Span (divider=pulse.html.Span.SPACE)
                 vbox.add_content (linkspan)
@@ -305,9 +295,8 @@ def output_branch (branch, path=[], query=[], http=True, fd=None):
                 grid = pulse.html.GridBox ()
                 vbox.add_content (grid)
                 for translation in translations:
-                    stat = pulse.db.Statistic.select ((pulse.db.Statistic.q.branchID == translation.id) &
-                                                      (pulse.db.Statistic.q.type == 'Messages'),
-                                                      orderBy='-daynum')
+                    stat = db.Statistic.objects.filter (branch=translation, type='Messages')
+                    stat = stat.order_by ('-daynum')
 
                     span = pulse.html.Span (translation.scm_file[:-3])
                     span.add_class ('title')

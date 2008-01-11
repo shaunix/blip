@@ -24,7 +24,7 @@ import os
 import os.path
 
 import pulse.config
-import pulse.db
+import pulse.models as db
 import pulse.scm
 import pulse.parsers
 import pulse.utils
@@ -62,8 +62,8 @@ def update_intltool (po, **kw):
         popo = pulse.parsers.Po (os.popen (cmd))
         stats = popo.get_stats()
         total = stats[0] + stats[1] + stats[2]
-        pulse.db.Statistic.set_statistic (po, pulse.utils.daynum(), 'Messages',
-                                          stats[0], stats[1], total)
+        db.Statistic.set_statistic (po, pulse.utils.daynum(), 'Messages',
+                                    stats[0], stats[1], total)
     finally:
         os.chdir (owd)
     if kw.get('history', True):
@@ -84,12 +84,12 @@ def update_xml2po (po, **kw):
         popo = pulse.parsers.Po (os.popen (cmd))
         stats = popo.get_stats()
         total = stats[0] + stats[1] + stats[2]
-        pulse.db.Statistic.set_statistic (po, pulse.utils.daynum(), 'Messages',
-                                          stats[0], stats[1], total)
+        db.Statistic.set_statistic (po, pulse.utils.daynum(), 'Messages',
+                                    stats[0], stats[1], total)
         stats = popo.get_image_stats()
         total = stats[0] + stats[1] + stats[2]
-        pulse.db.Statistic.set_statistic (po, pulse.utils.daynum(), 'ImageMessages',
-                                          stats[0], stats[1], total)
+        db.Statistic.set_statistic (po, pulse.utils.daynum(), 'ImageMessages',
+                                    stats[0], stats[1], total)
     finally:
         os.chdir (owd)
     if kw.get('history', True):
@@ -123,12 +123,13 @@ def get_intltool_potfile (po, checkout):
     if status == 0:
         popo = pulse.parsers.Po (potfile_abs)
         num = popo.get_num_messages ()
-        vf = pulse.db.VarFile.selectBy (filename=potfile_rel)
+        vf = db.VarFile.objects.filter (filename=potfile_rel)
         try:
             vf = vf[0]
             vf.set(datetime=datetime.datetime.now(), statistic=num)
         except IndexError:
-            pulse.db.VarFile (filename=potfile_rel, datetime=datetime.datetime.now(), statistic=num)
+            vf = db.VarFile (filename=potfile_rel, datetime=datetime.datetime.now(), statistic=num)
+        vf.save()
         intltool_potfiles[podir] = potfile_abs
         return potfile_abs
     else:
@@ -162,12 +163,13 @@ def get_xml2po_potfile (po, checkout):
     if status == 0:
         popo = pulse.parsers.Po (potfile_abs)
         num = popo.get_num_messages ()
-        vf = pulse.db.VarFile.selectBy (filename=potfile_rel)
+        vf = db.VarFile.objects.filter (filename=potfile_rel)
         try:
             vf = vf[0]
             vf.set(datetime=datetime.datetime.now(), statistic=num)
         except IndexError:
-            pulse.db.VarFile (filename=potfile_rel, datetime=datetime.datetime.now(), statistic=num)
+            vf = db.VarFile (filename=potfile_rel, datetime=datetime.datetime.now(), statistic=num)
+        vf.save()
         xml2po_potfiles[makedir] = potfile_abs
         return potfile_abs
     else:
@@ -182,14 +184,13 @@ def do_history (po, checkout, **kw):
     rel_scm = pulse.utils.relative_path (fullname, pulse.config.scmdir)
     mtime = os.stat(fullname).st_mtime
     if kw.get('timestamps', True):
-        stamp = pulse.db.Timestamp.get_timestamp (rel_scm)
+        stamp = db.Timestamp.get_timestamp (rel_scm)
         if mtime <= stamp:
             pulse.utils.warn ('Skipping history for %s' % rel_scm)
             return
     pulse.utils.log ('Checking history for %s' % rel_scm)
-    revision = pulse.db.Revision.select ((pulse.db.Revision.q.branchID == po.id) &
-                                         (pulse.db.Revision.q.filename == po.scm_file),
-                                         orderBy='-datetime')
+    revision = db.Revision.objects.filter (branch=po, filename=po.scm_file)
+    revision = revision.order_by ('-datetime')
     try:
         since = revision[0].revision
     except IndexError:
@@ -197,10 +198,11 @@ def do_history (po, checkout, **kw):
     serverid = '.'.join (pulse.scm.server_name (checkout.scm_type, checkout.scm_server).split('.')[-2:])
     for hist in checkout.get_file_history (rel_ch, since=since):
         pident = '/person/' + serverid + '/' + hist['userid']
-        pers = pulse.db.Entity.get_record (ident=pident, type='Person')
-        pulse.db.Revision (branch=po, person=pers, filename=po.scm_file, filetype='po',
+        pers = db.Entity.get_record (pident, 'Person')
+        rev = db.Revision (branch=po, person=pers, filename=po.scm_file, filetype='po',
                            revision=hist['revision'], datetime=hist['date'], comment=hist['comment'])
-    pulse.db.Timestamp.set_timestamp (rel_scm, mtime)
+        rev.save()
+    db.Timestamp.set_timestamp (rel_scm, mtime)
     
 
 
@@ -217,41 +219,21 @@ def main (argv, options={}):
         prefix = argv[0]
 
     if prefix == None:
-        pos = pulse.db.Branch.selectBy (type='Translation')
+        pos = db.Branch.objects.filter (type='Translation')
     elif prefix.startswith ('/i18n/'):
-        BranchParent = Alias (pulse.db.Branch, 'BranchParent')
-        pos = pulse.db.Branch.select (
-            AND(pulse.db.Branch.q.type == 'Translation',
-                BranchParent.q.type == 'Domain',
-                BranchParent.q.ident.startswith (prefix)),
-            join=INNERJOINOn(None, BranchParent,
-                             pulse.db.Branch.q.parentID == BranchParent.q.id) )
-        pos = list(pos)
+        pos = db.Branch.objects.filter (type='Translation',
+                                        parent__ident__starswith=prefix)
     elif prefix.startswith ('/doc/') or prefix.startswith ('/ref/'):
-        BranchParent = Alias (pulse.db.Branch, 'BranchParent')
-        pos = pulse.db.Branch.select (
-            AND(pulse.db.Branch.q.type == 'Translation',
-                BranchParent.q.type == 'Document',
-                BranchParent.q.ident.startswith (prefix)),
-            join=INNERJOINOn(None, BranchParent,
-                             pulse.db.Branch.q.parentID == BranchParent.q.id) )
-        pos = list(pos)
+        pos = db.Branch.objects.filter (type='Translation',
+                                        parent__ident__starswith=prefix)
     elif prefix.startswith ('/mod'):
-        BranchParent = Alias (pulse.db.Branch, 'BranchParent')
-        BranchGrand = Alias (pulse.db.Branch, 'BranchGrand')
-        pos = pulse.db.Branch.select (
-            AND(pulse.db.Branch.q.type == 'Translation',
-                BranchGrand.q.type == 'Module',
-                BranchGrand.q.ident.startswith (prefix)),
-            join=INNERJOINOn(BranchParent, BranchGrand,
-                             AND(pulse.db.Branch.q.parentID == BranchParent.q.id,
-                                 BranchParent.q.parentID == BranchGrand.q.id)) )
-        pos = list(pos)
+        pos = db.Branch.objects.filter (type='Translation',
+                                        parent__parent__ident__startswith=prefix)
     else:
-        pos = pulse.db.Branch.select ((pulse.db.Branch.q.type == 'Translation') &
-                                      (pulse.db.Branch.q.ident.startswith (prefix)) )
+        pos = db.Branch.objects.filter (type='Translation',
+                                        ident__startswith=prefix)
 
-    for po in pos:
+    for po in list(pos):
         if po.subtype == 'intltool':
             update_intltool (po, update=update, timestamps=timestamps, history=history)
         elif po.subtype == 'xml2po':

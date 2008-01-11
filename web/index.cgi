@@ -7,7 +7,6 @@ sys.path.append ('/home/shaunm/Projects/pulse')
 import cgi
 
 import pulse.config
-import pulse.db
 import pulse.html
 import pulse.pages
 import pulse.utils
@@ -27,8 +26,7 @@ def main ():
         if opt in ('-o', '--output'):
             fd = file (arg, 'w')
         elif opt == '--debug-db':
-            pulse.db.conn.debug = True
-            debugger = pulse.db.conn.debugWriter = pulse.db.PulseDebugWriter()
+            pulse.config.debug_db = True
         elif opt == '--webroot':
             pulse.config.webroot = arg
     if len(args) > 0:

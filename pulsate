@@ -24,7 +24,7 @@ import os.path
 import sys
 from getopt import getopt
 
-import pulse.db
+import pulse.config
 import pulse.pulsate
 import pulse.utils
 
@@ -115,8 +115,7 @@ if __name__ == "__main__":
 
     debugger = None
     if options.get ('--debug-db', False):
-        pulse.db.conn.debug = True
-        debugger = pulse.db.conn.debugWriter = pulse.db.PulseDebugWriter()
+        pulse.config.debug_db = True
 
     mod = pulse.utils.import_ ('pulse.pulsate.' + argv[0])
     if hasattr (mod, 'args'):

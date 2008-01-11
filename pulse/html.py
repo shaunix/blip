@@ -25,6 +25,7 @@ import re
 import sys
 
 import pulse.config
+import pulse.models as db
 import pulse.utils
 
 class Block:
@@ -107,7 +108,7 @@ class FactsComponent (Block):
                 def factout (f):
                     if isinstance (f, basestring) or isinstance (f, Block):
                         p (fd, None, f, False)
-                    elif isinstance (f, pulse.db.Record):
+                    elif isinstance (f, db.PulseRecord):
                         p (fd, Link(f))
                     elif hasattr (f, '__getitem__'):
                         for ff in f:
@@ -405,7 +406,7 @@ class LinkBox (ContentComponent, FactsComponent):
         ContentComponent.__init__ (self, **kw)
         self._url = self._title = self._icon = self._desc = None
         self._show_icon = True
-        if isinstance (args[0], pulse.db.Record):
+        if isinstance (args[0], db.PulseRecord):
             if args[0].linkable:
                 self._url = args[0].pulse_url
             self._title = args[0].title
@@ -827,7 +828,7 @@ class Link (Block):
     def __init__ (self, *args, **kw):
         Block.__init__ (self, **kw)
         self._href = self._text = None
-        if isinstance (args[0], pulse.db.Record):
+        if isinstance (args[0], db.PulseRecord):
             if args[0].linkable:
                 self._href = args[0].pulse_url
             self._text = args[0].title

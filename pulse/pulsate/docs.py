@@ -26,13 +26,11 @@ import re
 import urllib
 import xml.dom.minidom
 
-import pulse.db
 import pulse.graphs
+import pulse.models as db
 import pulse.scm
 import pulse.parsers
 import pulse.utils
-
-from sqlobject.sqlbuilder import *
 
 synop = 'update information about documentation'
 usage_extra = '[ident]'
@@ -59,9 +57,9 @@ def update_gdu_docbook (doc, **kw):
     data = {}
 
     # FIXME: we want to add "audience" for docs.  use that here
-    cnt = pulse.db.Branch.select ((pulse.db.Branch.q.type == 'Document') &
-                                  (pulse.db.Branch.q.subtype.startswith ('gdu-')) &
-                                  (pulse.db.Branch.q.parentID == doc.parent.id))
+    cnt = db.Branch.objects.filter (type='Document',
+                                    subtype__startswith='gdu-',
+                                    parent=doc.parent)
     if cnt.count() == 1:
         data['icon_name'] = doc.parent.icon_name
         data['icon_dir'] = doc.parent.icon_dir
@@ -77,7 +75,7 @@ def update_gdu_docbook (doc, **kw):
     if not desc.has_key ('C') and doc.desc.has_key ('C'):
         desc['C'] = doc.desc['C']
 
-    translations = pulse.db.Branch.selectBy (type='Translation', parent=doc)
+    translations = db.Branch.objects.filter (type='Translation', parent=doc)
     for translation in translations:
         pofile = os.path.join (checkout.directory, translation.scm_dir, translation.scm_file)
         process_docbook_pofile (pofile, name, desc, data, timestamps=kw.get('timestamps', True))
@@ -95,9 +93,7 @@ def update_gdu_docbook (doc, **kw):
         if kw.get('history', True):
             fullname = os.path.join (makedir, 'C', fname)
             rel_ch = pulse.utils.relative_path (fullname, checkout.directory)
-            revision = pulse.db.Revision.select ((pulse.db.Revision.q.branchID == doc.id) &
-                                                 (pulse.db.Revision.q.filename == fname),
-                                                 orderBy='-datetime')
+            revision = db.Revision.objects.filter (branch=doc, filename=fname).order_by ('-datetime')
             try:
                 since = revision[0].revision
             except IndexError:
@@ -105,10 +101,11 @@ def update_gdu_docbook (doc, **kw):
             serverid = '.'.join (pulse.scm.server_name (checkout.scm_type, checkout.scm_server).split('.')[-2:])
             for hist in checkout.get_file_history (rel_ch, since=since):
                 pident = '/person/' + serverid + '/' + hist['userid']
-                pers = pulse.db.Entity.get_record (ident=pident, type='Person')
-                pulse.db.Revision (branch=doc, person=pers, filename=fname, filetype='xml',
+                pers = db.Entity.get_record (pident, 'Person')
+                rev = db.Revision (branch=doc, person=pers, filename=fname, filetype='xml',
                                    revision=hist['revision'], datetime=hist['date'], comment=hist['comment'])
-    revision = pulse.db.Revision.select (pulse.db.Revision.q.branchID == doc.id, orderBy='-datetime')
+                rev.save()
+    revision = db.Revision.objects.filter (branch=doc).order_by ('-datetime')
     try:
         revision = revision[0]
         data['mod_datetime'] = revision.datetime
@@ -120,8 +117,7 @@ def update_gdu_docbook (doc, **kw):
     now = datetime.datetime.now()
     threshhold = now - datetime.timedelta(days=168)
     stats = [0] * 24
-    revs = pulse.db.Revision.select ((pulse.db.Revision.q.branchID == doc.id) &
-                                     (pulse.db.Revision.q.datetime > threshhold) )
+    revs = db.Revision.objects.filter (branch=doc, datetime__gt=threshhold)
     for rev in list(revs):
         idx = (now - rev.datetime).days
         idx = 23 - (idx // 7)
@@ -140,10 +136,9 @@ def update_gdu_docbook (doc, **kw):
     xmlfiles = sorted(xmlfiles)
     if doc.data.get('xmlfiles') != xmlfiles:
         data['xmlfiles'] = xmlfiles
-    doc.update_name (name)
-    doc.update_desc (desc)
-    if len(data) > 0:
-        doc.update (data)
+
+    doc.update (data, name=name, desc=desc)
+    doc.save()
 
 
 def update_gtk_doc (doc, **kw):
@@ -163,10 +158,8 @@ def update_gtk_doc (doc, **kw):
     if not desc.has_key ('C') and doc.desc.has_key ('C'):
         desc['C'] = doc.desc['C']
 
-    doc.update_name (name)
-    doc.update_desc (desc)
-    if len (data) > 0:
-        doc.update (data)
+    doc.update (data, name=name, desc=desc)
+    doc.save()
 
 
 def process_docbook_docfile (docfile, name, desc, data, **kw):
@@ -176,7 +169,7 @@ def process_docbook_docfile (docfile, name, desc, data, **kw):
         return
     mtime = os.stat(docfile).st_mtime
     if kw.get('timestamps', True):
-        stamp = pulse.db.Timestamp.get_timestamp (rel_scm)
+        stamp = db.Timestamp.get_timestamp (rel_scm)
         if mtime <= stamp:
             pulse.utils.warn ('Skipping file %s' % rel_scm)
             return
@@ -241,7 +234,7 @@ def process_docbook_docfile (docfile, name, desc, data, **kw):
         desc['C'] = normalize (abstract)
     data['credits'] = credits
 
-    pulse.db.Timestamp.set_timestamp (rel_scm, mtime)
+    db.Timestamp.set_timestamp (rel_scm, mtime)
 
 
 def process_docbook_pofile (pofile, name, desc, data, **kw):
@@ -251,7 +244,7 @@ def process_docbook_pofile (pofile, name, desc, data, **kw):
         return
     mtime = os.stat(pofile).st_mtime
     if kw.get('timestamps', True):
-        stamp = pulse.db.Timestamp.get_timestamp (rel_scm)
+        stamp = db.Timestamp.get_timestamp (rel_scm)
         if mtime <= stamp:
             pulse.utils.log ('Skipping file %s' % rel_scm)
             return
@@ -264,7 +257,7 @@ def process_docbook_pofile (pofile, name, desc, data, **kw):
     if desc.has_key('C') and po.has_message (desc['C']):
         desc[lang] = po.get_message_str (desc['C'])
    
-    pulse.db.Timestamp.set_timestamp (rel_scm, mtime)
+    db.Timestamp.set_timestamp (rel_scm, mtime)
 
 
 def update_scm_file (doc, filename):
@@ -273,10 +266,7 @@ def update_scm_file (doc, filename):
 
 
 def set_credits (doc, credits):
-    author_rels = []
-    editor_rels = []
-    credit_rels = []
-    maint_rels = []
+    rels = []
     for cr_name, cr_email, cr_type, cr_maint in credits:
         ent = None
         if cr_email != None:
@@ -287,30 +277,23 @@ def set_credits (doc, credits):
                 ent = None
         if ent == None:
             ident = '/ghost/' + urllib.quote (cr_name.encode('utf-8'))
-            ent = pulse.db.Entity.get_record (ident=ident, type='Ghost')
+            ent = db.Entity.get_record (ident, 'Ghost')
             ent.update_name ({'C' : cr_name})
             if cr_email != None:
                 ent.email = cr_email
+            ent.save()
+        rel = db.DocumentEntity.set_related (doc, ent)
         if cr_type in ('author', 'corpauthor'):
-            author_rels.append (pulse.db.BranchEntityRelation.set_related (subj=doc,
-                                                                           verb='DocumentAuthor',
-                                                                           pred=ent))
+            rel.author = True
         elif cr_type == 'editor':
-            editor_rels.append (pulse.db.BranchEntityRelation.set_related (subj=doc,
-                                                                           verb='DocumentEditor',
-                                                                           pred=ent))
-        else:
-            credit_rels.append (pulse.db.BranchEntityRelation.set_related (subj=doc,
-                                                                           verb='DocumentCredit',
-                                                                           pred=ent))
+            rel.editor = True
+        elif cr_type == 'publisher':
+            rel.publisher = True
         if cr_maint:
-            maint_rels.append (pulse.db.BranchEntityRelation.set_related (subj=doc,
-                                                                          verb='DocumentMaintainer',
-                                                                          pred=ent))
-    doc.set_relations (pulse.db.BranchEntityRelation, 'DocumentAuthor', author_rels)
-    doc.set_relations (pulse.db.BranchEntityRelation, 'DocumentEditor', editor_rels)
-    doc.set_relations (pulse.db.BranchEntityRelation, 'DocumentCredit', credit_rels)
-    doc.set_relations (pulse.db.BranchEntityRelation, 'DocumentMaintainer', maint_rels)
+            rel.maintainer = True
+        rel.save()
+        rels.append (rel)
+    doc.set_relations (db.DocumentEntity, rels)
 
 
 ################################################################################
@@ -368,37 +351,18 @@ def main (argv, options={}):
         prefix = argv[0]
 
     if prefix == None:
-        docs = pulse.db.Branch.selectBy (type='Document')
+        docs = db.Branch.objects.filter (type='Document')
     elif prefix.startswith ('/mod/'):
-        BranchParent = Alias (pulse.db.Branch, 'BranchParent')
-        docs = pulse.db.Branch.select (
-            AND(pulse.db.Branch.q.type == 'Document',
-                BranchParent.q.type == 'Module',
-                BranchParent.q.ident.startswith (prefix)),
-            join=INNERJOINOn(None, BranchParent,
-                             pulse.db.Branch.q.parentID == BranchParent.q.id) )
-        docs = list(docs)
+        docs = db.Branch.objects.filter (type='Document',
+                                         parent__ident__startswith=prefix)
     elif prefix.startswith ('/set'):
-        docs = []
-        sets = pulse.db.Record.select ((pulse.db.Record.q.type == 'Set') &
-                                       (pulse.db.Record.q.ident.startswith (prefix)) )
-        BranchParent = Alias (pulse.db.Branch, 'BranchParent')
-        for set in sets:
-            setdocs = pulse.db.Branch.select (
-                (pulse.db.Branch.q.type == 'Document') &
-                (BranchParent.q.type == 'Module') &
-                (pulse.db.RecordBranchRelation.q.verb == 'SetModule') &
-                (pulse.db.RecordBranchRelation.q.subjID == set.id),
-                join=INNERJOINOn (BranchParent,
-                                  pulse.db.RecordBranchRelation,
-                                  (pulse.db.Branch.q.parentID == BranchParent.q.id) &
-                                  (pulse.db.RecordBranchRelation.q.predID == BranchParent.q.id)) )
-            docs += list(setdocs)
+        docs = db.Branch.objects.filter (type='Document',
+                                         parent__set_module_subjs__subj__ident__startswith=prefix)
     else:
-        docs = pulse.db.Branch.select ((pulse.db.Branch.q.type == 'Document') &
-                                       (pulse.db.Branch.q.ident.startswith (prefix)) )
+        docs = db.Branch.objects.filter (type='Document',
+                                         ident__startswith=prefix)
 
-    for doc in docs:
+    for doc in list(docs):
         if doc.subtype == 'gdu-docbook':
             update_gdu_docbook (doc, update=update, timestamps=timestamps, history=history)
         elif doc.subtype == 'gtk-doc':

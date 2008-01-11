@@ -23,7 +23,7 @@ import sys
 
 import xml.dom.minidom
 
-import pulse.db
+import pulse.models
 import pulse.scm
 import pulse.xmldata
 
@@ -34,17 +34,19 @@ args['no-update']  = (None, 'do not update SCM checkouts')
 
 modulesets = {}
 checkouts = {}
+records = {}
 
-def get_moduleset (file):
-    if not modulesets.has_key (file):
-        modulesets[file] = ModuleSet (file)
-    return modulesets[file]
+def get_moduleset (filename):
+    if not modulesets.has_key (filename):
+        modulesets[filename] = ModuleSet (filename)
+    return modulesets[filename]
 
 class ModuleSet:
-    def __init__ (self, file):
+    def __init__ (self, filename):
         self._packages = {}
         self._metas = {}
-        self.parse (file)
+        self.filename = filename
+        self.parse (filename)
 
     def get_packages (self):
         return self._packages.keys()
@@ -146,22 +148,27 @@ def update_branch (moduleset, key, update=True):
         return None
     ident = '/'.join (['/mod', servername, pkg_data['scm_module'], pkg_data['scm_branch']])
 
-    record = pulse.db.Branch.get_record (ident=ident, type='Module')
+    record = pulse.models.Branch.get_record (ident, 'Module')
     record.update (data)
+    record.save()
     pkg_data['__record__'] = record
+    records.setdefault (record.ident, {'record' : record, 'pkgdatas' : []})
+    # Records could have package information defined in multiple modulesets,
+    # so we record all of them.  See the comment in update_deps.
+    records[record.ident]['pkgdatas'].append ((moduleset, key))
     return record
 
 def update_set (data, update=True):
     ident = '/set/' + data['id']
-    record = pulse.db.Record.get_record (ident=ident, type='Set')
+    record = pulse.models.Record.get_record (ident, 'Set')
 
     # Sets may contain either other sets or modules, not both
     if data.has_key ('set'):
         rels = []
         for subset in data['set'].keys():
             subrecord = update_set (data['set'][subset], update=update)
-            rels.append (pulse.db.RecordRelation.set_related (record, 'SetSubset', subrecord))
-        record.set_relations (pulse.db.RecordRelation, 'SetSubset', rels)
+            rels.append (pulse.models.SetSubset.set_related (record, subrecord))
+        record.set_relations (pulse.models.SetSubset, rels)
     elif (data.has_key ('jhbuild_scm_type')   and
           data.has_key ('jhbuild_scm_server') and
           data.has_key ('jhbuild_scm_module') and
@@ -205,37 +212,49 @@ def update_set (data, update=True):
         for pkg in packages:
             branch = update_branch (moduleset, pkg, update=update)
             if branch != None:
-                rels.append (pulse.db.RecordBranchRelation.set_related (record, 'SetModule', branch))
-        record.set_relations (pulse.db.RecordBranchRelation, 'SetModule', rels)
+                rels.append (pulse.models.SetModule.set_related (record, branch))
+        record.set_relations (pulse.models.SetModule, rels)
 
     return record
 
-def update_deps (modulekey):
-    moduleset = modulesets[modulekey]
-    for pkg in moduleset.get_packages():
-        pkgdata = moduleset.get_package (pkg)
-        if not pkgdata.has_key ('__record__'): continue
-        pkgrec = pkgdata['__record__']
-        deps = get_deps (modulekey, pkg)
+def update_deps ():
+    for ident, recdata in records.items():
+        # Records could have package information defined in multiple modulesets.
+        # If the jhbuild maintainers are on the ball, the dependencies in either
+        # should be equivalent, except they might end up pointing to different
+        # branches, as a result of what branches of other modules are included
+        # in the particular moduleset.
+        #
+        # I toyed around with having dependencies go from Branch to Branchable,
+        # which would make this a moot point, but it makes it difficult to do
+        # dependency graphs, because you have to arbitrarily choose branches
+        # of dependencies, and that could affect further dependencies.
+        #
+        # So we arbitrarity take the first moduleset.  It's probably a good
+        # idea to keep newer modulesets first in sets.xml.
+        moduleset, pkgkey = recdata['pkgdatas'][0]
+        rec = recdata['record']
+        pkgdata = moduleset.get_package (pkgkey)
+        deps = get_deps (moduleset, pkgkey)
         pkgrels = []
         pkgdrels = []
         for dep in deps:
             depdata = moduleset.get_package (dep)
             if not depdata.has_key ('__record__'): continue
             deprec = depdata['__record__']
-            if deprec.resource == None: continue
-            pkgrels.append (pulse.db.BranchRelation.set_related (pkgrec, 'ModuleDependency', deprec))
-            if dep in pkgdata['deps']:
-                pkgdrels.append (pulse.db.BranchRelation.set_related (pkgrec, 'ModuleDirectDependency', deprec))
-        pkgrec.set_relations (pulse.db.BranchRelation, 'ModuleDependency', pkgrels)
-        pkgrec.set_relations (pulse.db.BranchRelation, 'ModuleDirectDependency', pkgdrels)
+            rel = pulse.models.ModuleDependency.set_related (rec, deprec)
+            pkgrels.append (rel)
+            direct = (dep in pkgdata['deps'])
+            if rel.direct != direct:
+                rel.direct = direct
+                rel.save()
+        rec.set_relations (pulse.models.ModuleDependency, pkgrels)
 
 known_deps = {}
-def get_deps (modulekey, pkg, seen=[]):
-    depskey = modulekey + ':' + pkg
+def get_deps (moduleset, pkg, seen=[]):
+    depskey = moduleset.filename + ':' + pkg
     if known_deps.has_key (depskey):
         return known_deps[depskey]
-    moduleset = modulesets[modulekey]
     pkgdata = moduleset.get_package (pkg)
     deps = []
     for dep in pkgdata.get('deps', []):
@@ -245,7 +264,7 @@ def get_deps (modulekey, pkg, seen=[]):
         depdata = moduleset.get_package (dep)
         if not dep in deps:
             deps.append (dep)
-            for depdep in get_deps (modulekey, dep, seen + [pkg]):
+            for depdep in get_deps (moduleset, dep, seen + [pkg]):
                 if not depdep in deps:
                     deps.append (depdep)
     known_deps[depskey] = deps
@@ -261,5 +280,4 @@ def main (argv, options={}):
             update_set (data[key], update=update)
 
     if not options.get ('--no-deps', False):
-        for modulekey in modulesets:
-            update_deps (modulekey)
+        update_deps ()
