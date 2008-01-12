@@ -582,31 +582,27 @@ class Revision (models.Model):
     comment = models.TextField ()
 
     @classmethod
-    def get_last_revision (cls, branch, filename):
-        revs = cls.select_revisions (branch, filename)
+    def get_last_revision (cls, branch=None, person=None, filename=False):
+        revs = cls.select_revisions (branch=branch, person=person, filename=filename)
         try:
             return revs[0]
         except IndexError:
             return None
 
     @classmethod
-    def select_revisions (cls, branch, filename):
+    def select_revisions (cls, branch=None, person=None, filename=False, since=None):
+        args = {}
+        if since != None:
+            args['datetime__gt'] = since
+        if branch != None:
+            args['branch'] = branch
+        if person != None:
+            args['person'] = person
         if isinstance (filename, basestring):
-            revs = cls.objects.filter (branch=branch, filename=filename)
-        elif filename == False:
-            revs = cls.objects.filter (branch=branch)
-        else:
-            revs = cls.objects.filter (branch=branch, filename__isnull=True)
-        return revs.order_by ('-datetime')
-
-    @classmethod
-    def select_revisions_since (cls, branch, filename, since):
-        if isinstance (filename, basestring):
-            revs = cls.objects.filter (branch=branch, filename=filename, datetime__gt=since)
-        elif filename == False:
-            revs = cls.objects.filter (branch=branch, datetime__gt=since)
-        else:
-            revs = cls.objects.filter (branch=branch, filename__isnull=True, datetime__gt=since)
+            args['filename'] = filename
+        elif filename == None:
+            args['filename__isnull'] = True
+        revs = cls.objects.filter (**args)
         return revs.order_by ('-datetime')
 
 

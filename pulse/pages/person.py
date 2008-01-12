@@ -21,24 +21,22 @@
 import os
 
 import pulse.config
-import pulse.db
 import pulse.graphs
 import pulse.html
+import pulse.models as db
 import pulse.scm
 import pulse.utils
-
-from sqlobject.sqlbuilder import *
 
 def main (path=[], query={}, http=True, fd=None):
     person = None
     if len(path) == 1:
         return output_top (path, query, http, fd)
     if len(path) == 3:
-        person = pulse.db.Entity.selectBy (ident=('/' + '/'.join(path)), type='Person')
-        if person.count() == 0:
-            person = None
-        else:
+        person = db.Entity.objects.filter (ident=('/' + '/'.join(path)), type='Person')
+        try:
             person = person[0]
+        except IndexError:
+            person = None
     if person == None:
         kw = {'http': http}
         kw['title'] = pulse.utils.gettext ('Person Not Found')
@@ -54,8 +52,7 @@ def main (path=[], query={}, http=True, fd=None):
 def output_top (path=[], query={}, http=True, fd=None):
     page = pulse.html.Page (http=http)
     page.set_title (pulse.utils.gettext ('People'))
-    people = pulse.db.Entity.select (pulse.db.Entity.q.type == 'Person',
-                                     orderBy='-mod_score')
+    people = db.Entity.objects.filter (type='Person').order_by ('-mod_score')
     page.add_content(pulse.html.Div(pulse.utils.gettext('42 most active people:')))
     for person in people[:42]:
         lbox = pulse.html.LinkBox (person)
@@ -95,9 +92,7 @@ def output_person (person, path=[], query=[], http=True, fd=None):
             cmt = pulse.utils.gettext ('this week: %i commits') % datum[1]
         graph.add_comment (datum[0], cmt)
     box.add_content (graph)
-    revs = pulse.db.Revision.select ((pulse.db.Revision.q.personID == person.id) &
-                                     (pulse.db.Revision.q.filename == None),
-                                     orderBy='-datetime')
+    revs = db.Revision.select_revisions (person=person, filename=None)
     cnt = revs.count()
     box.add_content ('Showing %i of %i commits:' % (min(10, cnt), cnt))
     dl = pulse.html.DefinitionList()
@@ -113,38 +108,33 @@ def output_person (person, path=[], query=[], http=True, fd=None):
         dl.add_entry (pulse.html.RevisionPopupLink (rev.comment))
 
     # Modules and Documents
-    branches = pulse.db.Branch.select (
-        pulse.db.BranchEntityRelation.q.predID == person.id,
-        join=INNERJOINOn(None, pulse.db.BranchEntityRelation,
-                         pulse.db.BranchEntityRelation.q.subjID == pulse.db.Branch.q.id) )
-    branches = pulse.utils.attrsorted (list(branches), 'title')
+    mods = db.Branch.objects.filter (type='Module', module_entity_preds__pred=person)
+    mods = pulse.utils.attrsorted (list(mods), 'title')
+    if len(mods) > 0:
+        mod_box = pulse.html.InfoBox ('modules', pulse.utils.gettext ('Modules'))
+        modules = pulse.html.LinkBoxContainer()
+        mod_box.add_content (modules)
+        columns.add_content (1, mod_box)
+        brs = []
+        for mod in mods:
+            if mod.branchable_id in brs:
+                continue
+            brs.append (mod.branchable_id)
+            modules.add_link_box (mod)
 
-    mod_box = pulse.html.InfoBox ('modules', pulse.utils.gettext ('Modules'))
-    modules = pulse.html.LinkBoxContainer()
-    mod_box.add_content (modules)
-
-    doc_box = pulse.html.InfoBox ('documents', pulse.utils.gettext ('Documents'))
-    documents = pulse.html.LinkBoxContainer()
-    doc_box.add_content (documents)
-
-    mod_add = doc_add = False
-    resources = []
-    for branch in branches:
-        # FIXME: this gives random results, do it better
-        if branch.resourceID in resources:
-            continue
-        else:
-            resources.append (branch.resourceID)
-        if branch.type == 'Module':
-            mod_add = True
-            modules.add_link_box (branch)
-        elif branch.type == 'Document':
-            doc_add = True
-            documents.add_link_box (branch)
-        # FIXME: more
-
-    if mod_add: columns.add_content (1, mod_box)
-    if doc_add: columns.add_content (1, doc_box)
+    docs = db.Branch.objects.filter (type='Document', document_entity_preds__pred=person)
+    docs = pulse.utils.attrsorted (list(docs), 'title')
+    if len(docs) > 0:
+        doc_box = pulse.html.InfoBox ('documents', pulse.utils.gettext ('Documents'))
+        documents = pulse.html.LinkBoxContainer()
+        doc_box.add_content (documents)
+        columns.add_content (1, doc_box)
+        brs = []
+        for doc in docs:
+            if doc.branchable_id in brs:
+                continue
+            brs.append (doc.branchable_id)
+            documents.add_link_box (doc)
 
     page.output(fd=fd)
 

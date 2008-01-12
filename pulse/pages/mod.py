@@ -163,7 +163,7 @@ def output_branch (branch, path=[], query=[], http=True, fd=None):
             cmt = pulse.utils.gettext ('this week: %i commits') % datum[1]
         graph.add_comment (datum[0], cmt)
     box.add_content (graph)
-    revs = db.Revision.select_revisions (branch, None)
+    revs = db.Revision.select_revisions (branch=branch, filename=None)
     cnt = revs.count()
     box.add_content ('Showing %i of %i commits:' % (min(10, cnt), cnt))
     dl = pulse.html.DefinitionList()

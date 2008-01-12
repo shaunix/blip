@@ -112,7 +112,7 @@ def update_gdu_docbook (doc, **kw):
     now = datetime.datetime.now()
     threshhold = now - datetime.timedelta(days=168)
     stats = [0] * 24
-    revs = db.Revision.select_revisions_since (doc, False, threshhold)
+    revs = db.Revision.select_revisions (branch=doc, since=threshhold)
     for rev in list(revs):
         idx = (now - rev.datetime).days
         idx = 23 - (idx // 7)

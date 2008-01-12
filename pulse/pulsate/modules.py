@@ -53,7 +53,7 @@ def update_branch (branch, update=True, timestamps=True, history=True):
     now = datetime.datetime.now()
     threshhold = now - datetime.timedelta(days=168)
     stats = [0] * 24
-    revs = db.Revision.select_revisions_since (branch, False, threshhold)
+    revs = db.Revision.select_revisions (branch=branch, since=threshhold)
     for rev in list(revs):
         idx = (now - rev.datetime).days
         idx = 23 - (idx // 7)
