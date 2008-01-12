@@ -645,7 +645,7 @@ def process_oafserver (branch, checkout, filename, **kw):
             data[key] = getattr(branch, key)
         data['scm_dir'], data['scm_file'] = os.path.split (rel_ch)
         applet.update (data)
-        applets.save()
+        applet.save()
         applets.append (applet)
 
     db.Timestamp.set_timestamp (rel_scm, mtime)
