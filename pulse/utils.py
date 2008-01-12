@@ -29,6 +29,18 @@ def daynum (when=datetime.now()):
 def gettext (str):
     return str
 
+def split (things, num):
+    each = len(things) // num
+    ext = len(things) % num
+    idx = i = start = 0
+    while start < len(things):
+        end = start + each + (i < ext)
+        for j in range(start, end):
+            yield (things[j], idx, j - start)
+        start = end
+        i += 1
+        idx += 1
+
 def isorted (list):
     return sorted (list, lambda x, y: cmp (x.lower(), y.lower()))
 

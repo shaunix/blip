@@ -375,23 +375,16 @@ class LinkBoxContainer (Block, SortLinkComponent):
                 p (fd, '<div class="exp-content">')
         if self._columns > 1:
             p (fd, '<table class="cols"><tr>')
+            p (fd, '<td class="col col-first">')
             width = str(100 // self._columns)
-            each = len(self._boxes) // self._columns
-            ext = len(self._boxes) % self._columns
-            i = start = 0
-            while start < len(self._boxes):
-                end = start + each + (i < ext)
-                if i == 0:
-                    p (fd, '<td class="col col-first">')
+            for box, col, pos in pulse.utils.split (self._boxes, self._columns):
+                if pos == 0:
+                    if col > 0:
+                        p (fd, '</td><td class="col" style="width: ' + width + '%">')
                 else:
-                    p (fd, '<td class="col" style="width: ' + width + '%">')
-                for i in range(start, end):
-                    if i != start: p (fd, '<div class="pad"></div>')
-                    p (fd, self._boxes[i])
-                p (fd, '</td>')
-                start = end
-                i += 1
-            p (fd, '</tr></table>')
+                     p (fd, '<div class="pad"></div>')
+                p (fd, box)
+            p (fd, '</td></tr></table>')
         else:
             for i in range(len(self._boxes)):
                 if i != 0: p (fd, '<div class="pad"></div>')

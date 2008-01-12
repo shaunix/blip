@@ -79,16 +79,15 @@ def output_set (set, path=[], query=[], http=True, fd=None):
     for super in get_supersets (set):
         page.add_sublink (super.pulse_url, super.title)
 
-    subsets = db.SetSubset.get_related (subj=set)
-    subsets = pulse.utils.attrsorted (subsets, ['pred', 'title'])
+    subsets = [rel.pred for rel in db.SetSubset.get_related (subj=set)]
+    subsets = pulse.utils.attrsorted (subsets, ['title'])
     if len(subsets) > 0:
         if len(path) < 3 or path[2] == 'set':
             columns = pulse.html.ColumnBox (2)
             tabbed.add_tab (pulse.utils.gettext ('Subsets (%i)') % len(subsets), True, columns)
             dls = [columns.add_content (i, pulse.html.DefinitionList()) for i in range(2)]
-            for i in range(len(subsets)):
-                subset = subsets[i].pred
-                dl = dls[int(i > len(subsets) / 2)]
+            for subset, col, pos in pulse.utils.split (subsets, 2):
+                dl = dls[col]
                 dl.add_term (pulse.html.Link (subset))
                 add_set_entries (subset, dl)
         else:
