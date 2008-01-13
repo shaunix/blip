@@ -42,10 +42,11 @@ def help_extra (fd=None):
 
 
 checkouts = {}
-def get_checkout (branch, update=True):
-    if not checkouts.has_key (branch.ident):
-        checkouts[branch.ident] = pulse.scm.Checkout.from_record (branch, update=update)
-    return checkouts[branch.ident]
+def get_checkout (record, update=True):
+    key = '::'.join(map(str, [record.scm_type, record.scm_server, record.scm_module, record.scm_branch, record.scm_path]))
+    if not checkouts.has_key (key):
+        checkouts[key] = pulse.scm.Checkout.from_record (record, update=update)
+    return checkouts[key]
 
 
 def update_intltool (po, **kw):
@@ -126,7 +127,8 @@ def get_intltool_potfile (po, checkout):
         vf = db.VarFile.objects.filter (filename=potfile_rel)
         try:
             vf = vf[0]
-            vf.set(datetime=datetime.datetime.now(), statistic=num)
+            vf.datetime = datetime.datetime.now()
+            vf.statistic = num
         except IndexError:
             vf = db.VarFile (filename=potfile_rel, datetime=datetime.datetime.now(), statistic=num)
         vf.save()
@@ -166,7 +168,8 @@ def get_xml2po_potfile (po, checkout):
         vf = db.VarFile.objects.filter (filename=potfile_rel)
         try:
             vf = vf[0]
-            vf.set(datetime=datetime.datetime.now(), statistic=num)
+            vf.datetime = datetime.datetime.now()
+            vf.statistic = num
         except IndexError:
             vf = db.VarFile (filename=potfile_rel, datetime=datetime.datetime.now(), statistic=num)
         vf.save()
