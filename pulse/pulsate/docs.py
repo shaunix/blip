@@ -273,7 +273,7 @@ def set_credits (doc, credits):
         if ent == None:
             ident = '/ghost/' + urllib.quote (cr_name.encode('utf-8'))
             ent = db.Entity.get_record (ident, 'Ghost')
-            ent.update_name ({'C' : cr_name})
+            ent.update (name=cr_name)
             if cr_email != None:
                 ent.email = cr_email
             ent.save()
