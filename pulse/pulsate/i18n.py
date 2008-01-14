@@ -220,6 +220,9 @@ def main (argv, options={}):
 
     if prefix == None:
         pos = db.Branch.objects.filter (type='Translation')
+    elif prefix.startswith ('/set/'):
+        pos = db.Branch.objects.filter (type='Translation',
+                                        parent__parent__set_module_subjs__subj__ident__startswith=prefix)
     elif prefix.startswith ('/i18n/'):
         pos = db.Branch.objects.filter (type='Translation',
                                         parent__ident__startswith=prefix)
