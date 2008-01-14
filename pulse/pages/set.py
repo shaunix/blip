@@ -18,6 +18,8 @@
 # Suite 330, Boston, MA  0211-1307  USA.
 #
 
+import os
+
 import pulse.config
 import pulse.html
 import pulse.models as db
@@ -251,6 +253,7 @@ def add_more_tabs (set, tabbed, path=[], query=[]):
             cont.set_columns (2)
             slink_mtime = False
             slink_documentation = False
+            slink_messages = False
             tabbed.add_tab (True, txt % len(objs))
             tabbed.add_content (cont)
             for i in range(len(objs)):
@@ -264,18 +267,37 @@ def add_more_tabs (set, tabbed, path=[], query=[]):
                 lbox.add_fact ('module', pulse.html.Link (url, span))
                 docs = db.Documentation.get_related (subj=obj)
                 for doc in docs:
+                    # FIXME: multiple docs look bad and sort poorly
                     doc = doc.pred
                     span = pulse.html.Span(doc.title)
                     span.add_class ('docs')
                     lbox.add_fact (pulse.utils.gettext ('docs'),
                                    pulse.html.Link (doc.pulse_url, span))
                     slink_documentation = True
+                if type == 'Domain':
+                    potlst = ['var', 'l10n'] + obj.ident.split('/')[1:]
+                    if obj.scm_dir == 'po':
+                        potlst.append (obj.scm_module + '.pot')
+                    else:
+                        potlst.append (obj.scm_dir + '.pot')
+                    potfile = os.path.join (*potlst)
+                    vf = db.VarFile.objects.filter (filename=potfile)
+                    try:
+                        vf = vf[0]
+                        span = pulse.html.Span (str(vf.statistic))
+                        span.add_class ('messages')
+                        lbox.add_fact ('messages', span)
+                        slink_messages = True
+                    except IndexError:
+                        pass
             cont.add_sort_link ('title', pulse.utils.gettext ('title'), False)
             cont.add_sort_link ('module', pulse.utils.gettext ('module'))
-            if slink_documentation:
-                cont.add_sort_link ('docs', pulse.utils.gettext ('docs'))
             if slink_mtime:
                 cont.add_sort_link ('mtime', pulse.utils.gettext ('modified'))
+            if slink_documentation:
+                cont.add_sort_link ('docs', pulse.utils.gettext ('docs'))
+            if slink_messages:
+                cont.add_sort_link ('messages', pulse.utils.gettext ('messages'))
         else:
             cnt = objs.count()
             if cnt > 0:

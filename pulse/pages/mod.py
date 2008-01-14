@@ -259,17 +259,17 @@ def output_branch (branch, path=[], query=[], http=True, fd=None):
             poturl = pulse.config.varroot + '/'.join (potlst[1:])
             potfile = os.path.join (*potlst)
             vf = db.VarFile.objects.filter (filename=potfile)
-            if vf.count() > 0:
+            try:
+                vf = vf[0]
                 linkspan = pulse.html.Span (divider=pulse.html.SPACE)
                 vbox.add_content (linkspan)
-                vf = vf[0]
                 linkspan.add_content (pulse.html.Link (poturl,
                                                        pulse.utils.gettext ('POT file'),
                                                        icon='download' ))
                 # FIXME: i18n reordering
                 linkspan.add_content (pulse.utils.gettext ('(%i messages)') % vf.statistic)
                 linkspan.add_content (pulse.utils.gettext ('on %s') % str(vf.datetime))
-            else:
+            except IndexError:
                 vbox.add_content (pulse.html.AdmonBox (pulse.html.AdmonBox.warning,
                                                        pulse.utils.gettext ('No POT file') ))
 
