@@ -495,8 +495,11 @@ class Branch (PulseRecord, models.Model):
 
     def get_title_default (self):
         id = self.ident.split('/')[-2]
-        if self.type == 'Domain' and id == 'po':
-            return pulse.utils.gettext ('Core Translations')
+        if self.type == 'Domain':
+            if id == 'po':
+                return self.scm_module
+            else:
+                return pulse.utils.gettext ('%s (%s)') % (self.scm_module, id)
         return id
 
     def get_branch_module (self):
