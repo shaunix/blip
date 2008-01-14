@@ -11,11 +11,28 @@ function exp_toggle (id) {
     }
   }
   img = document.getElementById ('img-' + id);
-  if (img.className == 'exp-img') {
+  if (img && img.className == 'exp-img') {
     if (open) {
       img.src = img.src.replace('closed', 'open');
     } else {
       img.src = img.src.replace('open', 'closed');
+    }
+  }
+  slink = document.getElementById ('slink-' + id);
+  if (slink && slink.className == 'slinks') {
+    mask = document.getElementById ('slink-' + id + '-mask');
+    if (!open) {
+      if (!mask) {
+        mask = document.createElement ('div');
+        mask.id = 'slink-' + id + '-mask';
+        mask.className = 'slinksmask';
+        mask.style.width = slink.parentNode.clientWidth + 'px';
+        mask.style.height = slink.parentNode.clientHeight + 'px';
+        slink.parentNode.insertBefore(mask, slink);
+      }
+      mask.style.display = 'block';
+    } else {
+      mask.style.display = 'none';
     }
   }
 }

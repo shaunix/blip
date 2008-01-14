@@ -197,6 +197,11 @@ div.exp-title table { width: 100%; }
 div.slinks { text-align: right; color: #555753; padding-right: 2em; }
 span.slinks { background-color: #eeeeec; padding: 0 0.5em 0 0.5em; }
 div.slinks a.slink { color: #204a87; }
+div.slinksmask {
+  position: absolute;
+  background-color: white;
+  opacity: 0.6;
+}
 
 a.plink:hover { text-decoration: none; }
 div.plink {

@@ -28,32 +28,59 @@ import pulse.config
 import pulse.models as db
 import pulse.utils
 
-class Block:
+SPACE = ' '
+BULLET = u' • '
+TRIANGLE = u' ‣ '
+
+class Widget (object):
     def __init__ (self, **kw):
-        pass
-    def output_top (self, fd=sys.stdout):
-        pass
-    def output_middle (self, fd=sys.stdout):
-        pass
-    def output_bottom (self, fd=sys.stdout):
-        pass
+        super (Widget, self).__init__ (**kw)
     def output (self, fd=sys.stdout):
-        self.output_top (fd=fd)
-        self.output_middle (fd=fd)
-        self.output_bottom (fd=fd)
+        pass
+
+class Component (object):
+    def __init__ (self, **kw):
+        super (Component, self).__init__ (**kw)
+    def output (self, fd=sys.stdout):
+        pass
 
 
 ################################################################################
 ## Components
 
-class SublinksComponent (Block):
-    BULLET = u' • '
-    TRIANGLE = u' ‣ '
-    
+class ContentComponent (Component):
+    """
+    A simple component for widgets that have generic content.  The output
+    method will call output on each of the added widgets.  Some widgets
+    may use this component only for the add_content method, and control
+    how the added widgets are output by mapping over get_content.
+    """
     def __init__ (self, **kw):
-        Block.__init__ (self, **kw)
+        super (ContentComponent, self).__init__ (**kw)
+        self._content = []
+
+    def add_content (self, content):
+        self._content.append (content)
+
+    def get_content (self):
+        return self._content
+
+    def output (self, fd=sys.stdout):
+        for s in self._content:
+            p (fd, None, s)
+
+
+class SublinksComponent (Component):
+    """
+    A component for widgets that contain sublinks.  Sublinks are a list of
+    links found under the title of a widget.  They may provide alternate
+    pages or a heirarchy of parent pages, depending on context.  The ouput
+    method will create the sublinks.
+    """
+    def __init__ (self, **kw):
+        super (SublinksComponent, self).__init__ (**kw)
         self._sublinks = []
-        self._divider = kw.get('divider', self.BULLET)
+        self._divider = kw.get('divider', BULLET)
 
     def add_sublink (self, href, title):
         self._sublinks.append ((href, title))
@@ -74,9 +101,15 @@ class SublinksComponent (Block):
             p (fd, '</div>')
 
 
-class FactsComponent (Block):
+class FactsComponent (Component):
+    """
+    A component for widgets that contain fact tables.  Fact tables are
+    key-value tables providing more information about whatever thing
+    the widget is showing.  The output method will create the table of
+    facts.
+    """
     def __init__ (self, **kw):
-        Block.__init__ (self, **kw)
+        super (FactsComponent, self).__init__ (**kw)
         self._divs = []
         self._facts = []
 
@@ -106,7 +139,7 @@ class FactsComponent (Block):
                 else:
                     p (fd, '<td class="fact-val" colspan="2">', None, False)
                 def factout (f):
-                    if isinstance (f, basestring) or isinstance (f, Block):
+                    if isinstance (f, basestring) or isinstance (f, Widget) or isinstance (f, Component):
                         p (fd, None, f, False)
                     elif isinstance (f, db.PulseRecord):
                         p (fd, Link(f))
@@ -120,94 +153,121 @@ class FactsComponent (Block):
         p (fd, '</table>')
 
 
-class ContentComponent (Block):
-    def __init__ (self, **kw):
-        Block.__init__ (self, **kw)
-        self._content = []
-
-    def add_content (self, content):
-        self._content.append (content)
-
-    def get_content (self):
-        return self._content
-
-    def output (self, fd=sys.stdout):
-        for s in self._content:
-            p (fd, None, s)
-
-
-class SortLinkComponent (Block):
+class SortableComponent (Component):
+    """
+    A component for widgets that have sortable content.  The output method
+    will create the link bar for sorting the content.
+    """
     def __init__ (self, *args, **kw):
-        Block.__init__ (self, **kw)
-        if len(args) > 0:
-            self._sortlinktag = args[0]
-        else:
-            self._sortlinktag = None
-        if len(args) > 1:
-            self._sortlinkclass = args[1]
-        else:
-            self._sortlinkclass = None
-        self._sortlinks = []
+        super (SortableComponent, self).__init__ (**kw)
+        self._slinktag = kw.get ('sortable_tag', None)
+        self._slinkclass = kw.get ('sortable_class', None)
+        self._slinks = []
 
-    def set_sort_link_tag (self, tag):
-        self._sortlinktag = tag
+    def set_sortable_tag (self, tag):
+        self._slinktag = tag
 
-    def get_sort_link_tag (self):
-        return self._sortlinktag
+    def get_sortable_tag (self):
+        return self._slinktag
 
-    def set_sort_link_class (self, cls):
-        self._sortlinkclass = cls
+    def set_sortable_class (self, cls):
+        self._slinkclass = cls
 
-    def get_sort_link_class (self):
-        return self._sortlinkclass
+    def get_sortable_class (self):
+        return self._slinkclass
 
     def add_sort_link (self, key, txt, on=True):
-        self._sortlinks.append ((key, txt, on))
+        self._slinks.append ((key, txt, on))
 
     def get_sort_links (self):
-        return self._sortlinks
+        return self._slinks
 
     def output (self, fd=sys.stdout):
-        p (fd, '<div class="slinks"><span class="slinks" id="slink-%s">', self._sortlinkclass)
-        for i in range(len(self._sortlinks)):
+        p (fd, '<div class="slinks"><span class="slinks" id="slink-%s">', self._slinkclass)
+        for i in range(len(self._slinks)):
             if i != 0: p (fd, u' • ')
-            slink = self._sortlinks[i]
+            slink = self._slinks[i]
             if slink[2]:
                 p (fd, '<a class="slink" id="slink-%s-%s-%s" href="javascript:sort(\'%s\', \'%s\', \'%s\')">%s</a>',
-                   (self._sortlinktag, self._sortlinkclass, slink[0],
-                    self._sortlinktag, self._sortlinkclass, slink[0], slink[1]),
+                   (self._slinktag, self._slinkclass, slink[0],
+                    self._slinktag, self._slinkclass, slink[0], slink[1]),
                    False)
             else:
                 p (fd, '<span class="slink" id="slink-%s-%s-%s">%s</span>',
-                   (self._sortlinktag, self._sortlinkclass, slink[0], slink[1]),
+                   (self._slinktag, self._slinkclass, slink[0], slink[1]),
                    False)
         p (fd, '</span></div>')
 
 
-
-################################################################################
-## Pages
-
-class HttpContainer (Block, ContentComponent):
+class LinkBoxesComponent (Component):
+    """
+    A component for widgets containing link boxes, possibly in multiple columns.
+    """
     def __init__ (self, **kw):
-        ContentComponent.__init__ (self, **kw)
-        self._http = kw.get ('http', True)
-        self._status = kw.get ('status')
+        super (LinkBoxesComponent, self).__init__ (**kw)
+        self._boxes = []
+        self._columns = kw.get('columns', 1)
 
-    def output_top (self, fd=sys.stdout):
+    def add_link_box (self, *args, **kw):
+        lbox = LinkBox (*args, **kw)
+        self._boxes.append (lbox)
+        return lbox
+
+    def set_columns (self, columns):
+        self._columns = columns
+
+    def output (self, fd=sys.stdout):
+        if self._columns > 1:
+            p (fd, '<table class="cols"><tr>')
+            p (fd, '<td class="col col-first">')
+            width = str(100 // self._columns)
+            for box, col, pos in pulse.utils.split (self._boxes, self._columns):
+                if pos == 0:
+                    if col > 0:
+                        p (fd, '</td><td class="col" style="width: ' + width + '%">')
+                else:
+                     p (fd, '<div class="pad"></div>')
+                p (fd, box)
+            p (fd, '</td></tr></table>')
+        else:
+            for i in range(len(self._boxes)):
+                if i != 0: p (fd, '<div class="pad"></div>')
+                p (fd, self._boxes[i])
+
+
+class HttpComponent (Component):
+    """
+    A component for widgets that may need to output HTTP headers.  Widgets using
+    this component are generally top-level that are not added to any other widgets.
+    The output method will generate the HTTP headers, if the http paramater has
+    not been set to False.
+    """
+    def __init__ (self, **kw):
+        super (HttpComponent, self).__init__ (**kw)
+        self._http = kw.get ('http', True)
+        self._status = kw.get ('status', 200)
+
+    def output (self, fd=sys.stdout):
         if self._http == True:
             if self._status == 404:
                 p (fd, 'Status: 404 Not found')
             elif self._status == 500:
                 p (fd, 'Status: 500 Internal server error')
             p (fd, 'Content-type: text/html; charset=utf-8\n')
+        
 
-    def output_middle (self, fd=sys.stdout):
-        ContentComponent.output (self, fd=fd)
 
-class Page (HttpContainer):
+################################################################################
+## Pages
+
+class Page (Widget, HttpComponent, ContentComponent):
+    """
+    A complete web page.  The output method creates all the standard HTML for
+    the top and bottom of the page, and call output_page_content in between.
+    Subclasses should override output_page_content.
+    """
     def __init__ (self, **kw):
-        HttpContainer.__init__ (self, **kw)
+        super (Page, self).__init__ (**kw)
         self._title = kw.get ('title')
         self._icon = kw.get ('icon')
 
@@ -217,8 +277,8 @@ class Page (HttpContainer):
     def set_icon (self, icon):
         self._icon = icon
 
-    def output_top (self, fd=sys.stdout):
-        HttpContainer.output_top (self, fd=fd)
+    def output (self, fd=sys.stdout):
+        HttpComponent.output (self, fd=fd)
         p (fd, '<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">')
         p (fd, '<html><head>')
         p (fd, '  <title>%s</title>', self._title)
@@ -245,33 +305,52 @@ class Page (HttpContainer):
             p (fd, '<img class="icon" src="%s" alt="%s">', (self._icon, self._title), False)
         p (fd, None, self._title)
         p (fd, '</h1>')
-
-    def output_bottom (self, fd=sys.stdout):
+        self.output_page_content (fd=fd)
         p (fd, '</div></body></html>')
+        
+    def output_page_content (self, fd=sys.stdout):
+        ContentComponent.output (self, fd=fd)
 
-class ResourcePage (Page, SublinksComponent, FactsComponent):
-    def __init__ (self, resource, **kw):
-        Page.__init__ (self, **kw)
-        SublinksComponent.__init__ (self, **kw)
-        FactsComponent.__init__ (self, **kw)
-        self.set_title (resource.title)
-        if resource.icon_url != None:
-            self.set_icon (resource.icon_url)
 
-    def output_middle (self, fd=sys.stdout):
+class Fragment (Widget, HttpComponent, ContentComponent):
+    """
+    A fragment of a web page.  Unlike Page, Fragment will not output any
+    boilerplate HTML.  Instead, it only outputs the HTTP headers and the
+    added content.  This is generally used for AJAX content.
+    """
+    def __init__ (self, **kw):
+        super (Page, self).__init__ (**kw)
+
+    def output (self, fd=sys.stdout):
+        HttpComponent.output (self, fd=fd)
+        ContentComponent.output (self, fd=fd)
+
+
+class RecordPage (Page, SublinksComponent, FactsComponent):
+    """
+    A convenience wrapper for Page that knows how to extract information
+    from database records.
+    """
+    def __init__ (self, record, **kw):
+        kw.setdefault ('title', record.title)
+        kw.setdefault ('icon', record.icon_url)
+        super (RecordPage, self).__init__ (**kw)
+
+    def output_page_content (self, fd=sys.stdout):
         SublinksComponent.output (self, fd=fd)
         FactsComponent.output (self, fd=fd)
-        Page.output_middle (self, fd=fd)
+        Page.output_page_content (self, fd=fd)
+
 
 class PageNotFound (Page):
+    """A 404 page."""
     def __init__ (self, message, **kw):
-        Page.__init__ (self, status=404, **kw)
-        if not kw.has_key ('title'):
-            self.set_title (pulse.utils.gettext('Page Not Found'))
+        kw.setdefault ('title', pulse.utils.gettext('Page Not Found'))
+        super (PageNotFound, self).__init__ (**kw)
         self._pages = kw.get ('pages', [])
         self._message = message
 
-    def output_middle (self, fd=sys.stdout):
+    def output_page_content (self, fd=sys.stdout):
         p (fd, '<div class="notfound">')
         p (fd, '<div class="message">%s</div>', self._message)
         if len(self._pages) > 0:
@@ -283,17 +362,18 @@ class PageNotFound (Page):
                    (pulse.config.webroot, page[0], page[1]))
             p (fd, '</ul></div>')
         p (fd, '</div>')
-        ContentComponent.output (self, fd=fd)
+        Page.output_page_content (self, fd=fd)
+
 
 class PageError (Page):
+    """A 500 page."""
     def __init__ (self, message, **kw):
-        Page.__init__ (self, status=500, **kw)
-        if not kw.has_key ('title'):
-            self.set_title (pulse.utils.gettext('Bad Monkeys'))
+        kw.setdefault ('title', pulse.utils.gettext('Bad Monkeys'))
+        super (PageError, self).__init__ (**kw)
         self._pages = kw.get ('pages', [])
         self._message = message
     
-    def output_middle (self, fd=sys.stdout):
+    def output_page_content (self, fd=sys.stdout):
         p (fd, '<div class="servererror">')
         p (fd, '<div class="message">%s</div>', self._message)
         p (fd, '</div>')
@@ -303,36 +383,32 @@ class PageError (Page):
 ################################################################################
 ## Boxes
 
-class InfoBox (ContentComponent):
+class InfoBox (Widget, ContentComponent, LinkBoxesComponent):
     def __init__ (self, id, title, **kw):
-        ContentComponent.__init__ (self, **kw)
+        super (InfoBox, self).__init__ (**kw)
         self._id = id
         self._title = title
-
-    def add_link_box (self, *args):
-        lbox = LinkBox (*args)
-        self.add_content (lbox)
-        return lbox
 
     def output (self, fd=sys.stdout):
         p (fd, '<div class="info" id="%s">', self._id)
         p (fd, '<div class="info-title">%s</div>', self._title)
         p (fd, '<div class="info-content">')
         ContentComponent.output (self, fd=fd)
+        LinkBoxesComponent.output (self, fd=fd)
         p (fd, '</div></div>')
 
 
-class LinkBoxContainer (Block, SortLinkComponent):
+class ContainerBox (Widget, SortableComponent, ContentComponent, LinkBoxesComponent):
     def __init__ (self, **kw):
-        SortLinkComponent.__init__ (self, **kw)
-        self._boxes = []
-        self._columns = kw.get('columns', 1)
         self._id = kw.get('id', None)
         self._title = kw.get('title', None)
+        kw.setdefault ('sortable_tag', 'table')
+        kw.setdefault ('sortable_class', self._id or 'lbox')
+        super (ContainerBox, self).__init__ (**kw)
 
     def add_link_box (self, *args, **kw):
-        lbox = LinkBox (*args, **kw)
-        self._boxes.append (lbox)
+        lbox = LinkBoxesComponent.add_link_box (self, *args, **kw)
+        lbox.add_class (self.get_sortable_class())
         return lbox
 
     def set_id (self, id):
@@ -341,62 +417,42 @@ class LinkBoxContainer (Block, SortLinkComponent):
     def set_title (self, title):
         self._title = title
 
-    def set_columns (self, columns):
-        self._columns = columns
-
     def output (self, fd=sys.stdout):
         if self._title != None or self._id != None:
             if self._id == None:
                 self._id = md5.md5(self._title).hexdigest()
-            p (fd, '<div class="lcont" id="%s">', self._id)
+            p (fd, '<div class="cont" id="%s">', self._id)
         else:
-            p (fd, '<div class="lcont">')
+            p (fd, '<div class="cont">')
         slinks = self.get_sort_links()
         if self._title != None or len(slinks) > 0:
-            self.set_sort_link_tag ('table')
-            if self.get_sort_link_class() == None:
-                self.set_sort_link_class ('lbox')
             if self._title != None:
                 p (fd, '<div class="exp-title">', None, False)
             if self._title != None and len(slinks) > 0:
                 p (fd, '<table><tr><td>')
             if self._title != None:
                 p (fd, '<a href="javascript:exp_toggle(\'%s\')">', self._id, False)
-                p (fd, '<img id="img-%s" class="exp-img" src="%sexpander-open.png"> %s</a></div>',
+                p (fd, '<img id="img-%s" class="exp-img" src="%sexpander-open.png"> %s</a>',
                    (self._id, pulse.config.dataroot, self._title))
             if self._title != None and len(slinks) > 0:
                 p (fd, '</td><td>')
             if len(slinks) > 0:
-                SortLinkComponent.output (self, fd=fd)
+                SortableComponent.output (self, fd=fd)
             if self._title != None and len(slinks) > 0:
                 p (fd, '</td></tr></table>')
             if self._title != None:
                 p (fd, '</div>')
                 p (fd, '<div class="exp-content">')
-        if self._columns > 1:
-            p (fd, '<table class="cols"><tr>')
-            p (fd, '<td class="col col-first">')
-            width = str(100 // self._columns)
-            for box, col, pos in pulse.utils.split (self._boxes, self._columns):
-                if pos == 0:
-                    if col > 0:
-                        p (fd, '</td><td class="col" style="width: ' + width + '%">')
-                else:
-                     p (fd, '<div class="pad"></div>')
-                p (fd, box)
-            p (fd, '</td></tr></table>')
-        else:
-            for i in range(len(self._boxes)):
-                if i != 0: p (fd, '<div class="pad"></div>')
-                p (fd, self._boxes[i])
+        ContentComponent.output (self, fd=fd)
+        LinkBoxesComponent.output (self, fd=fd)
         if self._title != None:
             p (fd, '</div>')
         p (fd, '</div>')
 
-class LinkBox (ContentComponent, FactsComponent):
+
+class LinkBox (Widget, FactsComponent, ContentComponent):
     def __init__ (self, *args, **kw):
-        FactsComponent.__init__ (self, **kw)
-        ContentComponent.__init__ (self, **kw)
+        super (LinkBox, self).__init__ (**kw)
         self._url = self._title = self._icon = self._desc = None
         self._show_icon = True
         if isinstance (args[0], db.PulseRecord):
@@ -473,12 +529,13 @@ class LinkBox (ContentComponent, FactsComponent):
             p (fd, '</td>')
         p (fd, '</tr></table>')
         
-class ColumnBox (Block):
+
+class ColumnBox (Widget):
     def __init__ (self, num, **kw):
-        Block.__init__ (self, **kw)
+        super (ColumnBox, self).__init__ (**kw)
         self._columns = [[] for i in range(num)]
 
-    def add_content (self, index, content):
+    def add_to_column (self, index, content):
         self._columns[index].append (content)
         return content
 
@@ -497,9 +554,9 @@ class ColumnBox (Block):
         p (fd, '</tr></table>')
 
 
-class GridBox (Block):
+class GridBox (Widget):
     def __init__ (self, **kw):
-        Block.__init__ (self, **kw)
+        super (GridBox, self).__init__ (**kw)
         self._rows = []
 
     def add_row (self, *row):
@@ -533,9 +590,9 @@ class GridBox (Block):
         p (fd, '</table>')
 
 
-class VBox (ContentComponent):
+class VBox (Widget, ContentComponent):
     def __init__ (self, **kw):
-        ContentComponent.__init__ (self, **kw)
+        super (VBox, self).__init__ (**kw)
 
     def output (self, fd=sys.stdout):
         p (fd, '<div class="vbox">')
@@ -551,13 +608,13 @@ class VBox (ContentComponent):
         p (fd, '</div>')
 
 
-class AdmonBox (Block):
+class AdmonBox (Widget):
     error = "error"
     information = "information"
     warning = "warning"
     
     def __init__ (self, type, title, **kw):
-        Block.__init__ (self, **kw)
+        super (AdmonBox, self).__init__ (**kw)
         self._type = type
         self._title = title
 
@@ -569,9 +626,10 @@ class AdmonBox (Block):
         p (fd, '</div>')
 
 
-class ExpanderBox (ContentComponent):
+# FIXME: can probably be replaced by ContainerBox
+class ExpanderBox (Widget, ContentComponent):
     def __init__ (self, id, title, **kw):
-        ContentComponent.__init__ (self, **kw)
+        super (ExpanderBox, self).__init__ (**kw)
         self._id = id
         self._title = title
 
@@ -586,38 +644,36 @@ class ExpanderBox (ContentComponent):
         p (fd, '</div>')
 
 
-class TabbedBox (Block):
+# FIXME: let's have this implement components for the default tab
+class TabbedBox (Widget, ContentComponent):
     def __init__ (self, **kw):
-        Block.__init__ (self, **kw)
+        super (TabbedBox, self).__init__ (**kw)
         self._tabs = []
 
-    def add_tab (self, title, active, data):
-        self._tabs.append ((title, active, data))
+    def add_tab (self, url, title):
+        self._tabs.append ((url, title))
 
     def output (self, fd=sys.stdout):
-        content = None
         p (fd, '<div class="tabbed">')
         p (fd, '<div class="tabbed-tabs">')
-        for tab in self._tabs:
-            title = esc(tab[0]).replace(' ', '&nbsp;')
-            if tab[1]:
+        for url, title in self._tabs:
+            title = esc(title).replace(' ', '&nbsp;')
+            if url == True:
                 p (fd, '<span class="tabbed-tab-active">' + title + '</span>')
-                content = tab[2]
             else:
-                p (fd, '<span class="tabbed-tab-link"><a href="%s">' + title + '</a></span>', tab[2])
+                p (fd, '<span class="tabbed-tab-link"><a href="%s">' + title + '</a></span>', url)
         p (fd, '</div>')
-        if content != None:
-            p (fd, '<div class="tabbed-content">')
-            p (fd, content)
-            p (fd, '</div>')
+        p (fd, '<div class="tabbed-content">')
+        ContentComponent.output (self, fd=fd)
+        p (fd, '</div>')
 
 
 ################################################################################
 ## Lists
 
-class DefinitionList (Block):
+class DefinitionList (Widget):
     def __init__ (self, **kw):
-        Block.__init__ (self, **kw)
+        super (DefinitionList, self).__init__ (**kw)
         self._id = kw.get('id', None)
         self._all = []
 
@@ -642,11 +698,11 @@ class DefinitionList (Block):
 ################################################################################
 ## Other...
 
-class Graph (Block):
+class Graph (Widget):
     _count = 0
 
     def __init__ (self, url, **kw):
-        Block.__init__ (self, **kw)
+        super (Graph, self).__init__ (**kw)
         self._url = url
         self._comments = []
 
@@ -679,9 +735,9 @@ class Graph (Block):
             p (fd, '</div></div>')
 
 
-class EllipsizedLabel (Block):
+class EllipsizedLabel (Widget):
     def __init__ (self, label, size, **kw):
-        Block.__init__ (self, **kw)
+        super (EllipsizedLabel, self).__init__ (**kw)
         self._label = label
         self._size = size
 
@@ -705,11 +761,11 @@ class EllipsizedLabel (Block):
             p (fd, None, self._label)
 
 
-class PopupLink (Block):
+class PopupLink (Widget):
     _count = 0
 
     def __init__ (self, short, full, **kw):
-        Block.__init__ (self, **kw)
+        super (PopupLink, self).__init__ (**kw)
         self._short = short
         self._full = full
 
@@ -723,44 +779,39 @@ class PopupLink (Block):
         p (fd, '</div>')
 
 
-class RevisionPopupLink (PopupLink):
-    def __init__ (self, comment, **kw):
-        datere = re.compile ('^\d\d\d\d-\d\d-\d\d ')
-        colonre = re.compile ('^\* [^:]*:(.*)')
-        maybe = ''
-        for line in comment.split('\n'):
-            line = line.strip()
-            if line == '':
-                pass
-            elif datere.match(line):
-                maybe = line
+def RevisionPopupLink (comment, **kw):
+    datere = re.compile ('^\d\d\d\d-\d\d-\d\d ')
+    colonre = re.compile ('^\* [^:]*:(.*)')
+    maybe = ''
+    for line in comment.split('\n'):
+        line = line.strip()
+        if line == '':
+            pass
+        elif datere.match(line):
+            maybe = line
+        else:
+            cm = colonre.match(line)
+            if cm:
+                line = cm.group(1).strip()
+                if line != '':
+                    break
             else:
-                cm = colonre.match(line)
-                if cm:
-                    line = cm.group(1).strip()
-                    if line != '':
-                        break
-                else:
-                    break
-        if line == '': line = maybe
-        if len(line) > 40:
-            i = 30
-            while i < len(line):
-                if line[i] == ' ':
-                    break
-                i += 1
-            if i < len(comment):
-                line = line[:i] + '...'
-        PopupLink.__init__ (self, line, comment, **kw)
+                break
+    if line == '': line = maybe
+    if len(line) > 40:
+        i = 30
+        while i < len(line):
+            if line[i] == ' ':
+                break
+            i += 1
+        if i < len(comment):
+            line = line[:i] + '...'
+    return PopupLink (line, comment, **kw)
 
 
-class Span (ContentComponent):
-    SPACE = ' '
-    BULLET = u' • '
-    TRIANGLE = u' ‣ '
-
+class Span (Widget, ContentComponent):
     def __init__ (self, *args, **kw):
-        ContentComponent.__init__ (self, **kw)
+        super (Span, self).__init__ (**kw)
         for arg in args:
             self.add_content (arg)
         self._divider = kw.get('divider', None)
@@ -778,16 +829,16 @@ class Span (ContentComponent):
         else:
             p (fd, '<span>', None, False)
         content = self.get_content()
-        for i in range(len(self.get_content())):
+        for i in range(len(content)):
             if i != 0 and self._divider != None:
                 p (fd, None, self._divider, False)
             p (fd, None, content[i], False)
         p (fd, '</span>')
 
 
-class Div (ContentComponent):
+class Div (Widget, ContentComponent):
     def __init__ (self, *args, **kw):
-        ContentComponent.__init__ (self, **kw)
+        super (Div, self).__init__ (**kw)
         self._id = kw.get('id', None)
         for arg in args:
             self.add_content (arg)
@@ -801,9 +852,9 @@ class Div (ContentComponent):
         p (fd, '</div>')
 
 
-class Pre (ContentComponent):
+class Pre (Widget, ContentComponent):
     def __init__ (self, *args, **kw):
-        ContentComponent.__init__ (self, **kw)
+        super (Pre, self).__init__ (**kw)
         self._id = kw.get('id', None)
         for arg in args:
             self.add_content (arg)
@@ -817,9 +868,9 @@ class Pre (ContentComponent):
         p (fd, '</pre>')
 
 
-class Link (Block):
+class Link (Widget):
     def __init__ (self, *args, **kw):
-        Block.__init__ (self, **kw)
+        super (Link, self).__init__ (**kw)
         self._href = self._text = None
         if isinstance (args[0], db.PulseRecord):
             if args[0].linkable:
@@ -850,9 +901,9 @@ class Link (Block):
 def p (fd, s, arg=None, nl=True):
     if fd == None:
         fd = sys.stdout
-    if isinstance (s, Block):
+    if isinstance (s, Widget) or isinstance (s, Component):
         s.output (fd=fd)
-    elif s == None and isinstance (arg, Block):
+    elif s == None and (isinstance (arg, Widget) or isinstance (arg, Component)):
         arg.output (fd=fd)
     else:
         if s == None:

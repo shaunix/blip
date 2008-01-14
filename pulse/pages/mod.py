@@ -83,7 +83,7 @@ def output_branch (branch, path=[], query=[], http=True, fd=None):
     module = branch.branchable
     checkout = pulse.scm.Checkout.from_record (branch, checkout=False, update=False)
 
-    page = pulse.html.ResourcePage (branch, http=http)
+    page = pulse.html.RecordPage (branch, http=http)
 
     branches = pulse.utils.attrsorted (list(module.branches.all()), 'scm_branch')
     if len(branches) > 1:
@@ -105,7 +105,7 @@ def output_branch (branch, path=[], query=[], http=True, fd=None):
     if len(rels) > 0:
         sets = pulse.utils.attrsorted ([rel.subj for rel in rels], 'title')
         span = pulse.html.Span (*[pulse.html.Link(rel.subj) for rel in rels])
-        span.set_divider (span.BULLET)
+        span.set_divider (pulse.html.BULLET)
         page.add_fact (pulse.utils.gettext ('Release Sets'), span)
         sep = True
 
@@ -114,7 +114,7 @@ def output_branch (branch, path=[], query=[], http=True, fd=None):
     page.add_fact (pulse.utils.gettext ('Location'), checkout.location)
 
     if branch.mod_datetime != None:
-        span = pulse.html.Span(divider=pulse.html.Span.SPACE)
+        span = pulse.html.Span(divider=pulse.html.SPACE)
         # FIXME: i18n, word order, but we want to link person
         span.add_content (str(branch.mod_datetime))
         if branch.mod_person != None:
@@ -139,18 +139,16 @@ def output_branch (branch, path=[], query=[], http=True, fd=None):
     developers = db.ModuleEntity.get_related (subj=branch)
     developers = pulse.utils.attrsorted (list(developers), ['pred', 'title'])
     if len(developers) > 0:
-        lcont = pulse.html.LinkBoxContainer()
-        box.add_content (lcont)
         for rel in developers:
-            lcont.add_link_box (rel.pred)
+            box.add_link_box (rel.pred)
     else:
         box.add_content (pulse.html.AdmonBox (pulse.html.AdmonBox.warning,
                                               pulse.utils.gettext ('No developers') ))
-    columns.add_content (0, box)
+    columns.add_to_column (0, box)
 
     # Activity
     box = pulse.html.InfoBox ('activity', pulse.utils.gettext ('Activity'))
-    columns.add_content (0, box)
+    columns.add_to_column (0, box)
     graph = pulse.html.Graph ('/'.join(branch.ident.split('/')[1:] + ['commits.png']))
     graphdir = os.path.join (*([pulse.config.webdir, 'var', 'graph'] + branch.ident.split('/')[1:]))
     graphdata = pulse.graphs.load_graph_data (os.path.join (graphdir, 'commits.imap'))
@@ -170,7 +168,7 @@ def output_branch (branch, path=[], query=[], http=True, fd=None):
     box.add_content (dl)
     for rev in revs[:10]:
         # FIXME: i18n word order
-        span = pulse.html.Span (divider=pulse.html.Span.SPACE)
+        span = pulse.html.Span (divider=pulse.html.SPACE)
         span.add_content (rev.revision)
         span.add_content ('on')
         span.add_content (str(rev.datetime))
@@ -181,7 +179,7 @@ def output_branch (branch, path=[], query=[], http=True, fd=None):
 
     # Dependencies
     box = pulse.html.InfoBox ('dependencies', pulse.utils.gettext ('Dependencies'))
-    columns.add_content (0, box)
+    columns.add_to_column (0, box)
     deps = db.ModuleDependency.get_related (subj=branch)
     deps = [rel.pred for rel in list(deps)]
     deps = pulse.utils.attrsorted (list(deps), 'scm_module')
@@ -193,11 +191,9 @@ def output_branch (branch, path=[], query=[], http=True, fd=None):
     apps = pulse.utils.attrsorted (list(apps), 'title')
     if len(apps) > 0:
         box = pulse.html.InfoBox ('applications', pulse.utils.gettext ('Applications'))
-        columns.add_content (1, box)
-        lcont = pulse.html.LinkBoxContainer()
-        box.add_content (lcont)
+        columns.add_to_column (1, box)
         for app in apps:
-            lbox = lcont.add_link_box (app)
+            lbox = box.add_link_box (app)
             doc = db.Documentation.get_related (subj=app)
             try:
                 doc = doc[0]
@@ -210,33 +206,27 @@ def output_branch (branch, path=[], query=[], http=True, fd=None):
     applets = pulse.utils.attrsorted (list(applets), 'title')
     if len(applets) > 0:
         box = pulse.html.InfoBox ('applets', pulse.utils.gettext ('Applets'))
-        columns.add_content (1, box)
-        lcont = pulse.html.LinkBoxContainer()
-        box.add_content (lcont)
+        columns.add_to_column (1, box)
         for applet in applets:
-            lcont.add_link_box (applet)
+            box.add_link_box (applet)
 
     # Libraries
     libs = branch.select_children ('Library')
     libs = pulse.utils.attrsorted (list(libs), 'title')
     if len(libs) > 0:
         box = pulse.html.InfoBox ('libraries', pulse.utils.gettext ('Libraries'))
-        columns.add_content (1, box)
-        lcont = pulse.html.LinkBoxContainer()
-        box.add_content (lcont)
+        columns.add_to_column (1, box)
         for lib in libs:
-            lcont.add_link_box (lib)
+            box.add_link_box (lib)
 
     # Documents
     box = pulse.html.InfoBox ('documents', pulse.utils.gettext ('Documents'))
-    columns.add_content (1, box)
+    columns.add_to_column (1, box)
     docs = branch.select_children ('Document')
     docs = pulse.utils.attrsorted (list(docs), 'title')
     if len(docs) > 0:
-        lcont = pulse.html.LinkBoxContainer()
-        box.add_content (lcont)
         for doc in docs:
-            lbox = lcont.add_link_box (doc)
+            lbox = box.add_link_box (doc)
             res = doc.select_children ('Translation')
             lbox.add_fact (None, pulse.utils.gettext ('%i translations') % res.count())
     else:
@@ -245,19 +235,21 @@ def output_branch (branch, path=[], query=[], http=True, fd=None):
 
     # Translations
     box = pulse.html.InfoBox ('translations', pulse.utils.gettext ('Translations'))
-    columns.add_content (1, box)
+    columns.add_to_column (1, box)
     domains = branch.select_children ('Domain')
     domains = pulse.utils.attrsorted (list(domains), 'title')
     if len(domains) > 0:
         for domain in domains:
+            domainid = domain.ident.split('/')[-2].replace('-', '_')
             translations = domain.select_children ('Translation')
             translations = pulse.utils.attrsorted (list(translations), 'title')
-            exp = pulse.html.ExpanderBox (domain.ident.split('/')[-2],
-                                          pulse.utils.gettext ('%s (%s)')
-                                          % (domain.title, len(translations)))
-            box.add_content (exp)
+            cont = pulse.html.ContainerBox ()
+            cont.set_id (domainid)
+            cont.set_title (pulse.utils.gettext ('%s (%s)')
+                            % (domain.title, len(translations)))
+            box.add_content (cont)
             vbox = pulse.html.VBox()
-            exp.add_content (vbox)
+            cont.add_content (vbox)
 
             potlst = ['var', 'l10n'] + domain.ident.split('/')[1:]
             if domain.scm_dir == 'po':
@@ -268,7 +260,7 @@ def output_branch (branch, path=[], query=[], http=True, fd=None):
             potfile = os.path.join (*potlst)
             vf = db.VarFile.objects.filter (filename=potfile)
             if vf.count() > 0:
-                linkspan = pulse.html.Span (divider=pulse.html.Span.SPACE)
+                linkspan = pulse.html.Span (divider=pulse.html.SPACE)
                 vbox.add_content (linkspan)
                 vf = vf[0]
                 linkspan.add_content (pulse.html.Link (poturl,
@@ -285,10 +277,10 @@ def output_branch (branch, path=[], query=[], http=True, fd=None):
                 vbox.add_content (pulse.html.AdmonBox (pulse.html.AdmonBox.warning,
                                                        pulse.utils.gettext ('No translations') ))
             else:
-                slinks = pulse.html.SortLinkComponent ('tr', 'po')
-                slinks.add_sort_link ('title', pulse.utils.gettext ('lang'), False)
-                slinks.add_sort_link ('percent', pulse.utils.gettext ('percent'))
-                vbox.add_content (slinks)
+                cont.set_sortable_tag ('tr')
+                cont.set_sortable_class ('po_' + domainid)
+                cont.add_sort_link ('title', pulse.utils.gettext ('lang'), False)
+                cont.add_sort_link ('percent', pulse.utils.gettext ('percent'))
                 grid = pulse.html.GridBox ()
                 vbox.add_content (grid)
                 for translation in translations:
@@ -311,6 +303,7 @@ def output_branch (branch, path=[], query=[], http=True, fd=None):
                         pass
                     idx = grid.add_row (*row)
                     grid.add_row_class (idx, 'po')
+                    grid.add_row_class (idx, 'po_' + domainid)
                     if percent >= 80:
                         grid.add_row_class (idx, 'po80')
                     elif percent >= 50:

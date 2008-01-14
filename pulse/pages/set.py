@@ -58,7 +58,7 @@ def output_top (path=[], query=[], http=True, fd=None):
     for i in range(len(sets)):
         set = sets[i]
         box = pulse.html.InfoBox ('set', set.title)
-        columns.add_content (i, box)
+        columns.add_to_column (i, box)
         dl = pulse.html.DefinitionList ()
         box.add_content (dl)
         add_set_entries (set, dl)
@@ -69,12 +69,12 @@ def output_top (path=[], query=[], http=True, fd=None):
 
 
 def output_set (set, path=[], query=[], http=True, fd=None):
-    page = pulse.html.ResourcePage (set, http=http)
+    page = pulse.html.RecordPage (set, http=http)
 
     tabbed = pulse.html.TabbedBox ()
     page.add_content (tabbed)
 
-    page.set_sublinks_divider (page.TRIANGLE)
+    page.set_sublinks_divider (pulse.html.TRIANGLE)
     page.add_sublink (pulse.config.webroot + 'set', pulse.utils.gettext ('Sets'))
     for super in get_supersets (set):
         page.add_sublink (super.pulse_url, super.title)
@@ -84,15 +84,16 @@ def output_set (set, path=[], query=[], http=True, fd=None):
     if len(subsets) > 0:
         if len(path) < 3 or path[2] == 'set':
             columns = pulse.html.ColumnBox (2)
-            tabbed.add_tab (pulse.utils.gettext ('Subsets (%i)') % len(subsets), True, columns)
-            dls = [columns.add_content (i, pulse.html.DefinitionList()) for i in range(2)]
+            tabbed.add_tab (True, pulse.utils.gettext ('Subsets (%i)') % len(subsets))
+            tabbed.add_content (columns)
+            dls = [columns.add_to_column (i, pulse.html.DefinitionList()) for i in range(2)]
             for subset, col, pos in pulse.utils.split (subsets, 2):
                 dl = dls[col]
                 dl.add_term (pulse.html.Link (subset))
                 add_set_entries (subset, dl)
         else:
-            tabbed.add_tab (pulse.utils.gettext ('Subsets (%i)') % len(subsets),
-                            False, set.pulse_url + '/set')
+            tabbed.add_tab (set.pulse_url + '/set',
+                            pulse.utils.gettext ('Subsets (%i)') % len(subsets))
 
     count = False
     if len(path) == 2:
@@ -104,26 +105,28 @@ def output_set (set, path=[], query=[], http=True, fd=None):
     if count:
         modcnt = db.SetModule.count_related (subj=set)
         if modcnt > 0 or len(subsets) == 0:
-            tabbed.add_tab (pulse.utils.gettext ('Modules (%i)') % modcnt, False, set.pulse_url + '/mod')
+            tabbed.add_tab (set.pulse_url + '/mod',
+                            pulse.utils.gettext ('Modules (%i)') % modcnt)
     else:
         mods = [mod.pred for mod in db.SetModule.get_related (subj=set)]
         mods = pulse.utils.attrsorted (mods, 'title')
         modcnt = len(mods)
-        lcont = pulse.html.LinkBoxContainer ()
-        lcont.add_sort_link ('title', pulse.utils.gettext ('title'), False)
-        lcont.add_sort_link ('module', pulse.utils.gettext ('module'))
-        lcont.add_sort_link ('mtime', pulse.utils.gettext ('modified'))
-        lcont.add_sort_link ('score', pulse.utils.gettext ('score'))
-        tabbed.add_tab (pulse.utils.gettext ('Modules (%i)') % modcnt, True, lcont)
+        cont = pulse.html.ContainerBox ()
+        cont.add_sort_link ('title', pulse.utils.gettext ('title'), False)
+        cont.add_sort_link ('module', pulse.utils.gettext ('module'))
+        cont.add_sort_link ('mtime', pulse.utils.gettext ('modified'))
+        cont.add_sort_link ('score', pulse.utils.gettext ('score'))
+        tabbed.add_tab (True, pulse.utils.gettext ('Modules (%i)') % modcnt)
+        tabbed.add_content (cont)
         for i in range(modcnt):
             mod = mods[i]
-            lbox = lcont.add_link_box (mod)
+            lbox = cont.add_link_box (mod)
             lbox.add_graph ('/'.join(mod.ident.split('/')[1:] + ['commits.png']))
             span = pulse.html.Span (mod.branch_module)
             span.add_class ('module')
             lbox.add_fact ('module', pulse.html.Link (mod.pulse_url, span))
             if mod.mod_datetime != None:
-                span = pulse.html.Span (divider=pulse.html.Span.SPACE)
+                span = pulse.html.Span (divider=pulse.html.SPACE)
                 # FIXME: i18n, word order, but we want to link person
                 span.add_content (pulse.html.Span(str(mod.mod_datetime.date())))
                 span.add_class ('mtime')
@@ -200,17 +203,15 @@ def add_more_tabs (set, tabbed, path=[], query=[]):
         for id, txt in (('users', pulse.utils.gettext ('User Documentation (%i)')),
                         ('devels', pulse.utils.gettext ('Developer Documentation (%i)')) ):
             if len(buckets[id]) > 0:
-                lcont = pulse.html.LinkBoxContainer (id=id)
-                lcont.set_title (txt % len(buckets[id]))
-                lcont.set_sort_link_class ('doc' + id)
-                lcont.add_sort_link ('title', pulse.utils.gettext ('title'), False)
-                lcont.add_sort_link ('module', pulse.utils.gettext ('module'))
-                lcont.add_sort_link ('mtime', pulse.utils.gettext ('modified'))
-                lcont.add_sort_link ('score', pulse.utils.gettext ('score'))
-                vbox.add_content (lcont)
+                cont = pulse.html.ContainerBox (id=id)
+                cont.set_title (txt % len(buckets[id]))
+                cont.add_sort_link ('title', pulse.utils.gettext ('title'), False)
+                cont.add_sort_link ('module', pulse.utils.gettext ('module'))
+                cont.add_sort_link ('mtime', pulse.utils.gettext ('modified'))
+                cont.add_sort_link ('score', pulse.utils.gettext ('score'))
+                vbox.add_content (cont)
                 for doc in buckets[id]:
-                    lbox = lcont.add_link_box (doc)
-                    lbox.add_class ('doc' + id)
+                    lbox = cont.add_link_box (doc)
                     lbox.add_graph ('/'.join(doc.ident.split('/')[1:] + ['commits.png']))
                     span = pulse.html.Span (doc.branch_module)
                     span.add_class ('module')
@@ -219,7 +220,7 @@ def add_more_tabs (set, tabbed, path=[], query=[]):
                     url = pulse.config.webroot + url
                     lbox.add_fact ('module', pulse.html.Link (url, span))
                     if doc.mod_datetime != None:
-                        span = pulse.html.Span (divider=pulse.html.Span.SPACE)
+                        span = pulse.html.Span (divider=pulse.html.SPACE)
                         # FIXME: i18n, word order, but we want to link person
                         span.add_content (pulse.html.Span(str(doc.mod_datetime.date())))
                         span.add_class ('mtime')
@@ -231,9 +232,11 @@ def add_more_tabs (set, tabbed, path=[], query=[]):
                         span = pulse.html.Span(str(doc.mod_score))
                         span.add_class ('score')
                         lbox.add_fact (pulse.utils.gettext ('score'), span)
-        tabbed.add_tab ('Documents (%i)' % cnt, True, vbox)
+        tabbed.add_tab (True, 'Documents (%i)' % cnt)
+        tabbed.add_content (vbox)
     else:
-        tabbed.add_tab ('Documents (%i)' % docs.count(), False, set.pulse_url + '/doc')
+        tabbed.add_tab (set.pulse_url + '/doc',
+                        'Documents (%i)' % docs.count())
 
     things = (('Domain', pulse.utils.gettext ('Domains (%i)'), 'i18n'),
               ('Application', pulse.utils.gettext ('Applications (%i)'), 'app'),
@@ -244,14 +247,15 @@ def add_more_tabs (set, tabbed, path=[], query=[]):
         objs = db.Branch.objects.filter (type=type, parent__set_module_subjs__subj=set)
         if len(path) > 2 and path[2] == ext:
             objs = pulse.utils.attrsorted (list(objs), 'title', 'scm_module')
-            lcont = pulse.html.LinkBoxContainer ()
-            lcont.set_columns (2)
+            cont = pulse.html.ContainerBox ()
+            cont.set_columns (2)
             slink_mtime = False
             slink_documentation = False
-            tabbed.add_tab (txt % len(objs), True, lcont)
+            tabbed.add_tab (True, txt % len(objs))
+            tabbed.add_content (cont)
             for i in range(len(objs)):
                 obj = objs[i]
-                lbox = lcont.add_link_box (obj)
+                lbox = cont.add_link_box (obj)
                 span = pulse.html.Span (obj.branch_module)
                 span.add_class ('module')
                 url = obj.ident.split('/')
@@ -266,13 +270,14 @@ def add_more_tabs (set, tabbed, path=[], query=[]):
                     lbox.add_fact (pulse.utils.gettext ('docs'),
                                    pulse.html.Link (doc.pulse_url, span))
                     slink_documentation = True
-            lcont.add_sort_link ('title', pulse.utils.gettext ('title'), False)
-            lcont.add_sort_link ('module', pulse.utils.gettext ('module'))
+            cont.add_sort_link ('title', pulse.utils.gettext ('title'), False)
+            cont.add_sort_link ('module', pulse.utils.gettext ('module'))
             if slink_documentation:
-                lcont.add_sort_link ('docs', pulse.utils.gettext ('docs'))
+                cont.add_sort_link ('docs', pulse.utils.gettext ('docs'))
             if slink_mtime:
-                lcont.add_sort_link ('mtime', pulse.utils.gettext ('modified'))
+                cont.add_sort_link ('mtime', pulse.utils.gettext ('modified'))
         else:
             cnt = objs.count()
             if cnt > 0:
-                tabbed.add_tab (txt % cnt, False, set.pulse_url + '/' + ext)
+                tabbed.add_tab (set.pulse_url + '/' + ext,
+                                txt % cnt)
