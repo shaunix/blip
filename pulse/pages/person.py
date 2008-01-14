@@ -63,7 +63,7 @@ def output_top (path=[], query={}, http=True, fd=None):
 
 
 def output_person (person, path=[], query=[], http=True, fd=None):
-    page = pulse.html.ResourcePage (person, http=http)
+    page = pulse.html.RecordPage (person, http=http)
 
     if person.nick != None:
         page.add_fact (pulse.utils.gettext ('Nick'), person.nick)
@@ -79,7 +79,7 @@ def output_person (person, path=[], query=[], http=True, fd=None):
 
     # Activity
     box = pulse.html.InfoBox ('activity', pulse.utils.gettext ('Activity'))
-    columns.add_content (0, box)
+    columns.add_to_column (0, box)
     graph = pulse.html.Graph ('/'.join(person.ident.split('/')[1:] + ['commits.png']))
     graphdir = os.path.join (*([pulse.config.webdir, 'var', 'graph'] + person.ident.split('/')[1:]))
     graphdata = pulse.graphs.load_graph_data (os.path.join (graphdir, 'commits.imap'))
@@ -99,7 +99,7 @@ def output_person (person, path=[], query=[], http=True, fd=None):
     box.add_content (dl)
     for rev in revs[:10]:
         # FIXME: i18n word order
-        span = pulse.html.Span (divider=pulse.html.Span.SPACE)
+        span = pulse.html.Span (divider=pulse.html.SPACE)
         span.add_content (pulse.html.Link (rev.branch.pulse_url, rev.branch.branch_module))
         span.add_content ('on')
         span.add_content (str(rev.datetime))
@@ -111,30 +111,26 @@ def output_person (person, path=[], query=[], http=True, fd=None):
     mods = db.Branch.objects.filter (type='Module', module_entity_preds__pred=person)
     mods = pulse.utils.attrsorted (list(mods), 'title')
     if len(mods) > 0:
-        mod_box = pulse.html.InfoBox ('modules', pulse.utils.gettext ('Modules'))
-        modules = pulse.html.LinkBoxContainer()
-        mod_box.add_content (modules)
-        columns.add_content (1, mod_box)
+        modbox = pulse.html.InfoBox ('modules', pulse.utils.gettext ('Modules'))
+        columns.add_to_column (1, modbox)
         brs = []
         for mod in mods:
             if mod.branchable_id in brs:
                 continue
             brs.append (mod.branchable_id)
-            modules.add_link_box (mod)
+            modbox.add_link_box (mod)
 
     docs = db.Branch.objects.filter (type='Document', document_entity_preds__pred=person)
     docs = pulse.utils.attrsorted (list(docs), 'title')
     if len(docs) > 0:
-        doc_box = pulse.html.InfoBox ('documents', pulse.utils.gettext ('Documents'))
-        documents = pulse.html.LinkBoxContainer()
-        doc_box.add_content (documents)
-        columns.add_content (1, doc_box)
+        docbox = pulse.html.InfoBox ('documents', pulse.utils.gettext ('Documents'))
+        columns.add_to_column (1, docbox)
         brs = []
         for doc in docs:
             if doc.branchable_id in brs:
                 continue
             brs.append (doc.branchable_id)
-            documents.add_link_box (doc)
+            docbox.add_link_box (doc)
 
     page.output(fd=fd)
 

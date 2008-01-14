@@ -165,7 +165,7 @@ td.col-first { padding: 0; }
   padding: 0.2em 0.5em 0.2em 0.5em;
   border-bottom: solid 1px #d3d7cf;
 }
-.info-content { padding: 0.2em 0.5em 0.2em 0.5em; }
+.info-content { padding: 0.5em; }
 .infomask {
   text-align: center;
   font-weight: bold;

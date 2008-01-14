@@ -79,7 +79,7 @@ def main (path=[], query={}, http=True, fd=None):
 
 
 def output_doc (doc, path=[], query=[], http=True, fd=None):
-    page = pulse.html.ResourcePage (doc, http=http)
+    page = pulse.html.RecordPage (doc, http=http)
     checkout = pulse.scm.Checkout.from_record (doc, checkout=False, update=False)
 
     branches = pulse.utils.attrsorted (list(doc.branchable.branches.all()), 'scm_branch')
@@ -102,7 +102,7 @@ def output_doc (doc, path=[], query=[], http=True, fd=None):
     if len(rels) > 0:
         sets = pulse.utils.attrsorted ([rel.subj for rel in rels], 'title')
         span = pulse.html.Span (*[pulse.html.Link(rel.subj.pulse_url + '/doc', rel.subj.title) for rel in rels])
-        span.set_divider (span.BULLET)
+        span.set_divider (pulse.html.BULLET)
         page.add_fact (pulse.utils.gettext ('Release Sets'), span)
         sep = True
 
@@ -113,7 +113,7 @@ def output_doc (doc, path=[], query=[], http=True, fd=None):
     page.add_fact (pulse.utils.gettext ('Location'), checkout.get_location (doc.scm_dir, doc.scm_file))
 
     if doc.mod_datetime != None:
-        span = pulse.html.Span(divider=pulse.html.Span.SPACE)
+        span = pulse.html.Span(divider=pulse.html.SPACE)
         # FIXME: i18n, word order, but we want to link person
         span.add_content (str(doc.mod_datetime))
         if doc.mod_person != None:
@@ -126,14 +126,14 @@ def output_doc (doc, path=[], query=[], http=True, fd=None):
 
     # Developers
     box = pulse.html.InfoBox ('developers', pulse.utils.gettext ('Developers'))
-    columns.add_content (0, box)
+    columns.add_to_column (0, box)
     rels = db.DocumentEntity.get_related (subj=doc)
     if len(rels) > 0:
         people = {}
         for rel in rels:
             people[rel.pred] = rel
         for person in pulse.utils.attrsorted (people.keys(), 'title'):
-            lbox = lcont.add_link_box (person)
+            lbox = box.add_link_box (person)
             rel = people[person]
             if rel.maintainer:
                 lbox.add_badge ('maintainer')
@@ -149,7 +149,7 @@ def output_doc (doc, path=[], query=[], http=True, fd=None):
 
     # Files
     box = pulse.html.InfoBox ('activity', pulse.utils.gettext ('Activity'))
-    columns.add_content (0, box)
+    columns.add_to_column (0, box)
     graph = pulse.html.Graph ('/'.join(doc.ident.split('/')[1:] + ['commits.png']))
     graphdir = os.path.join (*([pulse.config.webdir, 'var', 'graph'] + doc.ident.split('/')[1:]))
     graphdata = pulse.graphs.load_graph_data (os.path.join (graphdir, 'commits.imap'))
@@ -176,9 +176,12 @@ def output_doc (doc, path=[], query=[], http=True, fd=None):
 
     # Translations
     box = pulse.html.InfoBox ('translations', pulse.utils.gettext ('Translations'))
-    columns.add_content (1, box)
+    columns.add_to_column (1, box)
+    cont = pulse.html.ContainerBox ()
+    cont.set_id ('po')
+    box.add_content (cont)
     vbox = pulse.html.VBox()
-    box.add_content (vbox)
+    cont.add_content (vbox)
 
     potlst = ['var', 'l10n'] + doc.ident.split('/')[1:] + [doc.ident.split('/')[-2] + '.pot']
     poturl = pulse.config.varroot + '/'.join (potlst[1:])
@@ -186,7 +189,7 @@ def output_doc (doc, path=[], query=[], http=True, fd=None):
     vf = db.VarFile.objects.filter (filename=potfile)
     try:
         vf = vf[0]
-        linkspan = pulse.html.Span (divider=pulse.html.Span.SPACE)
+        linkspan = pulse.html.Span (divider=pulse.html.SPACE)
         vbox.add_content (linkspan)
         linkspan.add_content (pulse.html.Link (poturl,
                                                pulse.utils.gettext ('POT file'),
@@ -204,11 +207,11 @@ def output_doc (doc, path=[], query=[], http=True, fd=None):
         vbox.add_content (pulse.html.AdmonBox (pulse.html.AdmonBox.warning,
                                                pulse.utils.gettext ('No translations') ))
     else:
-        slinks = pulse.html.SortLinkComponent ('tr', 'po')
-        slinks.add_sort_link ('title', pulse.utils.gettext ('lang'), False)
-        slinks.add_sort_link ('percent', pulse.utils.gettext ('percent'))
-        slinks.add_sort_link ('img', pulse.utils.gettext ('images'))
-        vbox.add_content (slinks)
+        cont.set_sortable_tag ('tr')
+        cont.set_sortable_class ('po')
+        cont.add_sort_link ('title', pulse.utils.gettext ('lang'), False)
+        cont.add_sort_link ('percent', pulse.utils.gettext ('percent'))
+        cont.add_sort_link ('img', pulse.utils.gettext ('images'))
         grid = pulse.html.GridBox ()
         vbox.add_content (grid)
         for translation in translations:
@@ -232,7 +235,7 @@ def output_doc (doc, path=[], query=[], http=True, fd=None):
                     imgstat = imgstat[0]
                     span = pulse.html.Span(str(imgstat.stat1))
                     span.add_class ('img')
-                    fspan = pulse.html.Span (span, '/', str(imgstat.total), divider=pulse.html.Span.SPACE)
+                    fspan = pulse.html.Span (span, '/', str(imgstat.total), divider=pulse.html.SPACE)
                     row.append (fspan)
                 except IndexError:
                     pass
@@ -258,18 +261,18 @@ def output_ajax (doc, path, query, http, fd):
     return 0
 
 def get_activity (doc, xmlfiles):
-    lcont = pulse.html.LinkBoxContainer()
+    cont = pulse.html.ContainerBox()
     if len(xmlfiles) > 1:
-        lcont.set_sort_link_class ('actfile')
-        lcont.add_sort_link ('title', pulse.utils.gettext ('name'), False)
-        lcont.add_sort_link ('mtime', pulse.utils.gettext ('modified'))
+        cont.set_sortable_class ('actfile')
+        cont.add_sort_link ('title', pulse.utils.gettext ('name'), False)
+        cont.add_sort_link ('mtime', pulse.utils.gettext ('modified'))
     for xmlfile in xmlfiles:
-        lbox = lcont.add_link_box (None, xmlfile)
+        lbox = cont.add_link_box (None, xmlfile)
         lbox.add_class ('actfile')
         lbox.set_show_icon (False)
         commit = db.Revision.get_last_revision (doc, xmlfile)
         if commit != None:
-            span = pulse.html.Span(divider=pulse.html.Span.SPACE)
+            span = pulse.html.Span(divider=pulse.html.SPACE)
             # FIXME: i18n, word order, but we want to link person
             mspan = pulse.html.Span()
             mspan.add_content (str(commit.datetime))
@@ -278,4 +281,4 @@ def get_activity (doc, xmlfiles):
             span.add_content (' by ')
             span.add_content (pulse.html.Link (commit.person))
             lbox.add_fact (None, span)
-    return lcont
+    return cont
