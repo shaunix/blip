@@ -69,7 +69,7 @@ def get_naming_links (data, links, update=True):
                     links[link.firstChild.data] = icon.getAttribute ('name')
 
 def update_installed_icons (icons, links):
-    icondir = os.path.join (pulse.config.icondir, 'apps')
+    icondir = os.path.join (pulse.config.web_icons_dir, 'apps')
     if not os.path.exists (icondir):
         return
     for f in os.listdir (icondir):
@@ -89,7 +89,7 @@ def update_installed_icons (icons, links):
             shutil.copyfile (icons[iconsrc], full)
 
 def update_uninstalled_icons (icons, links):
-    icondir = os.path.join (pulse.config.icondir, 'apps')
+    icondir = os.path.join (pulse.config.web_icons_dir, 'apps')
     if not os.path.exists (icondir):
         os.makedirs (icondir)
     for table in inspect.getmembers (db):
@@ -115,7 +115,7 @@ def update_uninstalled_icons (icons, links):
 def main (argv, options={}):
     update = not options.get ('--no-update', False)
 
-    data = pulse.xmldata.get_data (os.path.join (pulse.config.datadir, 'xml', 'icons.xml'))
+    data = pulse.xmldata.get_data (os.path.join (pulse.config.input_dir, 'xml', 'icons.xml'))
 
     icons = {}
     links = {}

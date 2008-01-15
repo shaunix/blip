@@ -21,35 +21,93 @@
 import os
 
 
-## Pulse Settings
+################################################################################
+## Directories for local stuff
+# These are the local directories where stuff can be found.
+# You probably only need to change base_dir.
 
-basedir = '/home/shaunm/Projects/pulse/'
+base_dir = '/home/shaunm/Projects/pulse/'
 
-datadir = os.path.join (basedir, 'data')
-vardir = os.path.join (basedir, 'var')
-potdir = os.path.join (vardir, 'pot')
-scmdir = os.path.join (vardir, 'scm')
-webdir = os.path.join (basedir, 'web')
-icondir = os.path.join (webdir, 'var', 'icons')
+# The directory containing input files that are stored in git with Pulse
+input_dir = os.path.join (base_dir, 'input')
 
-webroot = 'http://localhost/'
-dataroot = webroot + 'data/'
-varroot = webroot + 'var/'
-iconroot = varroot + 'icons/'
+# The directory where Pulse puts stuff it's working on
+scratch_dir = os.path.join (base_dir, 'scratch')
+
+# The directory where Pulse checks stuff out from SCM systems
+scm_dir = os.path.join (scratch_dir, 'scm')
 
 
-## Django Settings
+################################################################################
+## Directores for web stuff
+# These are the local directories where web-available stuff is
+# located.  You probably don't need to change any of these.
+
+# The directory that contains index.cgi, among other things
+web_dir = os.path.join (base_dir, 'web')
+
+# The directory where Pulse puts web-available files it creates
+web_files_dir = os.path.join (web_dir, 'files')
+
+# The directory where Pulse puts graphs
+web_graphs_dir = os.path.join (web_files_dir, 'graphs')
+
+# The directory where Pulse puts icons
+web_icons_dir = os.path.join (web_files_dir, 'icons')
+
+# The directory where Pulse puts POT files
+web_l10n_dir = os.path.join (web_files_dir, 'l10n')
+
+
+################################################################################
+## Web roots
+# These are the root URLs for various things in Pulse.  You probably
+# only need to change web_root, but see the comment below about using
+# Pulse without mod_rewrite.
+
+# The root URL for all things Pulse
+web_root = 'http://localhost/'
+
+# The root URL for Pulse's CSS, JavaScript, images, etc.
+data_root = web_root + 'data/'
+
+# The root URL for web-available files Pulse creates.
+files_root = web_root + 'files/'
+
+# If you don't want to use mod_rewrite or something similar, then
+# web_root needs to end with 'index.cgi/'.  But then data_root and
+# file_root won't work, so do something like this:
+# web_root = 'http://localhost/index.cgi/'
+# data_root = 'http://localhost/data/'
+# files_root = 'http://localhost/files/'
+
+# The root URL for generated graphs
+graph_root = files_root + 'graph/'
+
+# The root URL for generated icons
+icons_root = files_root + 'icons/'
+
+# The root URL for generated POT files
+l10n_root = files_root = 'l10n/'
+
+
+################################################################################
+## Django settings
+# These settings are used by Django to connect to the Pulse database.
+# This file is imported by Django as a settings file.  You may need
+# to change the DATABASE settings below.
 
 DATABASE_ENGINE = 'sqlite3'
-DATABASE_NAME = os.path.join (vardir, 'pulse.db')
+DATABASE_NAME = os.path.join (scratch_dir, 'pulse.db')
 
-# Uncomment these lines to use MySQL
+# If you want to use MySQL, use lines like these:
 # DATABASE_ENGINE = 'mysql'
 # DATABASE_HOST = '/var/run/mysql'
 # DATABASE_NAME = 'Pulse'
 # DATABASE_USER = ''
 # DATABASE_PASSWORD = ''
 
+# Do not change this.  It makes Django recognize Pulse.
 INSTALLED_APPS = 'pulse'
 
 # Do not change this.  We hook into Django's debugging stuff to do logging.

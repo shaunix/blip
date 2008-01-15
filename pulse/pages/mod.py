@@ -150,7 +150,7 @@ def output_branch (branch, path=[], query=[], http=True, fd=None):
     box = pulse.html.InfoBox ('activity', pulse.utils.gettext ('Activity'))
     columns.add_to_column (0, box)
     graph = pulse.html.Graph ('/'.join(branch.ident.split('/')[1:] + ['commits.png']))
-    graphdir = os.path.join (*([pulse.config.webdir, 'var', 'graph'] + branch.ident.split('/')[1:]))
+    graphdir = os.path.join (*([pulse.config.web_graphs_dir] + branch.ident.split('/')[1:]))
     graphdata = pulse.graphs.load_graph_data (os.path.join (graphdir, 'commits.imap'))
     for i in range(len(graphdata)):
         datum = graphdata[i]
@@ -251,24 +251,24 @@ def output_branch (branch, path=[], query=[], http=True, fd=None):
             pad = pulse.html.PaddingBox ()
             cont.add_content (pad)
 
-            potlst = ['var', 'l10n'] + domain.ident.split('/')[1:]
+            potlst = domain.ident.split('/')[1:]
             if domain.scm_dir == 'po':
                 potlst.append (domain.scm_module + '.pot')
             else:
                 potlst.append (domain.scm_dir + '.pot')
-            poturl = pulse.config.varroot + '/'.join (potlst[1:])
-            potfile = os.path.join (*potlst)
-            vf = db.VarFile.objects.filter (filename=potfile)
+            poturl = pulse.config.l10n_root + '/'.join (potlst)
+            potfile = os.path.join (*(['l10n'] + potlst))
+            of = db.OutputFile.objects.filter (filename=potfile)
             try:
-                vf = vf[0]
+                of = of[0]
                 linkspan = pulse.html.Span (divider=pulse.html.SPACE)
                 pad.add_content (linkspan)
                 linkspan.add_content (pulse.html.Link (poturl,
                                                        pulse.utils.gettext ('POT file'),
                                                        icon='download' ))
                 # FIXME: i18n reordering
-                linkspan.add_content (pulse.utils.gettext ('(%i messages)') % vf.statistic)
-                linkspan.add_content (pulse.utils.gettext ('on %s') % str(vf.datetime))
+                linkspan.add_content (pulse.utils.gettext ('(%i messages)') % of.statistic)
+                linkspan.add_content (pulse.utils.gettext ('on %s') % str(of.datetime))
             except IndexError:
                 pad.add_content (pulse.html.AdmonBox (pulse.html.AdmonBox.warning,
                                                        pulse.utils.gettext ('No POT file') ))

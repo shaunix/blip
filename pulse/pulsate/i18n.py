@@ -59,7 +59,7 @@ def update_intltool (po, **kw):
     try:
         os.chdir (podir)
         filepath = os.path.join (checkout.directory, po.scm_dir, po.scm_file)
-        pulse.utils.log ('Processing file ' + pulse.utils.relative_path (filepath, pulse.config.scmdir))
+        pulse.utils.log ('Processing file ' + pulse.utils.relative_path (filepath, pulse.config.scm_dir))
         popo = pulse.parsers.Po (os.popen (cmd))
         stats = popo.get_stats()
         total = stats[0] + stats[1] + stats[2]
@@ -81,7 +81,7 @@ def update_xml2po (po, **kw):
     try:
         os.chdir (makedir)
         filepath = os.path.join (checkout.directory, po.scm_dir, po.scm_file)
-        pulse.utils.log ('Processing file ' + pulse.utils.relative_path (filepath, pulse.config.scmdir))
+        pulse.utils.log ('Processing file ' + pulse.utils.relative_path (filepath, pulse.config.scm_dir))
         popo = pulse.parsers.Po (os.popen (cmd))
         stats = popo.get_stats()
         total = stats[0] + stats[1] + stats[2]
@@ -102,18 +102,17 @@ def get_intltool_potfile (po, checkout):
     podir = os.path.join (checkout.directory, po.scm_dir)
     if intltool_potfiles.has_key (podir):
         return intltool_potfiles[podir]
-    potdir_rel = os.path.join (*(['var', 'l10n'] + po.ident.split('/')[3:]))
-    potdir_abs = os.path.join (pulse.config.webdir, potdir_rel)
+    potdir = os.path.join ([pulse.config.web_l10n_dir] + po.ident.split('/')[3:])
     if po.scm_dir == 'po':
         potname = po.scm_module
     else:
         potname = po.scm_dir
     potfile = potname + '.pot'
-    potfile_rel = os.path.join (potdir_rel, potfile)
-    potfile_abs = os.path.join (potdir_abs, potfile)
-    if not os.path.exists (potdir_abs):
-        os.makedirs (potdir_abs)
-    cmd = 'intltool-update -p -g "%s" && mv "%s" "%s"' % (potname, potfile, potdir_abs)
+    potfile_abs = os.path.join (potdir, potfile)
+    potfile_rel = pulse.utils.relative_path (potfile_abs, pulse.config.web_files_dir)
+    if not os.path.exists (potdir):
+        os.makedirs (potdir)
+    cmd = 'intltool-update -p -g "%s" && mv "%s" "%s"' % (potname, potfile, potdir)
     owd = os.getcwd ()
     try:
         os.chdir (podir)
@@ -124,13 +123,13 @@ def get_intltool_potfile (po, checkout):
     if status == 0:
         popo = pulse.parsers.Po (potfile_abs)
         num = popo.get_num_messages ()
-        vf = db.VarFile.objects.filter (filename=potfile_rel)
+        vf = db.OutputFile.objects.filter (filename=potfile_rel)
         try:
             vf = vf[0]
             vf.datetime = datetime.datetime.now()
             vf.statistic = num
         except IndexError:
-            vf = db.VarFile (filename=potfile_rel, datetime=datetime.datetime.now(), statistic=num)
+            vf = db.OutputFile (filename=potfile_rel, datetime=datetime.datetime.now(), statistic=num)
         vf.save()
         intltool_potfiles[podir] = potfile_abs
         return potfile_abs
@@ -148,12 +147,16 @@ def get_xml2po_potfile (po, checkout):
     makefile = pulse.parsers.Automake (os.path.join (makedir, 'Makefile.am'))
     docfiles = [os.path.join ('C', fname)
                 for fname in ([makefile['DOC_MODULE']+'.xml'] + makefile.get('DOC_INCLUDES', '').split())]
-    potdir_rel = os.path.join (*(['var', 'l10n'] + po.ident.split('/')[3:]))
-    potdir_abs = os.path.join (pulse.config.webdir, potdir_rel)
-    potfile_rel = os.path.join (potdir_rel, makefile['DOC_MODULE'] + '.pot')
-    potfile_abs = os.path.join (potdir_abs, makefile['DOC_MODULE'] + '.pot')
-    if not os.path.exists (potdir_abs):
-        os.makedirs (potdir_abs)
+    potdir = os.path.join ([pulse.config.web_l10n_dir] + po.ident.split('/')[3:])
+    if po.scm_dir == 'po':
+        potname = po.scm_module
+    else:
+        potname = po.scm_dir
+    potfile = potname + '.pot'
+    potfile_abs = os.path.join (potdir, makefile['DOC_MODULE'] + '.pot')
+    potfile_rel = pulse.utils.relative_path (potfile_abs, pulse.config.web_files_dir)
+    if not os.path.exists (potdir):
+        os.makedirs (potdir)
     cmd = 'xml2po -e -o "' + potfile_abs + '" "' + '" "'.join(docfiles) + '"'
     owd = os.getcwd ()
     try:
@@ -165,13 +168,13 @@ def get_xml2po_potfile (po, checkout):
     if status == 0:
         popo = pulse.parsers.Po (potfile_abs)
         num = popo.get_num_messages ()
-        vf = db.VarFile.objects.filter (filename=potfile_rel)
+        vf = db.OutputFile.objects.filter (filename=potfile_rel)
         try:
             vf = vf[0]
             vf.datetime = datetime.datetime.now()
             vf.statistic = num
         except IndexError:
-            vf = db.VarFile (filename=potfile_rel, datetime=datetime.datetime.now(), statistic=num)
+            vf = db.OutputFile (filename=potfile_rel, datetime=datetime.datetime.now(), statistic=num)
         vf.save()
         xml2po_potfiles[makedir] = potfile_abs
         return potfile_abs
@@ -184,7 +187,7 @@ def get_xml2po_potfile (po, checkout):
 def do_history (po, checkout, **kw):
     fullname = os.path.join (checkout.directory, po.scm_dir, po.scm_file)
     rel_ch = pulse.utils.relative_path (fullname, checkout.directory)
-    rel_scm = pulse.utils.relative_path (fullname, pulse.config.scmdir)
+    rel_scm = pulse.utils.relative_path (fullname, pulse.config.scm_dir)
     mtime = os.stat(fullname).st_mtime
     if kw.get('timestamps', True):
         stamp = db.Timestamp.get_timestamp (rel_scm)

@@ -181,7 +181,7 @@ class Checkout (object):
         self._up = 'svn up'
         
 
-    directory = property (lambda self: os.path.join (pulse.config.scmdir,
+    directory = property (lambda self: os.path.join (pulse.config.scm_dir,
                                                      self._server_dir,
                                                      self._module_dir,
                                                      self._branch_dir))
@@ -199,7 +199,7 @@ class Checkout (object):
 
     def checkout (self):
         pulse.utils.log ('Checking out %s from %s' % (self._name, self._server_dir))
-        topdir = os.path.join (pulse.config.scmdir, self._server_dir, self._module_dir)
+        topdir = os.path.join (pulse.config.scm_dir, self._server_dir, self._module_dir)
         if not os.path.exists (topdir):
             os.makedirs (topdir)
         owd = os.getcwd ()

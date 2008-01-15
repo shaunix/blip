@@ -285,9 +285,9 @@ class Page (Widget, HttpComponent, ContentComponent):
         p (fd, '<html><head>')
         p (fd, '  <title>%s</title>', self._title)
         p (fd, '  <meta http-equiv="Content-type" content="text/html; charset=utf-8">')
-        p (fd, '  <link rel="stylesheet" href="%spulse.css">', pulse.config.dataroot)
+        p (fd, '  <link rel="stylesheet" href="%spulse.css">', pulse.config.data_root)
         p (fd, '  <script language="javascript" type="text/javascript" src="%spulse.js"></script>',
-           pulse.config.dataroot)
+           pulse.config.data_root)
         p (fd, '</head><body>')
         p (fd, '<ul id="general">')
         p (fd, '  <li id="siteaction-gnome_home" class="home"><a href="http://www.gnome.org/">Home</a></li>')
@@ -361,7 +361,7 @@ class PageNotFound (Page):
             p (fd, '<ul>')
             for page in self._pages:
                 p (fd, '<li><a href="%s%s">%s</a></li>' %
-                   (pulse.config.webroot, page[0], page[1]))
+                   (pulse.config.web_root, page[0], page[1]))
             p (fd, '</ul></div>')
         p (fd, '</div>')
         Page.output_page_content (self, fd=fd)
@@ -435,7 +435,7 @@ class ContainerBox (Widget, SortableComponent, ContentComponent, LinkBoxesCompon
             if self._title != None:
                 p (fd, '<a href="javascript:exp_toggle(\'%s\')">', self._id, False)
                 p (fd, '<img id="img-%s" class="exp-img" src="%sexpander-open.png"> %s</a>',
-                   (self._id, pulse.config.dataroot, self._title))
+                   (self._id, pulse.config.data_root, self._title))
             if self._title != None and len(slinks) > 0:
                 p (fd, '</td><td>')
             if len(slinks) > 0:
@@ -497,7 +497,6 @@ class LinkBox (Widget, FactsComponent, ContentComponent):
         self._graphs.append (url)
 
     def output (self, fd=sys.stdout):
-        d = pulse.utils.attrdict ([self, pulse.config])
         cls = ' '.join(['lbox'] + self._classes)
         p (fd, '<table class="%s"><tr>', cls)
         if self._show_icon:
@@ -515,7 +514,7 @@ class LinkBox (Widget, FactsComponent, ContentComponent):
             p (fd, ' ')
             for badge in self._badges:
                 p (fd, '<img src="%sbadge-%s-16.png" width="16" height="16" alt="%s">',
-                   (pulse.config.dataroot, badge, badge))
+                   (pulse.config.data_root, badge, badge))
         p (fd, '</div>')
         if self._desc != None:
             p (fd, '<div class="lbox-desc">')
@@ -634,7 +633,7 @@ class AdmonBox (Widget):
         cls = ' '.join(['admon'] + self._classes)
         p (fd, '<div class="admon-%s %s">', (self._type, cls))
         p (fd, '<img src="%sadmon-%s-16.png" width="16" height="16">',
-           (pulse.config.dataroot, self._type))
+           (pulse.config.data_root, self._type))
         p (fd, None, self._title)
         p (fd, '</div>')
 
@@ -706,11 +705,11 @@ class Graph (Widget):
     def output (self, fd=sys.stdout):
         if len(self._comments) == 0:
             p (fd, '<div class="graph"><img src="%s"></div>',
-               '/'.join ([pulse.config.varroot, 'graph', self._url]))
+               '/'.join ([pulse.config.graph_root, self._url]))
         else:
             Graph._count += 1
             p (fd, '<div class="graph" id="graph-%i"><img src="%s" usemap="#graphmap%i" ismap>',
-               (Graph._count, '/'.join ([pulse.config.varroot, 'graph', self._url]), Graph._count))
+               (Graph._count, '/'.join ([pulse.config.graph_root, self._url]), Graph._count))
             p (fd, '<map name="graphmap%i">', Graph._count)
             i = 0
             for comment in self._comments:
@@ -882,7 +881,7 @@ class Link (Widget):
             p (fd, '<a href="%s">', self._href, False)
         if self._icon != None:
             p (fd, '<img src="%s%s-16.png" height="16" width="16"> ',
-               (pulse.config.dataroot, self._icon),
+               (pulse.config.data_root, self._icon),
                False)
         p (fd, None, self._text, False)
         if (self._href != None):

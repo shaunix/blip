@@ -46,7 +46,7 @@ def update_person (person, **kw):
         score += (math.sqrt(i + 1) / 5) * stats[i]
     person.mod_score = int(score)
     person.save()
-    graphdir = os.path.join (*([pulse.config.webdir, 'var', 'graph'] + person.ident.split('/')[1:]))
+    graphdir = os.path.join (*([pulse.config.web_graphs_dir] + person.ident.split('/')[1:]))
     if not os.path.exists (graphdir):
         os.makedirs (graphdir)
     graph = pulse.graphs.BarGraph (stats, 20)

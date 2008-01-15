@@ -273,7 +273,7 @@ def get_deps (moduleset, pkg, seen=[]):
 def main (argv, options={}):
     update = not options.get ('--no-update', False)
 
-    data = pulse.xmldata.get_data (os.path.join (pulse.config.datadir, 'xml', 'sets.xml'))
+    data = pulse.xmldata.get_data (os.path.join (pulse.config.input_dir, 'xml', 'sets.xml'))
 
     for key in data.keys():
         if data[key]['__type__'] == 'set':

@@ -121,7 +121,7 @@ def update_gdu_docbook (doc, **kw):
     for i in range(len(stats)):
         score += (math.sqrt(i + 1) / 5) * stats[i]
     data['mod_score'] = int(score)
-    graphdir = os.path.join (*([pulse.config.webdir, 'var', 'graph'] + doc.ident.split('/')[1:]))
+    graphdir = os.path.join (*([pulse.config.web_graphs_dir] + doc.ident.split('/')[1:]))
     if not os.path.exists (graphdir):
         os.makedirs (graphdir)
     graph = pulse.graphs.BarGraph (stats, 10)
@@ -158,7 +158,7 @@ def update_gtk_doc (doc, **kw):
 
 
 def process_docbook_docfile (docfile, name, desc, data, **kw):
-    rel_scm = pulse.utils.relative_path (docfile, pulse.config.scmdir)
+    rel_scm = pulse.utils.relative_path (docfile, pulse.config.scm_dir)
     if not os.path.exists (docfile):
         pulse.utils.warn ('No such file %s' % rel_scm)
         return
@@ -233,7 +233,7 @@ def process_docbook_docfile (docfile, name, desc, data, **kw):
 
 
 def process_docbook_pofile (pofile, name, desc, data, **kw):
-    rel_scm = pulse.utils.relative_path (pofile, pulse.config.scmdir)
+    rel_scm = pulse.utils.relative_path (pofile, pulse.config.scm_dir)
     if not os.path.exists (pofile):
         pulse.utils.log ('No such file %s' % rel_scm)
         return

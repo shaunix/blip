@@ -77,7 +77,7 @@ def output_set (set, path=[], query=[], http=True, fd=None):
     page.add_content (tabbed)
 
     page.set_sublinks_divider (pulse.html.TRIANGLE)
-    page.add_sublink (pulse.config.webroot + 'set', pulse.utils.gettext ('Sets'))
+    page.add_sublink (pulse.config.web_root + 'set', pulse.utils.gettext ('Sets'))
     for super in get_supersets (set):
         page.add_sublink (super.pulse_url, super.title)
 
@@ -219,7 +219,7 @@ def add_more_tabs (set, tabbed, path=[], query=[]):
                     span.add_class ('module')
                     url = doc.ident.split('/')
                     url = '/'.join(['mod'] + url[2:4] + [url[5]])
-                    url = pulse.config.webroot + url
+                    url = pulse.config.web_root + url
                     lbox.add_fact ('module', pulse.html.Link (url, span))
                     if doc.mod_datetime != None:
                         span = pulse.html.Span (divider=pulse.html.SPACE)
@@ -263,7 +263,7 @@ def add_more_tabs (set, tabbed, path=[], query=[]):
                 span.add_class ('module')
                 url = obj.ident.split('/')
                 url = '/'.join(['mod'] + url[2:4] + [url[5]])
-                url = pulse.config.webroot + url
+                url = pulse.config.web_root + url
                 lbox.add_fact ('module', pulse.html.Link (url, span))
                 docs = db.Documentation.get_related (subj=obj)
                 for doc in docs:
@@ -275,16 +275,16 @@ def add_more_tabs (set, tabbed, path=[], query=[]):
                                    pulse.html.Link (doc.pulse_url, span))
                     slink_documentation = True
                 if type == 'Domain':
-                    potlst = ['var', 'l10n'] + obj.ident.split('/')[1:]
+                    potlst = ['l10n'] + obj.ident.split('/')[1:]
                     if obj.scm_dir == 'po':
                         potlst.append (obj.scm_module + '.pot')
                     else:
                         potlst.append (obj.scm_dir + '.pot')
                     potfile = os.path.join (*potlst)
-                    vf = db.VarFile.objects.filter (filename=potfile)
+                    of = db.OutputFile.objects.filter (filename=potfile)
                     try:
-                        vf = vf[0]
-                        span = pulse.html.Span (str(vf.statistic))
+                        of = of[0]
+                        span = pulse.html.Span (str(of.statistic))
                         span.add_class ('messages')
                         lbox.add_fact ('messages', span)
                         slink_messages = True

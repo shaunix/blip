@@ -310,16 +310,16 @@ class PulseRecord (object):
     localized_desc = property (get_localized_desc)
 
     def get_pulse_url (self):
-        return pulse.config.webroot + self.ident[1:]
+        return pulse.config.web_root + self.ident[1:]
     pulse_url = property (get_pulse_url)
 
     def get_icon_url (self):
         if self.icon_name == None or self.icon_dir.startswith ('__icon__'):
             return None
         elif self.icon_dir == None:
-            return pulse.config.iconroot + self.icon_name + '.png'
+            return pulse.config.icons_root + self.icon_name + '.png'
         else:
-            return pulse.config.iconroot + self.icon_dir + '/' + self.icon_name + '.png'
+            return pulse.config.icons_root + self.icon_dir + '/' + self.icon_name + '.png'
     icon_url = property (get_icon_url)
 
     def get_title_default (self):
@@ -669,9 +669,11 @@ class Timestamp (models.Model):
             return -1
 
 
-class VarFile (models.Model):
+class OutputFile (models.Model):
     __metaclass__ = PulseModelBase
 
+    type = models.CharField (maxlength=80)
     filename = models.CharField (maxlength=200)
     statistic = models.IntegerField ()
     datetime = models.DateTimeField ()
+    data = PickleField ()

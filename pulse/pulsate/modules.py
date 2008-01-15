@@ -62,7 +62,7 @@ def update_branch (branch, update=True, timestamps=True, history=True):
     for i in range(len(stats)):
         score += (math.sqrt(i + 1) / 5) * stats[i]
     branch.mod_score = int(score)
-    graphdir = os.path.join (*([pulse.config.webdir, 'var', 'graph'] + branch.ident.split('/')[1:]))
+    graphdir = os.path.join (*([pulse.config.web_graphs_dir] + branch.ident.split('/')[1:]))
     if not os.path.exists (graphdir):
         os.makedirs (graphdir)
     graph = pulse.graphs.BarGraph (stats, 30)
@@ -205,7 +205,7 @@ def process_maintainers (branch, checkout, **kw):
     if not os.path.isfile (maintfile):
         return
 
-    rel_scm = pulse.utils.relative_path (maintfile, pulse.config.scmdir)
+    rel_scm = pulse.utils.relative_path (maintfile, pulse.config.scm_dir)
     mtime = os.stat(maintfile).st_mtime
 
     if kw.get('timestamps', True):
@@ -265,7 +265,7 @@ def process_configure (branch, checkout, **kw):
     if not os.path.exists (filename):
         return
 
-    rel_scm = pulse.utils.relative_path (filename, pulse.config.scmdir)
+    rel_scm = pulse.utils.relative_path (filename, pulse.config.scm_dir)
     mtime = os.stat(filename).st_mtime
 
     if kw.get('timestamps', True):
@@ -333,7 +333,7 @@ def process_podir (branch, checkout, podir, **kw):
     if not os.path.isfile (linguas):
         return domain
 
-    rel_scm = pulse.utils.relative_path (linguas, pulse.config.scmdir)
+    rel_scm = pulse.utils.relative_path (linguas, pulse.config.scm_dir)
     mtime = os.stat(linguas).st_mtime
     langs = []
     translations = []
@@ -431,7 +431,7 @@ def process_gtk_docdir (branch, checkout, docdir, makefile, **kw):
 def process_pkgconfig (branch, checkout, filename, **kw):
     basename = os.path.basename (filename)[:-6]
     rel_ch = pulse.utils.relative_path (filename, checkout.directory)
-    rel_scm = pulse.utils.relative_path (filename, pulse.config.scmdir)
+    rel_scm = pulse.utils.relative_path (filename, pulse.config.scm_dir)
     mtime = os.stat(filename).st_mtime
     # Hack for GTK+'s uninstalled pkgconfig files
     if '-uninstalled' in basename:
@@ -482,7 +482,7 @@ def process_pkgconfig (branch, checkout, filename, **kw):
 
 def process_keyfile (branch, checkout, filename, **kw):
     rel_ch = pulse.utils.relative_path (filename, checkout.directory)
-    rel_scm = pulse.utils.relative_path (filename, pulse.config.scmdir)
+    rel_scm = pulse.utils.relative_path (filename, pulse.config.scm_dir)
     mtime = os.stat(filename).st_mtime
 
     if kw.get('timestamps', True):
@@ -572,7 +572,7 @@ def process_oafserver (branch, checkout, filename, **kw):
     bserver, bmodule, bbranch = branch.ident.split('/')[2:]
     basename = os.path.basename (filename)[:-13]
     rel_ch = pulse.utils.relative_path (filename, checkout.directory)
-    rel_scm = pulse.utils.relative_path (filename, pulse.config.scmdir)
+    rel_scm = pulse.utils.relative_path (filename, pulse.config.scm_dir)
     mtime = os.stat(filename).st_mtime
 
     if kw.get('timestamps', True):
@@ -588,7 +588,7 @@ def process_oafserver (branch, checkout, filename, **kw):
     owd = os.getcwd ()
     applets = []
     pulse.utils.log ('Processing file %s' %
-                     pulse.utils.relative_path (filename, pulse.config.scmdir))
+                     pulse.utils.relative_path (filename, pulse.config.scm_dir))
     try:
         os.chdir (checkout.directory)
         dom = xml.dom.minidom.parse (os.popen ('LC_ALL=C intltool-merge -x -q -u po "' + rel_ch + '" -'))
@@ -654,7 +654,7 @@ def process_oafserver (branch, checkout, filename, **kw):
 
 
 def locate_icon (record, icon, images):
-    icondir = os.path.join (pulse.config.icondir, 'apps')
+    icondir = os.path.join (pulse.config.web_icons_dir, 'apps')
 
     if icon.endswith ('.png'):
         iconfile = icon

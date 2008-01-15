@@ -81,7 +81,7 @@ def output_person (person, path=[], query=[], http=True, fd=None):
     box = pulse.html.InfoBox ('activity', pulse.utils.gettext ('Activity'))
     columns.add_to_column (0, box)
     graph = pulse.html.Graph ('/'.join(person.ident.split('/')[1:] + ['commits.png']))
-    graphdir = os.path.join (*([pulse.config.webdir, 'var', 'graph'] + person.ident.split('/')[1:]))
+    graphdir = os.path.join (*([pulse.config.web_graphs_dir] + person.ident.split('/')[1:]))
     graphdata = pulse.graphs.load_graph_data (os.path.join (graphdir, 'commits.imap'))
     for i in range(len(graphdata)):
         datum = graphdata[i]
