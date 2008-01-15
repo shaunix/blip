@@ -201,7 +201,7 @@ def add_more_tabs (set, tabbed, path=[], query=[]):
             else:
                 buckets['users'].append (doc)
                 cnt += 1
-        vbox = pulse.html.VBox()
+        pad = pulse.html.PaddingBox ()
         for id, txt in (('users', pulse.utils.gettext ('User Documentation (%i)')),
                         ('devels', pulse.utils.gettext ('Developer Documentation (%i)')) ):
             if len(buckets[id]) > 0:
@@ -211,7 +211,7 @@ def add_more_tabs (set, tabbed, path=[], query=[]):
                 cont.add_sort_link ('module', pulse.utils.gettext ('module'))
                 cont.add_sort_link ('mtime', pulse.utils.gettext ('modified'))
                 cont.add_sort_link ('score', pulse.utils.gettext ('score'))
-                vbox.add_content (cont)
+                pad.add_content (cont)
                 for doc in buckets[id]:
                     lbox = cont.add_link_box (doc)
                     lbox.add_graph ('/'.join(doc.ident.split('/')[1:] + ['commits.png']))
@@ -235,7 +235,7 @@ def add_more_tabs (set, tabbed, path=[], query=[]):
                         span.add_class ('score')
                         lbox.add_fact (pulse.utils.gettext ('score'), span)
         tabbed.add_tab (True, 'Documents (%i)' % cnt)
-        tabbed.add_content (vbox)
+        tabbed.add_content (pad)
     else:
         tabbed.add_tab (set.pulse_url + '/doc',
                         'Documents (%i)' % docs.count())

@@ -280,7 +280,7 @@ span.elliplnk {
 }
 span.elliptxt { display: none; }
 
-div.pad { margin: 1em; }
+.pad { margin-top: 1em !important; }
 
 .po { background-color: #eeeeec; }
 .po80 { background-color: #d9ebff; }

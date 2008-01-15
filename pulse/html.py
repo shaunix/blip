@@ -226,13 +226,15 @@ class LinkBoxesComponent (Component):
                     if col > 0:
                         p (fd, '</td><td class="col" style="width: ' + width + '%">')
                 else:
-                     p (fd, '<div class="pad"></div>')
+                    box.add_class ('pad')
                 p (fd, box)
             p (fd, '</td></tr></table>')
         else:
             for i in range(len(self._boxes)):
-                if i != 0: p (fd, '<div class="pad"></div>')
-                p (fd, self._boxes[i])
+                box = self._boxes[i]
+                if i != 0:
+                    box.add_class ('pad')
+                p (fd, box)
 
 
 class HttpComponent (Component):
@@ -558,10 +560,14 @@ class GridBox (Widget):
     def __init__ (self, **kw):
         super (GridBox, self).__init__ (**kw)
         self._rows = []
+        self._classes = []
 
     def add_row (self, *row):
         self._rows.append ({'data': row})
         return len(self._rows) - 1
+
+    def add_class (self, cls):
+        self._classes.append (cls)
 
     def add_row_class (self, idx, cls):
         self._rows[idx].setdefault ('classes', [])
@@ -570,7 +576,8 @@ class GridBox (Widget):
     def output (self, fd=sys.stdout):
         if len (self._rows) == 0:
             return
-        p (fd, '<table class="grid">')
+        cls = ' '.join(['grid'] + self._classes)
+        p (fd, '<table class="%s">', cls)
         cols = max (map (lambda x: len(x['data']), self._rows))
         for row in self._rows:
             cls = row.get('classes', None)
@@ -590,22 +597,23 @@ class GridBox (Widget):
         p (fd, '</table>')
 
 
-class VBox (Widget, ContentComponent):
+class PaddingBox (Widget, ContentComponent):
     def __init__ (self, **kw):
-        super (VBox, self).__init__ (**kw)
+        super (PaddingBox, self).__init__ (**kw)
 
     def output (self, fd=sys.stdout):
-        p (fd, '<div class="vbox">')
         content = self.get_content()
         for i in range(len(content)):
             s = content[i]
             if i == 0:
-                p (fd, '<div class="vbox-el-first">')
+                p (fd, None, s)
+            elif hasattr (s, 'add_class'):
+                s.add_class ('pad')
+                p (fd, s)
             else:
-                p (fd, '<div class="vbox-el">')
-            p (fd, None, s)
-            p (fd, '</div>')
-        p (fd, '</div>')
+                p (fd, '<div class="pad">')
+                p (fd, None, s)
+                p (fd, '</div>')
 
 
 class AdmonBox (Widget):
@@ -617,34 +625,20 @@ class AdmonBox (Widget):
         super (AdmonBox, self).__init__ (**kw)
         self._type = type
         self._title = title
+        self._classes = []
+
+    def add_class (self, cls):
+        self._classes.append (cls)
 
     def output (self, fd=sys.stdout):
-        p (fd, '<div class="admon admon-%s">', self._type)
+        cls = ' '.join(['admon'] + self._classes)
+        p (fd, '<div class="admon-%s %s">', (self._type, cls))
         p (fd, '<img src="%sadmon-%s-16.png" width="16" height="16">',
            (pulse.config.dataroot, self._type))
         p (fd, None, self._title)
         p (fd, '</div>')
 
 
-# FIXME: can probably be replaced by ContainerBox
-class ExpanderBox (Widget, ContentComponent):
-    def __init__ (self, id, title, **kw):
-        super (ExpanderBox, self).__init__ (**kw)
-        self._id = id
-        self._title = title
-
-    def output (self, fd=sys.stdout):
-        p (fd, '<div class="exp" id="%s">', self._id)
-        p (fd, '<div class="exp-title">', None, False)
-        p (fd, '<a href="javascript:exp_toggle(\'%s\')">', self._id, False)
-        p (fd, '<img id="img-%s" class="exp-img" src="%sexpander-open.png"> %s</a></div>',
-           (self._id, pulse.config.dataroot, self._title))
-        p (fd, '<div class="exp-content">')
-        ContentComponent.output (self, fd=fd)
-        p (fd, '</div>')
-
-
-# FIXME: let's have this implement components for the default tab
 class TabbedBox (Widget, ContentComponent):
     def __init__ (self, **kw):
         super (TabbedBox, self).__init__ (**kw)

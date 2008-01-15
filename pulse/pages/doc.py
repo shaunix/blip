@@ -180,8 +180,8 @@ def output_doc (doc, path=[], query=[], http=True, fd=None):
     cont = pulse.html.ContainerBox ()
     cont.set_id ('po')
     box.add_content (cont)
-    vbox = pulse.html.VBox()
-    cont.add_content (vbox)
+    pad = pulse.html.PaddingBox ()
+    cont.add_content (pad)
 
     potlst = ['var', 'l10n'] + doc.ident.split('/')[1:] + [doc.ident.split('/')[-2] + '.pot']
     poturl = pulse.config.varroot + '/'.join (potlst[1:])
@@ -190,7 +190,7 @@ def output_doc (doc, path=[], query=[], http=True, fd=None):
     try:
         vf = vf[0]
         linkspan = pulse.html.Span (divider=pulse.html.SPACE)
-        vbox.add_content (linkspan)
+        pad.add_content (linkspan)
         linkspan.add_content (pulse.html.Link (poturl,
                                                pulse.utils.gettext ('POT file'),
                                                icon='download' ))
@@ -198,13 +198,13 @@ def output_doc (doc, path=[], query=[], http=True, fd=None):
         linkspan.add_content (pulse.utils.gettext ('(%i messages)') % vf.statistic)
         linkspan.add_content (pulse.utils.gettext ('on %s') % str(vf.datetime))
     except IndexError:
-        vbox.add_content (pulse.html.AdmonBox (pulse.html.AdmonBox.warning,
+        pad.add_content (pulse.html.AdmonBox (pulse.html.AdmonBox.warning,
                                                pulse.utils.gettext ('No POT file') ))
 
     translations = doc.select_children ('Translation')
     translations = pulse.utils.attrsorted (list(translations), 'title')
     if len(translations) == 0:
-        vbox.add_content (pulse.html.AdmonBox (pulse.html.AdmonBox.warning,
+        pad.add_content (pulse.html.AdmonBox (pulse.html.AdmonBox.warning,
                                                pulse.utils.gettext ('No translations') ))
     else:
         cont.set_sortable_tag ('tr')
@@ -213,7 +213,7 @@ def output_doc (doc, path=[], query=[], http=True, fd=None):
         cont.add_sort_link ('percent', pulse.utils.gettext ('percent'))
         cont.add_sort_link ('img', pulse.utils.gettext ('images'))
         grid = pulse.html.GridBox ()
-        vbox.add_content (grid)
+        pad.add_content (grid)
         for translation in translations:
             stat = db.Statistic.select_statistic (translation, 'Messages')
             span = pulse.html.Span (translation.scm_file[:-3])
