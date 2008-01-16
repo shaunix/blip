@@ -102,7 +102,7 @@ def get_intltool_potfile (po, checkout):
     podir = os.path.join (checkout.directory, po.scm_dir)
     if intltool_potfiles.has_key (podir):
         return intltool_potfiles[podir]
-    potdir = os.path.join ([pulse.config.web_l10n_dir] + po.ident.split('/')[3:])
+    potdir = os.path.join (*([pulse.config.web_l10n_dir] + po.ident.split('/')[3:]))
     if po.scm_dir == 'po':
         potname = po.scm_module
     else:
@@ -147,7 +147,7 @@ def get_xml2po_potfile (po, checkout):
     makefile = pulse.parsers.Automake (os.path.join (makedir, 'Makefile.am'))
     docfiles = [os.path.join ('C', fname)
                 for fname in ([makefile['DOC_MODULE']+'.xml'] + makefile.get('DOC_INCLUDES', '').split())]
-    potdir = os.path.join ([pulse.config.web_l10n_dir] + po.ident.split('/')[3:])
+    potdir = os.path.join (*([pulse.config.web_l10n_dir] + po.ident.split('/')[3:]))
     if po.scm_dir == 'po':
         potname = po.scm_module
     else:
