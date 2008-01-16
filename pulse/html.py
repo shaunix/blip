@@ -226,15 +226,19 @@ class LinkBoxesComponent (Component):
                     if col > 0:
                         p (fd, '</td><td class="col" style="width: ' + width + '%">')
                 else:
-                    box.add_class ('pad')
+                    p (fd, '<div class="pad">')
                 p (fd, box)
+                if pos > 0:
+                    p (fd, '</div>')
             p (fd, '</td></tr></table>')
         else:
             for i in range(len(self._boxes)):
                 box = self._boxes[i]
                 if i != 0:
-                    box.add_class ('pad')
+                    p (fd, '<div class="pad">')
                 p (fd, box)
+                if i != 0:
+                    p (fd, '</div>')
 
 
 class HttpComponent (Component):
@@ -606,9 +610,6 @@ class PaddingBox (Widget, ContentComponent):
             s = content[i]
             if i == 0:
                 p (fd, None, s)
-            elif hasattr (s, 'add_class'):
-                s.add_class ('pad')
-                p (fd, s)
             else:
                 p (fd, '<div class="pad">')
                 p (fd, None, s)
