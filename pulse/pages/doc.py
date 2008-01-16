@@ -185,8 +185,8 @@ def output_doc (doc, path=[], query=[], http=True, fd=None):
 
     potlst = doc.ident.split('/')[1:] + [doc.ident.split('/')[-2] + '.pot']
     poturl = pulse.config.l10n_root + '/'.join (potlst)
-    potfile = os.path.join (*(['l10n'] + potlst))
-    of = db.OutputFile.objects.filter (filename=potfile)
+    potfile = os.path.join (*potlst)
+    of = db.OutputFile.objects.filter (type='l10n', filename=potfile)
     try:
         of = of[0]
         linkspan = pulse.html.Span (divider=pulse.html.SPACE)

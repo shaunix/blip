@@ -275,13 +275,13 @@ def add_more_tabs (set, tabbed, path=[], query=[]):
                                    pulse.html.Link (doc.pulse_url, span))
                     slink_documentation = True
                 if type == 'Domain':
-                    potlst = ['l10n'] + obj.ident.split('/')[1:]
+                    potlst = obj.ident.split('/')[1:]
                     if obj.scm_dir == 'po':
                         potlst.append (obj.scm_module + '.pot')
                     else:
                         potlst.append (obj.scm_dir + '.pot')
                     potfile = os.path.join (*potlst)
-                    of = db.OutputFile.objects.filter (filename=potfile)
+                    of = db.OutputFile.objects.filter (type='l10n', filename=potfile)
                     try:
                         of = of[0]
                         span = pulse.html.Span (str(of.statistic))

@@ -88,7 +88,7 @@ graph_root = files_root + 'graphs/'
 icons_root = files_root + 'icons/'
 
 # The root URL for generated POT files
-l10n_root = files_root = 'l10n/'
+l10n_root = files_root + 'l10n/'
 
 
 ################################################################################
