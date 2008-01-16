@@ -21,7 +21,6 @@ def main ():
     except getopt.GetoptError:
         usage ()
         sys.exit (1)
-    debugger = None
     for (opt, arg) in opts:
         if opt in ('-o', '--output'):
             fd = file (arg, 'w')
@@ -87,8 +86,9 @@ def main ():
                     ' their programming assignment.'))
                 page.output(fd=fd)
                 retcode = 500
-    if debugger != None:
-        print '%i SELECTS, %i UPDATES' % (debugger.selects, debugger.updates)
+    if pulse.config.debug_db:
+        print ('%i SELECT statements in %.3f seconds' %
+               (pulse.models.debug_select_count, pulse.models.debug_select_time))
     return retcode
 
 

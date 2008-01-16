@@ -63,33 +63,38 @@ if pulse.config.DATABASE_ENGINE == 'sqlite3':
 # This is a nasty hack that allows us to only log INSERTs below
 __was_insert = False
 
+debug_select_count = 0
+debug_select_time = 0
+
 class PulseDebugCursor (object):
     def __init__ (self, cursor, db):
         self.cursor = cursor
         self.db = db
 
     def execute (self, sql, params=()):
-        if True:
-            text = ''
-        elif isinstance (params, dict):
+        if isinstance (params, dict):
             text = sql % params
         else:
             text = sql % tuple(params)
 
+        select = False
         if text.startswith ('SELECT COUNT'):
-            pass
+            select = True
         if text.startswith ('SELECT 1 '):
-            pass
+            select = True
         elif text.startswith ('SELECT '):
+            select = True
             i = text.index (' FROM ')
             text = text[:7] + '...' + text[i:]
         elif text.startswith ('UPDATE '):
-            setattr (sys.modules[__name__], '__was_insert', False)
+            global __was_insert
+            __was_insert = False
             i = text.index (' SET ')
             j = text.index (' WHERE ')
             text = text[:i+5] + '...' + text[j:]
         elif text.startswith ('INSERT INTO '):
-            setattr (sys.modules[__name__], '__was_insert', True)
+            global __was_insert
+            __was_insert = True
             i = text[12:].index(' ')
             text = text[:13+i] + '...'
         start = time.time()
@@ -98,7 +103,13 @@ class PulseDebugCursor (object):
         finally:
             if getattr (pulse.config, 'debug_db', False):
                 stop = time.time()
-                print '  ' + ('%.3f' % (stop - start)) + ' -- ' + text.replace('"', '')
+                diff = stop - start
+                if select:
+                    global debug_select_count
+                    debug_select_count += 1
+                    global debug_select_time
+                    debug_select_time += diff
+                print '  ' + ('%.3f' % diff) + ' -- ' + text.replace('"', '')
 
     def execute_many (self, sql, param_list):
         return self.cursor.executemany (sql, param_list)
@@ -603,6 +614,8 @@ class Revision (models.Model):
             args['person'] = person
         if isinstance (filename, basestring):
             args['filename'] = filename
+        elif filename == True:
+            args['filename__isnull'] = False
         elif filename == None:
             args['filename__isnull'] = True
         revs = cls.objects.filter (**args)

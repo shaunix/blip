@@ -113,7 +113,6 @@ if __name__ == "__main__":
         sys.exit (1)
     options = get_options (opts, args)
 
-    debugger = None
     if options.get ('--debug-db', False):
         pulse.config.debug_db = True
 
@@ -125,7 +124,8 @@ if __name__ == "__main__":
     else:
         retcode = mod.main (argv[1:])
 
-    if debugger != None:
-        print '%i SELECTS, %i UPDATES' % (debugger.selects, debugger.updates)
+    if pulse.config.debug_db:
+        print ('%i SELECT statements in %.3f seconds' %
+               (pulse.models.debug_select_count, pulse.models.debug_select_time))
 
     sys.exit (retcode)
