@@ -254,7 +254,7 @@ def output_doc (doc, path=[], query=[], http=True, fd=None):
 
 
 def output_ajax (doc, path, query, http, fd):
-    page = pulse.html.HttpContainer ()
+    page = pulse.html.Fragment ()
     xmlfiles = doc.data.get('xmlfiles', [])
     page.add_content (get_activity (doc, xmlfiles))
     page.output(fd=fd)

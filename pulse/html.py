@@ -321,7 +321,7 @@ class Fragment (Widget, HttpComponent, ContentComponent):
     added content.  This is generally used for AJAX content.
     """
     def __init__ (self, **kw):
-        super (Page, self).__init__ (**kw)
+        super (Fragment, self).__init__ (**kw)
 
     def output (self, fd=sys.stdout):
         HttpComponent.output (self, fd=fd)
