@@ -28,10 +28,14 @@ import pulse.html
 import pulse.scm
 import pulse.utils
 
+people_cache = {}
+
 def main (path=[], query={}, http=True, fd=None):
     if len(path) == 3:
         modules = db.Branchable.objects.filter(ident=('/' + '/'.join(path)))
-        if modules.count() == 0:
+        try:
+            module = modules[0]
+        except IndexError:
             kw = {'http': http}
             kw['title'] = pulse.utils.gettext ('Module Not Found')
             # FIXME: this is not a good place to redirect
@@ -41,21 +45,23 @@ def main (path=[], query={}, http=True, fd=None):
                 **kw)
             page.output(fd=fd)
             return 404
-        else:
-            branch = modules[0].default
-            if branch == None:
-                kw = {'http': http}
-                kw['title'] = pulse.utils.gettext ('Default Branch Not Found')
-                # FIXME: this is not a good place to redirect
-                kw['pages'] = [('mod', pulse.utils.gettext ('All Modules'))]
-                page = pulse.html.PageNotFound (
-                    pulse.utils.gettext ('Pulse could not find a default branch for the module %s') % path[2],
-                    **kw)
-                page.output(fd=fd)
-                return 404
+
+        branch = module.branch
+        if branch == None:
+            kw = {'http': http}
+            kw['title'] = pulse.utils.gettext ('Default Branch Not Found')
+            # FIXME: this is not a good place to redirect
+            kw['pages'] = [('mod', pulse.utils.gettext ('All Modules'))]
+            page = pulse.html.PageNotFound (
+                pulse.utils.gettext ('Pulse could not find a default branch for the module %s') % path[2],
+                **kw)
+            page.output(fd=fd)
+            return 404
     elif len(path) == 4:
         branches = db.Branch.objects.filter (ident=('/' + '/'.join(path)))
-        if branches.count() == 0:
+        try:
+            branch = branches[0]
+        except IndexError:
             kw = {'http': http}
             kw['title'] = pulse.utils.gettext ('Branch Not Found')
             modules = db.Branchable.objects.filter (ident=('/' + '/'.join(path[:-1])))
@@ -70,8 +76,6 @@ def main (path=[], query={}, http=True, fd=None):
                 **kw)
             page.output(fd=fd)
             return 404
-        else:
-            branch = branches[0]
     else:
         # FIXME: redirect to /set or something
         pass
@@ -119,6 +123,8 @@ def output_branch (branch, path=[], query=[], http=True, fd=None):
         span.add_content (str(branch.mod_datetime))
         if branch.mod_person != None:
             span.add_content (' by ')
+            global people_cache
+            people_cache[branch.mod_person.id] = branch.mod_person
             span.add_content (pulse.html.Link (branch.mod_person))
         page.add_fact (pulse.utils.gettext ('Last Modified'), span)
 
@@ -173,7 +179,11 @@ def output_branch (branch, path=[], query=[], http=True, fd=None):
         span.add_content ('on')
         span.add_content (str(rev.datetime))
         span.add_content ('by')
-        span.add_content (pulse.html.Link (rev.person))
+        global people_cache
+        if not rev.person_id in people_cache:
+            people_cache[rev.person_id] = rev.person
+        person = people_cache[rev.person_id]
+        span.add_content (pulse.html.Link (person))
         dl.add_term (span)
         dl.add_entry (pulse.html.RevisionPopupLink (rev.comment))
 

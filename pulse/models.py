@@ -80,7 +80,7 @@ class PulseDebugCursor (object):
         select = False
         if text.startswith ('SELECT COUNT'):
             select = True
-        if text.startswith ('SELECT 1 '):
+        elif text.startswith ('SELECT 1 '):
             select = True
         elif text.startswith ('SELECT '):
             select = True

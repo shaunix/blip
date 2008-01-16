@@ -32,9 +32,9 @@ people_cache = {}
 
 def main (path=[], query={}, http=True, fd=None):
     if len(path) == 4:
-        modules = db.Branchable.objects.filter (ident=('/' + '/'.join(path)))
+        branchables = db.Branchable.objects.filter (ident=('/' + '/'.join(path)))
         try:
-            module = modules[0]
+            branchable = branchables[0]
         except IndexError:
             kw = {'http': http}
             kw['title'] = pulse.utils.gettext ('Document Not Found')
@@ -46,7 +46,7 @@ def main (path=[], query={}, http=True, fd=None):
             page.output(fd=fd)
             return 404
 
-        doc = module.default
+        doc = branchable.default
         if doc == None:
             kw = {'http': http}
             kw['title'] = pulse.utils.gettext ('Default Branch Not Found')
