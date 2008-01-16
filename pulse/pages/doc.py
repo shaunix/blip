@@ -28,6 +28,8 @@ import pulse.models as db
 import pulse.scm
 import pulse.utils
 
+people_cache = {}
+
 def main (path=[], query={}, http=True, fd=None):
     if len(path) == 4:
         modules = db.Branchable.objects.filter (ident=('/' + '/'.join(path)))
@@ -132,6 +134,7 @@ def output_doc (doc, path=[], query=[], http=True, fd=None):
         people = {}
         for rel in rels:
             people[rel.pred] = rel
+            people_cache[rel.pred.id] = rel.pred
         for person in pulse.utils.attrsorted (people.keys(), 'title'):
             lbox = box.add_link_box (person)
             rel = people[person]
@@ -149,6 +152,8 @@ def output_doc (doc, path=[], query=[], http=True, fd=None):
 
     # Files
     box = pulse.html.InfoBox ('activity', pulse.utils.gettext ('Activity'))
+    pad = pulse.html.PaddingBox ()
+    box.add_content (pad)
     columns.add_to_column (0, box)
     graph = pulse.html.Graph ('/'.join(doc.ident.split('/')[1:] + ['commits.png']))
     graphdir = os.path.join (*([pulse.config.web_graphs_dir] + doc.ident.split('/')[1:]))
@@ -161,9 +166,9 @@ def output_doc (doc, path=[], query=[], http=True, fd=None):
         else:
             cmt = pulse.utils.gettext ('this week: %i commits') % datum[1]
         graph.add_comment (datum[0], cmt)
-    box.add_content (graph)
+    pad.add_content (graph)
     div = pulse.html.Div (id='actfiles')
-    box.add_content (div)
+    pad.add_content (div)
     xmlfiles = doc.data.get('xmlfiles', [])
     if len(xmlfiles) > 10:
         jslink = 'javascript:replace_content(\'actfiles\', '
@@ -173,6 +178,39 @@ def output_doc (doc, path=[], query=[], http=True, fd=None):
                                           pulse.utils.gettext ('View all %i files') % len(xmlfiles)))
     else:
         div.add_content (get_activity (doc, xmlfiles))
+
+    cont = pulse.html.ContainerBox()
+    cont.set_title (pulse.utils.gettext ('History'))
+    pad.add_content (cont)
+    revs = db.Revision.select_revisions (branch=doc, filename=True)
+    cnt = revs.count()
+    dl = pulse.html.DefinitionList()
+    cont.add_content (dl)
+    seen = []
+    done = False
+    i = 0
+    while not done:
+        revlist = revs[i : i + 20]
+        for rev in revlist:
+            if rev.revision in seen: continue
+            seen.append (rev.revision)
+            span = pulse.html.Span (divider=pulse.html.SPACE)
+            span.add_content (rev.revision)
+            span.add_content ('on')
+            span.add_content (str(rev.datetime))
+            span.add_content ('by')
+            if not rev.person_id in people_cache:
+                people_cache[rev.person_id] = rev.person
+            person = people_cache[rev.person_id]
+            span.add_content (pulse.html.Link (person))
+            dl.add_term (span)
+            dl.add_entry (pulse.html.RevisionPopupLink (rev.comment))
+            if len(seen) >= 10:
+                done = True
+                break
+        if len(revlist) < 20:
+            break
+        i += 20
 
     # Translations
     box = pulse.html.InfoBox ('translations', pulse.utils.gettext ('Translations'))
@@ -262,6 +300,7 @@ def output_ajax (doc, path, query, http, fd):
 
 def get_activity (doc, xmlfiles):
     cont = pulse.html.ContainerBox()
+    cont.set_title (pulse.utils.gettext ('Files'))
     if len(xmlfiles) > 1:
         cont.set_sortable_class ('actfile')
         cont.add_sort_link ('title', pulse.utils.gettext ('name'), False)
@@ -279,6 +318,10 @@ def get_activity (doc, xmlfiles):
             mspan.add_class ('mtime')
             span.add_content (mspan)
             span.add_content (' by ')
-            span.add_content (pulse.html.Link (commit.person))
+            if not commit.person_id in people_cache:
+                people_cache[commit.person_id] = commit.person
+            person = people_cache[commit.person_id]
+            span.add_content (pulse.html.Link (person))
             lbox.add_fact (None, span)
     return cont
+
