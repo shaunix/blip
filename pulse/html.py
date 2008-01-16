@@ -308,7 +308,7 @@ class Page (Widget, HttpComponent, ContentComponent):
         p (fd, '<div id="body">')
         p (fd, '<h1>')
         if self._icon != None:
-            p (fd, '<img class="icon" src="%s" alt="%s">', (self._icon, self._title), False)
+            p (fd, '<img class="icon" src="%s" alt="%s"> ', (self._icon, self._title), False)
         p (fd, None, self._title)
         p (fd, '</h1>')
         self.output_page_content (fd=fd)

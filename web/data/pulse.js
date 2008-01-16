@@ -144,7 +144,7 @@ function replace_content (id, url) {
 
   var el = document.getElementById (id);
   for (var par = el.parentNode; par; par = par.parentNode) {
-    if (par.className == 'info') {
+    if (par.className == 'info-content') {
       break
     }
   }
