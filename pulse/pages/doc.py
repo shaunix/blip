@@ -117,7 +117,7 @@ def output_doc (doc, path=[], query=[], http=True, fd=None):
     if doc.mod_datetime != None:
         span = pulse.html.Span(divider=pulse.html.SPACE)
         # FIXME: i18n, word order, but we want to link person
-        span.add_content (str(doc.mod_datetime))
+        span.add_content (doc.mod_datetime.strftime('%Y-%m-%d %T'))
         if doc.mod_person != None:
             span.add_content (' by ')
             span.add_content (pulse.html.Link (doc.mod_person))
@@ -197,7 +197,7 @@ def output_doc (doc, path=[], query=[], http=True, fd=None):
             span = pulse.html.Span (divider=pulse.html.SPACE)
             span.add_content (rev.revision)
             span.add_content ('on')
-            span.add_content (str(rev.datetime))
+            span.add_content (rev.datetime.strftime('%Y-%m-%d %T'))
             span.add_content ('by')
             if not rev.person_id in people_cache:
                 people_cache[rev.person_id] = rev.person
@@ -234,7 +234,7 @@ def output_doc (doc, path=[], query=[], http=True, fd=None):
                                                icon='download' ))
         # FIXME: i18n reordering
         linkspan.add_content (pulse.utils.gettext ('(%i messages)') % of.statistic)
-        linkspan.add_content (pulse.utils.gettext ('on %s') % str(of.datetime))
+        linkspan.add_content (pulse.utils.gettext ('on %s') % of.datetime.strftime('%Y-%m-%d %T'))
     except IndexError:
         pad.add_content (pulse.html.AdmonBox (pulse.html.AdmonBox.warning,
                                                pulse.utils.gettext ('No POT file') ))
@@ -317,7 +317,7 @@ def get_activity (doc, xmlfiles):
             span = pulse.html.Span(divider=pulse.html.SPACE)
             # FIXME: i18n, word order, but we want to link person
             mspan = pulse.html.Span()
-            mspan.add_content (str(commit.datetime))
+            mspan.add_content (commit.datetime.strftime('%Y-%m-%d %T'))
             mspan.add_class ('mtime')
             span.add_content (mspan)
             span.add_content (' by ')

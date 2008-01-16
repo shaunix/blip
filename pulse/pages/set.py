@@ -130,7 +130,7 @@ def output_set (set, path=[], query=[], http=True, fd=None):
             if mod.mod_datetime != None:
                 span = pulse.html.Span (divider=pulse.html.SPACE)
                 # FIXME: i18n, word order, but we want to link person
-                span.add_content (pulse.html.Span(str(mod.mod_datetime.date())))
+                span.add_content (pulse.html.Span(mod.mod_datetime.strftime('%Y-%m-%d %T')))
                 span.add_class ('mtime')
                 if mod.mod_person != None:
                     span.add_content (pulse.utils.gettext ('by'))
@@ -224,7 +224,7 @@ def add_more_tabs (set, tabbed, path=[], query=[]):
                     if doc.mod_datetime != None:
                         span = pulse.html.Span (divider=pulse.html.SPACE)
                         # FIXME: i18n, word order, but we want to link person
-                        span.add_content (pulse.html.Span(str(doc.mod_datetime.date())))
+                        span.add_content (pulse.html.Span(doc.mod_datetime.strftime('%Y-%m-%d %T')))
                         span.add_class ('mtime')
                         if doc.mod_person != None:
                             span.add_content (pulse.utils.gettext ('by'))

@@ -120,7 +120,7 @@ def output_branch (branch, path=[], query=[], http=True, fd=None):
     if branch.mod_datetime != None:
         span = pulse.html.Span(divider=pulse.html.SPACE)
         # FIXME: i18n, word order, but we want to link person
-        span.add_content (str(branch.mod_datetime))
+        span.add_content (branch.mod_datetime.strftime('%Y-%m-%d %T'))
         if branch.mod_person != None:
             span.add_content (' by ')
             global people_cache
@@ -177,7 +177,7 @@ def output_branch (branch, path=[], query=[], http=True, fd=None):
         span = pulse.html.Span (divider=pulse.html.SPACE)
         span.add_content (rev.revision)
         span.add_content ('on')
-        span.add_content (str(rev.datetime))
+        span.add_content (rev.datetime.strftime('%Y-%m-%d %T'))
         span.add_content ('by')
         global people_cache
         if not rev.person_id in people_cache:
@@ -281,7 +281,7 @@ def output_branch (branch, path=[], query=[], http=True, fd=None):
                                                        icon='download' ))
                 # FIXME: i18n reordering
                 linkspan.add_content (pulse.utils.gettext ('(%i messages)') % of.statistic)
-                linkspan.add_content (pulse.utils.gettext ('on %s') % str(of.datetime))
+                linkspan.add_content (pulse.utils.gettext ('on %s') % of.datetime.strftime('%Y-%m-%d %T'))
             except IndexError:
                 pad.add_content (pulse.html.AdmonBox (pulse.html.AdmonBox.warning,
                                                        pulse.utils.gettext ('No POT file') ))

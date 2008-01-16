@@ -102,7 +102,7 @@ def output_person (person, path=[], query=[], http=True, fd=None):
         span = pulse.html.Span (divider=pulse.html.SPACE)
         span.add_content (pulse.html.Link (rev.branch.pulse_url, rev.branch.branch_module))
         span.add_content ('on')
-        span.add_content (str(rev.datetime))
+        span.add_content (rev.datetime.strftime('%Y-%m-%d %T'))
         dl.add_term (span)
         comment = rev.comment
         dl.add_entry (pulse.html.RevisionPopupLink (rev.comment))
