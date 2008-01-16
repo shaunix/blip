@@ -194,7 +194,10 @@ def output_branch (branch, path=[], query=[], http=True, fd=None):
     deps = [rel.pred for rel in list(deps)]
     deps = pulse.utils.attrsorted (list(deps), 'scm_module')
     for dep in deps:
-        box.add_link_box (dep.pulse_url, dep.scm_module)
+        div = pulse.html.Div ()
+        link = pulse.html.Link (dep.pulse_url, dep.scm_module)
+        div.add_content (link)
+        box.add_content (div)
 
     # Applications
     apps = branch.select_children ('Application')
