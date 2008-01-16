@@ -704,8 +704,8 @@ class Graph (Widget):
 
     def output (self, fd=sys.stdout):
         if len(self._comments) == 0:
-            p (fd, '<div class="graph"><img src="%s"></div>',
-               '/'.join ([pulse.config.graph_root, self._url]))
+            p (fd, '<div class="graph"><img src="%s%s"></div>',
+               (pulse.config.graph_root, self._url))
         else:
             Graph._count += 1
             p (fd, '<div class="graph" id="graph-%i"><img src="%s%s" usemap="#graphmap%i" ismap>',
