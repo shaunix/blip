@@ -771,12 +771,15 @@ class PopupLink (Widget):
         p (fd, '<a class="plink" href="javascript:plink(\'%i\')">%s</a>',
            (PopupLink._count, self._short))
         p (fd, '<div class="plink" id="plink%i">', PopupLink._count)
-        while self._full[-1] == '\n': self._full = self._full[:-1]
+        while len(self._full) > 0 and self._full[-1] == '\n': self._full = self._full[:-1]
         p (fd, '<pre>%s\n</pre>', self._full)
         p (fd, '</div>')
 
 
 def RevisionPopupLink (comment, **kw):
+    if comment.strip() == '':
+        return AdmonBox (AdmonBox.warning,
+                         pulse.utils.gettext ('No comment'))
     datere = re.compile ('^\d\d\d\d-\d\d-\d\d ')
     colonre = re.compile ('^\* [^:]*:(.*)')
     maybe = ''

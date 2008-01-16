@@ -245,7 +245,7 @@ table.lbox table.facts td.fact-key { padding: 0 1em 0 0; }
 table.lbox table.facts td.fact-val { padding: 0 1em 0 0; }
 
 .admon { font-style: italic; }
-.admon img { vertical-align: middle; }
+.admon img { vertical-align: -10%; }
 
 .tabbed {
   margin: 1em 0 1em 0;
