@@ -154,18 +154,16 @@ td.col-first { padding: 0; }
 
 .grid-td { padding: 0 0 0 1em; }
 
-.info {
-  border: solid 1px #d3d7cf;
-  margin: 1em 0 1em 0;
+.info { margin: 1em 0 1em 0; }
+.info-title { color: #555753; font-weight: bold; padding: 0 0 0.2em 0; }
+.info-content { padding: 0.5em;
+  border-top: solid 1px #888a85;
+  border-left: solid 1px #eeeeec;
+  border-right: solid 1px #eeeeec;
+  border-bottom: solid 8px #eeeeec;
+  -moz-border-radius-bottomleft: 6px;
+  -moz-border-radius-bottomright: 6px;
 }
-.info-title {
-  background-color: #729fcf;
-  color: white;
-  font-weight: bold;
-  padding: 0.2em 0.5em 0.2em 0.5em;
-  border-bottom: solid 1px #d3d7cf;
-}
-.info-content { padding: 0.5em; }
 .infomask {
   text-align: center;
   font-weight: bold;
@@ -175,6 +173,8 @@ td.col-first { padding: 0; }
   color: #eeeeec;
   opacity: 0.6;
   margin: 1em 0 1em 0;
+  -moz-border-radius-bottomleft: 6px;
+  -moz-border-radius-bottomright: 6px;
 }
 
 table.lbox { margin: 0.2em 0 0.2em 0; width: 100%;}
@@ -187,14 +187,14 @@ div.lbox-desc {
 }
 td.lbox-graph { vertical-align: top; text-align: right; }
 
-div.exp-title { color: black; }
-div.exp-title a { color: black; }
+div.exp-title { color: #555753; font-weight: bold; }
+div.exp-title a { color: #555753; }
 div.exp-title img { vertical-align: -10%; }
 div.exp-content { padding-left: 1em; }
 div.exp-hidden { display: none; }
 div.exp-title table { width: 100%; }
 
-div.slinks { text-align: right; color: #555753; padding-right: 2em; }
+div.slinks { text-align: right; color: #555753; padding-right: 2em; font-weight: normal; }
 span.slinks { background-color: #eeeeec; padding: 0 0.5em 0 0.5em; }
 div.slinks a.slink { color: #204a87; }
 div.slinksmask {
@@ -214,7 +214,7 @@ div.plink {
 }
 div.plink pre {
   padding: 1em;
-  border: solid 2px #729fcf;
+  border: solid 1px #555753;
   color: #000000;
 }
 
@@ -280,7 +280,7 @@ span.elliplnk {
 }
 span.elliptxt { display: none; }
 
-.pad { margin-top: 1em !important; }
+.pad { margin-top: 1em; }
 
 .po { background-color: #eeeeec; }
 .po80 { background-color: #d9ebff; }
