@@ -182,7 +182,7 @@ def update_branch (branch, update=True, timestamps=True, history=True):
 
 def check_history (branch, checkout):
     pulse.utils.log ('Checking history for %s' % branch.ident)
-    since = db.Revision.get_last_revision (branch, None)
+    since = db.Revision.get_last_revision (branch=branch, filename=None)
     if since != None:
         since = since.revision
     serverid = '.'.join (pulse.scm.server_name (checkout.scm_type, checkout.scm_server).split('.')[-2:])
@@ -193,7 +193,7 @@ def check_history (branch, checkout):
                            revision=hist['revision'], datetime=hist['date'], comment=hist['comment'])
         rev.save()
 
-    revision = db.Revision.get_last_revision (branch, None)
+    revision = db.Revision.get_last_revision (branch=branch, filename=None)
     if revision != None:
         branch.mod_datetime = revision.datetime
         branch.mod_person = revision.person

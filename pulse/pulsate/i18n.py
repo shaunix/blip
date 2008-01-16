@@ -195,7 +195,7 @@ def do_history (po, checkout, **kw):
             pulse.utils.warn ('Skipping history for %s' % rel_scm)
             return
     pulse.utils.log ('Checking history for %s' % rel_scm)
-    since = db.Revision.get_last_revision (po, po.scm_file)
+    since = db.Revision.get_last_revision (branch=po, filename=po.scm_file)
     if since != None:
         since = since.revision
     serverid = '.'.join (pulse.scm.server_name (checkout.scm_type, checkout.scm_server).split('.')[-2:])

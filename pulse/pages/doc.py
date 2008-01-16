@@ -270,7 +270,7 @@ def get_activity (doc, xmlfiles):
         lbox = cont.add_link_box (None, xmlfile)
         lbox.add_class ('actfile')
         lbox.set_show_icon (False)
-        commit = db.Revision.get_last_revision (doc, xmlfile)
+        commit = db.Revision.get_last_revision (branch=doc, filename=xmlfile)
         if commit != None:
             span = pulse.html.Span(divider=pulse.html.SPACE)
             # FIXME: i18n, word order, but we want to link person

@@ -708,8 +708,8 @@ class Graph (Widget):
                '/'.join ([pulse.config.graph_root, self._url]))
         else:
             Graph._count += 1
-            p (fd, '<div class="graph" id="graph-%i"><img src="%s" usemap="#graphmap%i" ismap>',
-               (Graph._count, '/'.join ([pulse.config.graph_root, self._url]), Graph._count))
+            p (fd, '<div class="graph" id="graph-%i"><img src="%s%s" usemap="#graphmap%i" ismap>',
+               (Graph._count, pulse.config.graph_root, self._url, Graph._count))
             p (fd, '<map name="graphmap%i">', Graph._count)
             i = 0
             for comment in self._comments:

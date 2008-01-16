@@ -93,7 +93,7 @@ def update_gdu_docbook (doc, **kw):
         if kw.get('history', True):
             fullname = os.path.join (makedir, 'C', fname)
             rel_ch = pulse.utils.relative_path (fullname, checkout.directory)
-            since = db.Revision.get_last_revision (doc, fname)
+            since = db.Revision.get_last_revision (branch=doc, filename=fname)
             if since != None:
                 since = since.revision
             serverid = '.'.join (pulse.scm.server_name (checkout.scm_type, checkout.scm_server).split('.')[-2:])
@@ -103,7 +103,7 @@ def update_gdu_docbook (doc, **kw):
                 rev = db.Revision (branch=doc, person=pers, filename=fname, filetype='xml',
                                    revision=hist['revision'], datetime=hist['date'], comment=hist['comment'])
                 rev.save()
-    revision = db.Revision.get_last_revision (doc, False)
+    revision = db.Revision.get_last_revision (branch=doc, filename=False)
     if revision != None:
         data['mod_datetime'] = revision.datetime
         data['mod_person'] = revision.person

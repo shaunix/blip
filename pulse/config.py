@@ -82,7 +82,7 @@ files_root = web_root + 'files/'
 # files_root = 'http://localhost/files/'
 
 # The root URL for generated graphs
-graph_root = files_root + 'graph/'
+graph_root = files_root + 'graphs/'
 
 # The root URL for generated icons
 icons_root = files_root + 'icons/'
