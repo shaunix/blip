@@ -671,21 +671,24 @@ class DefinitionList (Widget):
         self._id = kw.get('id', None)
         self._all = []
 
-    def add_term (self, term):
-        self._all.append (('dt', term))
+    def add_term (self, term, class_name=None):
+        self._all.append (('dt', term, class_name))
 
-    def add_entry (self, entry):
-        self._all.append (('dd', entry))
+    def add_entry (self, entry, class_name=None):
+        self._all.append (('dd', entry, class_name))
         
     def output (self, fd=sys.stdout):
         if self._id != None:
             p (fd, '<dl id="%s">', self._id)
         else:
             p (fd, '<dl>')
-        for d in self._all:
-            p (fd, '<%s>' % d[0])
-            p (fd, None, d[1])
-            p (fd, '</%s>' % d[0])
+        for tag, content, cname in self._all:
+            if cname != None:
+                p (fd, '<%s class="%%s">' % tag, cname)
+            else:
+                p (fd, '<%s>' % tag)
+            p (fd, None, content)
+            p (fd, '</%s>' % tag)
         p (fd, '</dl>')
 
 

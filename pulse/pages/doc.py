@@ -301,14 +301,17 @@ def output_ajax (doc, path, query, http, fd):
 def get_activity (doc, xmlfiles):
     cont = pulse.html.ContainerBox()
     cont.set_title (pulse.utils.gettext ('Files'))
+    dl = pulse.html.DefinitionList()
+    cont.add_content (dl)
     if len(xmlfiles) > 1:
+        cont.set_sortable_tag ('dt')
         cont.set_sortable_class ('actfile')
         cont.add_sort_link ('title', pulse.utils.gettext ('name'), False)
         cont.add_sort_link ('mtime', pulse.utils.gettext ('modified'))
     for xmlfile in xmlfiles:
-        lbox = cont.add_link_box (None, xmlfile)
-        lbox.add_class ('actfile')
-        lbox.set_show_icon (False)
+        span = pulse.html.Span (xmlfile)
+        span.add_class ('title')
+        dl.add_term (span, class_name='actfile')
         commit = db.Revision.get_last_revision (branch=doc, filename=xmlfile)
         if commit != None:
             span = pulse.html.Span(divider=pulse.html.SPACE)
@@ -322,6 +325,6 @@ def get_activity (doc, xmlfiles):
                 people_cache[commit.person_id] = commit.person
             person = people_cache[commit.person_id]
             span.add_content (pulse.html.Link (person))
-            lbox.add_fact (None, span)
+            dl.add_entry (span)
     return cont
 

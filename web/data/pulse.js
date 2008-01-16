@@ -175,10 +175,11 @@ function replace_content (id, url) {
   httpreq.send(null);
 }
 
-function KeyedThing (key, title, thing) {
+function KeyedThing (key, title, thing, extras) {
   this.key = key;
   this.title = title;
   this.thing = thing;
+  this.extras = extras;
 }
 intre = /^-?\d+%?$/;
 function lowercmp (s1, s2) {
@@ -228,18 +229,38 @@ function sort (tag, cls, key) {
   for (var i = 0; i < els.length; i++) {
     el = els[i];
     if (has_class (el, cls)) {
-      var spans = el.getElementsByTagName ('span');
+      var extras = [];
+      if (tag == 'dt') {
+        dd = el.nextSibling;
+        while (dd) {
+          if (dd.nodeType == 1) {
+            if (dd.tagName == 'DD') {
+              extras.push (dd);
+            } else {
+              break;
+            }
+          }
+          dd = dd.nextSibling;
+      }}
+
       var el_key = null;
       var el_title = null;
-      for (var k = 0; k < spans.length; k++) {
-        if (has_class (spans[k], key)) {
-          el_key = spans[k].innerHTML;
-          break;
-        }
-        else if (has_class (spans[k], 'title')) {
-          el_title = spans[k].innerHTML;
+      var these = Array.concat ([el], extras);
+      for (var j = 0; j < these.length; j++) {
+        var thisel = these[j];
+        var spans = thisel.getElementsByTagName ('span');
+
+        for (var k = 0; k < spans.length; k++) {
+          if (has_class (spans[k], key)) {
+            el_key = spans[k].innerHTML;
+            break;
+          }
+          else if (has_class (spans[k], 'title')) {
+            el_title = spans[k].innerHTML;
+          }
         }
       }
+
       if (el_key == null) {
         el.className = el.className + ' nokey';
       }
@@ -253,7 +274,7 @@ function sort (tag, cls, key) {
         }
         el.className = newcls.join(' ');
       }
-      keyed = new KeyedThing (el_key, el_title, el);
+      keyed = new KeyedThing (el_key, el_title, el, extras);
       things.push (keyed);
     }
   }
@@ -261,11 +282,18 @@ function sort (tag, cls, key) {
   for (var i = 0; i < things.length; i++) {
     dummy = document.createElement (tag);
     dummies.push (dummy);
+    for (var j = 0; j < things[i].extras.length; j++) {
+      var ex = things[i].extras[j];
+      ex.parentNode.removeChild (ex);
+    }
     things[i].thing.parentNode.replaceChild (dummy, things[i].thing);
   }
   things.sort (keycmp);
   for (var i = 0; i < things.length; i++) {
     dummies[i].parentNode.replaceChild (things[i].thing, dummies[i]);
+    for (var j = 0; j < things[i].extras.length; j++) {
+      things[i].thing.parentNode.insertBefore (things[i].extras[j], things[i].thing.nextSibling);
+    }
   }
   td = document.getElementById ('slink-' + cls);
   for (var i = 0; i < td.childNodes.length; i++) {
