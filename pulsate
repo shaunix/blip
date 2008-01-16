@@ -124,7 +124,7 @@ if __name__ == "__main__":
     else:
         retcode = mod.main (argv[1:])
 
-    if pulse.config.debug_db:
+    if getattr (pulse.config, 'debug_db', False):
         print ('%i SELECT statements in %.3f seconds' %
                (pulse.models.debug_select_count, pulse.models.debug_select_time))
 
