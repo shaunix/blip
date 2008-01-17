@@ -178,6 +178,7 @@ def add_set_entries (set, dl):
               ('Domain', pulse.utils.gettext ('%i domains'), 'i18n'),
               ('Application', pulse.utils.gettext ('%i applications'), 'app'),
               ('Library', pulse.utils.gettext ('%i libraries'), 'lib'),
+              ('Capplet', pulse.utils.gettext ('%i capplets'), 'capplet'),
               ('Applet', pulse.utils.gettext ('%i applets'), 'applet')
               )
     for type, txt, ext in things:
@@ -243,6 +244,7 @@ def add_more_tabs (set, tabbed, path=[], query=[]):
     things = (('Domain', pulse.utils.gettext ('Domains (%i)'), 'i18n'),
               ('Application', pulse.utils.gettext ('Applications (%i)'), 'app'),
               ('Library', pulse.utils.gettext ('Libraries (%i)'), 'lib'),
+              ('Capplet', pulse.utils.gettext ('Capplets (%i)'), 'capplet'),
               ('Applet', pulse.utils.gettext ('Applets (%i)'), 'applet')
               )
     for type, txt, ext in things:

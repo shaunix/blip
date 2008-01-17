@@ -141,6 +141,7 @@ def update_branch (branch, update=True, timestamps=True, history=True):
     branch.set_children ('Library', libraries)
 
     applications = []
+    capplets = []
     for keyfile in keyfiles:
         try:
             app = process_keyfile (branch, checkout, keyfile, images=images, timestamps=timestamps)
@@ -149,11 +150,15 @@ def update_branch (branch, update=True, timestamps=True, history=True):
             raise
             app = None
         if app != None:
-            if default_child == None:
-                if app.ident.split('/')[-2] == branch.scm_module:
-                    default_child = app
-            applications.append (app)
+            if app.type == 'Application':
+                if default_child == None:
+                    if app.ident.split('/')[-2] == branch.scm_module:
+                        default_child = app
+                applications.append (app)
+            elif app.type == 'Capplet':
+                capplets.append (app)
     branch.set_children ('Application', applications)
+    branch.set_children ('Capplet', capplets)
 
     applets = []
     for oafserver in oafservers:
@@ -529,7 +534,13 @@ def process_keyfile (branch, checkout, filename, **kw):
     else:
         desc = None
 
-    app = db.Branch.get_record (ident, 'Application')
+    type = 'Application'
+    if keyfile.has_key ('Desktop Entry', 'Categories'):
+        cats = keyfile.get_value ('Desktop Entry', 'Categories')
+        if 'Settings' in cats.split(';'):
+            type = 'Capplet'
+
+    app = db.Branch.get_record (ident, type)
 
     data = {}
     for key in ('scm_type', 'scm_server', 'scm_module', 'scm_branch', 'scm_path'):

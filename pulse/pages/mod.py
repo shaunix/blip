@@ -214,6 +214,21 @@ def output_branch (branch, path=[], query=[], http=True, fd=None):
             except IndexError:
                 pass
 
+    # Capplets
+    capps = branch.select_children ('Capplet')
+    capps = pulse.utils.attrsorted (list(capps), 'title')
+    if len(capps) > 0:
+        box = pulse.html.InfoBox ('capplets', pulse.utils.gettext ('Capplets'))
+        columns.add_to_column (1, box)
+        for capp in capps:
+            lbox = box.add_link_box (capp)
+            doc = db.Documentation.get_related (subj=app)
+            try:
+                doc = doc[0]
+                lbox.add_fact (pulse.utils.gettext ('Documentaion'), doc.pred)
+            except IndexError:
+                pass
+
     # Applets
     applets = branch.select_children ('Applet')
     applets = pulse.utils.attrsorted (list(applets), 'title')
