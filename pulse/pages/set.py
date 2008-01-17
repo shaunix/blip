@@ -176,9 +176,9 @@ def add_set_entries (set, dl):
 
     things = (('Document', pulse.utils.gettext ('%i documents'), 'doc'),
               ('Domain', pulse.utils.gettext ('%i domains'), 'i18n'),
-              ('Library', pulse.utils.gettext ('%i libraries'), 'lib'),
               (('Application', 'Capplet', 'Applet'),
-               pulse.utils.gettext ('%i programs'), 'prog')
+               pulse.utils.gettext ('%i programs'), 'prog'),
+              ('Library', pulse.utils.gettext ('%i libraries'), 'lib')
               )
     for typ, txt, ext in things:
         if isinstance (typ, tuple):
@@ -202,16 +202,16 @@ def add_more_tabs (set, tabbed, path=[], query=[]):
               { 'types'  : 'Domain',
                 'tabtxt' : pulse.utils.gettext ('Domains (%i)'),
                 'tabext' : 'i18n' },
-              { 'types'  : 'Library',
-                'tabtxt' : pulse.utils.gettext ('Libraries (%i)'),
-                'tabext' : 'lib' },
               { 'types'  : ('Application', 'Capplet', 'Applet'),
                 'tabtxt' : pulse.utils.gettext ('Programs (%i)'),
                 'txts'   : (pulse.utils.gettext ('Applications (%i)'),
                             pulse.utils.gettext ('Capplets (%i)'),
                             pulse.utils.gettext ('Applets (%i)')),
                 'tabext' : 'prog',
-                'exts'   : ('prog', 'app', 'capplet', 'applet') }
+                'exts'   : ('prog', 'app', 'capplet', 'applet') },
+              { 'types'  : 'Library',
+                'tabtxt' : pulse.utils.gettext ('Libraries (%i)'),
+                'tabext' : 'lib' }
               )
     for d in things:
         types = d['types']
