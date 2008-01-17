@@ -176,13 +176,15 @@ def add_set_entries (set, dl):
 
     things = (('Document', pulse.utils.gettext ('%i documents'), 'doc'),
               ('Domain', pulse.utils.gettext ('%i domains'), 'i18n'),
-              ('Application', pulse.utils.gettext ('%i applications'), 'app'),
               ('Library', pulse.utils.gettext ('%i libraries'), 'lib'),
-              ('Capplet', pulse.utils.gettext ('%i capplets'), 'capplet'),
-              ('Applet', pulse.utils.gettext ('%i applets'), 'applet')
+              (('Application', 'Capplet', 'Applet'),
+               pulse.utils.gettext ('%i programs'), 'prog')
               )
-    for type, txt, ext in things:
-        cnt = db.Branch.objects.filter (type=type, parent__set_module_subjs__subj=set)
+    for typ, txt, ext in things:
+        if isinstance (typ, tuple):
+            cnt = db.Branch.objects.filter (type__in=typ, parent__set_module_subjs__subj=set)
+        else:
+            cnt = db.Branch.objects.filter (type=typ, parent__set_module_subjs__subj=set)
         cnt = cnt.count()
         if cnt > 0:
             dl.add_entry (pulse.html.Link (set.pulse_url + '/' + ext, txt % cnt))
@@ -242,66 +244,101 @@ def add_more_tabs (set, tabbed, path=[], query=[]):
                         'Documents (%i)' % docs.count())
 
     things = (('Domain', pulse.utils.gettext ('Domains (%i)'), 'i18n'),
-              ('Application', pulse.utils.gettext ('Applications (%i)'), 'app'),
               ('Library', pulse.utils.gettext ('Libraries (%i)'), 'lib'),
-              ('Capplet', pulse.utils.gettext ('Capplets (%i)'), 'capplet'),
-              ('Applet', pulse.utils.gettext ('Applets (%i)'), 'applet')
+              (('Application', 'Capplet', 'Applet'),
+               (pulse.utils.gettext ('Programs (%i)'),
+                pulse.utils.gettext ('Applications (%i)'),
+                pulse.utils.gettext ('Capplets (%i)'),
+                pulse.utils.gettext ('Applets (%i)')),
+                ('prog', 'app', 'capplet', 'applet'))
               )
-    for type, txt, ext in things:
-        objs = db.Branch.objects.filter (type=type, parent__set_module_subjs__subj=set)
-        if len(path) > 2 and path[2] == ext:
-            objs = pulse.utils.attrsorted (list(objs), 'title', 'scm_module')
-            cont = pulse.html.ContainerBox ()
-            cont.set_columns (2)
-            slink_mtime = False
-            slink_documentation = False
-            slink_messages = False
-            tabbed.add_tab (True, txt % len(objs))
-            tabbed.add_content (cont)
-            for i in range(len(objs)):
-                obj = objs[i]
-                lbox = cont.add_link_box (obj)
-                span = pulse.html.Span (obj.branch_module)
-                span.add_class ('module')
-                url = obj.ident.split('/')
-                url = '/'.join(['mod'] + url[2:4] + [url[5]])
-                url = pulse.config.web_root + url
-                lbox.add_fact ('module', pulse.html.Link (url, span))
-                docs = db.Documentation.get_related (subj=obj)
-                for doc in docs:
-                    # FIXME: multiple docs look bad and sort poorly
-                    doc = doc.pred
-                    span = pulse.html.Span(doc.title)
-                    span.add_class ('docs')
-                    lbox.add_fact (pulse.utils.gettext ('docs'),
-                                   pulse.html.Link (doc.pulse_url, span))
-                    slink_documentation = True
-                if type == 'Domain':
-                    potlst = obj.ident.split('/')[1:]
-                    if obj.scm_dir == 'po':
-                        potlst.append (obj.scm_module + '.pot')
-                    else:
-                        potlst.append (obj.scm_dir + '.pot')
-                    potfile = os.path.join (*potlst)
-                    of = db.OutputFile.objects.filter (type='l10n', filename=potfile)
-                    try:
-                        of = of[0]
-                        span = pulse.html.Span (str(of.statistic))
-                        span.add_class ('messages')
-                        lbox.add_fact ('messages', span)
-                        slink_messages = True
-                    except IndexError:
-                        pass
-            cont.add_sort_link ('title', pulse.utils.gettext ('title'), False)
-            cont.add_sort_link ('module', pulse.utils.gettext ('module'))
-            if slink_mtime:
-                cont.add_sort_link ('mtime', pulse.utils.gettext ('modified'))
-            if slink_documentation:
-                cont.add_sort_link ('docs', pulse.utils.gettext ('docs'))
-            if slink_messages:
-                cont.add_sort_link ('messages', pulse.utils.gettext ('messages'))
+    for typ, txt, ext in things:
+        if isinstance (typ, tuple):
+            tabext = ext[0]
         else:
+            tabext = ext
+        if len(path) > 2 and path[2] == tabext:
+            if isinstance (typ, tuple):
+                pad = pulse.html.PaddingBox()
+                tabbed.add_content (pad)
+                tabtxt = txt[0]
+                sections = []
+                for i in range(len(typ)):
+                    objs = db.Branch.objects.filter (type=typ[i], parent__set_module_subjs__subj=set)
+                    objs = pulse.utils.attrsorted (list(objs), 'title')
+                    cont = pulse.html.ContainerBox (id=ext[i+1],
+                                                    title=txt[i+1] % len(objs))
+                    cont.set_columns (2)
+                    pad.add_content (cont)
+                    sections.append ((objs, cont))
+            else:
+                objs = db.Branch.objects.filter (type=typ, parent__set_module_subjs__subj=set)
+                objs = pulse.utils.attrsorted (list(objs), 'title')
+                cont = pulse.html.ContainerBox ()
+                cont.set_columns (2)
+                tabbed.add_content (cont)
+                tabtxt = txt
+                sections = [(objs, cont)]
+
+            total = 0
+            for objs, cont in sections:
+                total += len(objs)
+                slink_mtime = False
+                slink_documentation = False
+                slink_messages = False
+                for i in range(len(objs)):
+                    obj = objs[i]
+                    lbox = cont.add_link_box (obj)
+                    span = pulse.html.Span (obj.branch_module)
+                    span.add_class ('module')
+                    url = obj.ident.split('/')
+                    url = '/'.join(['mod'] + url[2:4] + [url[5]])
+                    url = pulse.config.web_root + url
+                    lbox.add_fact ('module', pulse.html.Link (url, span))
+                    docs = db.Documentation.get_related (subj=obj)
+                    for doc in docs:
+                        # FIXME: multiple docs look bad and sort poorly
+                        doc = doc.pred
+                        span = pulse.html.Span(doc.title)
+                        span.add_class ('docs')
+                        lbox.add_fact (pulse.utils.gettext ('docs'),
+                                       pulse.html.Link (doc.pulse_url, span))
+                        slink_documentation = True
+                    if typ == 'Domain':
+                        potlst = obj.ident.split('/')[1:]
+                        if obj.scm_dir == 'po':
+                            potlst.append (obj.scm_module + '.pot')
+                        else:
+                            potlst.append (obj.scm_dir + '.pot')
+                        potfile = os.path.join (*potlst)
+                        of = db.OutputFile.objects.filter (type='l10n', filename=potfile)
+                        try:
+                            of = of[0]
+                            span = pulse.html.Span (str(of.statistic))
+                            span.add_class ('messages')
+                            lbox.add_fact ('messages', span)
+                            slink_messages = True
+                        except IndexError:
+                            pass
+                cont.add_sort_link ('title', pulse.utils.gettext ('title'), False)
+                cont.add_sort_link ('module', pulse.utils.gettext ('module'))
+                if slink_mtime:
+                    cont.add_sort_link ('mtime', pulse.utils.gettext ('modified'))
+                if slink_documentation:
+                    cont.add_sort_link ('docs', pulse.utils.gettext ('docs'))
+                if slink_messages:
+                    cont.add_sort_link ('messages', pulse.utils.gettext ('messages'))
+            tabbed.add_tab (True, tabtxt % total)
+        else:
+            if isinstance (typ, tuple):
+                tabtxt = txt[0]
+                tabext = ext[0]
+                objs = db.Branch.objects.filter (type__in=typ, parent__set_module_subjs__subj=set)
+            else:
+                tabtxt = txt
+                tabext = ext
+                objs = db.Branch.objects.filter (type=typ, parent__set_module_subjs__subj=set)
             cnt = objs.count()
             if cnt > 0:
-                tabbed.add_tab (set.pulse_url + '/' + ext,
-                                txt % cnt)
+                tabbed.add_tab (set.pulse_url + '/' + tabext,
+                                tabtxt % cnt)
