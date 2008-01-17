@@ -7,7 +7,6 @@ sys.path.append ('/home/shaunm/Projects/pulse')
 import cgi
 
 import pulse.config
-import pulse.html
 import pulse.pages
 import pulse.utils
 
@@ -28,6 +27,14 @@ def main ():
             pulse.config.debug_db = True
         elif opt == '--webroot':
             pulse.config.webroot = arg
+
+    # If we're not using the debugging, just turn off Django's DEBUG
+    # setting.  This is set to True in pulse.config, because logging
+    # in Pulse piggybacks off Django's debug system.  But that's just
+    # wasted CPU cycles when we're making pages for the outside world.
+    if not getattr (pulse.config, 'debug_db', False):
+        pulse.config.DEBUG = False
+
     if len(args) > 0:
         http = False
         pathInfo = args[0]
@@ -58,11 +65,15 @@ def main ():
     else:
         query = {}
 
+    # It's important that we don't do this at the top, because this
+    # will cause pulse.models to be imported, and we have to be able
+    # to set pulse.config.DEBUG to False before that.
+    import pulse.html as html
     retcode = 0
     if len (path) == 0:
-        page = pulse.html.Page (http=http)
+        page = html.Page (http=http)
         page.set_title (pulse.utils.gettext ('Pulse'))
-        lcont = pulse.html.LinkBoxContainer()
+        lcont = html.LinkBoxContainer()
         page.add_content (lcont)
         for type in pulse.pages.__all__:
             mod = pulse.utils.import_ ('pulse.pages.' + type)
@@ -80,7 +91,7 @@ def main ():
             except:
                 kw = {'http': http}
                 kw['title'] = pulse.utils.gettext ('Bad Monkeys')
-                page = pulse.html.PageError (pulse.utils.gettext (
+                page = html.PageError (pulse.utils.gettext (
                     'Pulse does not know how to construct this page.  This is' +
                     ' probably because some naughty little monkeys didn\'t finish' +
                     ' their programming assignment.'))
