@@ -58,6 +58,9 @@ web_icons_dir = os.path.join (web_files_dir, 'icons')
 # The directory where Pulse puts POT files
 web_l10n_dir = os.path.join (web_files_dir, 'l10n')
 
+# The directory where Pulse puts screenshots
+web_screens_dir = os.path.join (web_files_dir, 'screens')
+
 
 ################################################################################
 ## Web roots
@@ -89,6 +92,9 @@ icons_root = files_root + 'icons/'
 
 # The root URL for generated POT files
 l10n_root = files_root + 'l10n/'
+
+# The root URL for screenshots
+screens_root = files_root + 'screens/'
 
 
 ################################################################################

@@ -110,7 +110,6 @@ class FactsComponent (Component):
     """
     def __init__ (self, **kw):
         super (FactsComponent, self).__init__ (**kw)
-        self._divs = []
         self._facts = []
 
     def add_fact (self, label, content, **kw):
@@ -276,12 +275,22 @@ class Page (Widget, HttpComponent, ContentComponent):
         super (Page, self).__init__ (**kw)
         self._title = kw.get ('title')
         self._icon = kw.get ('icon')
+        self._screenshot_thumb = None
+        self._screenshot_tw = None
+        self._screenshot_th = None
+        self._screenshot_url = None
 
     def set_title (self, title):
         self._title = title
 
     def set_icon (self, icon):
         self._icon = icon
+
+    def add_screenshot (self, thumb, tw, th, url):
+        self._screenshot_thumb = thumb
+        self._screenshot_tw = tw
+        self._screenshot_th = th
+        self._screenshot_url = url
 
     def output (self, fd=sys.stdout):
         HttpComponent.output (self, fd=fd)
@@ -311,6 +320,17 @@ class Page (Widget, HttpComponent, ContentComponent):
             p (fd, '<img class="icon" src="%s" alt="%s"> ', (self._icon, self._title), False)
         p (fd, None, self._title)
         p (fd, '</h1>')
+        if self._screenshot_thumb != None:
+            p (fd, '<div class="screenshot">', None, False)
+            if self._screenshot_url != None:
+                p (fd, '<a href="%s%s">', (pulse.config.screens_root, self._screenshot_url), False)
+            p (fd, '<img src="%s%s" width="%i" height="%i">',
+               (pulse.config.screens_root, self._screenshot_thumb,
+                self._screenshot_tw, self._screenshot_th))
+            if self._screenshot_url != None:
+                p (fd, '</a>', None, False)
+            p (fd, '</div>')
+        
         self.output_page_content (fd=fd)
         p (fd, '</div></body></html>')
         

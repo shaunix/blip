@@ -696,6 +696,6 @@ class OutputFile (models.Model):
 
     type = models.CharField (maxlength=80)
     filename = models.CharField (maxlength=200)
-    statistic = models.IntegerField ()
+    statistic = models.IntegerField (default=0)
     datetime = models.DateTimeField ()
     data = PickleField ()

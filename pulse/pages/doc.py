@@ -92,6 +92,16 @@ def output_doc (doc, path=[], query=[], http=True, fd=None):
             else:
                 page.add_sublink (None, b.ident.split('/')[-1])
 
+    # FIXME: i18n
+    fname = doc.ident[1:] + '/C.png'
+    tname = doc.ident[1:] + '/t_C.png'
+    of = db.OutputFile.objects.filter (filename=fname, type='screens')
+    try:
+        of = of[0]
+        page.add_screenshot (tname, of.data['twidth'], of.data['theight'], fname)
+    except IndexError:
+        pass
+
     sep = False
     try:
         desc = doc.localized_desc

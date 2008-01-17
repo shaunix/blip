@@ -33,7 +33,8 @@ def main (argv, options={}):
     for dir in (pulse.config.scratch_dir,
                 pulse.config.web_graphs_dir,
                 pulse.config.web_icons_dir,
-                pulse.config.web_l10n_dir):
+                pulse.config.web_l10n_dir,
+                pulse.config.web_screens_dir):
         if not os.path.exists (dir):
             os.makedirs (dir)
     django.core.management.syncdb (0, False)
