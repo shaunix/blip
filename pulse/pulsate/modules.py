@@ -33,20 +33,25 @@ import pulse.scm
 import pulse.parsers
 import pulse.utils
 
+import pulse.pulsate.docs
+import pulse.pulsate.i18n
+
 synop = 'update information from module and branch checkouts'
 usage_extra = '[ident]'
 args = pulse.utils.odict()
 args['no-history'] = (None, 'do not check SCM history')
 args['no-timestamps'] = (None, 'do not check timestamps before processing files')
 args['no-update']  = (None, 'do not update SCM checkouts')
+args['no-docs'] = (None, 'do not update the documentation')
+args['no-i18n'] = (None, 'do not update the translations')
 def help_extra (fd=None):
     print >>fd, 'If ident is passed, only modules and branches with a matching identifier will be updated.'
 
 
-def update_branch (branch, update=True, timestamps=True, history=True):
-    checkout = pulse.scm.Checkout.from_record (branch, update=update)
+def update_branch (branch, **kw):
+    checkout = pulse.scm.Checkout.from_record (branch, update=kw.get('update', True))
 
-    if history:
+    if kw.get('history', True):
         check_history (branch, checkout)
 
     pulse.utils.log ('Creating commit graph for %s' % branch.ident)
@@ -107,35 +112,38 @@ def update_branch (branch, update=True, timestamps=True, history=True):
                             gtk_docs.append((dirname, makefile))
     os.path.walk (checkout.directory, visit, None)
 
-    process_configure (branch, checkout, timestamps=timestamps)
+    process_configure (branch, checkout, **kw)
     if branch.name == {}:
         branch.name = {'C' : branch.scm_module}
 
-    process_maintainers (branch, checkout, timestamps=timestamps)
+    process_maintainers (branch, checkout, **kw)
 
     domains = []
     for podir in podirs:
-        domain = process_podir (branch, checkout, podir, timestamps=timestamps)
+        domain = process_podir (branch, checkout, podir, **kw)
         if domain != None:
             domains.append (domain)
     branch.set_children ('Domain', domains)
 
     documents = []
     for docdir, makefile in gdu_docs:
-        document = process_gdu_docdir (branch, checkout, docdir, makefile, timestamps=timestamps)
+        document = process_gdu_docdir (branch, checkout, docdir, makefile, **kw)
         if document != None:
             documents.append (document)
     for docdir, makefile in gtk_docs:
-        document = process_gtk_docdir (branch, checkout, docdir, makefile, timestamps=timestamps)
+        document = process_gtk_docdir (branch, checkout, docdir, makefile, **kw)
         if document != None:
             documents.append (document)
     branch.set_children ('Document', documents)
+    if kw.get('do_docs', True):
+        for doc in documents:
+            pulse.pulsate.docs.update_document (doc, checkout=checkout, **kw)
 
     default_child = None
 
     libraries = []
     for pkgconfig in pkgconfigs:
-        lib = process_pkgconfig (branch, checkout, pkgconfig, timestamps=timestamps)
+        lib = process_pkgconfig (branch, checkout, pkgconfig, **kw)
         if lib != None:
             libraries.append (lib)
     branch.set_children ('Library', libraries)
@@ -144,7 +152,7 @@ def update_branch (branch, update=True, timestamps=True, history=True):
     capplets = []
     for keyfile in keyfiles:
         try:
-            app = process_keyfile (branch, checkout, keyfile, images=images, timestamps=timestamps)
+            app = process_keyfile (branch, checkout, keyfile, images=images, **kw)
         except:
             # FIXME: log something
             raise
@@ -162,7 +170,7 @@ def update_branch (branch, update=True, timestamps=True, history=True):
 
     applets = []
     for oafserver in oafservers:
-        applets += process_oafserver (branch, checkout, oafserver, images=images, timestamps=timestamps)
+        applets += process_oafserver (branch, checkout, oafserver, images=images, **kw)
     branch.set_children ('Applet', applets)
 
     if default_child == None:
@@ -369,6 +377,9 @@ def process_podir (branch, checkout, podir, **kw):
         translation.update (ldata)
         translation.save()
     domain.set_children ('Translation', translations)
+    if kw.get('do_i18n', True):
+        for po in translations:
+            pulse.pulsate.i18n.update_intltool (po, checkout=checkout, **kw)
 
     db.Timestamp.set_timestamp (rel_scm, mtime)
 
@@ -390,8 +401,8 @@ def process_gdu_docdir (branch, checkout, docdir, makefile, **kw):
     data['scm_file'] = doc_module + '.xml'
     document.update (data)
 
+    translations = []
     if makefile.has_key ('DOC_LINGUAS'):
-        translations = []
         for lang in makefile['DOC_LINGUAS'].split():
             lident = '/l10n/' + lang + document.ident
             translation = db.Branch.get_record (lident, 'Translation')
@@ -407,6 +418,11 @@ def process_gdu_docdir (branch, checkout, docdir, makefile, **kw):
         document.set_children ('Translation', translations)
 
     document.save()
+
+    if kw.get('do_i18n', True):
+        for po in translations:
+            pulse.pulsate.i18n.update_xml2po (po, checkout=checkout, **kw)
+
     return document
 
 
@@ -696,6 +712,8 @@ def main (argv, options={}):
     update = not options.get ('--no-update', False)
     timestamps = not options.get ('--no-timestamps', False)
     history = not options.get ('--no-history', False)
+    do_docs = not options.get ('--no-docs', False)
+    do_i18n = not options.get ('--no-i18n', False)
     if len(argv) == 0:
         prefix = None
     else:
@@ -712,4 +730,5 @@ def main (argv, options={}):
         branches = db.Branch.objects.filter (type='Module')
 
     for branch in list(branches):
-        update_branch (branch, update=update, timestamps=timestamps, history=history)
+        update_branch (branch, update=update, timestamps=timestamps, history=history,
+                       do_docs=do_docs, do_i18n=do_i18n)

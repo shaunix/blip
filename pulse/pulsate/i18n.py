@@ -50,7 +50,9 @@ def get_checkout (record, update=True):
 
 
 def update_intltool (po, **kw):
-    checkout = get_checkout (po, update=kw.get('update', True))
+    checkout = kw.get('checkout', None)
+    if checkout == None:
+        checkout = get_checkout (doc, update=kw.get('update', True))
     potfile = get_intltool_potfile (po, checkout)
     if potfile == None: return
     podir = os.path.join (checkout.directory, po.scm_dir)

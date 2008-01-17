@@ -49,9 +49,18 @@ def get_checkout (record, update=True):
         checkouts[key] = pulse.scm.Checkout.from_record (record, update=update)
     return checkouts[key]
 
+def update_document (doc, **kw):
+    if doc.subtype == 'gdu-docbook':
+        update_gdu_docbook (doc, **kw)
+    elif doc.subtype == 'gtk-doc':
+        update_gtk_doc (doc, **kw)
+    else:
+        pulse.utils.log ('Skipping document %s with unknown type %s' % (doc.ident, doc.subtype))
 
 def update_gdu_docbook (doc, **kw):
-    checkout = get_checkout (doc, update=kw.get('update', True))
+    checkout = kw.get('checkout', None)
+    if checkout == None:
+        checkout = get_checkout (doc, update=kw.get('update', True))
     name = {}
     desc = {}
     data = {}
@@ -137,7 +146,9 @@ def update_gdu_docbook (doc, **kw):
 
 
 def update_gtk_doc (doc, **kw):
-    checkout = get_checkout (doc, update=kw.get('update', True))
+    checkout = kw.get('checkout', None)
+    if checkout == None:
+        checkout = get_checkout (doc, update=kw.get('update', True))
     name = {}
     desc = {}
     data = {}
@@ -358,9 +369,4 @@ def main (argv, options={}):
                                          ident__startswith=prefix)
 
     for doc in list(docs):
-        if doc.subtype == 'gdu-docbook':
-            update_gdu_docbook (doc, update=update, timestamps=timestamps, history=history)
-        elif doc.subtype == 'gtk-doc':
-            update_gtk_doc (doc, update=update, timestamps=timestamps, history=history)
-        else:
-            pulse.utils.log ('Skipping document %s with unknown type %s' % (doc.ident, doc.subtype))
+        update_document (doc, update=update, timestamps=timestamps, history=history)
