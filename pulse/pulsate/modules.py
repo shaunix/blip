@@ -538,6 +538,7 @@ def process_keyfile (branch, checkout, filename, **kw):
     if keyfile.has_key ('Desktop Entry', 'Categories'):
         cats = keyfile.get_value ('Desktop Entry', 'Categories')
         if 'Settings' in cats.split(';'):
+            ident = '/'.join(['/capplet', bserver, bmodule, basename, bbranch])
             type = 'Capplet'
 
     app = db.Branch.get_record (ident, type)

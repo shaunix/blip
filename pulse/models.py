@@ -434,6 +434,7 @@ class Branchable (PulseRecord, models.Model):
     # Document     /doc/<server>/<module>/<document>  (gnome-doc-utils)
     #              /ref/<server>/<module>/<document>  (gtk-doc)
     # Application  /app/<server>/<module>/<app>
+    # Capplet      /capplet/<server>/<module>/<capplet>
     # Applet       /applet/<server>/<module>/<applet>
     # Library      /lib/<server>/<module>/<lib>
     # Plugin       /ext/<server>/<module>/<ext>
