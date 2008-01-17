@@ -73,9 +73,16 @@ class PulseDebugCursor (object):
 
     def execute (self, sql, params=()):
         if isinstance (params, dict):
-            text = sql % params
+            ps = params
         else:
-            text = sql % tuple(params)
+            ps = []
+            for p in params:
+                if isinstance (p, basestring):
+                    ps.append (str(p))
+                else:
+                    ps.append (p)
+            ps = tuple(ps)
+        text = sql % ps
 
         select = False
         if text.startswith ('SELECT COUNT'):
@@ -123,6 +130,7 @@ class PulseDebugCursor (object):
 django.db.backends.util.CursorDebugWrapper = PulseDebugCursor
 
 def __pulse_log_save (instance):
+    global __was_insert
     if not __was_insert: return
     if isinstance (instance, PulseRecord):
         pulse.utils.log ('Created %s %s' % (instance.type, instance.ident))
