@@ -191,110 +191,116 @@ def add_set_entries (set, dl):
 
 
 def add_more_tabs (set, tabbed, path=[], query=[]):
-    docs = db.Branch.objects.filter (type='Document', parent__set_module_subjs__subj=set)
-    if len(path) > 2 and path[2] == 'doc':
-        buckets = {'users' : [], 'devels' : []}
-        user_docs = []
-        devel_docs = []
-        cnt = 0
-        for doc in pulse.utils.attrsorted (list(docs), 'title'):
-            if doc.subtype == 'gtk-doc':
-                buckets['devels'].append (doc)
-                cnt += 1
-            else:
-                buckets['users'].append (doc)
-                cnt += 1
-        pad = pulse.html.PaddingBox ()
-        for id, txt in (('users', pulse.utils.gettext ('User Documentation (%i)')),
-                        ('devels', pulse.utils.gettext ('Developer Documentation (%i)')) ):
-            if len(buckets[id]) > 0:
-                cont = pulse.html.ContainerBox (id=id)
-                cont.set_title (txt % len(buckets[id]))
-                cont.add_sort_link ('title', pulse.utils.gettext ('title'), False)
-                cont.add_sort_link ('module', pulse.utils.gettext ('module'))
-                cont.add_sort_link ('mtime', pulse.utils.gettext ('modified'))
-                cont.add_sort_link ('score', pulse.utils.gettext ('score'))
-                pad.add_content (cont)
-                for doc in buckets[id]:
-                    lbox = cont.add_link_box (doc)
-                    lbox.add_graph ('/'.join(doc.ident.split('/')[1:] + ['commits.png']))
-                    span = pulse.html.Span (doc.branch_module)
-                    span.add_class ('module')
-                    url = doc.ident.split('/')
-                    url = '/'.join(['mod'] + url[2:4] + [url[5]])
-                    url = pulse.config.web_root + url
-                    lbox.add_fact ('module', pulse.html.Link (url, span))
-                    if doc.mod_datetime != None:
-                        span = pulse.html.Span (divider=pulse.html.SPACE)
-                        # FIXME: i18n, word order, but we want to link person
-                        span.add_content (pulse.html.Span(doc.mod_datetime.strftime('%Y-%m-%d %T')))
-                        span.add_class ('mtime')
-                        if doc.mod_person != None:
-                            span.add_content (pulse.utils.gettext ('by'))
-                            span.add_content (pulse.html.Link (doc.mod_person))
-                        lbox.add_fact (pulse.utils.gettext ('modified'), span)
-                    if doc.mod_score != None:
-                        span = pulse.html.Span(str(doc.mod_score))
-                        span.add_class ('score')
-                        lbox.add_fact (pulse.utils.gettext ('score'), span)
-        tabbed.add_tab (True, 'Documents (%i)' % cnt)
-        tabbed.add_content (pad)
-    else:
-        tabbed.add_tab (set.pulse_url + '/doc',
-                        'Documents (%i)' % docs.count())
-
-    things = (('Domain', pulse.utils.gettext ('Domains (%i)'), 'i18n'),
-              ('Library', pulse.utils.gettext ('Libraries (%i)'), 'lib'),
-              (('Application', 'Capplet', 'Applet'),
-               (pulse.utils.gettext ('Programs (%i)'),
-                pulse.utils.gettext ('Applications (%i)'),
-                pulse.utils.gettext ('Capplets (%i)'),
-                pulse.utils.gettext ('Applets (%i)')),
-                ('prog', 'app', 'capplet', 'applet'))
+    things = ({ 'types'  : 'Document',
+                'subs'   : ('*', 'gtk-doc'),
+                'tabtxt' : pulse.utils.gettext ('Documents (%i)'),
+                'txts'   : (pulse.utils.gettext ('User Documentation (%i)'),
+                            pulse.utils.gettext ('Developer Documentation (%i)')),
+                'tabext' : 'doc',
+                'exts'   : ('user', 'devel'),
+                'graphs' : 'commits.png' },
+              { 'types'  : 'Domain',
+                'tabtxt' : pulse.utils.gettext ('Domains (%i)'),
+                'tabext' : 'i18n' },
+              { 'types'  : 'Library',
+                'tabtxt' : pulse.utils.gettext ('Libraries (%i)'),
+                'tabext' : 'lib' },
+              { 'types'  : ('Application', 'Capplet', 'Applet'),
+                'tabtxt' : pulse.utils.gettext ('Programs (%i)'),
+                'txts'   : (pulse.utils.gettext ('Applications (%i)'),
+                            pulse.utils.gettext ('Capplets (%i)'),
+                            pulse.utils.gettext ('Applets (%i)')),
+                'tabext' : 'prog',
+                'exts'   : ('prog', 'app', 'capplet', 'applet') }
               )
-    for typ, txt, ext in things:
-        if isinstance (typ, tuple):
-            tabext = ext[0]
-        else:
-            tabext = ext
-        if len(path) > 2 and path[2] == tabext:
-            if isinstance (typ, tuple):
+    for d in things:
+        types = d['types']
+        graphs = d.get ('graphs', False)
+        if len(path) > 2 and path[2] == d['tabext']:
+            if isinstance (types, tuple):
                 pad = pulse.html.PaddingBox()
                 tabbed.add_content (pad)
-                tabtxt = txt[0]
                 sections = []
-                for i in range(len(typ)):
-                    objs = db.Branch.objects.filter (type=typ[i], parent__set_module_subjs__subj=set)
+                for i in range(len(types)):
+                    objs = db.Branch.objects.filter (type=types[i], parent__set_module_subjs__subj=set)
                     objs = pulse.utils.attrsorted (list(objs), 'title')
-                    cont = pulse.html.ContainerBox (id=ext[i+1],
-                                                    title=txt[i+1] % len(objs))
-                    cont.set_columns (2)
+                    cont = pulse.html.ContainerBox (id=d['exts'][i],
+                                                    title=d['txts'][i] % len(objs))
+                    if not graphs:
+                        cont.set_columns (2)
                     pad.add_content (cont)
                     sections.append ((objs, cont))
+            elif d.has_key ('subs'):
+                pad = pulse.html.PaddingBox()
+                tabbed.add_content (pad)
+                s = {}
+                subs = d['subs']
+                for i in range(len(subs)):
+                    sub = subs[i]
+                    cont = pulse.html.ContainerBox (id=d['exts'][i])
+                    if not graphs:
+                        cont.set_columns (2)
+                    pad.add_content (cont)
+                    s[sub] = ([], cont)
+                objs = db.Branch.objects.filter (type=types, parent__set_module_subjs__subj=set)
+                objs = pulse.utils.attrsorted (list(objs), 'title')
+                for obj in objs:
+                    stype = obj.subtype
+                    if s.has_key (stype):
+                        s[stype][0].append (obj)
+                    elif s.has_key ('*'):
+                        s['*'][0].append (obj)
+                sections = []
+                for i in range(len(subs)):
+                    sub = subs[i]
+                    s[sub][1].set_title (d['txts'][i] % len(s[sub][0]))
+                    sections.append (s[sub])
             else:
-                objs = db.Branch.objects.filter (type=typ, parent__set_module_subjs__subj=set)
+                objs = db.Branch.objects.filter (type=types, parent__set_module_subjs__subj=set)
                 objs = pulse.utils.attrsorted (list(objs), 'title')
                 cont = pulse.html.ContainerBox ()
-                cont.set_columns (2)
+                if not graphs:
+                    cont.set_columns (2)
                 tabbed.add_content (cont)
-                tabtxt = txt
                 sections = [(objs, cont)]
 
             total = 0
             for objs, cont in sections:
                 total += len(objs)
                 slink_mtime = False
+                slink_score = False
                 slink_documentation = False
                 slink_messages = False
                 for i in range(len(objs)):
                     obj = objs[i]
                     lbox = cont.add_link_box (obj)
+                    if graphs:
+                        if isinstance (graphs, tuple):
+                            for graph in graphs:
+                                lbox.add_graph (obj.ident[1:] + '/' + graph)
+                        else:
+                            lbox.add_graph (obj.ident[1:] + '/' + graphs)
                     span = pulse.html.Span (obj.branch_module)
                     span.add_class ('module')
                     url = obj.ident.split('/')
                     url = '/'.join(['mod'] + url[2:4] + [url[5]])
                     url = pulse.config.web_root + url
                     lbox.add_fact ('module', pulse.html.Link (url, span))
+                    if obj.mod_datetime != None:
+                        span = pulse.html.Span (divider=pulse.html.SPACE)
+                        # FIXME: i18n, word order, but we want to link person
+                        span.add_content (pulse.html.Span(obj.mod_datetime.strftime('%Y-%m-%d %T')))
+                        span.add_class ('mtime')
+                        if obj.mod_person != None:
+                            span.add_content (pulse.utils.gettext ('by'))
+                            span.add_content (pulse.html.Link (obj.mod_person))
+                        lbox.add_fact (pulse.utils.gettext ('modified'), span)
+                        slink_mtime = True
+                    if obj.mod_score != None:
+                        span = pulse.html.Span(str(obj.mod_score))
+                        span.add_class ('score')
+                        lbox.add_fact (pulse.utils.gettext ('score'), span)
+                        slink_score = True
                     docs = db.Documentation.get_related (subj=obj)
                     for doc in docs:
                         # FIXME: multiple docs look bad and sort poorly
@@ -304,7 +310,7 @@ def add_more_tabs (set, tabbed, path=[], query=[]):
                         lbox.add_fact (pulse.utils.gettext ('docs'),
                                        pulse.html.Link (doc.pulse_url, span))
                         slink_documentation = True
-                    if typ == 'Domain':
+                    if types == 'Domain':
                         potlst = obj.ident.split('/')[1:]
                         if obj.scm_dir == 'po':
                             potlst.append (obj.scm_module + '.pot')
@@ -324,21 +330,19 @@ def add_more_tabs (set, tabbed, path=[], query=[]):
                 cont.add_sort_link ('module', pulse.utils.gettext ('module'))
                 if slink_mtime:
                     cont.add_sort_link ('mtime', pulse.utils.gettext ('modified'))
+                if slink_score:
+                    cont.add_sort_link ('score', pulse.utils.gettext ('score'))
                 if slink_documentation:
                     cont.add_sort_link ('docs', pulse.utils.gettext ('docs'))
                 if slink_messages:
                     cont.add_sort_link ('messages', pulse.utils.gettext ('messages'))
-            tabbed.add_tab (True, tabtxt % total)
+            tabbed.add_tab (True, d['tabtxt'] % total)
         else:
-            if isinstance (typ, tuple):
-                tabtxt = txt[0]
-                tabext = ext[0]
-                objs = db.Branch.objects.filter (type__in=typ, parent__set_module_subjs__subj=set)
+            if isinstance (types, tuple):
+                objs = db.Branch.objects.filter (type__in=types, parent__set_module_subjs__subj=set)
             else:
-                tabtxt = txt
-                tabext = ext
-                objs = db.Branch.objects.filter (type=typ, parent__set_module_subjs__subj=set)
+                objs = db.Branch.objects.filter (type=types, parent__set_module_subjs__subj=set)
             cnt = objs.count()
             if cnt > 0:
-                tabbed.add_tab (set.pulse_url + '/' + tabext,
-                                tabtxt % cnt)
+                tabbed.add_tab (set.pulse_url + '/' + d['tabext'],
+                                d['tabtxt'] % cnt)

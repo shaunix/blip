@@ -184,6 +184,7 @@ td.lbox-text { padding: 0 0.5em 0 0.5em; }
 div.lbox-desc {
   font-style: italic;
   color: #555753;
+  max-width: 40em;
 }
 td.lbox-graph { vertical-align: top; text-align: right; }
 
