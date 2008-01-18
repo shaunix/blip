@@ -25,6 +25,7 @@ import os
 import os.path
 import re
 import shutil
+import StringIO
 import time
 import urllib
 import xml.dom.minidom
@@ -383,7 +384,14 @@ def make_one_screenshot (doc, indir, lang, ref, outdir, of):
     shutil.copyfile (infile, fullfile)
     im = Image.open (infile)
     w, h = im.size
-    im.thumbnail((120, 120), Image.ANTIALIAS)
+    try:
+        im.thumbnail((120, 120), Image.ANTIALIAS)
+    except IOError:
+        fd = os.popen ('convert "%s" -interlace none -' % fullfile)
+        # We have to wrap with StringIO because Image.open expects the
+        # file object to implement seek, which os.popen does not.
+        im = Image.open(StringIO.StringIO(fd.read()))
+        im.thumbnail((120, 120), Image.ANTIALIAS)
     tw, th = im.size
     im.save (thumbfile, 'PNG')
     of.datetime = datetime.datetime.now()
