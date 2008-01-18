@@ -26,7 +26,7 @@ def main ():
         elif opt == '--debug-db':
             pulse.config.debug_db = True
         elif opt == '--webroot':
-            pulse.config.webroot = arg
+            pulse.config.web_root = arg
 
     # If we're not using the debugging, just turn off Django's DEBUG
     # setting.  This is set to True in pulse.config, because logging
@@ -73,12 +73,12 @@ def main ():
     if len (path) == 0:
         page = html.Page (http=http)
         page.set_title (pulse.utils.gettext ('Pulse'))
-        lcont = html.LinkBoxContainer()
-        page.add_content (lcont)
+        cont = html.ContainerBox ()
+        page.add_content (cont)
         for type in pulse.pages.__all__:
             mod = pulse.utils.import_ ('pulse.pages.' + type)
             if hasattr (mod, 'main'):
-                lcont.add_link_box (pulse.config.webroot + type, type)
+                cont.add_link_box (pulse.config.web_root + type, type)
         page.output (fd=fd)
     else:
         if not http:
