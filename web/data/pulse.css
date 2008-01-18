@@ -147,6 +147,13 @@ pre {
   margin: 0; padding: 0;
   font-size: 0.83em;
 }
+div.hr {
+  border: none;
+  background-color: #eeeeec;
+  height: 2px;
+  margin: 6px 0 0 0;
+}
+div.hr hr { display: none; }
 
 table.cols { width: 100%; }
 td.col { padding: 0 0 0 1em; }

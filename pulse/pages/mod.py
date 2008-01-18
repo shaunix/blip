@@ -202,13 +202,20 @@ def output_branch (branch, path=[], query=[], http=True, fd=None):
     box = pulse.html.InfoBox ('dependencies', pulse.utils.gettext ('Dependencies'))
     columns.add_to_column (0, box)
     deps = db.ModuleDependency.get_related (subj=branch)
-    deps = [rel.pred for rel in list(deps)]
-    deps = pulse.utils.attrsorted (list(deps), 'scm_module')
+    deps = pulse.utils.attrsorted (list(deps), 'pred', 'scm_module')
+    d1 = pulse.html.Div()
+    d2 = pulse.html.Div()
+    box.add_content (d1)
+    box.add_content (pulse.html.Rule())
+    box.add_content (d2)
     for dep in deps:
         div = pulse.html.Div ()
-        link = pulse.html.Link (dep.pulse_url, dep.scm_module)
+        link = pulse.html.Link (dep.pred.pulse_url, dep.pred.scm_module)
         div.add_content (link)
-        box.add_content (div)
+        if dep.direct:
+            d1.add_content (div)
+        else:
+            d2.add_content (div)
 
     # Applications
     apps = branch.select_children ('Application')

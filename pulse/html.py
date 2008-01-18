@@ -715,6 +715,11 @@ class DefinitionList (Widget):
 ################################################################################
 ## Other...
 
+class Rule (Widget):
+    def output (self, fd=sys.stdout):
+        p (fd, '<div class="hr"><hr></div>')
+
+
 class Graph (Widget):
     _count = 0
 
