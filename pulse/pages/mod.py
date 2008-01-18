@@ -97,6 +97,16 @@ def output_branch (branch, path=[], query=[], http=True, fd=None):
             else:
                 page.add_sublink (None, b.ident.split('/')[-1])
 
+    # FIXME: i18n
+    fname = branch.ident[1:] + '/C.png'
+    tname = branch.ident[1:] + '/t_C.png'
+    of = db.OutputFile.objects.filter (filename=fname, type='screens')
+    try:
+        of = of[0]
+        page.add_screenshot (tname, of.data['twidth'], of.data['theight'], fname)
+    except IndexError:
+        pass
+
     sep = False
     try:
         desc = branch.localized_desc
@@ -140,13 +150,14 @@ def output_branch (branch, path=[], query=[], http=True, fd=None):
     page.add_content (columns)
 
     # Developers
-    # FIXME: use a JOIN
     box = pulse.html.InfoBox ('developers', pulse.utils.gettext ('Developers'))
     developers = db.ModuleEntity.get_related (subj=branch)
     developers = pulse.utils.attrsorted (list(developers), ['pred', 'title'])
     if len(developers) > 0:
         for rel in developers:
-            box.add_link_box (rel.pred)
+            lbox = box.add_link_box (rel.pred)
+            if rel.maintainer:
+                lbox.add_badge ('maintainer')
     else:
         box.add_content (pulse.html.AdmonBox (pulse.html.AdmonBox.warning,
                                               pulse.utils.gettext ('No developers') ))

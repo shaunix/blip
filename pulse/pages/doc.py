@@ -113,12 +113,20 @@ def output_doc (doc, path=[], query=[], http=True, fd=None):
     rels = db.SetModule.get_related (pred=doc.parent)
     if len(rels) > 0:
         sets = pulse.utils.attrsorted ([rel.subj for rel in rels], 'title')
-        span = pulse.html.Span (*[pulse.html.Link(rel.subj.pulse_url + '/doc', rel.subj.title) for rel in rels])
+        span = pulse.html.Span (*[pulse.html.Link(set.pulse_url + '/doc', set.title) for set in sets])
         span.set_divider (pulse.html.BULLET)
         page.add_fact (pulse.utils.gettext ('Release Sets'), span)
         sep = True
 
     page.add_fact (pulse.utils.gettext ('Module'), pulse.html.Link (doc.parent))
+
+    rels = db.Documentation.get_related (pred=doc)
+    if len(rels) > 0:
+        objs = pulse.utils.attrsorted ([rel.subj for rel in rels], 'title')
+        span = pulse.html.Span (*[pulse.html.Link(obj) for obj in objs])
+        span.set_divider (pulse.html.BULLET)
+        page.add_fact (pulse.utils.gettext ('Describes'), span)
+        sep = True
 
     if sep: page.add_fact_sep ()
     
