@@ -50,7 +50,7 @@ def get_checkout (record, update=True):
 
 
 def update_intltool (po, **kw):
-    checkout = kw.get('checkout', None)
+    checkout = kw.pop('checkout', None)
     if checkout == None:
         checkout = get_checkout (po, update=kw.get('update', True))
     potfile = get_intltool_potfile (po, checkout)
@@ -74,7 +74,7 @@ def update_intltool (po, **kw):
 
 
 def update_xml2po (po, **kw):
-    checkout = kw.get('checkout', None)
+    checkout = kw.pop('checkout', None)
     if checkout == None:
         checkout = get_checkout (po, update=kw.get('update', True))
     potfile = get_xml2po_potfile (po, checkout)

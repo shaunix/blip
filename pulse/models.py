@@ -78,7 +78,10 @@ class PulseDebugCursor (object):
             ps = []
             for p in params:
                 if isinstance (p, basestring):
-                    ps.append (str(p))
+                    try:
+                        ps.append (str(p))
+                    except:
+                        ps.append ('...')
                 else:
                     ps.append (p)
             ps = tuple(ps)

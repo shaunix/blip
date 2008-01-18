@@ -61,7 +61,7 @@ def update_document (doc, **kw):
         pulse.utils.log ('Skipping document %s with unknown type %s' % (doc.ident, doc.subtype))
 
 def update_gdu_docbook (doc, **kw):
-    checkout = kw.get('checkout', None)
+    checkout = kw.pop('checkout', None)
     if checkout == None:
         checkout = get_checkout (doc, update=kw.get('update', True))
     data = {}
@@ -152,7 +152,7 @@ def update_gdu_docbook (doc, **kw):
 
 
 def update_gtk_doc (doc, **kw):
-    checkout = kw.get('checkout', None)
+    checkout = kw.pop('checkout', None)
     if checkout == None:
         checkout = get_checkout (doc, update=kw.get('update', True))
     data = {}
