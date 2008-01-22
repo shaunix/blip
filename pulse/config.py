@@ -49,6 +49,9 @@ web_dir = os.path.join (base_dir, 'web')
 # The directory where Pulse puts web-available files it creates
 web_files_dir = os.path.join (web_dir, 'files')
 
+# The directory where Pulse puts figures
+web_figures_dir = os.path.join (web_files_dir, 'figures')
+
 # The directory where Pulse puts graphs
 web_graphs_dir = os.path.join (web_files_dir, 'graphs')
 
@@ -57,9 +60,6 @@ web_icons_dir = os.path.join (web_files_dir, 'icons')
 
 # The directory where Pulse puts POT files
 web_l10n_dir = os.path.join (web_files_dir, 'l10n')
-
-# The directory where Pulse puts screenshots
-web_screens_dir = os.path.join (web_files_dir, 'screens')
 
 
 ################################################################################
@@ -84,6 +84,9 @@ files_root = web_root + 'files/'
 # data_root = 'http://localhost/data/'
 # files_root = 'http://localhost/files/'
 
+# The root URL for figures
+figures_root = files_root + 'figures/'
+
 # The root URL for generated graphs
 graph_root = files_root + 'graphs/'
 
@@ -92,9 +95,6 @@ icons_root = files_root + 'icons/'
 
 # The root URL for generated POT files
 l10n_root = files_root + 'l10n/'
-
-# The root URL for screenshots
-screens_root = files_root + 'screens/'
 
 
 ################################################################################

@@ -97,15 +97,8 @@ def output_branch (branch, path=[], query=[], http=True, fd=None):
             else:
                 page.add_sublink (None, b.ident.split('/')[-1])
 
-    # FIXME: i18n
-    fname = branch.ident[1:] + '/C.png'
-    tname = branch.ident[1:] + '/t_C.png'
-    of = db.OutputFile.objects.filter (filename=fname, type='screens')
-    try:
-        of = of[0]
-        page.add_screenshot (tname, of.data['twidth'], of.data['theight'], fname)
-    except IndexError:
-        pass
+    if branch.data.has_key ('screenshot'):
+        page.add_screenshot (branch.data['screenshot'])
 
     sep = False
     try:

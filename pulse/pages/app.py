@@ -89,15 +89,8 @@ def output_app (app, path=[], query=[], http=True, fd=None):
             else:
                 page.add_sublink (None, b.ident.split('/')[-1])
 
-    # FIXME: i18n
-    fname = app.ident[1:] + '/C.png'
-    tname = app.ident[1:] + '/t_C.png'
-    of = db.OutputFile.objects.filter (filename=fname, type='screens')
-    try:
-        of = of[0]
-        page.add_screenshot (tname, of.data['twidth'], of.data['theight'], fname)
-    except IndexError:
-        pass
+    if app.data.has_key ('screenshot'):
+        page.add_screenshot (app.data['screenshot'])
 
     sep = False
     try:

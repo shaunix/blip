@@ -279,6 +279,7 @@ class Page (Widget, HttpComponent, ContentComponent):
         self._screenshot_tw = None
         self._screenshot_th = None
         self._screenshot_url = None
+        self._do_screenshot = False
 
     def set_title (self, title):
         self._title = title
@@ -286,11 +287,19 @@ class Page (Widget, HttpComponent, ContentComponent):
     def set_icon (self, icon):
         self._icon = icon
 
-    def add_screenshot (self, thumb, tw, th, url):
-        self._screenshot_thumb = thumb
-        self._screenshot_tw = tw
-        self._screenshot_th = th
-        self._screenshot_url = url
+    def add_screenshot (self, screenshot):
+        # FIXME: i18n
+        screen = screenshot['C']
+        of = db.OutputFile.objects.filter (type='figures', filename=screen)
+        try:
+            of = of[0]
+            self._screenshot_thumb = of.data['thumb']
+            self._screenshot_tw = of.data['thumb_width']
+            self._screenshot_th = of.data['thumb_height']
+            self._screenshot_url = of.filename
+            self._do_screenshot = True
+        except:
+            pass
 
     def output (self, fd=sys.stdout):
         HttpComponent.output (self, fd=fd)
@@ -320,12 +329,12 @@ class Page (Widget, HttpComponent, ContentComponent):
             p (fd, '<img class="icon" src="%s" alt="%s"> ', (self._icon, self._title), False)
         p (fd, None, self._title)
         p (fd, '</h1>')
-        if self._screenshot_thumb != None:
+        if self._do_screenshot:
             p (fd, '<div class="screenshot">', None, False)
             if self._screenshot_url != None:
-                p (fd, '<a href="%s%s">', (pulse.config.screens_root, self._screenshot_url), False)
+                p (fd, '<a href="%s%s">', (pulse.config.figures_root, self._screenshot_url), False)
             p (fd, '<img src="%s%s" width="%i" height="%i">',
-               (pulse.config.screens_root, self._screenshot_thumb,
+               (pulse.config.figures_root, self._screenshot_thumb,
                 self._screenshot_tw, self._screenshot_th))
             if self._screenshot_url != None:
                 p (fd, '</a>', None, False)

@@ -97,14 +97,12 @@ class PulseDebugCursor (object):
             i = text.index (' FROM ')
             text = text[:7] + '...' + text[i:]
         elif text.startswith ('UPDATE '):
-            global __was_insert
-            __was_insert = False
+            sys.modules[__name__].__was_insert = False
             i = text.index (' SET ')
             j = text.index (' WHERE ')
             text = text[:i+5] + '...' + text[j:]
         elif text.startswith ('INSERT INTO '):
-            global __was_insert
-            __was_insert = True
+            sys.modules[__name__].__was_insert = True
             i = text[12:].index(' ')
             text = text[:13+i] + '...'
         start = time.time()
@@ -267,7 +265,6 @@ class PulseRecord (object):
 
     # Delete custom relations.
     def delete_relations (self):
-        print __name__
         for cls in sys.modules[__name__].__dict__.values():
             if isinstance (cls, PulseModelBase) and issubclass (cls, PulseRelation):
                 for field in cls._meta.fields:

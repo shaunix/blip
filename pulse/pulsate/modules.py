@@ -177,7 +177,9 @@ def update_branch (branch, **kw):
         rels = db.Documentation.get_related (subj=obj)
         if len(rels) == 0: continue
         doc = rels[0].pred
-        copy_screenshots (doc, obj)
+        if doc.data.has_key ('screenshot'):
+            obj.data['screenshot'] = doc.data['screenshot']
+            obj.save()
 
     if default_child == None:
         if len(applications) == 1 and len(applets) == 0:
@@ -195,7 +197,8 @@ def update_branch (branch, **kw):
         branch.desc = default_child.desc
         branch.icon_dir = default_child.icon_dir
         branch.icon_name = default_child.icon_name
-        copy_screenshots (default_child, branch)
+        if default_child.data.has_key ('screenshot'):
+            branch.data['screenshot'] = default_child.data['screenshot']
 
     branch.save()
     
@@ -714,35 +717,6 @@ def locate_icon (record, icon, images):
     elif record.icon_name == None or record.icon_name != icon:
         record.update ({'icon_dir' : '__icon__:apps', 'icon_name' : icon})
 
-
-def copy_screenshots (src, dst):
-    src_ofs = db.OutputFile.objects.filter (type='screens',
-                                            filename__startswith=(src.ident[1:] + '/'))
-    for src_of in src_ofs:
-        base = os.path.basename (src_of.filename)
-        fname = dst.ident[1:] + '/' + base
-        dst_of = db.OutputFile.objects.filter (type='screens', filename=fname)
-        try:
-            dst_of = dst_of[0]
-            dst_of.data = src_of.data
-            dst_of.save()
-        except IndexError:
-            lang = base[:-4]
-            pulse.utils.log ('Linking %s screenshot for %s' % (lang, dst.ident))
-            src_full = os.path.join (pulse.config.web_screens_dir, src_of.filename)
-            dst_full = os.path.join (pulse.config.web_screens_dir, fname)
-            src_thumb = os.path.join (pulse.config.web_screens_dir, src.ident[1:], base)
-            dst_thumb = os.path.join (pulse.config.web_screens_dir, dst.ident[1:], 't_' + base)
-            dst_dir = os.path.dirname (dst_full)
-            if not os.path.exists (dst_dir):
-                os.makedirs (dst_dir)
-            for s, d in ((src_full, dst_full), (src_thumb, dst_thumb)):
-                if os.path.exists (d): os.remove (d)
-                os.symlink (s, d)
-            dst_of = db.OutputFile (type='screens', filename=fname,
-                                    datetime=src_of.datetime, data=src_of.data)
-            dst_of.save()
-            
 
 def main (argv, options={}):
     update = not options.get ('--no-update', False)

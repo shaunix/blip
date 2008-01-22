@@ -53,6 +53,7 @@ def get_checkout (record, update=True):
         checkouts[key] = pulse.scm.Checkout.from_record (record, update=update)
     return checkouts[key]
 
+
 def update_document (doc, **kw):
     if doc.subtype == 'gdu-docbook':
         update_gdu_docbook (doc, **kw)
@@ -60,6 +61,7 @@ def update_document (doc, **kw):
         update_gtk_doc (doc, **kw)
     else:
         pulse.utils.log ('Skipping document %s with unknown type %s' % (doc.ident, doc.subtype))
+
 
 def update_gdu_docbook (doc, **kw):
     checkout = kw.pop('checkout', None)
@@ -80,21 +82,13 @@ def update_gdu_docbook (doc, **kw):
 
     if data.has_key ('credits'):
         set_credits (doc, data.pop ('credits'))
-    if not data.has_key ('screenshots'):
-        sshot = doc.ident[1:] + '/C.png'
-        of = db.OutputFile.objects.filter (filename=sshot, type='screens')
-        try:
-            of = of[0]
-            data['screenshots'] = {'C' : of.data['source']}
-        except IndexError:
-            pass
 
     translations = db.Branch.objects.filter (type='Translation', parent=doc)
     for translation in translations:
         pofile = os.path.join (checkout.directory, translation.scm_dir, translation.scm_file)
         process_docbook_pofile (pofile, doc, data, **kw)
 
-    make_screenshots (doc, checkout, data.pop ('screenshots', {}), **kw)
+    process_figures (doc, checkout, data, **kw)
 
     makedir = os.path.join (checkout.directory, os.path.dirname (doc.scm_dir))
     makefile = pulse.parsers.Automake (os.path.join (makedir, 'Makefile.am'))
@@ -163,7 +157,7 @@ def update_gtk_doc (doc, **kw):
 
     if data.has_key ('credits'):
         set_credits (doc, data.pop ('credits'))
-    make_screenshots (doc, checkout, data.pop ('screenshots', {}), **kw)
+    process_figures (doc, checkout, data, **kw)
 
     doc.update (data)
     doc.save()
@@ -178,7 +172,15 @@ def process_docbook_docfile (docfile, doc, data, **kw):
     if kw.get('timestamps', True):
         stamp = db.Timestamp.get_timestamp (rel_scm)
         if mtime <= stamp:
-            pulse.utils.warn ('Skipping file %s' % rel_scm)
+            pulse.utils.log ('Skipping file %s' % rel_scm)
+            # Populate with the figures we found last time this file was
+            # actually processed.  These need to be here so we can check
+            # translations, even if this file hasn't changed.
+            data.setdefault ('figures', {})
+            if not data['figures'].has_key ('C'):
+                ofs = db.OutputFile.objects.filter (type='figures',
+                                                    filename__startswith=(doc.ident[1:] + '/C/'))
+                data['figures']['C'] = [of.data['source'] for of in ofs]
             return
     pulse.utils.log ('Processing file %s' % rel_scm)
 
@@ -189,6 +191,7 @@ def process_docbook_docfile (docfile, doc, data, **kw):
         dom = xml.dom.minidom.parse (docfile)
     except:
         pulse.utils.warn ('Failed to load file %s' % rel_scm)
+        # FIXME: would be nice to set an error in the database
         return
     for node in dom.documentElement.childNodes:
         if node.nodeType != node.ELEMENT_NODE:
@@ -241,21 +244,42 @@ def process_docbook_docfile (docfile, doc, data, **kw):
         doc.update (desc=normalize(abstract))
     data['credits'] = credits
 
-    screen = dom.getElementsByTagName ('screenshot')
-    if len(screen) > 0:
-        screen = screen[0]
-        img = screen.getElementsByTagName ('imagedata')
-        if len(img) > 0:
-            img = img[0]
-            if img.hasAttribute ('fileref'): 
-                ref = img.getAttribute ('fileref')
-                data.setdefault ('screenshots', {})
-                data['screenshots']['C'] = ref
+    imgs = dom.getElementsByTagName ('imagedata')
+    data.setdefault ('figures', {})
+    for img in imgs:
+        if not img.hasAttribute ('fileref'): continue
+        ref = img.getAttribute ('fileref')
+
+        par = img.parentNode
+        is_screenshot = False
+        while par.nodeType == par.ELEMENT_NODE:
+            if par.tagName == 'screenshot':
+                is_screenshot = True
+            if is_screenshot:
+                if par.hasAttribute ('id'):
+                    parid = par.getAttribute ('id')
+                    data.setdefault ('screens', {})
+                    data['screens'].setdefault (parid, os.path.basename (ref))
+            par = par.parentNode
+        if is_screenshot:
+            data.setdefault ('screens', {})
+            data['screens'].setdefault (None, os.path.basename (ref))
+
+        data['figures'].setdefault ('C', [])
+        data['figures']['C'].append (ref)
 
     db.Timestamp.set_timestamp (rel_scm, mtime)
 
 
 def process_docbook_pofile (pofile, doc, data, **kw):
+    lang = os.path.basename(pofile)[:-3]
+    if data.has_key ('figures') and data['figures'].has_key ('C'):
+        for ref in data['figures']['C']:
+            dref = os.path.join (os.path.dirname (pofile), ref)
+            if os.path.exists (dref):
+                data['figures'].setdefault (lang, [])
+                data['figures'][lang].append (ref)
+   
     rel_scm = pulse.utils.relative_path (pofile, pulse.config.scm_dir)
     if not os.path.exists (pofile):
         pulse.utils.log ('No such file %s' % rel_scm)
@@ -268,25 +292,13 @@ def process_docbook_pofile (pofile, doc, data, **kw):
             return
     pulse.utils.log ('Processing file %s' % rel_scm)
 
-    lang = os.path.basename(pofile)[:-3]
     po = pulse.parsers.Po (pofile)
     if doc.name.has_key('C') and po.has_message (doc.name['C']):
         doc.update (name={lang : po.get_message_str (doc.name['C'])})
     if doc.desc.has_key('C') and po.has_message (doc.desc['C']):
         doc.update (desc={lang : po.get_message_str (doc.desc['C'])})
 
-    if data.has_key ('screenshots') and data['screenshots'].has_key ('C'):
-        ref = data['screenshots']['C']
-        dref = os.path.join (os.path.dirname (pofile), ref)
-        if os.path.exists (dref):
-            data['screenshots'][lang] = ref
-   
     db.Timestamp.set_timestamp (rel_scm, mtime)
-
-
-def update_scm_file (doc, filename):
-    print filename
-    pass
 
 
 def set_credits (doc, credits):
@@ -320,51 +332,90 @@ def set_credits (doc, credits):
     doc.set_relations (db.DocumentEntity, rels)
 
 
-def make_screenshots (doc, checkout, screenshots, **kw):
-    indir = os.path.join (checkout.directory, doc.scm_dir, doc.scm_file)
-    indir = os.path.dirname (os.path.dirname (indir))
-    outdir = doc.ident[1:] + '/'
-    ofs = db.OutputFile.objects.filter (type='screens',
-                                        filename__startswith=outdir)
+def process_figures (doc, checkout, data, **kw):
+    figures = data.pop('figures', [])
+    ofs = db.OutputFile.objects.filter (type='figures',
+                                        filename__startswith=(doc.ident[1:] + '/'))
     ofs = list(ofs)
-    to_add = []
-    to_update = []
-    to_remove = []
+    langs = figures.keys()
     ofs_by_lang = {}
     for of in ofs:
-        lang = os.path.basename (of.filename)[:-4]
-        ofs_by_lang[lang] = of
-    for lang, ref in screenshots.items():
-        if not ofs_by_lang.has_key (lang):
-            to_add.append ((lang, ref))
+        lang = of.data['lang']
+        ofs_by_lang.setdefault (lang, [])
+        ofs_by_lang[of.data['lang']].append (of)
+    for lang in figures.keys():
+        ofs_by_lang.setdefault (lang, [])
+
+    for lang in ofs_by_lang.keys():
+        process_images_lang (doc, checkout, lang, figures.get(lang, []), ofs_by_lang[lang], **kw)
+
+def process_images_lang (doc, checkout, lang, figs, ofs, **kw):
+    indir = os.path.join (checkout.directory, doc.scm_dir, doc.scm_file)
+    indir = os.path.dirname (os.path.dirname (indir))
+    indir = os.path.join (indir, lang)
+    ofs_by_source = {}
+    for of in ofs:
+        ofs_by_source[of.data['source']] = of
+    for ref in figs:
+        of = ofs_by_source.pop (ref, None)
+        if of == None:
+            infile = os.path.join (indir, ref)
+            outdir = os.path.join (pulse.config.web_figures_dir, doc.ident[1:], lang)
+            relfile = os.path.join (doc.ident[1:], lang, os.path.basename (ref))
+            of = db.OutputFile (type='figures', filename=relfile)
+            of.data['source'] = ref
+            of.data['lang'] = lang
+            pulse.utils.log ('Copying figure %s' % relfile)
+            copy_image (infile, outdir, of)
         else:
-            of = ofs_by_lang.pop (lang)
-            if of.data['source'] != ref:
-                to_update.append ((ref, of))
-            else:
-                to_update.append ((None, of))
-    for lang, of in ofs_by_lang.items():
-        fpath = os.path.join (indir, lang, of.data['source'])
-        if os.path.exists (fpath):
-            to_update.append ((None, of))
-        else:
-            pulse.utils.log ('Removing %s screenshot for %s' % (lang, doc.ident))
-            os.remove (os.path.join (pulse.config.web_screens_dir, outdir, lang + '.png'))
-            os.remove (os.path.join (pulse.config.web_screens_dir, outdir, 't_' + lang + '.png'))
-            of.delete ()
-    for lang, ref in to_add:
-        make_one_screenshot (doc, indir, lang, ref, outdir, None)
-    for ref, of in to_update:
-        lang = os.path.basename (of.filename)[:-4]
-        if ref == None:
+            infile = os.path.join (indir, of.data['source'])
             if kw.get('timestamps', True):
-                infile = os.path.join (indir, lang, of.data['source'])
                 mtime = os.stat(infile).st_mtime
                 if mtime <= time.mktime(of.datetime.timetuple()):
                     continue
-        else:
-            of.data['source'] = ref
-        make_one_screenshot (doc, indir, lang, of.data['source'], outdir, of)
+            outdir = os.path.join (pulse.config.web_figures_dir, doc.ident[1:], lang)
+            pulse.utils.log ('Copying figure %s' % of.filename)
+            copy_image (infile, outdir, of)
+    for of in ofs_by_source.values():
+        pulse.utils.log ('Deleting figure %s' % of.filename)
+        os.remove (os.path.join (pulse.config.web_figures_dir, of.filename))
+        os.remove (os.path.join (pulse.config.web_figures_dir, of.data['thumb']))
+        of.delete()
+
+    if doc.data.has_key ('screens') and doc.data['screens'].has_key (None):
+        screen = doc.data['screens'][None]
+        doc.data.setdefault ('screenshot', {})
+        doc.data['screenshot'][lang] = '/'.join ([doc.ident[1:], lang, screen])
+
+
+def copy_image (infile, outdir, of):
+    if not os.path.exists (outdir):
+        os.makedirs (outdir)
+    outfile = os.path.join (outdir, os.path.basename (infile))
+    tdir = os.path.join (outdir, 'thumbs')
+    if not os.path.exists (tdir):
+        os.makedirs (tdir)
+    tfile = os.path.join (tdir, os.path.basename (infile))
+    shutil.copyfile (infile, outfile)
+    im = Image.open (infile)
+    w, h = im.size
+    try:
+        im.thumbnail((120, 120), Image.ANTIALIAS)
+    except IOError:
+        fd = os.popen ('convert "%s" -interlace none -' % fullfile)
+        # We have to wrap with StringIO because Image.open expects the
+        # file object to implement seek, which os.popen does not.
+        im = Image.open(StringIO.StringIO(fd.read()))
+        im.thumbnail((120, 120), Image.ANTIALIAS)
+    tw, th = im.size
+    im.save (tfile, 'PNG')
+    of.datetime = datetime.datetime.now()
+    of.data['width'] = w
+    of.data['height'] = h
+    of.data['thumb_width'] = tw
+    of.data['thumb_height'] = th
+    of.data['thumb'] = pulse.utils.relative_path (tfile, pulse.config.web_figures_dir)
+    of.save()
 
 
 def make_one_screenshot (doc, indir, lang, ref, outdir, of):
