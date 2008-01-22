@@ -333,7 +333,7 @@ def set_credits (doc, credits):
 
 
 def process_figures (doc, checkout, data, **kw):
-    figures = data.pop('figures', [])
+    figures = data.pop('figures', {})
     ofs = db.OutputFile.objects.filter (type='figures',
                                         filename__startswith=(doc.ident[1:] + '/'))
     ofs = list(ofs)
