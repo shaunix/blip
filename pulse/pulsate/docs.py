@@ -60,7 +60,7 @@ def update_document (doc, **kw):
     elif doc.subtype == 'gtk-doc':
         update_gtk_doc (doc, **kw)
     else:
-        pulse.utils.log ('Skipping document %s with unknown type %s' % (doc.ident, doc.subtype))
+        pulse.utils.warn ('Skipping document %s with unknown type %s' % (doc.ident, doc.subtype))
 
 
 def update_gdu_docbook (doc, **kw):
@@ -282,7 +282,7 @@ def process_docbook_pofile (pofile, doc, data, **kw):
    
     rel_scm = pulse.utils.relative_path (pofile, pulse.config.scm_dir)
     if not os.path.exists (pofile):
-        pulse.utils.log ('No such file %s' % rel_scm)
+        pulse.utils.warn ('No such file %s' % rel_scm)
         return
     mtime = os.stat(pofile).st_mtime
     if kw.get('timestamps', True):
@@ -365,7 +365,6 @@ def process_images_lang (doc, checkout, lang, figs, ofs, **kw):
             of = db.OutputFile (type='figures', filename=relfile)
             of.data['source'] = ref
             of.data['lang'] = lang
-            pulse.utils.log ('Copying figure %s' % relfile)
             copy_image (infile, outdir, of)
         else:
             infile = os.path.join (indir, of.data['source'])
@@ -374,7 +373,6 @@ def process_images_lang (doc, checkout, lang, figs, ofs, **kw):
                 if mtime <= time.mktime(of.datetime.timetuple()):
                     continue
             outdir = os.path.join (pulse.config.web_figures_dir, doc.ident[1:], lang)
-            pulse.utils.log ('Copying figure %s' % of.filename)
             copy_image (infile, outdir, of)
     for of in ofs_by_source.values():
         pulse.utils.log ('Deleting figure %s' % of.filename)
@@ -389,6 +387,10 @@ def process_images_lang (doc, checkout, lang, figs, ofs, **kw):
 
 
 def copy_image (infile, outdir, of):
+    if not os.path.exists (infile):
+        pulse.utils.warn ('Failed to copy figure %s' % of.filename)
+        return
+    pulse.utils.log ('Copying figure %s' % of.filename)
     if not os.path.exists (outdir):
         os.makedirs (outdir)
     outfile = os.path.join (outdir, os.path.basename (infile))
@@ -402,6 +404,8 @@ def copy_image (infile, outdir, of):
     try:
         im.thumbnail((120, 120), Image.ANTIALIAS)
     except IOError:
+        # PIL doesn't do interlaced PNGs.  Process the image with
+        # ImageMagick and pipe the result back.
         fd = os.popen ('convert "%s" -interlace none -' % fullfile)
         # We have to wrap with StringIO because Image.open expects the
         # file object to implement seek, which os.popen does not.
@@ -415,42 +419,6 @@ def copy_image (infile, outdir, of):
     of.data['thumb_width'] = tw
     of.data['thumb_height'] = th
     of.data['thumb'] = pulse.utils.relative_path (tfile, pulse.config.web_figures_dir)
-    of.save()
-
-
-def make_one_screenshot (doc, indir, lang, ref, outdir, of):
-    infile = os.path.join (indir, lang, ref)
-    if not os.path.exists (infile): return
-    outfile = os.path.join (outdir, lang + '.png')
-    fullfile = os.path.join (pulse.config.web_screens_dir, outfile)
-    thumbfile = os.path.join (pulse.config.web_screens_dir, outdir, 't_' + lang + '.png')
-    if of == None:
-        pulse.utils.log ('Creating %s screenshot for %s' % (lang, doc.ident))
-        of = db.OutputFile (type='screens', filename=outfile)
-    else:
-        pulse.utils.log ('Updating %s screenshot for %s' % (lang, doc.ident))
-    od = os.path.join (pulse.config.web_screens_dir, outdir)
-    if not os.path.exists (od):
-        os.makedirs (od)
-    shutil.copyfile (infile, fullfile)
-    im = Image.open (infile)
-    w, h = im.size
-    try:
-        im.thumbnail((120, 120), Image.ANTIALIAS)
-    except IOError:
-        fd = os.popen ('convert "%s" -interlace none -' % fullfile)
-        # We have to wrap with StringIO because Image.open expects the
-        # file object to implement seek, which os.popen does not.
-        im = Image.open(StringIO.StringIO(fd.read()))
-        im.thumbnail((120, 120), Image.ANTIALIAS)
-    tw, th = im.size
-    im.save (thumbfile, 'PNG')
-    of.datetime = datetime.datetime.now()
-    of.data['source'] = ref
-    of.data['width'] = w
-    of.data['height'] = h
-    of.data['twidth'] = tw
-    of.data['theight'] = th
     of.save()
 
 
