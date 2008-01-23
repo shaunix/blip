@@ -311,12 +311,12 @@ def output_ajax (doc, path, query, http, fd):
 
 def get_activity (doc, xmlfiles):
     cont = pulse.html.ContainerBox()
+    cont.set_id ('actfile')
     cont.set_title (pulse.utils.gettext ('Files'))
     dl = pulse.html.DefinitionList()
     cont.add_content (dl)
     if len(xmlfiles) > 1:
         cont.set_sortable_tag ('dt')
-        cont.set_sortable_class ('actfile')
         cont.add_sort_link ('title', pulse.utils.gettext ('name'), False)
         cont.add_sort_link ('mtime', pulse.utils.gettext ('modified'))
     for xmlfile in xmlfiles:

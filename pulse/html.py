@@ -182,18 +182,20 @@ class SortableComponent (Component):
         return self._slinks
 
     def output (self, fd=sys.stdout):
-        p (fd, '<div class="slinks"><span class="slinks" id="slink-%s">', self._slinkclass)
+        slinktag = self._slinktag or 'table'
+        slinkclass = self._slinkclass or 'lbox'
+        p (fd, '<div class="slinks"><span class="slinks" id="slink-%s">', slinkclass)
         for i in range(len(self._slinks)):
             if i != 0: p (fd, u' • ')
             slink = self._slinks[i]
             if slink[2]:
                 p (fd, '<a class="slink" id="slink-%s-%s-%s" href="javascript:sort(\'%s\', \'%s\', \'%s\')">%s</a>',
-                   (self._slinktag, self._slinkclass, slink[0],
-                    self._slinktag, self._slinkclass, slink[0], slink[1]),
+                   (slinktag, slinkclass, slink[0],
+                    slinktag, slinkclass, slink[0], slink[1]),
                    False)
             else:
                 p (fd, '<span class="slink" id="slink-%s-%s-%s">%s</span>',
-                   (self._slinktag, self._slinkclass, slink[0], slink[1]),
+                   (slinktag, slinkclass, slink[0], slink[1]),
                    False)
         p (fd, '</span></div>')
 
@@ -437,8 +439,8 @@ class ContainerBox (Widget, SortableComponent, ContentComponent, LinkBoxesCompon
     def __init__ (self, **kw):
         self._id = kw.get('id', None)
         self._title = kw.get('title', None)
-        kw.setdefault ('sortable_tag', 'table')
-        kw.setdefault ('sortable_class', self._id or 'lbox')
+        if self._id != None:
+            kw.setdefault ('sortable_class', self._id)
         super (ContainerBox, self).__init__ (**kw)
 
     def add_link_box (self, *args, **kw):
@@ -459,21 +461,23 @@ class ContainerBox (Widget, SortableComponent, ContentComponent, LinkBoxesCompon
             p (fd, '<div class="cont" id="%s">', self._id)
         else:
             p (fd, '<div class="cont">')
-        slinks = self.get_sort_links()
-        if self._title != None or len(slinks) > 0:
+        slinks = len(self.get_sort_links())
+        if self._title != None or slinks > 0:
             if self._title != None:
                 p (fd, '<div class="exp-title">', None, False)
-            if self._title != None and len(slinks) > 0:
+            if self._title != None and slinks > 0:
                 p (fd, '<table><tr><td>')
             if self._title != None:
                 p (fd, '<a href="javascript:exp_toggle(\'%s\')">', self._id, False)
                 p (fd, '<img id="img-%s" class="exp-img" src="%sexpander-open.png"> %s</a>',
                    (self._id, pulse.config.data_root, self._title))
-            if self._title != None and len(slinks) > 0:
+            if self._title != None and slinks > 0:
                 p (fd, '</td><td>')
-            if len(slinks) > 0:
+            if slinks > 0:
+                if self.get_sortable_class() == None:
+                    self.set_sortable_class (self._id)
                 SortableComponent.output (self, fd=fd)
-            if self._title != None and len(slinks) > 0:
+            if self._title != None and slinks > 0:
                 p (fd, '</td></tr></table>')
             if self._title != None:
                 p (fd, '</div>')
