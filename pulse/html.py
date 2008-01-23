@@ -445,10 +445,14 @@ class ContainerBox (Widget, SortableComponent, ContentComponent, LinkBoxesCompon
 
     def add_link_box (self, *args, **kw):
         lbox = LinkBoxesComponent.add_link_box (self, *args, **kw)
-        lbox.add_class (self.get_sortable_class())
+        scls = self.get_sortable_class()
+        if scls != None:
+            lbox.add_class (scls)
         return lbox
 
     def set_id (self, id):
+        if self.get_sortable_class() == None:
+            self.set_sortable_class (id)
         self._id = id
 
     def set_title (self, title):
