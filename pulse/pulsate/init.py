@@ -30,11 +30,8 @@ import django.core.management
 synop = 'initialize the Pulse database'
 
 def main (argv, options={}):
-    for dir in (pulse.config.scratch_dir,
-                pulse.config.web_graphs_dir,
-                pulse.config.web_icons_dir,
-                pulse.config.web_l10n_dir,
-                pulse.config.web_screens_dir):
-        if not os.path.exists (dir):
-            os.makedirs (dir)
+    if not os.path.exists (pulse.config.scratch_dir):
+        os.makedirs (pulse.config.scratch_dir)
+    if not os.path.exists (pulse.config.web_files_dir):
+        os.makedirs (pulse.config.web_files_dir)
     django.core.management.syncdb (0, False)

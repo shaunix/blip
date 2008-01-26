@@ -232,15 +232,13 @@ def output_doc (doc, path=[], query=[], http=True, fd=None):
     pad = pulse.html.PaddingBox ()
     cont.add_content (pad)
 
-    potlst = doc.ident.split('/')[1:] + [doc.ident.split('/')[-2] + '.pot']
-    poturl = pulse.config.l10n_root + '/'.join (potlst)
-    potfile = os.path.join (*potlst)
-    of = db.OutputFile.objects.filter (type='l10n', filename=potfile)
+    of = db.OutputFile.objects.filter (type='l10n', ident=doc.ident,
+                                       filename=(doc.ident.split('/')[-2] + '.pot'))
     try:
         of = of[0]
         linkspan = pulse.html.Span (divider=pulse.html.SPACE)
         pad.add_content (linkspan)
-        linkspan.add_content (pulse.html.Link (poturl,
+        linkspan.add_content (pulse.html.Link (of.pulse_url,
                                                pulse.utils.gettext ('POT file'),
                                                icon='download' ))
         # FIXME: i18n reordering

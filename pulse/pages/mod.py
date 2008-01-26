@@ -290,19 +290,16 @@ def output_branch (branch, path=[], query=[], http=True, fd=None):
             pad = pulse.html.PaddingBox ()
             cont.add_content (pad)
 
-            potlst = domain.ident.split('/')[1:]
             if domain.scm_dir == 'po':
-                potlst.append (domain.scm_module + '.pot')
+                potfile = domain.scm_module + '.pot'
             else:
-                potlst.append (domain.scm_dir + '.pot')
-            poturl = pulse.config.l10n_root + '/'.join (potlst)
-            potfile = os.path.join (*potlst)
-            of = db.OutputFile.objects.filter (type='l10n', filename=potfile)
+                potfile = domain.scm_dir + '.pot'
+            of = db.OutputFile.objects.filter (type='l10n', ident=domain.ident, filename=potfile)
             try:
                 of = of[0]
                 linkspan = pulse.html.Span (divider=pulse.html.SPACE)
                 pad.add_content (linkspan)
-                linkspan.add_content (pulse.html.Link (poturl,
+                linkspan.add_content (pulse.html.Link (of.pulse_url,
                                                        pulse.utils.gettext ('POT file'),
                                                        icon='download' ))
                 # FIXME: i18n reordering

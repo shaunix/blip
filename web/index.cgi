@@ -99,7 +99,8 @@ def main ():
                 retcode = 500
     if getattr (pulse.config, 'debug_db', False):
         print ('%i SELECT statements in %.3f seconds' %
-               (pulse.models.debug_select_count, pulse.models.debug_select_time))
+               (pulse.models.PulseDebugCursor.debug_select_count,
+                pulse.models.PulseDebugCursor.debug_select_time))
     return retcode
 
 

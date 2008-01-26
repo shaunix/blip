@@ -103,23 +103,32 @@ def update_xml2po (po, **kw):
 
 intltool_potfiles = {}
 def get_intltool_potfile (po, checkout):
-    podir = os.path.join (checkout.directory, po.scm_dir)
-    if intltool_potfiles.has_key (podir):
-        return intltool_potfiles[podir]
-    potdir = os.path.join (*([pulse.config.web_l10n_dir] + po.ident.split('/')[3:]))
+    indir = os.path.join (checkout.directory, po.scm_dir)
+    if intltool_potfiles.has_key (indir):
+        return intltool_potfiles[indir]
+
     if po.scm_dir == 'po':
         potname = po.scm_module
     else:
         potname = po.scm_dir
     potfile = potname + '.pot'
-    potfile_abs = os.path.join (potdir, potfile)
+    of = db.OutputFile.objects.filter (type='l10n', ident=po.parent.ident, filename=potfile)
+    try:
+        of = of[0]
+        of.datetime = datetime.datetime.now()
+    except IndexError:
+        of = db.OutputFile (type='l10n', ident=po.parent.ident, filename=potfile,
+                            datetime=datetime.datetime.now())
+
+    potfile_abs = of.get_file_path()
     potfile_rel = pulse.utils.relative_path (potfile_abs, pulse.config.web_l10n_dir)
+    potdir = os.path.dirname (potfile_abs)
     if not os.path.exists (potdir):
         os.makedirs (potdir)
     cmd = 'intltool-update -p -g "%s" && mv "%s" "%s"' % (potname, potfile, potdir)
     owd = os.getcwd ()
     try:
-        os.chdir (podir)
+        os.chdir (indir)
         pulse.utils.log ('Creating POT file %s' % potfile_rel)
         (status, output) = commands.getstatusoutput (cmd)
     finally:
@@ -127,45 +136,46 @@ def get_intltool_potfile (po, checkout):
     if status == 0:
         popo = pulse.parsers.Po (potfile_abs)
         num = popo.get_num_messages ()
-        vf = db.OutputFile.objects.filter (filename=potfile_rel, type='l10n')
-        try:
-            vf = vf[0]
-            vf.datetime = datetime.datetime.now()
-            vf.statistic = num
-        except IndexError:
-            vf = db.OutputFile (filename=potfile_rel, type='l10n',
-                                datetime=datetime.datetime.now(), statistic=num)
-        vf.save()
-        intltool_potfiles[podir] = potfile_abs
+        of.datetime = datetime.datetime.now()
+        of.statistic = num
+        of.save()
+        intltool_potfiles[indir] = potfile_abs
         return potfile_abs
     else:
         pulse.utils.warn ('Failed to create POT file %s' % potfile_rel)
-        intltool_potfiles[podir] = None
+        intltool_potfiles[indir] = None
         return None
 
 
 xml2po_potfiles = {}
 def get_xml2po_potfile (po, checkout):
-    makedir = os.path.join (checkout.directory, os.path.dirname (po.scm_dir))
-    if xml2po_potfiles.has_key (makedir):
-        return xml2po_potfiles[makedir]
-    makefile = pulse.parsers.Automake (os.path.join (makedir, 'Makefile.am'))
+    indir = os.path.dirname (os.path.join (checkout.directory, po.scm_dir))
+    if xml2po_potfiles.has_key (indir):
+        return xml2po_potfiles[indir]
+
+    makefile = pulse.parsers.Automake (os.path.join (indir, 'Makefile.am'))
     docfiles = [os.path.join ('C', fname)
                 for fname in ([makefile['DOC_MODULE']+'.xml'] + makefile.get('DOC_INCLUDES', '').split())]
-    potdir = os.path.join (*([pulse.config.web_l10n_dir] + po.ident.split('/')[3:]))
-    if po.scm_dir == 'po':
-        potname = po.scm_module
-    else:
-        potname = po.scm_dir
+    potname = makefile['DOC_MODULE']
     potfile = potname + '.pot'
-    potfile_abs = os.path.join (potdir, makefile['DOC_MODULE'] + '.pot')
+    of = db.OutputFile.objects.filter (type='l10n', ident=po.parent.ident, filename=potfile)
+    try:
+        of = of[0]
+        of.datetime = datetime.datetime.now()
+    except IndexError:
+        of = db.OutputFile (type='l10n', ident=po.parent.ident, filename=potfile,
+                            datetime=datetime.datetime.now())
+
+    potfile_abs = of.get_file_path()
     potfile_rel = pulse.utils.relative_path (potfile_abs, pulse.config.web_l10n_dir)
+    potdir = os.path.dirname (potfile_abs)
     if not os.path.exists (potdir):
         os.makedirs (potdir)
+
     cmd = 'xml2po -e -o "' + potfile_abs + '" "' + '" "'.join(docfiles) + '"'
     owd = os.getcwd ()
     try:
-        os.chdir (makedir)
+        os.chdir (indir)
         pulse.utils.log ('Creating POT file %s' % potfile_rel)
         (status, output) = commands.getstatusoutput (cmd)
     finally:
@@ -173,20 +183,14 @@ def get_xml2po_potfile (po, checkout):
     if status == 0:
         popo = pulse.parsers.Po (potfile_abs)
         num = popo.get_num_messages ()
-        vf = db.OutputFile.objects.filter (filename=potfile_rel, type='l10n')
-        try:
-            vf = vf[0]
-            vf.datetime = datetime.datetime.now()
-            vf.statistic = num
-        except IndexError:
-            vf = db.OutputFile (filename=potfile_rel, type='l10n',
-                                datetime=datetime.datetime.now(), statistic=num)
-        vf.save()
-        xml2po_potfiles[makedir] = potfile_abs
+        of.datetime = datetime.datetime.now()
+        of.statistic = num
+        of.save()
+        xml2po_potfiles[indir] = potfile_abs
         return potfile_abs
     else:
         pulse.utils.warn ('Failed to create POT file %s' % potfile_rel)
-        xml2po_potfiles[makedir] = None
+        xml2po_potfiles[indir] = None
         return None
     
 

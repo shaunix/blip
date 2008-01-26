@@ -277,11 +277,7 @@ class Page (Widget, HttpComponent, ContentComponent):
         super (Page, self).__init__ (**kw)
         self._title = kw.get ('title')
         self._icon = kw.get ('icon')
-        self._screenshot_thumb = None
-        self._screenshot_tw = None
-        self._screenshot_th = None
-        self._screenshot_url = None
-        self._do_screenshot = False
+        self._screenshot_file = None
 
     def set_title (self, title):
         self._title = title
@@ -290,16 +286,11 @@ class Page (Widget, HttpComponent, ContentComponent):
         self._icon = icon
 
     def add_screenshot (self, screenshot):
-        # FIXME: i18n
-        screen = screenshot['C']
-        of = db.OutputFile.objects.filter (type='figures', filename=screen)
         try:
-            of = of[0]
-            self._screenshot_thumb = of.data['thumb']
-            self._screenshot_tw = of.data['thumb_width']
-            self._screenshot_th = of.data['thumb_height']
-            self._screenshot_url = of.filename
-            self._do_screenshot = True
+            # FIXME: i18n
+            screen = screenshot['C']
+            of = db.OutputFile.objects.get (id=screen)
+            self._screenshot_file = of
         except:
             pass
 
@@ -331,16 +322,15 @@ class Page (Widget, HttpComponent, ContentComponent):
             p (fd, '<img class="icon" src="%s" alt="%s"> ', (self._icon, self._title), False)
         p (fd, None, self._title)
         p (fd, '</h1>')
-        if self._do_screenshot:
+        if self._screenshot_file != None:
             p (fd, '<div class="screenshot">', None, False)
-            if self._screenshot_url != None:
-                p (fd, '<a href="%s%s">', (pulse.config.figures_root, self._screenshot_url), False)
-            p (fd, '<img src="%s%s" width="%i" height="%i">',
-               (pulse.config.figures_root, self._screenshot_thumb,
-                self._screenshot_tw, self._screenshot_th))
-            if self._screenshot_url != None:
-                p (fd, '</a>', None, False)
-            p (fd, '</div>')
+            url = self._screenshot_file.get_pulse_url ()
+            p (fd, '<a href="%s">', self._screenshot_file.pulse_url, False)
+            p (fd, '<img src="%s" width="%i" height="%i">',
+               (self._screenshot_file.get_pulse_url ('thumbs'),
+                self._screenshot_file.data['thumb_width'],
+                self._screenshot_file.data['thumb_height']))
+            p (fd, '</a></div>')
         
         self.output_page_content (fd=fd)
         p (fd, '</div></body></html>')

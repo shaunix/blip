@@ -63,13 +63,15 @@ if pulse.config.DATABASE_ENGINE == 'sqlite3':
 # This is a nasty hack that allows us to only log INSERTs below
 __was_insert = False
 
-debug_select_count = 0
-debug_select_time = 0
 
 class PulseDebugCursor (object):
     def __init__ (self, cursor, db):
         self.cursor = cursor
         self.db = db
+
+    debug_select_count = 0
+    debug_select_time = 0
+    was_insert = False
 
     def execute (self, sql, params=()):
         if isinstance (params, dict):
@@ -97,12 +99,12 @@ class PulseDebugCursor (object):
             i = text.index (' FROM ')
             text = text[:7] + '...' + text[i:]
         elif text.startswith ('UPDATE '):
-            sys.modules[__name__].__was_insert = False
+            PulseDebugCursor.was_insert = False
             i = text.index (' SET ')
             j = text.index (' WHERE ')
             text = text[:i+5] + '...' + text[j:]
         elif text.startswith ('INSERT INTO '):
-            sys.modules[__name__].__was_insert = True
+            PulseDebugCursor.was_insert = True
             i = text[12:].index(' ')
             text = text[:13+i] + '...'
         start = time.time()
@@ -113,10 +115,8 @@ class PulseDebugCursor (object):
                 stop = time.time()
                 diff = stop - start
                 if select:
-                    global debug_select_count
-                    debug_select_count += 1
-                    global debug_select_time
-                    debug_select_time += diff
+                    PulseDebugCursor.debug_select_count += 1
+                    PulseDebugCursor.debug_select_time += diff
                 print '  ' + ('%.3f' % diff) + ' -- ' + text.replace('"', '')
 
     def execute_many (self, sql, param_list):
@@ -131,8 +131,8 @@ class PulseDebugCursor (object):
 django.db.backends.util.CursorDebugWrapper = PulseDebugCursor
 
 def __pulse_log_save (instance):
-    global __was_insert
-    if not __was_insert: return
+    if not PulseDebugCursor.was_insert:
+        return
     if isinstance (instance, PulseRecord):
         pulse.utils.log ('Created %s %s' % (instance.type, instance.ident))
     elif isinstance (instance, PulseRelation):
@@ -272,6 +272,8 @@ class PulseRecord (object):
                         if field.rel.to == self.__class__:
                             for rel in list(cls.objects.filter(**{field.name : self})):
                                 rel.delete()
+        for of in OutputFile.objects.filter (ident=self.ident):
+            of.delete()
 
     # Whether Pulse should link to this thing, i.e. whether it
     # displays pages for this kind of thing.  Subclasses will
@@ -695,7 +697,37 @@ class OutputFile (models.Model):
     __metaclass__ = PulseModelBase
 
     type = models.CharField (maxlength=80)
+    ident = models.CharField (maxlength=200)
+    subdir = models.CharField (maxlength=200, null=True)
     filename = models.CharField (maxlength=200)
-    statistic = models.IntegerField (default=0)
+    source = models.CharField (maxlength=200, null=True)
     datetime = models.DateTimeField ()
+    statistic = models.IntegerField (null=True)
     data = PickleField ()
+
+    def get_pulse_url (self, subsub=None):
+        lst = [self.ident[1:]]
+        if self.subdir != None:
+            lst.append (self.subdir)
+        if subsub != None:
+            lst.append (subsub)
+        lst.append (self.filename)
+        rootdir = getattr (pulse.config, self.type + '_root', None)
+        if rootdir == None:
+            lst.insert (0, self.type)
+            rootdir = pulse.config.web_root
+        return rootdir + '/'.join(lst)
+    pulse_url = property (get_pulse_url)
+
+    def get_file_path (self, subsub=None):
+        lst = self.ident[1:].split('/')
+        if self.subdir != None:
+            lst.append (self.subdir)
+        if subsub != None:
+            lst.append (subsub)
+        lst.append (self.filename)
+        rootdir = getattr (pulse.config, 'web_' + self.type + '_dir', None)
+        if rootdir == None:
+            lst.insert (0, self.type)
+            rootdir = pulse.config.web_files_dir
+        return os.path.join(rootdir, *lst)

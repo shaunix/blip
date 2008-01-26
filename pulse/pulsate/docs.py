@@ -67,28 +67,25 @@ def update_gdu_docbook (doc, **kw):
     checkout = kw.pop('checkout', None)
     if checkout == None:
         checkout = get_checkout (doc, update=kw.get('update', True))
-    data = {}
 
     # FIXME: we want to add "audience" for docs.  use that here
     cnt = db.Branch.objects.filter (type='Document',
                                     subtype__startswith='gdu-',
                                     parent=doc.parent)
     if cnt.count() == 1:
-        data['icon_name'] = doc.parent.icon_name
-        data['icon_dir'] = doc.parent.icon_dir
+        doc.icon_name = doc.parent.icon_name
+        doc.icon_dir = doc.parent.icon_dir
 
     docfile = os.path.join (checkout.directory, doc.scm_dir, doc.scm_file)
-    process_docbook_docfile (docfile, doc, data, **kw)
-
-    if data.has_key ('credits'):
-        set_credits (doc, data.pop ('credits'))
+    process_docbook_docfile (docfile, doc, **kw)
 
     translations = db.Branch.objects.filter (type='Translation', parent=doc)
     for translation in translations:
         pofile = os.path.join (checkout.directory, translation.scm_dir, translation.scm_file)
-        process_docbook_pofile (pofile, doc, data, **kw)
+        process_docbook_pofile (pofile, doc, **kw)
 
-    process_figures (doc, checkout, data, **kw)
+    process_credits (doc, **kw)
+    process_figures (doc, checkout, **kw)
 
     makedir = os.path.join (checkout.directory, os.path.dirname (doc.scm_dir))
     makefile = pulse.parsers.Automake (os.path.join (makedir, 'Makefile.am'))
@@ -113,10 +110,13 @@ def update_gdu_docbook (doc, **kw):
                 rev = db.Revision (branch=doc, person=pers, filename=fname, filetype='xml',
                                    revision=hist['revision'], datetime=hist['date'], comment=hist['comment'])
                 rev.save()
+
+    doc.data['xmlfiles'] = sorted (xmlfiles)
+
     revision = db.Revision.get_last_revision (branch=doc, filename=False)
     if revision != None:
-        data['mod_datetime'] = revision.datetime
-        data['mod_person'] = revision.person
+        doc.mod_datetime = revision.datetime
+        doc.mod_person = revision.person
 
     pulse.utils.log ('Creating commit graph for %s' % doc.ident)
     now = datetime.datetime.now()
@@ -130,7 +130,7 @@ def update_gdu_docbook (doc, **kw):
     score = 0;
     for i in range(len(stats)):
         score += (math.sqrt(i + 1) / 5) * stats[i]
-    data['mod_score'] = int(score)
+    doc.mod_score = int(score)
     graphdir = os.path.join (*([pulse.config.web_graphs_dir] + doc.ident.split('/')[1:]))
     if not os.path.exists (graphdir):
         os.makedirs (graphdir)
@@ -138,11 +138,6 @@ def update_gdu_docbook (doc, **kw):
     graph.save (os.path.join (graphdir, 'commits.png'))
     graph.save_data (os.path.join (graphdir, 'commits.imap'))
 
-    xmlfiles = sorted(xmlfiles)
-    if doc.data.get('xmlfiles') != xmlfiles:
-        data['xmlfiles'] = xmlfiles
-
-    doc.update (data)
     doc.save()
 
 
@@ -153,17 +148,15 @@ def update_gtk_doc (doc, **kw):
     data = {}
 
     docfile = os.path.join (checkout.directory, doc.scm_dir, doc.scm_file)
-    process_docbook_docfile (docfile, doc, data, **kw)
+    process_docbook_docfile (docfile, doc, **kw)
 
-    if data.has_key ('credits'):
-        set_credits (doc, data.pop ('credits'))
-    process_figures (doc, checkout, data, **kw)
+    process_credits (doc, **kw)
+    process_figures (doc, checkout, **kw)
 
-    doc.update (data)
     doc.save()
 
 
-def process_docbook_docfile (docfile, doc, data, **kw):
+def process_docbook_docfile (docfile, doc, **kw):
     rel_scm = pulse.utils.relative_path (docfile, pulse.config.scm_dir)
     if not os.path.exists (docfile):
         pulse.utils.warn ('No such file %s' % rel_scm)
@@ -173,14 +166,6 @@ def process_docbook_docfile (docfile, doc, data, **kw):
         stamp = db.Timestamp.get_timestamp (rel_scm)
         if mtime <= stamp:
             pulse.utils.log ('Skipping file %s' % rel_scm)
-            # Populate with the figures we found last time this file was
-            # actually processed.  These need to be here so we can check
-            # translations, even if this file hasn't changed.
-            data.setdefault ('figures', {})
-            if not data['figures'].has_key ('C'):
-                ofs = db.OutputFile.objects.filter (type='figures',
-                                                    filename__startswith=(doc.ident[1:] + '/C/'))
-                data['figures']['C'] = [of.data['source'] for of in ofs]
             return
     pulse.utils.log ('Processing file %s' % rel_scm)
 
@@ -242,10 +227,12 @@ def process_docbook_docfile (docfile, doc, data, **kw):
         doc.update (name=normalize(title))
     if abstract != None:
         doc.update (desc=normalize(abstract))
-    data['credits'] = credits
+
+    doc.credits = credits
 
     imgs = dom.getElementsByTagName ('imagedata')
-    data.setdefault ('figures', {})
+    doc.data['figures'] = []
+    doc.data['screens'] = {}
     for img in imgs:
         if not img.hasAttribute ('fileref'): continue
         ref = img.getAttribute ('fileref')
@@ -258,27 +245,25 @@ def process_docbook_docfile (docfile, doc, data, **kw):
             if is_screenshot:
                 if par.hasAttribute ('id'):
                     parid = par.getAttribute ('id')
-                    data.setdefault ('screens', {})
-                    data['screens'].setdefault (parid, os.path.basename (ref))
+                    doc.data['screens'].setdefault (parid, ref)
             par = par.parentNode
         if is_screenshot:
-            data.setdefault ('screens', {})
-            data['screens'].setdefault (None, os.path.basename (ref))
+            doc.data['screens'].setdefault (None, ref)
 
-        data['figures'].setdefault ('C', [])
-        data['figures']['C'].append (ref)
+        doc.data['figures'].append (ref)
 
     db.Timestamp.set_timestamp (rel_scm, mtime)
 
 
-def process_docbook_pofile (pofile, doc, data, **kw):
+def process_docbook_pofile (pofile, doc, **kw):
     lang = os.path.basename(pofile)[:-3]
-    if data.has_key ('figures') and data['figures'].has_key ('C'):
-        for ref in data['figures']['C']:
-            dref = os.path.join (os.path.dirname (pofile), ref)
-            if os.path.exists (dref):
-                data['figures'].setdefault (lang, [])
-                data['figures'][lang].append (ref)
+    if not hasattr (doc, 'figures_by_lang'):
+        doc.figures_by_lang = {}
+    doc.figures_by_lang[lang] = []
+    for ref in doc.data.get ('figures', []):
+        dref = os.path.join (os.path.dirname (pofile), ref)
+        if os.path.exists (dref):
+            doc.figures_by_lang[lang].append (ref)
    
     rel_scm = pulse.utils.relative_path (pofile, pulse.config.scm_dir)
     if not os.path.exists (pofile):
@@ -301,9 +286,11 @@ def process_docbook_pofile (pofile, doc, data, **kw):
     db.Timestamp.set_timestamp (rel_scm, mtime)
 
 
-def set_credits (doc, credits):
+def process_credits (doc, **kw):
+    if not hasattr (doc, 'credits'):
+        return
     rels = []
-    for cr_name, cr_email, cr_type, cr_maint in credits:
+    for cr_name, cr_email, cr_type, cr_maint in doc.credits:
         ent = None
         if cr_email != None:
             ent = db.Entity.objects.filter (email=cr_email)
@@ -332,22 +319,24 @@ def set_credits (doc, credits):
     doc.set_relations (db.DocumentEntity, rels)
 
 
-def process_figures (doc, checkout, data, **kw):
-    figures = data.pop('figures', {})
-    ofs = db.OutputFile.objects.filter (type='figures',
-                                        filename__startswith=(doc.ident[1:] + '/'))
-    ofs = list(ofs)
-    langs = figures.keys()
+def process_figures (doc, checkout, **kw):
+    figures = doc.data.get ('figures', [])
+    figures_by_lang = getattr (doc, 'figures_by_lang', {})
+    figures_by_lang['C'] = figures
+    ofs = list(db.OutputFile.objects.filter (type='figures', ident=doc.ident))
     ofs_by_lang = {}
     for of in ofs:
-        lang = of.data['lang']
-        ofs_by_lang.setdefault (lang, [])
-        ofs_by_lang[of.data['lang']].append (of)
-    for lang in figures.keys():
+        ofs_by_lang.setdefault (of.subdir, [])
+        ofs_by_lang[of.subdir].append (of)
+    for lang in figures_by_lang.keys():
         ofs_by_lang.setdefault (lang, [])
 
     for lang in ofs_by_lang.keys():
-        process_images_lang (doc, checkout, lang, figures.get(lang, []), ofs_by_lang[lang], **kw)
+        process_images_lang (doc, checkout, lang,
+                             figures_by_lang.get(lang, []),
+                             ofs_by_lang[lang],
+                             **kw)
+
 
 def process_images_lang (doc, checkout, lang, figs, ofs, **kw):
     indir = os.path.join (checkout.directory, doc.scm_dir, doc.scm_file)
@@ -355,49 +344,47 @@ def process_images_lang (doc, checkout, lang, figs, ofs, **kw):
     indir = os.path.join (indir, lang)
     ofs_by_source = {}
     for of in ofs:
-        ofs_by_source[of.data['source']] = of
+        ofs_by_source[of.source] = of
+    screen = doc.data.get('screens', {}).get(None, None)
     for ref in figs:
         of = ofs_by_source.pop (ref, None)
         if of == None:
             infile = os.path.join (indir, ref)
-            outdir = os.path.join (pulse.config.web_figures_dir, doc.ident[1:], lang)
-            relfile = os.path.join (doc.ident[1:], lang, os.path.basename (ref))
-            of = db.OutputFile (type='figures', filename=relfile)
-            of.data['source'] = ref
-            of.data['lang'] = lang
-            copy_image (infile, outdir, of)
+            of = db.OutputFile (type='figures', ident=doc.ident, subdir=lang,
+                                filename=os.path.basename (ref), source=ref,
+                                datetime=datetime.datetime.now())
+            copy_image (infile, of)
         else:
-            infile = os.path.join (indir, of.data['source'])
+            infile = os.path.join (indir, of.source)
             if kw.get('timestamps', True):
                 mtime = os.stat(infile).st_mtime
-                if mtime <= time.mktime(of.datetime.timetuple()):
-                    continue
-            outdir = os.path.join (pulse.config.web_figures_dir, doc.ident[1:], lang)
-            copy_image (infile, outdir, of)
+                if mtime > time.mktime(of.datetime.timetuple()):
+                    copy_image (infile, of)
+            else:
+                copy_image (infile, of)
+        if ref == screen:
+            doc.data.setdefault ('screenshot', {})
+            doc.data['screenshot'][lang] = of.id
     for of in ofs_by_source.values():
         pulse.utils.log ('Deleting figure %s' % of.filename)
-        os.remove (os.path.join (pulse.config.web_figures_dir, of.filename))
-        os.remove (os.path.join (pulse.config.web_figures_dir, of.data['thumb']))
+        os.remove (of.get_file_path())
+        os.remove (of.get_file_path('thumbs'))
         of.delete()
 
-    if doc.data.has_key ('screens') and doc.data['screens'].has_key (None):
-        screen = doc.data['screens'][None]
-        doc.data.setdefault ('screenshot', {})
-        doc.data['screenshot'][lang] = '/'.join ([doc.ident[1:], lang, screen])
 
-
-def copy_image (infile, outdir, of):
+def copy_image (infile, of):
     if not os.path.exists (infile):
         pulse.utils.warn ('Failed to copy figure %s' % of.filename)
         return
     pulse.utils.log ('Copying figure %s' % of.filename)
+    outfile = of.get_file_path ()
+    outdir = os.path.dirname (outfile)
     if not os.path.exists (outdir):
         os.makedirs (outdir)
-    outfile = os.path.join (outdir, os.path.basename (infile))
-    tdir = os.path.join (outdir, 'thumbs')
+    tfile = of.get_file_path ('thumbs')
+    tdir = os.path.dirname (tfile)
     if not os.path.exists (tdir):
         os.makedirs (tdir)
-    tfile = os.path.join (tdir, os.path.basename (infile))
     shutil.copyfile (infile, outfile)
     im = Image.open (infile)
     w, h = im.size
@@ -418,7 +405,6 @@ def copy_image (infile, outdir, of):
     of.data['height'] = h
     of.data['thumb_width'] = tw
     of.data['thumb_height'] = th
-    of.data['thumb'] = pulse.utils.relative_path (tfile, pulse.config.web_figures_dir)
     of.save()
 
 
