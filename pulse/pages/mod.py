@@ -126,7 +126,6 @@ def output_branch (branch, path=[], query=[], http=True, fd=None):
         span.add_content (branch.mod_datetime.strftime('%Y-%m-%d %T'))
         if branch.mod_person != None:
             span.add_content (' by ')
-            global people_cache
             people_cache[branch.mod_person.id] = branch.mod_person
             span.add_content (pulse.html.Link (branch.mod_person))
         page.add_fact (pulse.utils.gettext ('Last Modified'), span)
@@ -183,7 +182,6 @@ def output_branch (branch, path=[], query=[], http=True, fd=None):
         span.add_content ('on')
         span.add_content (rev.datetime.strftime('%Y-%m-%d %T'))
         span.add_content ('by')
-        global people_cache
         if not rev.person_id in people_cache:
             people_cache[rev.person_id] = rev.person
         person = people_cache[rev.person_id]
@@ -233,7 +231,7 @@ def output_branch (branch, path=[], query=[], http=True, fd=None):
         columns.add_to_column (1, box)
         for capp in capps:
             lbox = box.add_link_box (capp)
-            doc = db.Documentation.get_related (subj=app)
+            doc = db.Documentation.get_related (subj=capp)
             try:
                 doc = doc[0]
                 lbox.add_fact (pulse.utils.gettext ('Documentaion'), doc.pred)
