@@ -45,8 +45,8 @@ def main (path=[], query={}, http=True, fd=None):
             page.output(fd=fd)
             return 404
 
-        doc = branchable.default
-        if doc == None:
+        app = branchable.default
+        if app == None:
             kw = {'http': http}
             kw['title'] = pulse.utils.gettext ('Default Branch Not Found')
             # FIXME: this is not a good place to redirect
@@ -63,7 +63,7 @@ def main (path=[], query={}, http=True, fd=None):
             app = apps[0]
         except IndexError:
             kw = {'http': http}
-            kw['title'] = pulse.utils.gettext ('Document Not Found')
+            kw['title'] = pulse.utils.gettext ('Application Not Found')
             page = pulse.html.PageNotFound (
                 (pulse.utils.gettext ('Pulse could not find the branch %s of the application %s')
                  % (path[4], path[3])),
@@ -84,7 +84,7 @@ def output_app (app, path=[], query=[], http=True, fd=None):
     branches = pulse.utils.attrsorted (list(app.branchable.branches.all()), 'scm_branch')
     if len(branches) > 1:
         for b in branches:
-            if b.ident != doc.ident:
+            if b.ident != app.ident:
                 page.add_sublink (b.pulse_url, b.ident.split('/')[-1])
             else:
                 page.add_sublink (None, b.ident.split('/')[-1])
