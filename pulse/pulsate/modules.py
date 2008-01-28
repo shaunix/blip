@@ -535,10 +535,13 @@ def process_keyfile (branch, checkout, filename, **kw):
         basename = os.path.basename (filename)[:-11]
     owd = os.getcwd ()
     try:
-        os.chdir (checkout.directory)
-        keyfile = pulse.parsers.KeyFile (os.popen ('LC_ALL=C intltool-merge -d -q -u po "' + rel_ch + '" -'))
-    finally:
-        os.chdir (owd)
+        try:
+            os.chdir (checkout.directory)
+            keyfile = pulse.parsers.KeyFile (os.popen ('LC_ALL=C intltool-merge -d -q -u po "' + rel_ch + '" -'))
+        finally:
+            os.chdir (owd)
+    except:
+        return None
     if not keyfile.has_group ('Desktop Entry'):
         return None
     if not keyfile.has_key ('Desktop Entry', 'Type'):

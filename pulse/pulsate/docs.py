@@ -366,7 +366,7 @@ def process_images_lang (doc, checkout, lang, figs, ofs, **kw):
             doc.data.setdefault ('screenshot', {})
             doc.data['screenshot'][lang] = of.id
     for of in ofs_by_source.values():
-        pulse.utils.log ('Deleting figure %s' % of.filename)
+        pulse.utils.log ('Deleting figure %s/%s' % (of.subdir, of.filename))
         os.remove (of.get_file_path())
         os.remove (of.get_file_path('thumbs'))
         of.delete()
@@ -376,7 +376,7 @@ def copy_image (infile, of):
     if not os.path.exists (infile):
         pulse.utils.warn ('Failed to copy figure %s' % of.filename)
         return
-    pulse.utils.log ('Copying figure %s' % of.filename)
+    pulse.utils.log ('Copying figure %s/%s' % (of.subdir, of.filename))
     outfile = of.get_file_path ()
     outdir = os.path.dirname (outfile)
     if not os.path.exists (outdir):
@@ -393,7 +393,7 @@ def copy_image (infile, of):
     except IOError:
         # PIL doesn't do interlaced PNGs.  Process the image with
         # ImageMagick and pipe the result back.
-        fd = os.popen ('convert "%s" -interlace none -' % fullfile)
+        fd = os.popen ('convert "%s" -interlace none -' % infile)
         # We have to wrap with StringIO because Image.open expects the
         # file object to implement seek, which os.popen does not.
         im = Image.open(StringIO.StringIO(fd.read()))
