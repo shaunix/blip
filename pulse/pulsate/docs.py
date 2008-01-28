@@ -386,10 +386,12 @@ def copy_image (infile, of):
     if not os.path.exists (tdir):
         os.makedirs (tdir)
     shutil.copyfile (infile, outfile)
-    im = Image.open (infile)
-    w, h = im.size
     try:
+        im = Image.open (infile)
+        w, h = im.size
         im.thumbnail((120, 120), Image.ANTIALIAS)
+        tw, th = im.size
+        im.save (tfile, 'PNG')
     except IOError:
         # PIL doesn't do interlaced PNGs.  Process the image with
         # ImageMagick and pipe the result back.
@@ -398,8 +400,8 @@ def copy_image (infile, of):
         # file object to implement seek, which os.popen does not.
         im = Image.open(StringIO.StringIO(fd.read()))
         im.thumbnail((120, 120), Image.ANTIALIAS)
-    tw, th = im.size
-    im.save (tfile, 'PNG')
+        tw, th = im.size
+        im.save (tfile, 'PNG')
     of.datetime = datetime.datetime.now()
     of.data['width'] = w
     of.data['height'] = h
