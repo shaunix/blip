@@ -26,7 +26,7 @@ import os
 # These are the local directories where stuff can be found.
 # You probably only need to change base_dir.
 
-base_dir = '/home/shaunm/Projects/pulse/'
+base_dir = '/home/users/shaunm/public_html/pulse/'
 
 # The directory containing input files that are stored in git with Pulse
 input_dir = os.path.join (base_dir, 'input')
@@ -69,7 +69,7 @@ web_l10n_dir = os.path.join (web_files_dir, 'l10n')
 # Pulse without mod_rewrite.
 
 # The root URL for all things Pulse
-web_root = 'http://localhost/'
+web_root = 'http://www.gnome.org/~shaunm/pulse/web/'
 
 # The root URL for Pulse's CSS, JavaScript, images, etc.
 data_root = web_root + 'data/'
