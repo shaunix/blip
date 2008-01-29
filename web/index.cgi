@@ -3,7 +3,7 @@
 import getopt
 import os
 import sys
-sys.path.append ('/home/shaunm/Projects/pulse')
+sys.path.append ('/home/users/shaunm/public_html/pulse')
 import cgi
 
 import pulse.config
