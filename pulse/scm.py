@@ -451,10 +451,25 @@ class Checkout (object):
                     if comment != None:
                         comment += line.strip() + '\n'
                     elif line.startswith ('Author:'):
+                        # FIXME: parse "name <email@domain>"
                         who = line[7:].strip()
                     elif line.startswith ('Date:'):
-                        # FIXME: parse date
-                        date = line[5:].strip()
+                        revdate = line[5:].strip()
+                        revdate = revdate.split()
+                        datelist = [0, 0, 0, 0, 0, 0]
+                        datelist[0] = int(revdate[4])
+                        months = {'Jan':1, 'Feb':2, 'Mar':3, 'Apr':4, 'May':5, 'Jun':6,
+                                  'Jul':7, 'Aug':8, 'Sep':9, 'Oct':10, 'Nov':11, 'Dec':12}
+                        datelist[1] = months[revdate[1]]
+                        datelist[2] = int(revdate[2])
+                        datelist[3:6] = map (int, revdate[3].split(':'))
+                        date = datetime.datetime(*datelist)
+
+                        off = revdate[-1]
+                        offhours = int(off[:3])
+                        offmins = int(off[0] + off[3:])
+                        delta = datetime.timedelta (hours=offhours, minutes=offmins)
+                        date = date - delta
                     elif line.strip() == '':
                         comment = ''
                     line = fd.readline()

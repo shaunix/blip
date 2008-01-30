@@ -142,7 +142,7 @@ def get_intltool_potfile (po, checkout):
         intltool_potfiles[indir] = potfile_abs
         return potfile_abs
     else:
-        pulse.utils.warn ('Failed to create POT file %s' % potfile_rel)
+        pulse.utils.warn('Failed to create POT file %s' % potfile_rel)
         intltool_potfiles[indir] = None
         return None
 
@@ -202,7 +202,7 @@ def do_history (po, checkout, **kw):
     if kw.get('timestamps', True):
         stamp = db.Timestamp.get_timestamp (rel_scm)
         if mtime <= stamp:
-            pulse.utils.warn ('Skipping history for %s' % rel_scm)
+            pulse.utils.log ('Skipping history for %s' % rel_scm)
             return
     pulse.utils.log ('Checking history for %s' % rel_scm)
     since = db.Revision.get_last_revision (branch=po, filename=po.scm_file)
