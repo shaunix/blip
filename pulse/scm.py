@@ -222,6 +222,8 @@ class Checkout (object):
             os.chdir (owd)
 
 
+    ############################################################################
+
     def get_history (self, since=None):
         if hasattr (Checkout, '_get_history_' + self.scm_type) and self.scm_type in default_branches:
             func = getattr (Checkout, '_get_history_' + self.scm_type)
@@ -236,6 +238,21 @@ class Checkout (object):
         # the module's statistics.  So we're just going to require ChangeLog
         # files for CVS modules.
         return self.get_file_history ('ChangeLog', since=since)
+
+    def _get_history_git (self, since=None):
+        owd = os.getcwd ()
+        retval = []
+        try:
+            os.chdir (self.directory)
+            cmd = 'git log'
+            if since != None:
+                cmd += ' "%s..%s"' % (since, self.scm_branch)
+            else:
+                cmd += ' "%s"' % self.scm_branch
+            retval = self._process_git_history (cmd, since)
+        finally:
+            os.chdir (owd)
+        return retval
 
     def _get_history_svn (self, since=None):
         owd = os.getcwd ()
@@ -253,6 +270,8 @@ class Checkout (object):
             os.chdir (owd)
         return retval
 
+
+    ############################################################################
 
     def get_file_revision (self, filename):
         if hasattr (Checkout, '_get_file_revision_' + self.scm_type) and self.scm_type in default_branches:
@@ -296,7 +315,18 @@ class Checkout (object):
         retval = None
         try:
             os.chdir (os.path.join (self.directory, os.path.dirname (filename)))
-            cmd = 'svn info "%s@"' % os.path.basename (filename)
+            base = os.path.basename (filename)
+            # SVN interprets @ as giving a revision, but we actually have files
+            # with @ in the name, like sr@Latn.po.  The only way to get around
+            # this is by appending @ to the file name.  But appending @ causes
+            # SVN to hit the network.  There doesn't seem to be any other way
+            # around this magic revision parsing crap, so we just suck it up
+            # and accept the network penalty, but only for files with @ in the
+            # name.  It would probably be worthwhile to investigate using pysvn.
+            if '@' in base:
+                cmd = 'svn info "%s@"' % base
+            else:
+                cmd = 'svn info "%s"' % base
             for line in os.popen (cmd):
                 if line.startswith ('Last Changed Rev: '):
                     revnumber = line[18:].strip()
@@ -308,6 +338,8 @@ class Checkout (object):
             os.chdir (owd)
         return retval
 
+
+    ############################################################################
 
     def get_file_history (self, filename, since=None):
         if hasattr (Checkout, '_get_file_history_' + self.scm_type) and self.scm_type in default_branches:
@@ -367,7 +399,21 @@ class Checkout (object):
             os.chdir (owd)
         return retval
     
-    #def _get_file_history_git (self, filename, since=None)
+    def _get_file_history_git (self, filename, since=None):
+        owd = os.getcwd ()
+        retval = []
+        try:
+            os.chdir (self.directory)
+            cmd = 'git log'
+            if since != None:
+                cmd += ' "%s..%s"' % (since, self.scm_branch)
+            else:
+                cmd += ' "%s"' % self.scm_branch
+            cmd += ' -- "%s"' % filename
+            retval = self._process_git_history (cmd, since)
+        finally:
+            os.chdir (owd)
+        return retval
     
     def _get_file_history_svn (self, filename, since=None):
         owd = os.getcwd ()
@@ -386,6 +432,38 @@ class Checkout (object):
             os.chdir (owd)
         return retval
 
+
+    ############################################################################
+
+    def _process_git_history (self, cmd, since):
+        retval = []
+        fd = codecs.getreader('utf-8')(os.popen (cmd), 'ignore')
+        line = fd.readline()
+        rev = None
+        while line:
+            if line.startswith ('commit '):
+                rev = line[7:].strip()
+                comment = None
+                line = fd.readline()
+                while line:
+                    if line.startswith ('commit '):
+                        break
+                    if comment != None:
+                        comment += line.strip() + '\n'
+                    elif line.startswith ('Author:'):
+                        who = line[7:].strip()
+                    elif line.startswith ('Date:'):
+                        # FIXME: parse date
+                        date = line[5:].strip()
+                    elif line.strip() == '':
+                        comment = ''
+                    line = fd.readline()
+                retval.insert (0,
+                               {'revision' : rev, 'date' : date,
+                                'userid' : who, 'comment' : comment})
+            else:
+                line = fd.readline()
+        return retval
 
     def _process_svn_history (self, cmd, since):
         retval = []
