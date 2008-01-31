@@ -87,6 +87,14 @@ def update_intltool (po, **kw):
     if kw.get('history', True):
         do_history (po, checkout, **kw)
 
+    # FIXME: things like .desktop files might not be reprocessed because
+    # they haven't changed, but translators might have updated the name
+    # or description.  Rather than trying to make those things run when
+    # po files have been updated, let's just grab these:
+    # po.parent.parent.select_children (...)
+    # for Application, Capplet, Applet, and Library and see if we can
+    # provide an updated name or description.
+
     po.data['md5'] = potfile.data.get('md5', None)
     po.save()
     db.Timestamp.set_timestamp (rel_scm, mtime)

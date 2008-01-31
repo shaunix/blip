@@ -204,10 +204,14 @@ def update_branch (branch, **kw):
     
 
 def check_history (branch, checkout):
-    pulse.utils.log ('Checking history for %s' % branch.ident)
     since = db.Revision.get_last_revision (branch=branch, filename=None)
     if since != None:
         since = since.revision
+        current = checkout.get_revision()
+        if current != None and since == current[0]:
+            pulse.utils.log ('Skipping history for %s' % branch.ident)
+            return
+    pulse.utils.log ('Checking history for %s' % branch.ident)
     serverid = '.'.join (pulse.scm.server_name (checkout.scm_type, checkout.scm_server).split('.')[-2:])
     for hist in checkout.get_history (since=since):
         pident = '/person/' + serverid + '/' + hist['userid']

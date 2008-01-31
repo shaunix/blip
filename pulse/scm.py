@@ -224,48 +224,35 @@ class Checkout (object):
 
     ############################################################################
 
-    def get_history (self, since=None):
-        if hasattr (Checkout, '_get_history_' + self.scm_type) and self.scm_type in default_branches:
-            func = getattr (Checkout, '_get_history_' + self.scm_type)
+    def get_revision (self):
+        if hasattr (Checkout, '_get_revision_' + self.scm_type) and self.scm_type in default_branches:
+            func = getattr (Checkout, '_get_revision_' + self.scm_type)
         else:
             raise CheckoutError (
-                'get_history got unknown SCM type "%s"' % self.scm_type)
-        return func (self, since=since)
+                'get_revision got unknown SCM type "%s"' % self.scm_type)
+        return func (self)
 
-    def _get_history_cvs (self, since=None):
-        # I don't feel like writing per-file to per-repo stuff, and we don't
-        # want to count each file commit, otherwise we drastically inflate
-        # the module's statistics.  So we're just going to require ChangeLog
-        # files for CVS modules.
-        return self.get_file_history ('ChangeLog', since=since)
+    def _get_revision_cvs (self):
+        # FIXME
+        return None
 
-    def _get_history_git (self, since=None):
+    def _get_revision_git (self):
+        # FIXME
+        return None
+
+    def _get_revision_svn (self):
         owd = os.getcwd ()
-        retval = []
+        retval = None
         try:
             os.chdir (self.directory)
-            cmd = 'git log'
-            if since != None:
-                cmd += ' "%s..%s"' % (since, self.scm_branch)
-            else:
-                cmd += ' "%s"' % self.scm_branch
-            retval = self._process_git_history (cmd, since)
-        finally:
-            os.chdir (owd)
-        return retval
-
-    def _get_history_svn (self, since=None):
-        owd = os.getcwd ()
-        retval = []
-        try:
-            os.chdir (self.directory)
-            cmd = 'svn log '
-            if since != None:
-                cmd += '-r' + since + ':HEAD'
-            else:
-                # Since the beginning of time, to give us oldest first
-                cmd += '-r\'{1970-01-01}\':HEAD'
-            retval = self._process_svn_history (cmd, since)
+            cmd = 'svn info .'
+            for line in os.popen (cmd):
+                if line.startswith ('Last Changed Rev: '):
+                    revnumber = line[18:].strip()
+                elif line.startswith ('Last Changed Date: '):
+                    revdate = line[19:].strip()
+                    break
+            retval = (revnumber, parse_date_svn (revdate))
         finally:
             os.chdir (owd)
         return retval
@@ -334,6 +321,55 @@ class Checkout (object):
                     revdate = line[19:].strip()
                     break
             retval = (revnumber, parse_date_svn (revdate))
+        finally:
+            os.chdir (owd)
+        return retval
+
+
+    ############################################################################
+
+    def get_history (self, since=None):
+        if hasattr (Checkout, '_get_history_' + self.scm_type) and self.scm_type in default_branches:
+            func = getattr (Checkout, '_get_history_' + self.scm_type)
+        else:
+            raise CheckoutError (
+                'get_history got unknown SCM type "%s"' % self.scm_type)
+        return func (self, since=since)
+
+    def _get_history_cvs (self, since=None):
+        # I don't feel like writing per-file to per-repo stuff, and we don't
+        # want to count each file commit, otherwise we drastically inflate
+        # the module's statistics.  So we're just going to require ChangeLog
+        # files for CVS modules.
+        return self.get_file_history ('ChangeLog', since=since)
+
+    def _get_history_git (self, since=None):
+        owd = os.getcwd ()
+        retval = []
+        try:
+            os.chdir (self.directory)
+            cmd = 'git log'
+            if since != None:
+                cmd += ' "%s..%s"' % (since, self.scm_branch)
+            else:
+                cmd += ' "%s"' % self.scm_branch
+            retval = self._process_git_history (cmd, since)
+        finally:
+            os.chdir (owd)
+        return retval
+
+    def _get_history_svn (self, since=None):
+        owd = os.getcwd ()
+        retval = []
+        try:
+            os.chdir (self.directory)
+            cmd = 'svn log '
+            if since != None:
+                cmd += '-r' + since + ':HEAD'
+            else:
+                # Since the beginning of time, to give us oldest first
+                cmd += '-r\'{1970-01-01}\':HEAD'
+            retval = self._process_svn_history (cmd, since)
         finally:
             os.chdir (owd)
         return retval
