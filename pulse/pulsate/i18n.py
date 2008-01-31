@@ -20,6 +20,7 @@
 
 import commands
 import datetime
+import md5
 import os
 import os.path
 
@@ -53,15 +54,29 @@ def update_intltool (po, **kw):
     checkout = kw.pop('checkout', None)
     if checkout == None:
         checkout = get_checkout (po, update=kw.get('update', True))
+
     potfile = get_intltool_potfile (po, checkout)
     if potfile == None: return
+
+    filepath = os.path.join (checkout.directory, po.scm_dir, po.scm_file)
+    rel_scm = pulse.utils.relative_path (filepath, pulse.config.scm_dir)
+    mtime = os.stat(filepath).st_mtime
+
+    if kw.get('timestamps', True):
+        stamp = db.Timestamp.get_timestamp (rel_scm)
+        if mtime <= stamp:
+            pomd5 = po.data.get('md5', None)
+            potmd5 = potfile.data.get('md5', None)
+            if pomd5 != None and pomd5 == potmd5:
+                pulse.utils.log ('Skipping file %s' % rel_scm)
+                return
+
     podir = os.path.join (checkout.directory, po.scm_dir)
-    cmd = 'msgmerge "' + po.scm_file + '" "' + potfile + '" 2>&1'
+    cmd = 'msgmerge "%s" "%s" 2>&1' % (po.scm_file, potfile.get_file_path())
     owd = os.getcwd ()
     try:
         os.chdir (podir)
-        filepath = os.path.join (checkout.directory, po.scm_dir, po.scm_file)
-        pulse.utils.log ('Processing file ' + pulse.utils.relative_path (filepath, pulse.config.scm_dir))
+        pulse.utils.log ('Processing file ' + rel_scm)
         popo = pulse.parsers.Po (os.popen (cmd))
         stats = popo.get_stats()
         total = stats[0] + stats[1] + stats[2]
@@ -72,20 +87,40 @@ def update_intltool (po, **kw):
     if kw.get('history', True):
         do_history (po, checkout, **kw)
 
+    po.data['md5'] = potfile.data.get('md5', None)
+    po.save()
+    db.Timestamp.set_timestamp (rel_scm, mtime)
+
 
 def update_xml2po (po, **kw):
     checkout = kw.pop('checkout', None)
     if checkout == None:
         checkout = get_checkout (po, update=kw.get('update', True))
+
     potfile = get_xml2po_potfile (po, checkout)
     if potfile == None: return
+
+    filepath = os.path.join (checkout.directory, po.scm_dir, po.scm_file)
+    rel_scm = pulse.utils.relative_path (filepath, pulse.config.scm_dir)
+    mtime = os.stat(filepath).st_mtime
+
+    if kw.get('timestamps', True):
+        stamp = db.Timestamp.get_timestamp (rel_scm)
+        if mtime <= stamp:
+            pomd5 = po.data.get('md5', None)
+            potmd5 = potfile.data.get('md5', None)
+            if pomd5 != None and pomd5 == potmd5:
+                pulse.utils.log ('Skipping file %s' % rel_scm)
+                return
+
     makedir = os.path.join (checkout.directory, os.path.dirname (po.scm_dir))
-    cmd = 'msgmerge "' + os.path.join (os.path.basename (po.scm_dir), po.scm_file) + '" "' + potfile + '" 2>&1'
+    cmd = 'msgmerge "%s" "%s" 2>&1' % (
+        os.path.join (os.path.basename (po.scm_dir), po.scm_file),
+        potfile.get_file_path() )
     owd = os.getcwd ()
     try:
         os.chdir (makedir)
-        filepath = os.path.join (checkout.directory, po.scm_dir, po.scm_file)
-        pulse.utils.log ('Processing file ' + pulse.utils.relative_path (filepath, pulse.config.scm_dir))
+        pulse.utils.log ('Processing file ' + rel_scm)
         popo = pulse.parsers.Po (os.popen (cmd))
         stats = popo.get_stats()
         total = stats[0] + stats[1] + stats[2]
@@ -99,6 +134,10 @@ def update_xml2po (po, **kw):
         os.chdir (owd)
     if kw.get('history', True):
         do_history (po, checkout, **kw)
+
+    po.data['md5'] = potfile.data.get('md5', None)
+    po.save()
+    db.Timestamp.set_timestamp (rel_scm, mtime)
     
 
 intltool_potfiles = {}
@@ -134,13 +173,23 @@ def get_intltool_potfile (po, checkout):
     finally:
         os.chdir (owd)
     if status == 0:
-        popo = pulse.parsers.Po (potfile_abs)
+        m = md5.new()
+        y = False
+        popo = pulse.parsers.Po ()
+        for line in open (potfile_abs):
+            if y:
+                m.update (line)
+            if line.strip() == '':
+                y = True
+            popo.feed (line)
+        popo.finish ()
         num = popo.get_num_messages ()
         of.datetime = datetime.datetime.now()
         of.statistic = num
+        of.data['md5'] = m.hexdigest ()
         of.save()
-        intltool_potfiles[indir] = potfile_abs
-        return potfile_abs
+        intltool_potfiles[indir] = of
+        return of
     else:
         pulse.utils.warn('Failed to create POT file %s' % potfile_rel)
         intltool_potfiles[indir] = None
@@ -181,13 +230,23 @@ def get_xml2po_potfile (po, checkout):
     finally:
         os.chdir (owd)
     if status == 0:
-        popo = pulse.parsers.Po (potfile_abs)
+        m = md5.new()
+        y = False
+        popo = pulse.parsers.Po ()
+        for line in open (potfile_abs):
+            if y:
+                m.update (line)
+            if line.strip() == '':
+                y = True
+            popo.feed (line)
+        popo.finish ()
         num = popo.get_num_messages ()
         of.datetime = datetime.datetime.now()
         of.statistic = num
+        of.data['md5'] = m.hexdigest ()
         of.save()
-        xml2po_potfiles[indir] = potfile_abs
-        return potfile_abs
+        xml2po_potfiles[indir] = of
+        return of
     else:
         pulse.utils.warn ('Failed to create POT file %s' % potfile_rel)
         xml2po_potfiles[indir] = None

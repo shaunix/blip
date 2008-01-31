@@ -115,11 +115,13 @@ class KeyFile (object):
         return self._data[group][key]
 
 class Po:
-    def __init__ (self, f):
+    def __init__ (self, f=None):
         if isinstance (f, basestring):
             self._fd = codecs.open (f, 'r', 'utf-8')
-        else:
+        elif isinstance (f, file):
             self._fd = f
+        else:
+            self._fd = None
         self._msgstrs = {}
         self._comments = {}
         self._num_translated = 0
@@ -129,68 +131,68 @@ class Po:
         self._num_translated_images = 0
         self._num_fuzzy_images = 0
         self._num_untranslated_images = 0
-        self.parse()
 
-    def parse (self):
         self._inkey = ''
         self._msg = {}
+        if self._fd != None:
+            for line in self._fd:
+                self.feed (line)
+            self.finish ()
 
-        def finish_msg ():
-            if self._msg.has_key ('msgid'):
-                key = (self._msg['msgid'], self._msg.get('msgctxt'))
-                self._comments[key] = self._msg.get('comment')
-                self._msgstrs[key] = self._msg.get('msgstr')
-                img = self._msg['msgid'].startswith ('@@image: ')
-                if img: self._num_images += 1
-                if self._msg.get('msgstr', '') == '':
-                    self._num_untranslated += 1
-                    if img: self._num_untranslated_images += 1
-                elif self._msg.get('fuzzy', False):
-                    self._num_fuzzy += 1
-                    if img: self._num_fuzzy_images += 1
-                else:
-                    self._num_translated += 1
-                    if img: self._num_translated_images += 1
-            self._inkey = ''
-            self._msg = {}
-                
-        for line in self._fd:
-            line = line.strip()
-            if line.startswith ('#~'):
-                continue
+    def feed (self, line):
+        line = line.strip()
+        if line.startswith ('#~'):
+            return
 
-            if line.startswith ('msgid "'):
-                if self._inkey.startswith ('msg'):
-                    finish_msg ()
-                self._inkey = 'msgid'
-                line = line[6:]
-            elif line.startswith ('msgctxt "'):
-                self._inkey = 'msgctxt'
-                line = line[8:]
-            elif line.startswith ('msgstr "'):
-                self._inkey = 'msgstr'
-                line = line[7:]
-            elif line.startswith ('#'):
-                if self._inkey.startswith ('msg'):
-                    finish_msg ()
-                self._inkey = 'comment'
-            elif line == '':
-                finish_msg ()
-
+        if line.startswith ('msgid "'):
             if self._inkey.startswith ('msg'):
-                if line.startswith ('"') and line.endswith ('"'):
-                    self._msg.setdefault (self._inkey, '')
-                    self._msg[self._inkey] += line[1:-1]
-            elif self._inkey == 'comment':
-                self._msg.setdefault (self._inkey, '')
-                if line == '#, fuzzy':
-                    self._msg['fuzzy'] = True
-                if ' ' in line:
-                    self._msg[self._inkey] += line[line.index(' ')+1:] + '\n'
-                else:
-                    self._msg[self._inkey] += '\n'
+                self.finish ()
+            self._inkey = 'msgid'
+            line = line[6:]
+        elif line.startswith ('msgctxt "'):
+            self._inkey = 'msgctxt'
+            line = line[8:]
+        elif line.startswith ('msgstr "'):
+            self._inkey = 'msgstr'
+            line = line[7:]
+        elif line.startswith ('#'):
+            if self._inkey.startswith ('msg'):
+                self.finish ()
+            self._inkey = 'comment'
+        elif line == '':
+            self.finish ()
 
-        finish_msg ()
+        if self._inkey.startswith ('msg'):
+            if line.startswith ('"') and line.endswith ('"'):
+                self._msg.setdefault (self._inkey, '')
+                self._msg[self._inkey] += line[1:-1]
+        elif self._inkey == 'comment':
+            self._msg.setdefault (self._inkey, '')
+            if line == '#, fuzzy':
+                self._msg['fuzzy'] = True
+            if ' ' in line:
+                self._msg[self._inkey] += line[line.index(' ')+1:] + '\n'
+            else:
+                self._msg[self._inkey] += '\n'
+
+    def finish (self):
+        if self._msg.has_key ('msgid'):
+            key = (self._msg['msgid'], self._msg.get('msgctxt'))
+            self._comments[key] = self._msg.get('comment')
+            self._msgstrs[key] = self._msg.get('msgstr')
+            img = self._msg['msgid'].startswith ('@@image: ')
+            if img: self._num_images += 1
+            if self._msg.get('msgstr', '') == '':
+                self._num_untranslated += 1
+                if img: self._num_untranslated_images += 1
+            elif self._msg.get('fuzzy', False):
+                self._num_fuzzy += 1
+                if img: self._num_fuzzy_images += 1
+            else:
+                self._num_translated += 1
+                if img: self._num_translated_images += 1
+        self._inkey = ''
+        self._msg = {}
 
     def has_message (self, msgid, msgctxt=None):
         return self._msgstrs.has_key ((msgid, msgctxt))
