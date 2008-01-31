@@ -103,6 +103,9 @@ def update_gdu_docbook (doc, **kw):
             since = db.Revision.get_last_revision (branch=doc, filename=fname)
             if since != None:
                 since = since.revision
+                current = checkout.get_file_revision(rel_ch)
+                if current != None and since == current[0]:
+                    continue
             serverid = '.'.join (pulse.scm.server_name (checkout.scm_type, checkout.scm_server).split('.')[-2:])
             for hist in checkout.get_file_history (rel_ch, since=since):
                 pident = '/person/' + serverid + '/' + hist['userid']
