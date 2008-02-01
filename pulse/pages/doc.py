@@ -183,17 +183,17 @@ def output_doc (doc, path=[], query=[], http=True, fd=None):
             cmt = pulse.utils.gettext ('this week: %i commits') % datum[1]
         graph.add_comment (datum[0], cmt)
     pad.add_content (graph)
-    div = pulse.html.Div (id='actfiles')
+    div = pulse.html.Div (id='xmlfiles')
     pad.add_content (div)
     xmlfiles = doc.data.get('xmlfiles', [])
     if len(xmlfiles) > 10:
-        jslink = 'javascript:replace_content(\'actfiles\', '
-        jslink += '\'%s%s?ajax=activity\'' % (pulse.config.web_root, doc.ident[1:])
+        jslink = 'javascript:replace_content(\'xmlfiles\', '
+        jslink += '\'%s%s?ajax=xmlfiles\'' % (pulse.config.web_root, doc.ident[1:])
         jslink += ')'
         div.add_content (pulse.html.Link (jslink,
                                           pulse.utils.gettext ('View all %i files') % len(xmlfiles)))
     else:
-        div.add_content (get_activity (doc, xmlfiles))
+        div.add_content (get_xmlfiles (doc, xmlfiles))
 
     cont = pulse.html.ContainerBox()
     cont.set_title (pulse.utils.gettext ('History'))
@@ -308,11 +308,12 @@ def output_doc (doc, path=[], query=[], http=True, fd=None):
 def output_ajax (doc, path, query, http, fd):
     page = pulse.html.Fragment ()
     xmlfiles = doc.data.get('xmlfiles', [])
-    page.add_content (get_activity (doc, xmlfiles))
+    page.add_content (get_xmlfiles (doc, xmlfiles))
     page.output(fd=fd)
     return 0
 
-def get_activity (doc, xmlfiles):
+
+def get_xmlfiles (doc, xmlfiles):
     cont = pulse.html.ContainerBox()
     cont.set_id ('actfile')
     cont.set_title (pulse.utils.gettext ('Files'))
