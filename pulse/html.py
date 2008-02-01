@@ -735,8 +735,8 @@ class Graph (Widget):
         self._url = url
         self._comments = []
 
-    def add_comment (self, coords, comment):
-        self._comments.append ((coords, comment))
+    def add_comment (self, coords, comment, href=None):
+        self._comments.append ((coords, comment, href))
 
     def output (self, fd=sys.stdout):
         if len(self._comments) == 0:
@@ -753,6 +753,8 @@ class Graph (Widget):
                 p (fd, '<area shape="rect" coords="%s"', ','.join(map(str, comment[0])), False)
                 p (fd, ' onmouseover="javascript:showcomment(%i, %i, %i)"', (Graph._count, i, comment[0][0]), False)
                 p (fd, ' onmouseout="javascript:hidecomment(%i, %i)"', (Graph._count, i), False)
+                if comment[2] != None:
+                    p (fd, ' href="%s"', comment[2])
                 p (fd, '>')
             p (fd, '</map>')
             i = 0

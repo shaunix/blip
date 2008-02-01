@@ -616,10 +616,12 @@ class Revision (models.Model):
             return None
 
     @classmethod
-    def select_revisions (cls, branch=None, person=None, filename=False, since=None):
+    def select_revisions (cls, branch=None, person=None, filename=False, since=None, until=None):
         args = {}
         if since != None:
             args['datetime__gt'] = since
+        if until != None:
+            args['datetime__lte'] = until
         if branch != None:
             args['branch'] = branch
         if person != None:

@@ -18,6 +18,7 @@
 # Suite 330, Boston, MA  0211-1307  USA.
 #
 
+import datetime
 import os
 
 import pulse.config
@@ -46,7 +47,10 @@ def main (path=[], query={}, http=True, fd=None):
         page.output(fd=fd)
         return 404
 
-    return output_person (person, path, query, http, fd)
+    if query.has_key ('ajax'):
+        return output_ajax (person, path, query, http, fd)
+    else:
+        return output_person (person, path, query, http, fd)
 
 
 def output_top (path=[], query={}, http=True, fd=None):
@@ -62,7 +66,24 @@ def output_top (path=[], query={}, http=True, fd=None):
     page.output (fd=fd)
 
 
-def output_person (person, path=[], query=[], http=True, fd=None):
+def output_ajax (person, path=[], query={}, http=True, fd=None):
+    page = pulse.html.Fragment ()
+    ago = int (query.get('weeksago', 0))
+    now = datetime.datetime.now()
+    top = now - datetime.timedelta(days=(7 * ago))
+    bot = now - datetime.timedelta(days=(7 * (ago + 1)))
+    revs = db.Revision.select_revisions (person=person, filename=None,
+                                         since=bot, until=top)
+    revs = revs[:20]
+    div = get_commits_div (revs,
+                           pulse.utils.gettext('Showing %i commits from %i week ago:') %
+                           (len(revs), ago))
+    page.add_content (div)
+    page.output(fd=fd)
+    return 0
+
+
+def output_person (person, path=[], query={}, http=True, fd=None):
     page = pulse.html.RecordPage (person, http=http)
 
     if person.nick != None:
@@ -91,22 +112,17 @@ def output_person (person, path=[], query=[], http=True, fd=None):
             cmt = pulse.utils.gettext ('%i weeks ago: %i commits') % (ago, datum[1])
         else:
             cmt = pulse.utils.gettext ('this week: %i commits') % datum[1]
-        graph.add_comment (datum[0], cmt)
+        jslink = 'javascript:replace_content(\'commits\', '
+        jslink += '\'%s%s?ajax=commits&weeksago=%i\'' % (pulse.config.web_root, person.ident[1:], ago)
+        jslink += ')'
+        graph.add_comment (datum[0], cmt, jslink)
     box.add_content (graph)
     revs = db.Revision.select_revisions (person=person, filename=None)
     cnt = revs.count()
-    box.add_content ('Showing %i of %i commits:' % (min(10, cnt), cnt))
-    dl = pulse.html.DefinitionList()
-    box.add_content (dl)
-    for rev in revs[:10]:
-        # FIXME: i18n word order
-        span = pulse.html.Span (divider=pulse.html.SPACE)
-        span.add_content (pulse.html.Link (rev.branch.pulse_url, rev.branch.branch_module))
-        span.add_content ('on')
-        span.add_content (rev.datetime.strftime('%Y-%m-%d %T'))
-        dl.add_term (span)
-        comment = rev.comment
-        dl.add_entry (pulse.html.RevisionPopupLink (rev.comment))
+    revs = revs[:10]
+    div = get_commits_div (revs,
+                           pulse.utils.gettext('Showing %i of %i commits:') % (len(revs), cnt))
+    box.add_content (div)
 
     # Modules and Documents
     mods = db.Branch.objects.filter (type='Module', module_entity_preds__pred=person)
@@ -136,3 +152,20 @@ def output_person (person, path=[], query=[], http=True, fd=None):
     page.output(fd=fd)
 
     return 0
+
+
+def get_commits_div (revs, title):
+    div = pulse.html.Div (id='commits')
+    div.add_content (title)
+    dl = pulse.html.DefinitionList()
+    div.add_content (dl)
+    for rev in revs[:10]:
+        # FIXME: i18n word order
+        span = pulse.html.Span (divider=pulse.html.SPACE)
+        span.add_content (pulse.html.Link (rev.branch.pulse_url, rev.branch.branch_module))
+        span.add_content ('on')
+        span.add_content (rev.datetime.strftime('%Y-%m-%d %T'))
+        dl.add_term (span)
+        comment = rev.comment
+        dl.add_entry (pulse.html.RevisionPopupLink (rev.comment))
+    return div
