@@ -73,6 +73,7 @@ def output_person (person, path=[], query=[], http=True, fd=None):
                        pulse.html.Link ('mailto:' + person.email, person.email))
     if person.web != None:
         page.add_fact (pulse.utils.gettext ('Website'), pulse.html.Link (person.web))
+    page.add_fact (pulse.utils.gettext ('Score'), str(person.mod_score))
 
     columns = pulse.html.ColumnBox (2)
     page.add_content (columns)
