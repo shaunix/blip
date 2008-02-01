@@ -459,6 +459,7 @@ class Branch (PulseRecord, models.Model):
     subtype = models.CharField (maxlength=80, null=True)
     parent = models.ForeignKey ('Branch', related_name='children', null=True)
     branchable = models.ForeignKey ('Branchable', related_name='branches', null=True)
+    error = models.CharField (maxlength=200, null=True)
 
     scm_type = models.CharField (maxlength=20, null=True)
     scm_server = models.CharField (maxlength=200, null=True)

@@ -95,6 +95,11 @@ def output_doc (doc, path=[], query=[], http=True, fd=None):
     if doc.data.has_key ('screenshot'):
         page.add_screenshot (doc.data['screenshot'])
 
+    if doc.error != None:
+        page.add_fact (pulse.utils.gettext ('Error'),
+                       pulse.html.AdmonBox (pulse.html.AdmonBox.error, doc.error))
+        page.add_fact_sep ()
+
     sep = False
     try:
         desc = doc.localized_desc

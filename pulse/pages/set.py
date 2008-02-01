@@ -126,7 +126,7 @@ def output_set (set, path=[], query=[], http=True, fd=None):
             lbox.add_graph ('/'.join(mod.ident.split('/')[1:] + ['commits.png']))
             span = pulse.html.Span (mod.branch_module)
             span.add_class ('module')
-            lbox.add_fact ('module', pulse.html.Link (mod.pulse_url, span))
+            lbox.add_fact (pulse.utils.gettext ('module'), pulse.html.Link (mod.pulse_url, span))
             if mod.mod_datetime != None:
                 span = pulse.html.Span (divider=pulse.html.SPACE)
                 # FIXME: i18n, word order, but we want to link person
@@ -267,6 +267,7 @@ def add_more_tabs (set, tabbed, path=[], query=[]):
             total = 0
             for objs, cont in sections:
                 total += len(objs)
+                slink_error = False
                 slink_mtime = False
                 slink_score = False
                 slink_documentation = False
@@ -280,12 +281,18 @@ def add_more_tabs (set, tabbed, path=[], query=[]):
                                 lbox.add_graph (obj.ident[1:] + '/' + graph)
                         else:
                             lbox.add_graph (obj.ident[1:] + '/' + graphs)
+                    if obj.error != None:
+                        slink_error = True
+                        span = pulse.html.Span (obj.error)
+                        span.add_class ('errormsg')
+                        lbox.add_fact (pulse.utils.gettext ('error'),
+                                       pulse.html.AdmonBox (pulse.html.AdmonBox.error, span))
                     span = pulse.html.Span (obj.branch_module)
                     span.add_class ('module')
                     url = obj.ident.split('/')
                     url = '/'.join(['mod'] + url[2:4] + [url[5]])
                     url = pulse.config.web_root + url
-                    lbox.add_fact ('module', pulse.html.Link (url, span))
+                    lbox.add_fact (pulse.utils.gettext ('module'), pulse.html.Link (url, span))
                     if obj.mod_datetime != None:
                         span = pulse.html.Span (divider=pulse.html.SPACE)
                         # FIXME: i18n, word order, but we want to link person
@@ -322,12 +329,14 @@ def add_more_tabs (set, tabbed, path=[], query=[]):
                             of = of[0]
                             span = pulse.html.Span (str(of.statistic))
                             span.add_class ('messages')
-                            lbox.add_fact ('messages', span)
+                            lbox.add_fact (pulse.utils.gettext ('messages'), span)
                             slink_messages = True
                         except IndexError:
                             pass
                 cont.add_sort_link ('title', pulse.utils.gettext ('title'), False)
                 cont.add_sort_link ('module', pulse.utils.gettext ('module'))
+                if slink_error:
+                    cont.add_sort_link ('errormsg', pulse.utils.gettext ('error'))
                 if slink_mtime:
                     cont.add_sort_link ('mtime', pulse.utils.gettext ('modified'))
                 if slink_score:

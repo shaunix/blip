@@ -177,10 +177,12 @@ def process_docbook_docfile (docfile, doc, **kw):
     credits = []
     try:
         dom = xml.dom.minidom.parse (docfile)
-    except:
+    except Exception, e:
         pulse.utils.warn ('Failed to load file %s' % rel_scm)
-        # FIXME: would be nice to set an error in the database
+        doc.error = str(e)
+        doc.save()
         return
+    doc.error = None
     for node in dom.documentElement.childNodes:
         if node.nodeType != node.ELEMENT_NODE:
             continue
