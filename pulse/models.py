@@ -675,10 +675,11 @@ class Timestamp (models.Model):
         sfunc = inspect.stack()[1]
         sfunc = os.path.basename (sfunc[1]) + '#' + sfunc[3]
         obj = cls.objects.filter (filename=filename, sourcefunc=sfunc)
-        if obj.count() > 0:
-            obj[0].stamp = int(stamp)
-            obj[0].save()
-        else:
+        try:
+            obj = obj[0]
+            obj.stamp = int(stamp)
+            obj.save()
+        except IndexError:
             cls (filename=filename, sourcefunc=sfunc, stamp=int(stamp)).save()
         return stamp
 
@@ -687,9 +688,9 @@ class Timestamp (models.Model):
         sfunc = inspect.stack()[1]
         sfunc = os.path.basename (sfunc[1]) + '#' + sfunc[3]
         obj = cls.objects.filter (filename=filename, sourcefunc=sfunc)
-        if obj.count() > 0:
+        try:
             return obj[0].stamp
-        else:
+        except IndexError:
             return -1
 
 
