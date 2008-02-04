@@ -45,7 +45,7 @@ def main (path=[], query={}, http=True, fd=None):
         return 404
 
 
-def output_top (path=[], query=[], http=True, fd=None):
+def output_top (path=[], query={}, http=True, fd=None):
     page = pulse.html.Page (http=http)
     page.set_title (pulse.utils.gettext ('Sets'))
 
@@ -70,7 +70,7 @@ def output_top (path=[], query=[], http=True, fd=None):
     return 0
 
 
-def output_set (set, path=[], query=[], http=True, fd=None):
+def output_set (set, path=[], query={}, http=True, fd=None):
     page = pulse.html.RecordPage (set, http=http)
 
     tabbed = pulse.html.TabbedBox ()
@@ -123,7 +123,7 @@ def output_set (set, path=[], query=[], http=True, fd=None):
         for i in range(modcnt):
             mod = mods[i]
             lbox = cont.add_link_box (mod)
-            lbox.add_graph ('/'.join(mod.ident.split('/')[1:] + ['commits.png']))
+            lbox.add_graph (pulse.config.graphs_root + '/'.join(mod.ident.split('/')[1:] + ['commits.png']))
             span = pulse.html.Span (mod.branch_module)
             span.add_class ('module')
             lbox.add_fact (pulse.utils.gettext ('module'), pulse.html.Link (mod.pulse_url, span))
@@ -190,7 +190,7 @@ def add_set_entries (set, dl):
             dl.add_entry (pulse.html.Link (set.pulse_url + '/' + ext, txt % cnt))
 
 
-def add_more_tabs (set, tabbed, path=[], query=[]):
+def add_more_tabs (set, tabbed, path=[], query={}):
     things = ({ 'types'  : 'Document',
                 'subs'   : ('*', 'gtk-doc'),
                 'tabtxt' : pulse.utils.gettext ('Documents (%i)'),
@@ -278,9 +278,9 @@ def add_more_tabs (set, tabbed, path=[], query=[]):
                     if graphs:
                         if isinstance (graphs, tuple):
                             for graph in graphs:
-                                lbox.add_graph (obj.ident[1:] + '/' + graph)
+                                lbox.add_graph (pulse.config.graphs_root + obj.ident[1:] + '/' + graph)
                         else:
-                            lbox.add_graph (obj.ident[1:] + '/' + graphs)
+                            lbox.add_graph (pulse.config.graphs_root + obj.ident[1:] + '/' + graphs)
                     if obj.error != None:
                         slink_error = True
                         span = pulse.html.Span (obj.error)

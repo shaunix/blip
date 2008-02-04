@@ -19,15 +19,32 @@
 #
 
 from datetime import datetime
+import math
 import os.path
 import sys
 
-def daynum (when=datetime.now()):
-    return (when - datetime(1970, 1, 1, 0, 0, 0)).days
 
 # Just a dummy until we hook up gettext
 def gettext (str):
     return str
+
+
+def daynum (when=datetime.now()):
+    return (when - datetime(1970, 1, 1, 0, 0, 0)).days
+
+
+epoch_week = datetime(1970, 1, 5, 0, 0, 0)
+def weeknum (dt):
+    return ((dt - epoch_week).days // 7) + 1
+
+
+def score (stats):
+    score = 0
+    den = math.sqrt (len(stats))
+    for i in range(len(stats)):
+        score += (math.sqrt(i + 1) / den) * stats[i]
+    return int(score)
+
 
 def split (things, num):
     each = len(things) // num

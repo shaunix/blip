@@ -599,41 +599,31 @@ class SetSubset (PulseRelation, models.Model):
 class Revision (models.Model):
     __metaclass__ = PulseModelBase
 
+    def __init__ (self, *args, **kw):
+        models.Model.__init__ (self, *args, **kw)
+        if self.weeknum == None and self.datetime != None:
+            self.weeknum = pulse.utils.weeknum (self.datetime)
+
     branch = models.ForeignKey (Branch)
     person = models.ForeignKey (Entity)
     filename = models.CharField (maxlength=200, null=True, default=None)
     filetype = models.CharField (maxlength=20, null=True, default=None)
     revision = models.CharField (maxlength=80)
     datetime = models.DateTimeField ()
+    weeknum = models.IntegerField (null=True)
     comment = models.TextField ()
 
     @classmethod
-    def get_last_revision (cls, branch=None, person=None, filename=False):
-        revs = cls.select_revisions (branch=branch, person=person, filename=filename)
+    def get_last_revision (cls, **kw):
+        revs = cls.select_revisions (**kw)
         try:
             return revs[0]
         except IndexError:
             return None
 
     @classmethod
-    def select_revisions (cls, branch=None, person=None, filename=False, since=None, until=None):
-        args = {}
-        if since != None:
-            args['datetime__gt'] = since
-        if until != None:
-            args['datetime__lte'] = until
-        if branch != None:
-            args['branch'] = branch
-        if person != None:
-            args['person'] = person
-        if isinstance (filename, basestring):
-            args['filename'] = filename
-        elif filename == True:
-            args['filename__isnull'] = False
-        elif filename == None:
-            args['filename__isnull'] = True
-        revs = cls.objects.filter (**args)
-        return revs.order_by ('-datetime')
+    def select_revisions (cls, **kw):
+        return cls.objects.filter (**kw).order_by ('-datetime')
 
 
 class Statistic (models.Model):

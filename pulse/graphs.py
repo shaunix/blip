@@ -22,6 +22,7 @@ from math import pi
 
 import colorsys
 import os
+import os.path
 import re
 
 import cairo
@@ -65,6 +66,9 @@ class Graph:
         self.context.stroke ()
 
     def save (self, filename):
+        filedir = os.path.dirname (filename)
+        if not os.path.exists (filedir):
+            os.makedirs (filedir)
         self.surface.write_to_png (filename)
 
 
@@ -90,6 +94,9 @@ class BarGraph (Graph):
             else:
                 self.context.set_source_rgb (*alum_rgb)
             self.context.stroke ()
+
+    def get_coords (self):
+        return [(6*i, 0, 6*i + 5, self.height) for i in range(len(self._stats))]
 
     def save_data (self, filename, data=[]):
         fd = open(filename, 'w')

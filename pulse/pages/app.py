@@ -77,7 +77,7 @@ def main (path=[], query={}, http=True, fd=None):
     return output_app (app, path, query, http, fd)
 
 
-def output_app (app, path=[], query=[], http=True, fd=None):
+def output_app (app, path=[], query={}, http=True, fd=None):
     page = pulse.html.RecordPage (app, http=http)
     checkout = pulse.scm.Checkout.from_record (app, checkout=False, update=False)
 

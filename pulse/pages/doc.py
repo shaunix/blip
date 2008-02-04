@@ -18,6 +18,7 @@
 # Suite 330, Boston, MA  0211-1307  USA.
 #
 
+import datetime
 import math
 import os
 
@@ -74,13 +75,15 @@ def main (path=[], query={}, http=True, fd=None):
         # FIXME: redirect to /set or something
         pass
 
-    if query.has_key ('ajax'):
-        return output_ajax (doc, path, query, http, fd)
+    if query.get('ajax', None) == 'commits':
+        return output_ajax_commits (doc, path, query, http, fd)
+    elif query.get('ajax', None) == 'xmlfiles':
+        return output_ajax_xmlfiles (doc, path, query, http, fd)
     else:
         return output_doc (doc, path, query, http, fd)
 
 
-def output_doc (doc, path=[], query=[], http=True, fd=None):
+def output_doc (doc, path=[], query={}, http=True, fd=None):
     page = pulse.html.RecordPage (doc, http=http)
     checkout = pulse.scm.Checkout.from_record (doc, checkout=False, update=False)
 
@@ -139,6 +142,9 @@ def output_doc (doc, path=[], query=[], http=True, fd=None):
             span.add_content (pulse.html.Link (doc.mod_person))
         page.add_fact (pulse.utils.gettext ('Last Modified'), span)
 
+    page.add_fact_sep ()
+    page.add_fact (pulse.utils.gettext ('Score'), str(doc.mod_score))
+
     columns = pulse.html.ColumnBox (2)
     page.add_content (columns)
 
@@ -171,18 +177,14 @@ def output_doc (doc, path=[], query=[], http=True, fd=None):
     pad = pulse.html.PaddingBox ()
     box.add_content (pad)
     columns.add_to_column (0, box)
-    graph = pulse.html.Graph ('/'.join(doc.ident.split('/')[1:] + ['commits.png']))
-    graphdir = os.path.join (*([pulse.config.web_graphs_dir] + doc.ident.split('/')[1:]))
-    graphdata = pulse.graphs.load_graph_data (os.path.join (graphdir, 'commits.imap'))
-    for i in range(len(graphdata)):
-        datum = graphdata[i]
-        ago = len(graphdata) - i - 1
-        if ago > 0:
-            cmt = pulse.utils.gettext ('%i weeks ago: %i commits') % (ago, datum[1])
-        else:
-            cmt = pulse.utils.gettext ('this week: %i commits') % datum[1]
-        graph.add_comment (datum[0], cmt)
-    pad.add_content (graph)
+    of = db.OutputFile.objects.filter (type='graphs', ident=doc.ident, filename='commits.png')
+    try:
+        of = of[0]
+        graph = pulse.html.Graph.activity_graph (of, doc.pulse_url)
+        pad.add_content (graph)
+    except IndexError:
+        pass
+
     div = pulse.html.Div (id='xmlfiles')
     pad.add_content (div)
     xmlfiles = doc.data.get('xmlfiles', [])
@@ -198,35 +200,11 @@ def output_doc (doc, path=[], query=[], http=True, fd=None):
     cont = pulse.html.ContainerBox()
     cont.set_title (pulse.utils.gettext ('History'))
     pad.add_content (cont)
-    revs = db.Revision.select_revisions (branch=doc, filename=True)
-    cnt = revs.count()
-    dl = pulse.html.DefinitionList()
-    cont.add_content (dl)
-    seen = []
-    done = False
-    i = 0
-    while not done:
-        revlist = revs[i : i + 20]
-        for rev in revlist:
-            if rev.revision in seen: continue
-            seen.append (rev.revision)
-            span = pulse.html.Span (divider=pulse.html.SPACE)
-            span.add_content (rev.revision)
-            span.add_content ('on')
-            span.add_content (rev.datetime.strftime('%Y-%m-%d %T'))
-            span.add_content ('by')
-            if not rev.person_id in people_cache:
-                people_cache[rev.person_id] = rev.person
-            person = people_cache[rev.person_id]
-            span.add_content (pulse.html.Link (person))
-            dl.add_term (span)
-            dl.add_entry (pulse.html.RevisionPopupLink (rev.comment))
-            if len(seen) >= 10:
-                done = True
-                break
-        if len(revlist) < 20:
-            break
-        i += 20
+
+    revs = db.Revision.select_revisions (branch=doc, filename__isnull=False)
+    div = get_commits_div (revs, 10,
+                           pulse.utils.gettext('Showing %i commits:'))
+    cont.add_content (div)
 
     # Translations
     box = pulse.html.InfoBox ('translations', pulse.utils.gettext ('Translations'))
@@ -305,10 +283,30 @@ def output_doc (doc, path=[], query=[], http=True, fd=None):
     return 0
 
 
-def output_ajax (doc, path, query, http, fd):
+def output_ajax_xmlfiles (doc, path=[], query={}, http=True, fd=None):
     page = pulse.html.Fragment ()
     xmlfiles = doc.data.get('xmlfiles', [])
     page.add_content (get_xmlfiles (doc, xmlfiles))
+    page.output(fd=fd)
+    return 0
+
+
+def output_ajax_commits (doc, path=[], query={}, http=True, fd=None):
+    page = pulse.html.Fragment ()
+    weeknum = int(query.get('weeknum', 0))
+    thisweek = pulse.utils.weeknum (datetime.datetime.now())
+    ago = thisweek - weeknum
+    revs = db.Revision.select_revisions (branch=doc, filename__isnull=False, weeknum=weeknum)
+    cnt = revs.count()
+    revs = revs[:20]
+    if ago == 0:
+        fmt = pulse.utils.gettext('Showing %i commits from this week:')
+    elif ago == 1:
+        fmt = pulse.utils.gettext('Showing %i commits from last week:')
+    else:
+        fmt = pulse.utils.gettext('Showing %%i commits from %i weeks ago:') % ago
+    div = get_commits_div (revs, 20, fmt)
+    page.add_content (div)
     page.output(fd=fd)
     return 0
 
@@ -343,3 +341,37 @@ def get_xmlfiles (doc, xmlfiles):
             dl.add_entry (span)
     return cont
 
+
+def get_commits_div (revs, max, fmt):
+    div = pulse.html.Div (id='commits')
+    dl = pulse.html.DefinitionList()
+    seen = []
+    done = False
+    i = 0
+    while not done:
+        revlist = revs[i : i + 2*max]
+        for rev in revlist:
+            revstr = rev.revision + str(rev.datetime)
+            if revstr in seen: continue
+            seen.append (revstr)
+            span = pulse.html.Span (divider=pulse.html.SPACE)
+            span.add_content (rev.revision)
+            span.add_content ('on')
+            span.add_content (rev.datetime.strftime('%Y-%m-%d %T'))
+            span.add_content ('by')
+            if not rev.person_id in people_cache:
+                people_cache[rev.person_id] = rev.person
+            person = people_cache[rev.person_id]
+            span.add_content (pulse.html.Link (person))
+            dl.add_term (span)
+            dl.add_entry (pulse.html.RevisionPopupLink (rev.comment))
+            if len(seen) >= max:
+                done = True
+                break
+        if len(revlist) < 2*max:
+            break
+        i += 2*max
+    title = fmt % len(seen)
+    div.add_content (title)
+    div.add_content (dl)
+    return div

@@ -18,6 +18,7 @@
 # Suite 330, Boston, MA  0211-1307  USA.
 #
 
+import datetime
 import math
 import os
 
@@ -80,10 +81,13 @@ def main (path=[], query={}, http=True, fd=None):
         # FIXME: redirect to /set or something
         pass
 
-    return output_branch (branch, path, query, http, fd)
+    if query.get('ajax', None) == 'commits':
+        return output_ajax_commits (branch, path, query, http, fd)
+    else:
+        return output_branch (branch, path, query, http, fd)
 
 
-def output_branch (branch, path=[], query=[], http=True, fd=None):
+def output_branch (branch, path=[], query={}, http=True, fd=None):
     module = branch.branchable
     checkout = pulse.scm.Checkout.from_record (branch, checkout=False, update=False)
 
@@ -138,6 +142,9 @@ def output_branch (branch, path=[], query=[], http=True, fd=None):
             page.add_fact_sep ()
         page.add_fact (pulse.utils.gettext ('Version'), branch.data['tarversion'])
 
+    page.add_fact_sep ()
+    page.add_fact (pulse.utils.gettext ('Score'), str(branch.mod_score))
+
     columns = pulse.html.ColumnBox (2)
     page.add_content (columns)
 
@@ -158,36 +165,20 @@ def output_branch (branch, path=[], query=[], http=True, fd=None):
     # Activity
     box = pulse.html.InfoBox ('activity', pulse.utils.gettext ('Activity'))
     columns.add_to_column (0, box)
-    graph = pulse.html.Graph ('/'.join(branch.ident.split('/')[1:] + ['commits.png']))
-    graphdir = os.path.join (*([pulse.config.web_graphs_dir] + branch.ident.split('/')[1:]))
-    graphdata = pulse.graphs.load_graph_data (os.path.join (graphdir, 'commits.imap'))
-    for i in range(len(graphdata)):
-        datum = graphdata[i]
-        ago = len(graphdata) - i - 1
-        if ago > 0:
-            cmt = pulse.utils.gettext ('%i weeks ago: %i commits') % (ago, datum[1])
-        else:
-            cmt = pulse.utils.gettext ('this week: %i commits') % datum[1]
-        graph.add_comment (datum[0], cmt)
-    box.add_content (graph)
-    revs = db.Revision.select_revisions (branch=branch, filename=None)
+    of = db.OutputFile.objects.filter (type='graphs', ident=branch.ident, filename='commits.png')
+    try:
+        of = of[0]
+        graph = pulse.html.Graph.activity_graph (of, branch.pulse_url)
+        box.add_content (graph)
+    except IndexError:
+        pass
+
+    revs = db.Revision.select_revisions (branch=branch, filename__isnull=True)
     cnt = revs.count()
-    box.add_content ('Showing %i of %i commits:' % (min(10, cnt), cnt))
-    dl = pulse.html.DefinitionList()
-    box.add_content (dl)
-    for rev in revs[:10]:
-        # FIXME: i18n word order
-        span = pulse.html.Span (divider=pulse.html.SPACE)
-        span.add_content (rev.revision)
-        span.add_content ('on')
-        span.add_content (rev.datetime.strftime('%Y-%m-%d %T'))
-        span.add_content ('by')
-        if not rev.person_id in people_cache:
-            people_cache[rev.person_id] = rev.person
-        person = people_cache[rev.person_id]
-        span.add_content (pulse.html.Link (person))
-        dl.add_term (span)
-        dl.add_entry (pulse.html.RevisionPopupLink (rev.comment))
+    revs = revs[:10]
+    div = get_commits_div (revs,
+                           pulse.utils.gettext('Showing %i of %i commits:') % (len(revs), cnt))
+    box.add_content (div)
 
     # Dependencies
     box = pulse.html.InfoBox ('dependencies', pulse.utils.gettext ('Dependencies'))
@@ -350,3 +341,43 @@ def output_branch (branch, path=[], query=[], http=True, fd=None):
 
     return 0
 
+
+def output_ajax_commits (branch, path=[], query={}, http=True, fd=None):
+    page = pulse.html.Fragment ()
+    weeknum = int(query.get('weeknum', 0))
+    thisweek = pulse.utils.weeknum (datetime.datetime.now())
+    ago = thisweek - weeknum
+    revs = db.Revision.select_revisions (branch=branch, filename__isnull=True, weeknum=weeknum)
+    cnt = revs.count()
+    revs = revs[:20]
+    if ago == 0:
+        title = pulse.utils.gettext('Showing %i of %i commits from this week:') % (len(revs), cnt)
+    elif ago == 1:
+        title = pulse.utils.gettext('Showing %i of %i commits from last week:') % (len(revs), cnt)
+    else:
+        title = pulse.utils.gettext('Showing %i of %i commits from %i weeks ago:') % (len(revs), cnt, ago)
+    div = get_commits_div (revs, title)
+    page.add_content (div)
+    page.output(fd=fd)
+    return 0
+
+
+def get_commits_div (revs, title):
+    div = pulse.html.Div (id='commits')
+    div.add_content (title)
+    dl = pulse.html.DefinitionList()
+    div.add_content (dl)
+    for rev in revs:
+        # FIXME: i18n word order
+        span = pulse.html.Span (divider=pulse.html.SPACE)
+        span.add_content (rev.revision)
+        span.add_content ('on')
+        span.add_content (rev.datetime.strftime('%Y-%m-%d %T'))
+        span.add_content ('by')
+        if not rev.person_id in people_cache:
+            people_cache[rev.person_id] = rev.person
+        person = people_cache[rev.person_id]
+        span.add_content (pulse.html.Link (person))
+        dl.add_term (span)
+        dl.add_entry (pulse.html.RevisionPopupLink (rev.comment))
+    return div

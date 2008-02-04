@@ -54,25 +54,7 @@ def update_branch (branch, **kw):
     if kw.get('history', True):
         check_history (branch, checkout)
 
-    pulse.utils.log ('Creating commit graph for %s' % branch.ident)
-    now = datetime.datetime.now()
-    threshhold = now - datetime.timedelta(days=168)
-    stats = [0] * 24
-    revs = db.Revision.select_revisions (branch=branch, since=threshhold)
-    for rev in list(revs):
-        idx = (now - rev.datetime).days
-        idx = 23 - (idx // 7)
-        if idx < 24: stats[idx] += 1
-    score = 0;
-    for i in range(len(stats)):
-        score += (math.sqrt(i + 1) / 5) * stats[i]
-    branch.mod_score = int(score)
-    graphdir = os.path.join (*([pulse.config.web_graphs_dir] + branch.ident.split('/')[1:]))
-    if not os.path.exists (graphdir):
-        os.makedirs (graphdir)
-    graph = pulse.graphs.BarGraph (stats, 30)
-    graph.save (os.path.join (graphdir, 'commits.png'))
-    graph.save_data (os.path.join (graphdir, 'commits.imap'))
+    update_graph (branch, **kw)
 
     # FIXME: what do we want to know?
     # mailing list
@@ -204,7 +186,7 @@ def update_branch (branch, **kw):
     
 
 def check_history (branch, checkout):
-    since = db.Revision.get_last_revision (branch=branch, filename=None)
+    since = db.Revision.get_last_revision (branch=branch, filename__isnull=True)
     if since != None:
         since = since.revision
         current = checkout.get_revision()
@@ -217,14 +199,61 @@ def check_history (branch, checkout):
         pident = '/person/' + serverid + '/' + hist['userid']
         pers = db.Entity.get_record (pident, 'Person')
         rev = db.Revision (branch=branch, person=pers,
-                           revision=hist['revision'], datetime=hist['date'], comment=hist['comment'])
+                           revision=hist['revision'],
+                           comment=hist['comment'],
+                           datetime=hist['date'])
         rev.save()
 
-    revision = db.Revision.get_last_revision (branch=branch, filename=None)
+    revision = db.Revision.get_last_revision (branch=branch, filename__isnull=True)
     if revision != None:
         branch.mod_datetime = revision.datetime
         branch.mod_person = revision.person
         branch.save()
+
+
+def update_graph (branch, **kw):
+    now = datetime.datetime.now()
+    thisweek = pulse.utils.weeknum (now)
+    of = db.OutputFile.objects.filter (type='graphs', ident=branch.ident, filename='commits.png')
+    try:
+        of = of[0]
+    except IndexError:
+        of = None
+
+    revs = db.Revision.select_revisions (branch=branch, filename__isnull=True,
+                                         weeknum__gt=(thisweek - 24))
+
+    if of != None:
+        if kw.get('timestamps', True):
+            lastrev = of.data.get ('lastrev', None)
+            weeknum = of.data.get ('weeknum', None)
+            if lastrev != None:
+                try:
+                    if lastrev == revs[0].id and weeknum == thisweek:
+                        pulse.utils.log ('Skipping commit graph for %s' % branch.ident)
+                        return
+                except IndexError:
+                    pass
+    else:
+        of = db.OutputFile (type='graphs', ident=branch.ident, filename='commits.png', datetime=now)
+
+    pulse.utils.log ('Creating commit graph for %s' % branch.ident)
+    stats = [0] * 24
+    revs = list(revs)
+    for rev in revs:
+        idx = rev.weeknum - thisweek + 23
+        stats[idx] += 1
+    score = pulse.utils.score (stats)
+    branch.mod_score = score
+
+    graph = pulse.graphs.BarGraph (stats, 30)
+    graph.save (of.get_file_path())
+
+    of.data['coords'] = zip (graph.get_coords(), stats, range(thisweek-23, thisweek+1))
+    if len(revs) > 0:
+        of.data['lastrev'] = revs[0].id
+    of.data['weeknum'] = thisweek
+    of.save()
 
 
 def process_maintainers (branch, checkout, **kw):

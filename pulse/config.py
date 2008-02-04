@@ -88,7 +88,7 @@ files_root = web_root + 'files/'
 figures_root = files_root + 'figures/'
 
 # The root URL for generated graphs
-graph_root = files_root + 'graphs/'
+graphs_root = files_root + 'graphs/'
 
 # The root URL for generated icons
 icons_root = files_root + 'icons/'

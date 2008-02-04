@@ -19,6 +19,7 @@
 # Suite 330, Boston, MA  0211-1307  USA.
 #
 
+import datetime
 import cgi
 import md5
 import re
@@ -740,12 +741,11 @@ class Graph (Widget):
 
     def output (self, fd=sys.stdout):
         if len(self._comments) == 0:
-            p (fd, '<div class="graph"><img src="%s%s"></div>',
-               (pulse.config.graph_root, self._url))
+            p (fd, '<div class="graph"><img src="%s"></div>', self._url)
         else:
             Graph._count += 1
-            p (fd, '<div class="graph" id="graph-%i"><img src="%s%s" usemap="#graphmap%i" ismap>',
-               (Graph._count, pulse.config.graph_root, self._url, Graph._count))
+            p (fd, '<div class="graph" id="graph-%i"><img src="%s" usemap="#graphmap%i" ismap>',
+               (Graph._count, self._url, Graph._count))
             p (fd, '<map name="graphmap%i">', Graph._count)
             i = 0
             for comment in self._comments:
@@ -764,6 +764,23 @@ class Graph (Widget):
                 p (fd, '<div class="comment" id="comment-%i-%i">%s</div>',
                    (Graph._count, i, comment[1]))
             p (fd, '</div></div>')
+
+    @classmethod
+    def activity_graph (cls, of, url):
+        graph = cls (of.pulse_url)
+        thisweek = pulse.utils.weeknum (datetime.datetime.now())
+        for (c, tot, weeknum) in of.data.get ('coords', []):
+            ago = thisweek - weeknum
+            if ago == 0:
+                cmt = pulse.utils.gettext ('this week: %i commits') % tot
+            elif ago == 1:
+                cmt = pulse.utils.gettext ('last week: %i commits') % tot
+            else:
+                cmt = pulse.utils.gettext ('%i weeks ago: %i commits') % (ago, tot)
+            jslink = 'javascript:replace_content(\'commits\', '
+            jslink += '\'%s?ajax=commits&weeknum=%i\')' % (url, weeknum)
+            graph.add_comment (c, cmt, jslink)
+        return graph
 
 
 class EllipsizedLabel (Widget):
