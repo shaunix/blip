@@ -155,8 +155,6 @@ function replace_content (id, url) {
     mask.style.width = par.clientWidth + 'px';
     mask.style.height = par.clientHeight + 'px';
     par.parentNode.insertBefore(mask, par);
-    /* FIXME: i18n */
-    el.innerHTML = 'Loading...';
   }
 
   /* we should show some sort of activity thingy */

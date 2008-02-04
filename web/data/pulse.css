@@ -175,8 +175,7 @@ td.col-first { padding: 0; }
   text-align: center;
   font-weight: bold;
   position: absolute;
-  border: solid 1px #d3d7cf;
-  background-color: #555753;
+  background-color: white;
   color: #eeeeec;
   opacity: 0.6;
   margin: 1em 0 1em 0;
