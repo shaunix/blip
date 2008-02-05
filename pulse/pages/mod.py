@@ -379,5 +379,5 @@ def get_commits_div (revs, title):
         person = people_cache[rev.person_id]
         span.add_content (pulse.html.Link (person))
         dl.add_term (span)
-        dl.add_entry (pulse.html.RevisionPopupLink (rev.comment))
+        dl.add_entry (pulse.html.PopupLink.from_revision (rev))
     return div

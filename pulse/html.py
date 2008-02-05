@@ -826,38 +826,40 @@ class PopupLink (Widget):
         p (fd, '<pre>%s\n</pre>', self._full)
         p (fd, '</div>')
 
-
-def RevisionPopupLink (comment, **kw):
-    if comment.strip() == '':
-        return AdmonBox (AdmonBox.warning,
-                         pulse.utils.gettext ('No comment'))
-    datere = re.compile ('^\d\d\d\d-\d\d-\d\d ')
-    colonre = re.compile ('^\* [^:]*:(.*)')
-    maybe = ''
-    for line in comment.split('\n'):
-        line = line.strip()
-        if line == '':
-            pass
-        elif datere.match(line):
-            maybe = line
-        else:
-            cm = colonre.match(line)
-            if cm:
-                line = cm.group(1).strip()
-                if line != '':
-                    break
+    @classmethod
+    def from_revision (cls, rev, **kw):
+        comment = rev.comment
+        if comment.strip() == '':
+            return AdmonBox (AdmonBox.warning,
+                             pulse.utils.gettext ('No comment'))
+        datere = re.compile ('^\d\d\d\d-\d\d-\d\d ')
+        colonre = re.compile ('^\* [^:]*:(.*)')
+        maybe = ''
+        for line in comment.split('\n'):
+            line = line.strip()
+            if line == '':
+                pass
+            elif datere.match(line):
+                maybe = line
             else:
-                break
-    if line == '': line = maybe
-    if len(line) > 40:
-        i = 30
-        while i < len(line):
-            if line[i] == ' ':
-                break
-            i += 1
-        if i < len(comment):
-            line = line[:i] + '...'
-    return PopupLink (line, comment, **kw)
+                cm = colonre.match(line)
+                if cm:
+                    line = cm.group(1).strip()
+                    if line != '':
+                        break
+                else:
+                    break
+        if line == '': line = maybe
+        if len(line) > 40:
+            i = 30
+            while i < len(line):
+                if line[i] == ' ':
+                    break
+                i += 1
+            if i < len(comment):
+                line = line[:i] + '...'
+        lnk = cls (line, comment, **kw)
+        return lnk
 
 
 class Span (Widget, ContentComponent):
