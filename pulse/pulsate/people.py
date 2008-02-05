@@ -48,13 +48,16 @@ def update_person (person, **kw):
         if kw.get('timestamps', True):
             lastrev = of.data.get ('lastrev', None)
             weeknum = of.data.get ('weeknum', None)
-            if lastrev != None:
-                try:
-                    if lastrev == revs[0].id and weeknum == thisweek:
-                        pulse.utils.log ('Skipping commit graph for %s' % person.ident)
-                        return
-                except IndexError:
-                    pass
+            if weeknum == thisweek:
+                rev = None
+                if lastrev != None:
+                    try:
+                        rev = revs[0].id
+                    except IndexError:
+                        pass
+                if lastrev == rev:
+                    pulse.utils.log ('Skipping commit graph for %s' % person.ident)
+                    return
     else:
         of = db.OutputFile (type='graphs', ident=person.ident, filename='commits.png', datetime=now)
 
