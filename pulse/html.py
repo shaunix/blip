@@ -885,7 +885,7 @@ class PopupLink (Widget):
                 elif branch.scm_branch == 'trunk':
                     base += branch.scm_module + '/trunk'
                 else:
-                    base += branch.scm_module + '/branches/' + self.scm_branch
+                    base += branch.scm_module + '/branches/' + branch.scm_branch
                 url = base + '?view=revision&revision=' + rev.revision
                 lnk.add_link (url, pulse.utils.gettext ('info'))
 
