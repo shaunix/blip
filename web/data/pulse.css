@@ -224,6 +224,14 @@ div.plink pre {
   border: solid 1px #555753;
   color: #000000;
 }
+div.plink div {
+  padding: 0 1em 0 1em;
+  border-bottom: solid 1px #555753;
+  border-left: solid 1px #555753;
+  border-right: solid 1px #555753;
+  background-color: #fff9cf;
+  text-align: right;
+}
 
 div.graph { margin: 0.5em; }
 div.comment {

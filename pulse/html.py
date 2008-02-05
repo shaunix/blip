@@ -816,6 +816,10 @@ class PopupLink (Widget):
         super (PopupLink, self).__init__ (**kw)
         self._short = short
         self._full = full
+        self._links = []
+
+    def add_link (self, url, txt):
+        self._links.append ((url, txt))
 
     def output (self, fd=sys.stdout):
         PopupLink._count += 1
@@ -824,10 +828,17 @@ class PopupLink (Widget):
         p (fd, '<div class="plink" id="plink%i">', PopupLink._count)
         while len(self._full) > 0 and self._full[-1] == '\n': self._full = self._full[:-1]
         p (fd, '<pre>%s\n</pre>', self._full)
+        if self._links != []:
+            p (fd, '<div>', None, False)
+            for i in range(len(self._links)):
+                if i != 0:
+                    p (fd, BULLET)
+                p (fd, '<a href="%s">%s</a>', (self._links[i][0], self._links[i][1]), False)
+            p (fd, '</div>')
         p (fd, '</div>')
 
     @classmethod
-    def from_revision (cls, rev, **kw):
+    def from_revision (cls, branch, rev, **kw):
         comment = rev.comment
         if comment.strip() == '':
             return AdmonBox (AdmonBox.warning,
@@ -858,7 +869,26 @@ class PopupLink (Widget):
                 i += 1
             if i < len(comment):
                 line = line[:i] + '...'
+
         lnk = cls (line, comment, **kw)
+
+        if branch.scm_type == 'svn':
+            if branch.scm_server.endswith ('/svn/'):
+                base = branch.scm_server[:-4] + 'viewvc/'
+                colon = base.find (':')
+                if colon < 0:
+                    return lnk
+                if base[:colon] != 'http':
+                    base = 'http' + base[colon:]
+                if branch.scm_path != None:
+                    base += branch.scm_path
+                elif branch.scm_branch == 'trunk':
+                    base += branch.scm_module + '/trunk'
+                else:
+                    base += branch.scm_module + '/branches/' + self.scm_branch
+                url = base + '?view=revision&revision=' + rev.revision
+                lnk.add_link (url, pulse.utils.gettext ('info'))
+
         return lnk
 
 
