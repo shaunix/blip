@@ -61,7 +61,7 @@ def output_top (path=[], query={}, http=True, fd=None):
     for person in people[:42]:
         lbox = pulse.html.LinkBox (person)
         lbox.add_fact (pulse.utils.gettext ('score'), str(person.mod_score))
-        lbox.add_graph ('/'.join(person.ident.split('/')[1:] + ['commits.png']))
+        lbox.add_graph (pulse.config.graphs_root + '/'.join(person.ident.split('/')[1:] + ['commits.png']))
         page.add_content (lbox)
     page.output (fd=fd)
 
