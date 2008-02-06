@@ -272,7 +272,7 @@ def output_branch (branch, path=[], query={}, http=True, fd=None):
             translations = domain.select_children ('Translation')
             translations = pulse.utils.attrsorted (list(translations), 'title')
             cont = pulse.html.ContainerBox ()
-            cont.set_id (domainid)
+            cont.set_id ('po_' + domainid)
             cont.set_title (pulse.utils.gettext ('%s (%s)')
                             % (domain.title, len(translations)))
             box.add_content (cont)
