@@ -24,6 +24,11 @@
   - xchat-gnome
 
 
+* When we find icons through icon-naming-utils, let's somehow record that in
+the database.  Then we can see which things need to have their icons updated
+to use the naming spec.
+
+
 * Add support for "forums", where a forum might be a web forum, a mailing list,
 or anything else where people post things.  Track all posts, including who sent
 them and the parent post.  Make activity graphs.
