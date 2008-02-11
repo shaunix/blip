@@ -61,7 +61,7 @@ def output_top (path=[], query={}, http=True, fd=None):
     for person in people[:42]:
         lbox = pulse.html.LinkBox (person)
         lbox.add_fact (pulse.utils.gettext ('score'), str(person.mod_score))
-        lbox.add_graph ('/'.join(person.ident.split('/')[1:] + ['commits.png']))
+        lbox.add_graph (pulse.config.graphs_root + '/'.join(person.ident.split('/')[1:] + ['commits.png']))
         page.add_content (lbox)
     page.output (fd=fd)
 
@@ -96,7 +96,7 @@ def output_person (person, path=[], query={}, http=True, fd=None):
     revs = db.Revision.select_revisions (person=person)
     cnt = revs.count()
     revs = revs[:10]
-    div = get_commits_div (revs,
+    div = get_commits_div (person, revs,
                            pulse.utils.gettext('Showing %i of %i commits:') % (len(revs), cnt))
     box.add_content (div)
 
@@ -144,13 +144,13 @@ def output_ajax_commits (person, path=[], query={}, http=True, fd=None):
         title = pulse.utils.gettext('Showing %i of %i commits from last week:') % (len(revs), cnt)
     else:
         title = pulse.utils.gettext('Showing %i of %i commits from %i weeks ago:') % (len(revs), cnt, ago)
-    div = get_commits_div (revs, title)
+    div = get_commits_div (person, revs, title)
     page.add_content (div)
     page.output(fd=fd)
     return 0
 
 
-def get_commits_div (revs, title):
+def get_commits_div (person, revs, title):
     div = pulse.html.Div (id='commits')
     div.add_content (title)
     dl = pulse.html.DefinitionList()
@@ -163,5 +163,5 @@ def get_commits_div (revs, title):
         span.add_content (rev.datetime.strftime('%Y-%m-%d %T'))
         dl.add_term (span)
         comment = rev.comment
-        dl.add_entry (pulse.html.RevisionPopupLink (rev.comment))
+        dl.add_entry (pulse.html.PopupLink.from_revision (rev.branch, rev))
     return div

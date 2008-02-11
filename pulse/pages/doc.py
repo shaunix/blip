@@ -205,7 +205,7 @@ def output_doc (doc, path=[], query={}, http=True, fd=None):
     revs = db.Revision.select_revisions (branch=doc.parent, files=files)
     cnt = revs.count()
     revs = revs[:10]
-    div = get_commits_div (revs,
+    div = get_commits_div (doc, revs,
                            pulse.utils.gettext('Showing %i of %i commits:') % (len(revs), cnt))
     cont.add_content (div)
 
@@ -309,7 +309,7 @@ def output_ajax_commits (doc, path=[], query={}, http=True, fd=None):
         title = pulse.utils.gettext('Showing %i of %i commits from last week:') % (len(revs), cnt)
     else:
         title = pulse.utils.gettext('Showing %i of %i commits from %i weeks ago:') % (len(revs), cnt, ago)
-    div = get_commits_div (revs, title)
+    div = get_commits_div (doc, revs, title)
     page.add_content (div)
     page.output(fd=fd)
     return 0
@@ -347,7 +347,7 @@ def get_xmlfiles (doc, xmlfiles):
     return cont
 
 
-def get_commits_div (revs, title):
+def get_commits_div (doc, revs, title):
     div = pulse.html.Div (id='commits')
     div.add_content (title)
     dl = pulse.html.DefinitionList()
@@ -363,5 +363,5 @@ def get_commits_div (revs, title):
         person = people_cache[rev.person_id]
         span.add_content (pulse.html.Link (person))
         dl.add_term (span)
-        dl.add_entry (pulse.html.RevisionPopupLink (rev.comment))
+        dl.add_entry (pulse.html.PopupLink.from_revision (doc, rev))
     return div
