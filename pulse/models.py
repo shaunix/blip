@@ -606,8 +606,6 @@ class Revision (models.Model):
 
     branch = models.ForeignKey (Branch)
     person = models.ForeignKey (Entity)
-    filename = models.CharField (maxlength=200, null=True, default=None)
-    filetype = models.CharField (maxlength=20, null=True, default=None)
     revision = models.CharField (maxlength=80)
     datetime = models.DateTimeField ()
     weeknum = models.IntegerField (null=True)
@@ -624,6 +622,15 @@ class Revision (models.Model):
     @classmethod
     def select_revisions (cls, **kw):
         return cls.objects.filter (**kw).order_by ('-datetime')
+
+
+class RevisionFile (models.Model):
+    __metaclass__ = PulseModelBase
+
+    revision = models.ForeignKey (Revision, related_name='files')
+    filename = models.CharField (maxlength=200)
+    filerev = models.CharField (maxlength=80)
+    prevrev = models.CharField (maxlength=80)
 
 
 class Statistic (models.Model):

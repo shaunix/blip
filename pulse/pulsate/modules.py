@@ -186,7 +186,7 @@ def update_branch (branch, **kw):
     
 
 def check_history (branch, checkout):
-    since = db.Revision.get_last_revision (branch=branch, filename__isnull=True)
+    since = db.Revision.get_last_revision (branch=branch)
     if since != None:
         since = since.revision
         current = checkout.get_revision()
@@ -195,16 +195,21 @@ def check_history (branch, checkout):
             return
     pulse.utils.log ('Checking history for %s' % branch.ident)
     serverid = '.'.join (pulse.scm.server_name (checkout.scm_type, checkout.scm_server).split('.')[-2:])
-    for hist in checkout.get_history (since=since):
-        pident = '/person/' + serverid + '/' + hist['userid']
+    for hist in checkout.read_history (since=since):
+        # FIXME: this doesn't work for git
+        pident = '/person/' + serverid + '/' + hist['author'][0]
         pers = db.Entity.get_record (pident, 'Person')
         rev = db.Revision (branch=branch, person=pers,
                            revision=hist['revision'],
                            comment=hist['comment'],
                            datetime=hist['date'])
         rev.save()
+        for filename, filerev, prevrev in hist['files']:
+            rfile = db.RevisionFile (revision=rev, filename=filename,
+                                     filerev=filerev, prevrev=prevrev)
+            rfile.save()
 
-    revision = db.Revision.get_last_revision (branch=branch, filename__isnull=True)
+    revision = db.Revision.get_last_revision (branch=branch)
     if revision != None:
         branch.mod_datetime = revision.datetime
         branch.mod_person = revision.person
@@ -220,7 +225,7 @@ def update_graph (branch, **kw):
     except IndexError:
         of = None
 
-    revs = db.Revision.select_revisions (branch=branch, filename__isnull=True,
+    revs = db.Revision.select_revisions (branch=branch,
                                          weeknum__gt=(thisweek - 24))
 
     if of != None:

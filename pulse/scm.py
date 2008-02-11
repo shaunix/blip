@@ -21,6 +21,7 @@
 import commands
 import codecs
 import datetime
+import email.utils
 import os
 import time
 
@@ -237,8 +238,19 @@ class Checkout (object):
         return None
 
     def _get_revision_git (self):
-        # FIXME
-        return None
+        owd = os.getcwd ()
+        revnumber = revdate = None
+        try:
+            os.chdir (self.directory)
+            cmd = 'git show --name-only --pretty="format:%H%n%ad" .'
+            fd = codecs.getreader('utf-8')(os.popen (cmd), 'ignore')
+            line = fd.readline()
+            revnumber = line.strip()
+            line = fd.readline()
+            revdate = parse_date_git (line.strip())
+        finally:
+            os.chdir (owd)
+        return (revnumber, revdate)
 
     def _get_revision_svn (self):
         owd = os.getcwd ()
@@ -246,7 +258,8 @@ class Checkout (object):
         try:
             os.chdir (self.directory)
             cmd = 'svn info .'
-            for line in os.popen (cmd):
+            fd = codecs.getreader('utf-8')(os.popen (cmd), 'ignore')
+            for line in fd:
                 if line.startswith ('Last Changed Rev: '):
                     revnumber = line[18:].strip()
                 elif line.startswith ('Last Changed Date: '):
@@ -259,14 +272,6 @@ class Checkout (object):
 
 
     ############################################################################
-
-    def get_file_revision (self, filename):
-        if hasattr (Checkout, '_get_file_revision_' + self.scm_type) and self.scm_type in default_branches:
-            func = getattr (Checkout, '_get_file_revision_' + self.scm_type)
-        else:
-            raise CheckoutError (
-                'get_file_revision got unknown SCM type "%s"' % self.scm_type)
-        return func (self, filename)
 
     def _get_file_revision_cvs (self, filename):
         entries = os.path.join (self.directory, os.path.dirname (filename), 'CVS', 'Entries')
@@ -284,264 +289,190 @@ class Checkout (object):
                 return (revnumber, datetime.datetime(*datelist))
         return None
 
-    def _get_file_revision_git (self, filename):
-        owd = os.getcwd ()
-        retval = None
-        try:
-            os.chdir (self.directory)
-            cmd = 'git log -1 --pretty="format:%H/%ci" "%s"' % filename
-            (status, output) = commands.getstatusoutput (self._co)
-            revhash, revdate = output.split('/')
-            retval = (revhash, parse_date (revdate))
-        finally:
-            os.chdir (owd)
-        return retval
-
-    def _get_file_revision_svn (self, filename):
-        owd = os.getcwd ()
-        retval = None
-        try:
-            os.chdir (os.path.join (self.directory, os.path.dirname (filename)))
-            base = os.path.basename (filename)
-            # SVN interprets @ as giving a revision, but we actually have files
-            # with @ in the name, like sr@Latn.po.  The only way to get around
-            # this is by appending @ to the file name.  But appending @ causes
-            # SVN to hit the network.  There doesn't seem to be any other way
-            # around this magic revision parsing crap, so we just suck it up
-            # and accept the network penalty, but only for files with @ in the
-            # name.  It would probably be worthwhile to investigate using pysvn.
-            if '@' in base:
-                cmd = 'svn info "%s@"' % base
-            else:
-                cmd = 'svn info "%s"' % base
-            for line in os.popen (cmd):
-                if line.startswith ('Last Changed Rev: '):
-                    revnumber = line[18:].strip()
-                elif line.startswith ('Last Changed Date: '):
-                    revdate = line[19:].strip()
-                    break
-            retval = (revnumber, parse_date_svn (revdate))
-        finally:
-            os.chdir (owd)
-        return retval
-
-
     ############################################################################
 
-    def get_history (self, since=None):
-        if hasattr (Checkout, '_get_history_' + self.scm_type) and self.scm_type in default_branches:
-            func = getattr (Checkout, '_get_history_' + self.scm_type)
+    def read_history (self, since=None):
+        if hasattr (Checkout, '_read_history_' + self.scm_type) and self.scm_type in default_branches:
+            func = getattr (Checkout, '_read_history_' + self.scm_type)
         else:
             raise CheckoutError (
-                'get_history got unknown SCM type "%s"' % self.scm_type)
+                'read_history got unknown SCM type "%s"' % self.scm_type)
         return func (self, since=since)
 
-    def _get_history_cvs (self, since=None):
-        # I don't feel like writing per-file to per-repo stuff, and we don't
-        # want to count each file commit, otherwise we drastically inflate
-        # the module's statistics.  So we're just going to require ChangeLog
-        # files for CVS modules.
-        return self.get_file_history ('ChangeLog', since=since)
-
-    def _get_history_git (self, since=None):
+    def _read_history_cvs (self, since=None):
+        sep = '---------------------\n'
         owd = os.getcwd ()
-        retval = []
         try:
             os.chdir (self.directory)
-            cmd = 'git log'
+            cmd = 'cvsps -q -u -b ' + self.scm_branch
             if since != None:
-                cmd += ' "%s..%s"' % (since, self.scm_branch)
-            else:
-                cmd += ' "%s"' % self.scm_branch
-            retval = self._process_git_history (cmd, since)
-        finally:
-            os.chdir (owd)
-        return retval
-
-    def _get_history_svn (self, since=None):
-        owd = os.getcwd ()
-        retval = []
-        try:
-            os.chdir (self.directory)
-            cmd = 'svn log '
-            if since != None:
-                cmd += '-r' + since + ':HEAD'
-            else:
-                # Since the beginning of time, to give us oldest first
-                cmd += '-r\'{1970-01-01}\':HEAD'
-            retval = self._process_svn_history (cmd, since)
-        finally:
-            os.chdir (owd)
-        return retval
-
-
-    ############################################################################
-
-    def get_file_history (self, filename, since=None):
-        if hasattr (Checkout, '_get_file_history_' + self.scm_type) and self.scm_type in default_branches:
-            func = getattr (Checkout, '_get_file_history_' + self.scm_type)
-        else:
-            raise CheckoutError (
-                'get_file_history got unknown SCM type "%s"' % self.scm_type)
-        return func (self, filename, since=since)
-
-    def _get_file_history_cvs (self, filename, since=None):
-        owd = os.getcwd ()
-        retval = []
-        try:
-            os.chdir (self.directory)
-            cmd = 'cvs log -N'
-            if since != None:
-                cmd += ' -r' + since + '::'
-            elif self.scm_branch == 'HEAD':
-                cmd += ' -b'
-            else:
-                cmd += ' -r' + self.scm_branch
-            cmd += ' "' + filename + '"'
+                cmd += ' -s ' + since + '-'
+            cmd += ' 2>/dev/null'
             fd = codecs.getreader('utf-8')(os.popen (cmd), 'ignore')
             line = fd.readline()
             while line:
-                if line == '-' * 28 + '\n':
+                if not line.startswith ('PatchSet '):
                     line = fd.readline()
-                    if not line: break
-                    lnum = 0
-                    comment = ''
-                    while line:
-                        if not line or line == '-' * 28 + '\n' or line == '=' * 77 + '\n':
-                            break
-                        if lnum == 0:
-                            # revision x.y
-                            rev = line[9:].strip()
-                        elif lnum == 1:
-                            # date: <date>; author: <author>; state: ...; lines: ...
-                            parts = map(lambda s: s.strip(), line.split(';'))
-                            for part in parts:
-                                if part.startswith ('date: '):
-                                    date = parse_date (part[6:].strip())
-                                elif part.startswith ('author: '):
-                                    who = part[8:].strip()
-                            pass
-                        elif lnum == 2 and line.startswith ('branches: '):
-                            pass
+                    continue
+                revnumber = line[9:].strip()
+                revauthor = None
+                revdate = None
+                comment = ''
+                revfiles = []
+                current = None
+                blank = False
+                line = fd.readline()
+                while True:
+                    if not line or line == sep:
+                        if revnumber != since:
+                            yield {'revision' : revnumber, 'date' : revdate,
+                                   'author' : revauthor, 'comment' : comment,
+                                   'files' : revfiles }
+                        break
+                    if current == 'Log':
+                        if blank:
+                            blank = False
+                            if line.strip() == 'Members:':
+                                current = 'Members'
+                            else:
+                                comment += '\n'
                         else:
-                            comment += line
-                        line = fd.readline()
-                        lnum += 1
-                    retval.insert (0, {'revision' : rev, 'date' : date,
-                                       'userid' : who, 'comment' : comment})
-                else:
+                            blank = (line == '\n')
+                            if not blank:
+                                comment += line
+                    elif current == 'Members':
+                        if line.strip() != '':
+                            member, revs = line.strip().split(':')
+                            prevrev, filerev = revs.split('->')
+                            revfiles.append ((member, filerev, prevrev))
+                    elif line.startswith ('Date: '):
+                        datestr = line[6:].strip()
+                        dt = datetime.datetime (*time.strptime (datestr, '%Y/%m/%d %H:%M:%S')[:6])
+                        revdate = dt + datetime.timedelta (seconds=time.timezone)
+                    elif line.startswith ('Author: '):
+                        revauthor = (line[8:].strip(), None, None)
+                    elif line.strip() == 'Log:':
+                        current = 'Log'
+                        blank = False
                     line = fd.readline()
-        finally:
+        except:
             os.chdir (owd)
-        return retval
-    
-    def _get_file_history_git (self, filename, since=None):
+            raise
+        os.chdir (owd)
+
+    def _read_history_git (self, since=None):
         owd = os.getcwd ()
-        retval = []
         try:
             os.chdir (self.directory)
-            cmd = 'git log'
+            cmd = 'git log --pretty="format:%H %P" '
             if since != None:
-                cmd += ' "%s..%s"' % (since, self.scm_branch)
+                cmd += '"%s..%s"' % (since, self.scm_branch)
             else:
-                cmd += ' "%s"' % self.scm_branch
-            cmd += ' -- "%s"' % filename
-            retval = self._process_git_history (cmd, since)
-        finally:
+                cmd += '"%s"' % self.scm_branch
+            allrevs = []
+            fd = codecs.getreader('utf-8')(os.popen (cmd), 'ignore')
+            for line in fd:
+                hashes = line.split()
+                revnumber = hashes[0]
+                parnumber = len(hashes) > 1 and hashes[1] or None
+                allrevs.insert (0, (revnumber, parnumber))
+            for revnumber, parnumber in allrevs:
+                cmd = 'git show --name-only ' + revnumber
+                revauthor = None
+                revdate = None
+                comment = ''
+                revfiles = []
+                fd = codecs.getreader('utf-8')(os.popen (cmd), 'ignore')
+                line = fd.readline()
+                while line:
+                    if line.startswith ('Author: '):
+                        revauthor = (None,) + email.utils.parseaddr (line[8:].strip())
+                    elif line.startswith ('Date: '):
+                        revdate = line[8:].strip()
+                        revdate = parse_date_git (revdate)
+                    elif line.strip() == '':
+                        line = fd.readline()
+                        blank = False
+                        while line:
+                            if blank:
+                                if line.strip() != '' and line[0] != ' ':
+                                    break
+                                else:
+                                    comment += '\n'
+                            if line.strip() == '':
+                                blank = True
+                            else:
+                                comment += line
+                            line = fd.readline()
+                        while line:
+                            revfiles.append ((line.strip(), revnumber, parnumber))
+                            line = fd.readline()
+                    if line:
+                        line = fd.readline()
+                yield {'revision' : revnumber, 'date' : revdate,
+                       'author' : revauthor, 'comment' : comment,
+                       'files' : revfiles }
+        except:
             os.chdir (owd)
-        return retval
-    
-    def _get_file_history_svn (self, filename, since=None):
+            raise
+        os.chdir (owd)
+
+    def _read_history_svn (self, since=None):
+        sep = '-' * 72 + '\n'
         owd = os.getcwd ()
-        retval = []
         try:
-            os.chdir (os.path.join (self.directory, os.path.dirname (filename)))
-            cmd = 'svn log '
+            os.chdir (self.directory)
+            cmd = 'svn log -v'
             if since != None:
-                cmd += '-r' + since + ':HEAD '
+                cmd += ' -r' + since + ':HEAD'
             else:
                 # Since the beginning of time, to give us oldest first
-                cmd += '-r\'{1970-01-01}\':HEAD '
-            cmd += '"' + os.path.basename (filename) + '@"'
-            retval = self._process_svn_history (cmd, since)
-        finally:
-            os.chdir (owd)
-        return retval
-
-
-    ############################################################################
-
-    def _process_git_history (self, cmd, since):
-        retval = []
-        fd = codecs.getreader('utf-8')(os.popen (cmd), 'ignore')
-        line = fd.readline()
-        rev = None
-        while line:
-            if line.startswith ('commit '):
-                rev = line[7:].strip()
-                comment = None
-                line = fd.readline()
-                while line:
-                    if line.startswith ('commit '):
-                        break
-                    if comment != None:
-                        comment += line.strip() + '\n'
-                    elif line.startswith ('Author:'):
-                        # FIXME: parse "name <email@domain>"
-                        who = line[7:].strip()
-                    elif line.startswith ('Date:'):
-                        revdate = line[5:].strip()
-                        revdate = revdate.split()
-                        datelist = [0, 0, 0, 0, 0, 0]
-                        datelist[0] = int(revdate[4])
-                        months = {'Jan':1, 'Feb':2, 'Mar':3, 'Apr':4, 'May':5, 'Jun':6,
-                                  'Jul':7, 'Aug':8, 'Sep':9, 'Oct':10, 'Nov':11, 'Dec':12}
-                        datelist[1] = months[revdate[1]]
-                        datelist[2] = int(revdate[2])
-                        datelist[3:6] = map (int, revdate[3].split(':'))
-                        date = datetime.datetime(*datelist)
-
-                        off = revdate[-1]
-                        offhours = int(off[:3])
-                        offmins = int(off[0] + off[3:])
-                        delta = datetime.timedelta (hours=offhours, minutes=offmins)
-                        date = date - delta
-                    elif line.strip() == '':
-                        comment = ''
-                    line = fd.readline()
-                retval.insert (0,
-                               {'revision' : rev, 'date' : date,
-                                'userid' : who, 'comment' : comment})
-            else:
-                line = fd.readline()
-        return retval
-
-    def _process_svn_history (self, cmd, since):
-        retval = []
-        fd = codecs.getreader('utf-8')(os.popen (cmd), 'ignore')
-        line = fd.readline()
-        while line:
-            if line == '-' * 72 + '\n':
+                cmd += ' -r\'{1970-01-01}\':HEAD'
+            fd = codecs.getreader('utf-8')(os.popen (cmd), 'ignore')
+            line = fd.readline()
+            while line:
                 line = fd.readline()
                 if not line: break
-                (rev, who, date, diff) = line.split('|')
-                rev = rev[1:].strip()
-                who = who.strip()
-                date = parse_date_svn (date)
+                (revnumber, revauthor, revdate, diff) = line.split('|')
+                revnumber = revnumber[1:].strip()
+                prevrev = str(int(revnumber) - 1)
+                revauthor = (revauthor.strip(), None, None)
+                revdate = parse_date_svn (revdate)
                 comment = ''
+                revfiles = []
                 line = fd.readline()
+                if line.strip() == 'Changed paths:':
+                    line = fd.readline()
+                    while line:
+                        if line == '\n' or line == sep:
+                            break
+                        filename = line.strip()[3:]
+                        # FIXME: if I knew how to get the previous revision that
+                        # affected this file, I would.  But I don't know how to
+                        # get that from the single svn log command, and I'm not
+                        # about to do extra svn calls for each revision.
+                        revfiles.append ((filename, revnumber, prevrev))
+                        line = fd.readline()
                 if line == '\n': line = fd.readline()
                 while line:
-                    if line == '-' * 72 + '\n':
+                    if line == sep:
                         break
                     comment += line
                     line = fd.readline()
-                if rev != since:
-                    retval.append ({'revision' : rev, 'date' : date,
-                                    'userid' : who, 'comment' : comment})
+                if revnumber != since:
+                    yield {'revision' : revnumber, 'date' : revdate,
+                           'author' : revauthor, 'comment' : comment,
+                           'files' : revfiles }
             else:
                 line = fd.readline()
-        return retval
+        except:
+            os.chdir (owd)
+            raise
+        os.chdir (owd)
+
+
+months = {'Jan':1, 'Feb':2, 'Mar':3, 'Apr':4, 'May':5, 'Jun':6,
+          'Jul':7, 'Aug':8, 'Sep':9, 'Oct':10, 'Nov':11, 'Dec':12}
 
 def parse_date (d):
     dt = datetime.datetime (*time.strptime(d[:19], '%Y-%m-%d %H:%M:%S')[:6])
@@ -553,3 +484,31 @@ def parse_date (d):
 
 def parse_date_svn (d):
     return parse_date (d.split('(')[0].strip())
+
+def parse_date_git (d):
+    revdate = d.split()
+    datelist = [0, 0, 0, 0, 0, 0]
+    datelist[0] = int(revdate[4])
+    datelist[1] = months[revdate[1]]
+    datelist[2] = int(revdate[2])
+    datelist[3:6] = map (int, revdate[3].split(':'))
+    date = datetime.datetime(*datelist)
+    off = revdate[-1]
+    offhours = int(off[:3])
+    offmins = int(off[0] + off[3:])
+    delta = datetime.timedelta (hours=offhours, minutes=offmins)
+    date = date - delta
+    return date
+
+icons = Checkout(scm_type='cvs',
+                 scm_server=':pserver:anoncvs@anoncvs.freedesktop.org:/cvs/icon-theme',
+                 scm_module='icon-naming-utils',
+                 update=False)
+yelp = Checkout(scm_type='svn',
+                scm_server='http://svn.gnome.org/svn/',
+                scm_module='yelp',
+                update=False)
+dbus = Checkout(scm_type='git',
+                scm_server='git://anongit.freedesktop.org/git/',
+                scm_module='dbus',
+                update=False)
