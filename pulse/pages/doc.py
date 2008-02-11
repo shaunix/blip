@@ -201,9 +201,12 @@ def output_doc (doc, path=[], query={}, http=True, fd=None):
     cont.set_title (pulse.utils.gettext ('History'))
     pad.add_content (cont)
 
-    revs = db.Revision.select_revisions (branch=doc, filename__isnull=False)
-    div = get_commits_div (revs, 10,
-                           pulse.utils.gettext('Showing %i commits:'))
+    files = [os.path.join (doc.scm_dir, f) for f in doc.data.get ('xmlfiles', [])]
+    revs = db.Revision.select_revisions (branch=doc.parent, files=files)
+    cnt = revs.count()
+    revs = revs[:10]
+    div = get_commits_div (revs,
+                           pulse.utils.gettext('Showing %i of %i commits:') % (len(revs), cnt))
     cont.add_content (div)
 
     # Translations
@@ -296,16 +299,17 @@ def output_ajax_commits (doc, path=[], query={}, http=True, fd=None):
     weeknum = int(query.get('weeknum', 0))
     thisweek = pulse.utils.weeknum (datetime.datetime.now())
     ago = thisweek - weeknum
-    revs = db.Revision.select_revisions (branch=doc, filename__isnull=False, weeknum=weeknum)
+    files = [os.path.join (doc.scm_dir, f) for f in doc.data.get ('xmlfiles', [])]
+    revs = db.Revision.select_revisions (branch=doc.parent, files=files, weeknum=weeknum)
     cnt = revs.count()
     revs = revs[:20]
     if ago == 0:
-        fmt = pulse.utils.gettext('Showing %i commits from this week:')
+        title = pulse.utils.gettext('Showing %i of %i commits from this week:') % (len(revs), cnt)
     elif ago == 1:
-        fmt = pulse.utils.gettext('Showing %i commits from last week:')
+        title = pulse.utils.gettext('Showing %i of %i commits from last week:') % (len(revs), cnt)
     else:
-        fmt = pulse.utils.gettext('Showing %%i commits from %i weeks ago:') % ago
-    div = get_commits_div (revs, 20, fmt)
+        title = pulse.utils.gettext('Showing %i of %i commits from %i weeks ago:') % (len(revs), cnt, ago)
+    div = get_commits_div (revs, title)
     page.add_content (div)
     page.output(fd=fd)
     return 0
@@ -325,7 +329,8 @@ def get_xmlfiles (doc, xmlfiles):
         span = pulse.html.Span (xmlfile)
         span.add_class ('title')
         dl.add_term (span, class_name='actfile')
-        commit = db.Revision.get_last_revision (branch=doc, filename=xmlfile)
+        files = [os.path.join (doc.scm_dir, xmlfile)]
+        commit = db.Revision.get_last_revision (branch=doc.parent, files=files)
         if commit != None:
             span = pulse.html.Span(divider=pulse.html.SPACE)
             # FIXME: i18n, word order, but we want to link person
@@ -342,36 +347,21 @@ def get_xmlfiles (doc, xmlfiles):
     return cont
 
 
-def get_commits_div (revs, max, fmt):
+def get_commits_div (revs, title):
     div = pulse.html.Div (id='commits')
-    dl = pulse.html.DefinitionList()
-    seen = []
-    done = False
-    i = 0
-    while not done:
-        revlist = revs[i : i + 2*max]
-        for rev in revlist:
-            revstr = rev.revision + str(rev.datetime)
-            if revstr in seen: continue
-            seen.append (revstr)
-            span = pulse.html.Span (divider=pulse.html.SPACE)
-            span.add_content (rev.revision)
-            span.add_content ('on')
-            span.add_content (rev.datetime.strftime('%Y-%m-%d %T'))
-            span.add_content ('by')
-            if not rev.person_id in people_cache:
-                people_cache[rev.person_id] = rev.person
-            person = people_cache[rev.person_id]
-            span.add_content (pulse.html.Link (person))
-            dl.add_term (span)
-            dl.add_entry (pulse.html.RevisionPopupLink (rev.comment))
-            if len(seen) >= max:
-                done = True
-                break
-        if len(revlist) < 2*max:
-            break
-        i += 2*max
-    title = fmt % len(seen)
     div.add_content (title)
+    dl = pulse.html.DefinitionList()
     div.add_content (dl)
+    for rev in revs:
+        span = pulse.html.Span (divider=pulse.html.SPACE)
+        span.add_content (rev.revision)
+        span.add_content ('on')
+        span.add_content (rev.datetime.strftime('%Y-%m-%d %T'))
+        span.add_content ('by')
+        if not rev.person_id in people_cache:
+            people_cache[rev.person_id] = rev.person
+        person = people_cache[rev.person_id]
+        span.add_content (pulse.html.Link (person))
+        dl.add_term (span)
+        dl.add_entry (pulse.html.RevisionPopupLink (rev.comment))
     return div

@@ -35,7 +35,6 @@ from sqlobject.sqlbuilder import *
 synop = 'update information about translations'
 usage_extra = '[ident]'
 args = pulse.utils.odict()
-args['no-history'] = (None, 'do not check SCM history')
 args['no-timestamps'] = (None, 'do not check timestamps before processing files')
 args['no-update']  = (None, 'do not update SCM checkouts')
 def help_extra (fd=None):
@@ -84,8 +83,6 @@ def update_intltool (po, **kw):
                                     stats[0], stats[1], total)
     finally:
         os.chdir (owd)
-    if kw.get('history', True):
-        do_history (po, checkout, **kw)
 
     # FIXME: things like .desktop files might not be reprocessed because
     # they haven't changed, but translators might have updated the name
@@ -140,8 +137,6 @@ def update_xml2po (po, **kw):
                                     stats[0], stats[1], total)
     finally:
         os.chdir (owd)
-    if kw.get('history', True):
-        do_history (po, checkout, **kw)
 
     po.data['md5'] = potfile.data.get('md5', None)
     po.save()
@@ -261,38 +256,12 @@ def get_xml2po_potfile (po, checkout):
         return None
     
 
-def do_history (po, checkout, **kw):
-    fullname = os.path.join (checkout.directory, po.scm_dir, po.scm_file)
-    rel_ch = pulse.utils.relative_path (fullname, checkout.directory)
-    rel_scm = pulse.utils.relative_path (fullname, pulse.config.scm_dir)
-    mtime = os.stat(fullname).st_mtime
-    if kw.get('timestamps', True):
-        stamp = db.Timestamp.get_timestamp (rel_scm)
-        if mtime <= stamp:
-            pulse.utils.log ('Skipping history for %s' % rel_scm)
-            return
-    pulse.utils.log ('Checking history for %s' % rel_scm)
-    since = db.Revision.get_last_revision (branch=po, filename=po.scm_file)
-    if since != None:
-        since = since.revision
-    serverid = '.'.join (pulse.scm.server_name (checkout.scm_type, checkout.scm_server).split('.')[-2:])
-    for hist in checkout.get_file_history (rel_ch, since=since):
-        pident = '/person/' + serverid + '/' + hist['userid']
-        pers = db.Entity.get_record (pident, 'Person')
-        rev = db.Revision (branch=po, person=pers, filename=po.scm_file, filetype='po',
-                           revision=hist['revision'], datetime=hist['date'], comment=hist['comment'])
-        rev.save()
-    db.Timestamp.set_timestamp (rel_scm, mtime)
-    
-
-
 ################################################################################
 ## main
 
 def main (argv, options={}):
     update = not options.get ('--no-update', False)
     timestamps = not options.get ('--no-timestamps', False)
-    history = not options.get ('--no-history', False)
     if len(argv) == 0:
         prefix = None
     else:
@@ -318,9 +287,9 @@ def main (argv, options={}):
 
     for po in list(pos):
         if po.subtype == 'intltool':
-            update_intltool (po, update=update, timestamps=timestamps, history=history)
+            update_intltool (po, update=update, timestamps=timestamps)
         elif po.subtype == 'xml2po':
-            update_xml2po (po, update=update, timestamps=timestamps, history=history)
+            update_xml2po (po, update=update, timestamps=timestamps)
         else:
             pulse.utils.log ('Skipping translation %s with unknown type %s' %
                              (po.ident, po.subtype))

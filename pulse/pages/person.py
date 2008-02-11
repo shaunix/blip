@@ -93,7 +93,7 @@ def output_person (person, path=[], query={}, http=True, fd=None):
     except IndexError:
         pass
 
-    revs = db.Revision.select_revisions (person=person, filename__isnull=True)
+    revs = db.Revision.select_revisions (person=person)
     cnt = revs.count()
     revs = revs[:10]
     div = get_commits_div (revs,
@@ -135,7 +135,7 @@ def output_ajax_commits (person, path=[], query={}, http=True, fd=None):
     weeknum = int(query.get('weeknum', 0))
     thisweek = pulse.utils.weeknum (datetime.datetime.now())
     ago = thisweek - weeknum
-    revs = db.Revision.select_revisions (person=person, filename__isnull=True, weeknum=weeknum)
+    revs = db.Revision.select_revisions (person=person, weeknum=weeknum)
     cnt = revs.count()
     revs = revs[:20]
     if ago == 0:

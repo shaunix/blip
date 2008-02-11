@@ -39,7 +39,6 @@ import pulse.utils
 synop = 'update information about documentation'
 usage_extra = '[ident]'
 args = pulse.utils.odict()
-args['no-history'] = (None, 'do not check SCM history')
 args['no-timestamps'] = (None, 'do not check timestamps before processing files')
 args['no-update']  = (None, 'do not update SCM checkouts')
 def help_extra (fd=None):
@@ -93,30 +92,13 @@ def update_gdu_docbook (doc, **kw):
     fnames = ([makefile['DOC_MODULE']+'.xml']  +
               makefile.get('DOC_INCLUDES', '').split() +
               makefile.get('DOC_ENTITIES', '').split() )
-    if kw.get('history', True):
-        pulse.utils.log ('Checking history for %i files for %s' % (len(fnames), doc.ident))
     for fname in (fnames):
         xmlfiles.append (fname)
-        if kw.get('history', True):
-            fullname = os.path.join (makedir, 'C', fname)
-            rel_ch = pulse.utils.relative_path (fullname, checkout.directory)
-            since = db.Revision.get_last_revision (branch=doc, filename=fname)
-            if since != None:
-                since = since.revision
-                current = checkout.get_file_revision(rel_ch)
-                if current != None and since == current[0]:
-                    continue
-            serverid = '.'.join (pulse.scm.server_name (checkout.scm_type, checkout.scm_server).split('.')[-2:])
-            for hist in checkout.get_file_history (rel_ch, since=since):
-                pident = '/person/' + serverid + '/' + hist['userid']
-                pers = db.Entity.get_record (pident, 'Person')
-                rev = db.Revision (branch=doc, person=pers, filename=fname, filetype='xml',
-                                   revision=hist['revision'], datetime=hist['date'], comment=hist['comment'])
-                rev.save()
 
     doc.data['xmlfiles'] = sorted (xmlfiles)
 
-    revision = db.Revision.get_last_revision (branch=doc, filename__isnull=False)
+    files = [os.path.join (doc.scm_dir, f) for f in xmlfiles]
+    revision = db.Revision.get_last_revision (branch=doc.parent, files=files)
     if revision != None:
         doc.mod_datetime = revision.datetime
         doc.mod_person = revision.person
@@ -135,9 +117,11 @@ def update_graph (doc, **kw):
     except IndexError:
         of = None
 
-    revs = db.Revision.select_revisions (branch=doc, filename__isnull=False,
-                                         weeknum__gt=(thisweek - 24))
+    files = [os.path.join (doc.scm_dir, f) for f in doc.data.get ('xmlfiles', [])]
+    if len(files) == 0: return
 
+    revs = db.Revision.select_revisions (branch=doc.parent, files=files,
+                                         weeknum__gt=(thisweek - 24))
     if of != None:
         if kw.get('timestamps', True):
             lastrev = of.data.get ('lastrev', None)
@@ -155,11 +139,7 @@ def update_graph (doc, **kw):
     pulse.utils.log ('Creating commit graph for %s' % doc.ident)
     stats = [0] * 24
     revs = list(revs)
-    seen = []
     for rev in revs:
-        revstr = rev.revision + str(rev.datetime)
-        if revstr in seen: continue
-        seen.append (revstr)
         idx = rev.weeknum - thisweek + 23
         stats[idx] += 1
     score = pulse.utils.score (stats)
@@ -494,7 +474,6 @@ def personname (node):
 def main (argv, options={}):
     update = not options.get ('--no-update', False)
     timestamps = not options.get ('--no-timestamps', False)
-    history = not options.get ('--no-history', False)
     if len(argv) == 0:
         prefix = None
     else:
@@ -513,4 +492,4 @@ def main (argv, options={}):
                                          ident__startswith=prefix)
 
     for doc in list(docs):
-        update_document (doc, update=update, timestamps=timestamps, history=history)
+        update_document (doc, update=update, timestamps=timestamps)
