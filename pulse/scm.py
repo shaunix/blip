@@ -446,6 +446,9 @@ class Checkout (object):
                     while line:
                         if line == '\n' or line == sep:
                             break
+                        # FIXME: this has trunk/ prepended, and possibly a comment
+                        # in parens afterward.  We need to fix this before we can
+                        # do anything else
                         filename = line.strip()[3:]
                         # FIXME: if I knew how to get the previous revision that
                         # affected this file, I would.  But I don't know how to
