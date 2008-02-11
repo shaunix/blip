@@ -49,9 +49,8 @@ def output_top (path=[], query={}, http=True, fd=None):
     page = pulse.html.Page (http=http)
     page.set_title (pulse.utils.gettext ('Sets'))
 
-    # FIXME: this doesn't work.  what does?
     sets = db.Record.objects.filter (type='Set').extra (
-        select={'parent_count' : 'SELECT COUNT(*) FROM SetSubset where pred_ID = Record.id'},
+        select={'parent_count' : 'SELECT COUNT(*) FROM SetSubset where pred_id = Record.id'},
         where=['parent_count=0'])
     sets = pulse.utils.attrsorted (list(sets), 'title')
     # We should probably max this a 3 if we get more sets

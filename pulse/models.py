@@ -621,7 +621,14 @@ class Revision (models.Model):
 
     @classmethod
     def select_revisions (cls, **kw):
-        return cls.objects.filter (**kw).order_by ('-datetime')
+        files = kw.pop ('files', None)
+        sel = cls.objects.filter (**kw)
+        if files != None and len(files) > 0:
+            where = '(SELECT COUNT(*) FROM RevisionFile where revision_id = Revision.id AND filename IN ('
+            where += ','.join(['%s' for f in files])
+            where += ')) > 0'
+            sel = sel.extra (where=[where], params=files)
+        return sel.order_by ('-datetime')
 
 
 class RevisionFile (models.Model):

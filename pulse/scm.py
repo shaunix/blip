@@ -21,9 +21,13 @@
 import commands
 import codecs
 import datetime
-import email.utils
 import os
 import time
+
+try:
+    from email.utils import parseaddr
+except:
+    from email.Utils import parseaddr
 
 import pulse.config
 import pulse.utils
@@ -386,7 +390,7 @@ class Checkout (object):
                 line = fd.readline()
                 while line:
                     if line.startswith ('Author: '):
-                        revauthor = (None,) + email.utils.parseaddr (line[8:].strip())
+                        revauthor = (None,) + parseaddr (line[8:].strip())
                     elif line.startswith ('Date: '):
                         revdate = line[8:].strip()
                         revdate = parse_date_git (revdate)
@@ -422,6 +426,12 @@ class Checkout (object):
         owd = os.getcwd ()
         try:
             os.chdir (self.directory)
+            if getattr (self, 'scm_path', None) != None:
+                prefix = self.scm_path
+            elif self.scm_branch == 'trunk':
+                prefix = 'trunk'
+            else:
+                prefix = self.scm_module + '/branches/' + self.scm_branch
             cmd = 'svn log -v'
             if since != None:
                 cmd += ' -r' + since + ':HEAD'
@@ -446,10 +456,17 @@ class Checkout (object):
                     while line:
                         if line == '\n' or line == sep:
                             break
-                        # FIXME: this has trunk/ prepended, and possibly a comment
-                        # in parens afterward.  We need to fix this before we can
-                        # do anything else
                         filename = line.strip()[3:]
+                        if filename.startswith (prefix):
+                            filename = filename[len(prefix)+1:]
+                        else:
+                            filename = '../' + filename
+                        i = filename.find ('(from ')
+                        if i >= 0:
+                            filename = filename[:i]
+                        filename = filename.strip()
+                        if filename == '':
+                            filename = '.'
                         # FIXME: if I knew how to get the previous revision that
                         # affected this file, I would.  But I don't know how to
                         # get that from the single svn log command, and I'm not
@@ -511,7 +528,9 @@ yelp = Checkout(scm_type='svn',
                 scm_server='http://svn.gnome.org/svn/',
                 scm_module='yelp',
                 update=False)
+"""
 dbus = Checkout(scm_type='git',
                 scm_server='git://anongit.freedesktop.org/git/',
                 scm_module='dbus',
                 update=False)
+                """
