@@ -427,6 +427,11 @@ class Record (PulseRecord, models.Model):
     __metaclass__ = PulseModelBase
 
 
+class ReleaseSet (PulseRecord, models.Model):
+    __metaclass__ = PulseModelBase
+    parent = models.ForeignKey ('ReleaseSet', related_name='subsets', null=True)
+
+
 class Branchable (PulseRecord, models.Model):
     __metaclass__ = PulseModelBase
 
@@ -584,13 +589,8 @@ class ModuleEntity (PulseRelation, models.Model):
 
 class SetModule (PulseRelation, models.Model):
     __metaclass__ = PulseModelBase
-    subj = models.ForeignKey (Record, related_name='set_module_preds')
+    subj = models.ForeignKey (ReleaseSet, related_name='set_module_preds')
     pred = models.ForeignKey (Branch, related_name='set_module_subjs')
-
-class SetSubset (PulseRelation, models.Model):
-    __metaclass__ = PulseModelBase
-    subj = models.ForeignKey (Record, related_name='set_subset_preds')
-    pred = models.ForeignKey (Record, related_name='set_subset_subjs')
 
 
 ################################################################################

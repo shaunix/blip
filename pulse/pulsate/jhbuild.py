@@ -160,15 +160,15 @@ def update_branch (moduleset, key, update=True):
 
 def update_set (data, update=True):
     ident = '/set/' + data['id']
-    record = pulse.models.Record.get_record (ident, 'Set')
+    record = pulse.models.ReleaseSet.get_record (ident, 'Set')
 
     # Sets may contain either other sets or modules, not both
     if data.has_key ('set'):
         rels = []
         for subset in data['set'].keys():
             subrecord = update_set (data['set'][subset], update=update)
-            rels.append (pulse.models.SetSubset.set_related (record, subrecord))
-        record.set_relations (pulse.models.SetSubset, rels)
+            subrecord.parent = record
+            subrecord.save()
     elif (data.has_key ('jhbuild_scm_type')   and
           data.has_key ('jhbuild_scm_server') and
           data.has_key ('jhbuild_scm_module') and

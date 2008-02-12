@@ -30,7 +30,7 @@ def main (path=[], query={}, http=True, fd=None):
         return output_top (path=path, query=query, http=http, fd=fd)
     
     ident = '/' + '/'.join(path[:2])
-    sets = db.Record.objects.filter (ident=ident)
+    sets = db.ReleaseSet.objects.filter (ident=ident)
     try:
         set = sets[0]
         return output_set (set, path, query, http, fd)
@@ -49,9 +49,7 @@ def output_top (path=[], query={}, http=True, fd=None):
     page = pulse.html.Page (http=http)
     page.set_title (pulse.utils.gettext ('Sets'))
 
-    sets = db.Record.objects.filter (type='Set').extra (
-        select={'parent_count' : 'SELECT COUNT(*) FROM SetSubset where pred_id = Record.id'},
-        where=['parent_count=0'])
+    sets = db.ReleaseSet.objects.filter (parent__isnull=True)
     sets = pulse.utils.attrsorted (list(sets), 'title')
     # We should probably max this a 3 if we get more sets
     columns = pulse.html.ColumnBox (len(sets))
@@ -80,8 +78,7 @@ def output_set (set, path=[], query={}, http=True, fd=None):
     for super in get_supersets (set):
         page.add_sublink (super.pulse_url, super.title)
 
-    subsets = [rel.pred for rel in db.SetSubset.get_related (subj=set)]
-    subsets = pulse.utils.attrsorted (subsets, ['title'])
+    subsets = pulse.utils.attrsorted (set.subsets.all(), ['title'])
     if len(subsets) > 0:
         if len(path) < 3 or path[2] == 'set':
             columns = pulse.html.ColumnBox (2)
@@ -149,20 +146,18 @@ def output_set (set, path=[], query={}, http=True, fd=None):
 
 
 def get_supersets (set):
-    superset = db.SetSubset.get_one_related (pred=set)
+    superset = set.parent
     if superset == None:
         return []
     else:
-        supers = get_supersets (superset.subj)
-        return supers + [superset.subj]
-    
+        supers = get_supersets (superset)
+        return supers + [superset]
+
 
 def add_set_entries (set, dl):
-    rels = db.SetSubset.get_related (subj=set)
-    rels = pulse.utils.attrsorted (rels, ['pred', 'title'])
-    if len(rels) > 0:
-        for rel in rels:
-            subset = rel.pred
+    subsets = pulse.utils.attrsorted (set.subsets.all(), ['title'])
+    if len(subsets) > 0:
+        for subset in subsets:
             subdl = pulse.html.DefinitionList ()
             subdl.add_term (pulse.html.Link (subset))
             add_set_entries (subset, subdl)
