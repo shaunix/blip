@@ -25,6 +25,8 @@ import pulse.html
 import pulse.models as db
 import pulse.utils
 
+people_cache = {}
+
 def main (path=[], query={}, http=True, fd=None):
     if len(path) == 1:
         return output_top (path=path, query=query, http=http, fd=fd)
@@ -128,9 +130,12 @@ def output_set (set, path=[], query={}, http=True, fd=None):
                 # FIXME: i18n, word order, but we want to link person
                 span.add_content (pulse.html.Span(mod.mod_datetime.strftime('%Y-%m-%d %T')))
                 span.add_class ('mtime')
-                if mod.mod_person != None:
+                if mod.mod_person_id != None:
                     span.add_content (pulse.utils.gettext ('by'))
-                    span.add_content (pulse.html.Link (mod.mod_person))
+                    if not people_cache.has_key (mod.mod_person_id):
+                        people_cache[mod.mod_person_id] = mod.mod_person
+                    person = people_cache[mod.mod_person_id]
+                    span.add_content (pulse.html.Link (person))
                 lbox.add_fact (pulse.utils.gettext ('modified'), span)
             if mod.mod_score != None:
                 span = pulse.html.Span(str(mod.mod_score))
@@ -292,9 +297,12 @@ def add_more_tabs (set, tabbed, path=[], query={}):
                         # FIXME: i18n, word order, but we want to link person
                         span.add_content (pulse.html.Span(obj.mod_datetime.strftime('%Y-%m-%d %T')))
                         span.add_class ('mtime')
-                        if obj.mod_person != None:
+                        if obj.mod_person_id != None:
                             span.add_content (pulse.utils.gettext ('by'))
-                            span.add_content (pulse.html.Link (obj.mod_person))
+                            if not people_cache.has_key (obj.mod_person_id):
+                                people_cache[obj.mod_person_id] = obj.mod_person
+                            person = people_cache[obj.mod_person_id]
+                            span.add_content (pulse.html.Link (person))
                         lbox.add_fact (pulse.utils.gettext ('modified'), span)
                         slink_mtime = True
                     if obj.mod_score != None:
