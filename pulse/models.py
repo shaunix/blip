@@ -538,6 +538,26 @@ class Branch (PulseRecord, models.Model):
         return pulse.utils.gettext ('%s (%s)') % (self.title, self.scm_branch)
     branch_title = property (get_branch_title)
 
+    @classmethod
+    def select_with_statistic (cls, stattype, **kw):
+        sel = cls.objects.filter (**kw)
+        sel = sel.extra (select = {'maxdaynum' :
+                                   'SELECT daynum FROM Statistic' +
+                                   ' WHERE Statistic.branch_id = Branch.id' +
+                                   ' AND Statistic.type = %s' +
+                                   ' ORDER BY daynum DESC LIMIT 1'},
+                         params = [stattype])
+        sel = sel.extra (tables = ['Statistic'],
+                         where = ['Statistic.type = %s',
+                                  'Statistic.branch_id = Branch.id',
+                                  'daynum = maxdaynum'],
+                         params = [stattype],
+                         select = {stattype + '_daynum' : 'Statistic.daynum',
+                                   stattype + '_stat1' : 'Statistic.stat1',
+                                   stattype + '_stat2' : 'Statistic.stat2',
+                                   stattype + '_total' : 'Statistic.total'})
+        return sel
+
 
 class Entity (PulseRecord, models.Model):
     __metaclass__ = PulseModelBase

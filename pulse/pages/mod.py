@@ -269,7 +269,8 @@ def output_branch (branch, path=[], query={}, http=True, fd=None):
     if len(domains) > 0:
         for domain in domains:
             domainid = domain.ident.split('/')[-2].replace('-', '_')
-            translations = domain.select_children ('Translation')
+            translations = db.Branch.select_with_statistic ('Messages',
+                                                            type='Translation', parent=domain)
             translations = pulse.utils.attrsorted (list(translations), 'title')
             cont = pulse.html.ContainerBox ()
             cont.set_id ('po_' + domainid)
@@ -309,23 +310,21 @@ def output_branch (branch, path=[], query={}, http=True, fd=None):
                 grid = pulse.html.GridBox ()
                 pad.add_content (grid)
                 for translation in translations:
-                    stat = db.Statistic.select_statistic (translation, 'Messages')
                     span = pulse.html.Span (translation.scm_file[:-3])
                     span.add_class ('title')
                     row = [span]
                     percent = 0
-                    try:
-                        stat = stat[0]
-                        untranslated = stat.total - stat.stat1 - stat.stat2
-                        percent = math.floor (100 * (float(stat.stat1) / stat.total))
-                        span = pulse.html.Span ('%i%%' % percent)
-                        span.add_class ('percent')
-                        row.append (span)
+                    stat1 = translation.Messages_stat1
+                    stat2 = translation.Messages_stat2
+                    total = translation.Messages_total
+                    untranslated = total - stat1 - stat2
+                    percent = math.floor (100 * (float(stat1) / total))
+                    span = pulse.html.Span ('%i%%' % percent)
+                    span.add_class ('percent')
+                    row.append (span)
 
-                        row.append (pulse.utils.gettext ('%i.%i.%i') %
-                                    (stat.stat1, stat.stat2, untranslated))
-                    except IndexError:
-                        pass
+                    row.append (pulse.utils.gettext ('%i.%i.%i') %
+                                (stat1, stat2, untranslated))
                     idx = grid.add_row (*row)
                     grid.add_row_class (idx, 'po')
                     grid.add_row_class (idx, 'po_' + domainid)
