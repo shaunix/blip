@@ -520,17 +520,3 @@ def parse_date_git (d):
     date = date - delta
     return date
 
-icons = Checkout(scm_type='cvs',
-                 scm_server=':pserver:anoncvs@anoncvs.freedesktop.org:/cvs/icon-theme',
-                 scm_module='icon-naming-utils',
-                 update=False)
-yelp = Checkout(scm_type='svn',
-                scm_server='http://svn.gnome.org/svn/',
-                scm_module='yelp',
-                update=False)
-"""
-dbus = Checkout(scm_type='git',
-                scm_server='git://anongit.freedesktop.org/git/',
-                scm_module='dbus',
-                update=False)
-                """
