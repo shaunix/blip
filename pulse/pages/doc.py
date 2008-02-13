@@ -234,7 +234,8 @@ def output_doc (doc, path=[], query={}, http=True, fd=None):
         pad.add_content (pulse.html.AdmonBox (pulse.html.AdmonBox.warning,
                                                pulse.utils.gettext ('No POT file') ))
 
-    translations = doc.select_children ('Translation')
+    translations = db.Branch.select_with_statistic (['Messages', 'ImageMessages'],
+                                                    type='Translation', parent=doc)
     translations = pulse.utils.attrsorted (list(translations), 'title')
     if len(translations) == 0:
         pad.add_content (pulse.html.AdmonBox (pulse.html.AdmonBox.warning,
@@ -248,32 +249,28 @@ def output_doc (doc, path=[], query={}, http=True, fd=None):
         grid = pulse.html.GridBox ()
         pad.add_content (grid)
         for translation in translations:
-            stat = db.Statistic.select_statistic (translation, 'Messages')
             span = pulse.html.Span (translation.scm_file[:-3])
             span.add_class ('title')
             row = [span]
             percent = 0
-            try:
-                stat = stat[0]
-                untranslated = stat.total - stat.stat1 - stat.stat2
-                percent = math.floor (100 * (float(stat.stat1) / stat.total))
-                span = pulse.html.Span ('%i%%' % percent)
-                span.add_class ('percent')
-                row.append (span)
+            stat1 = translation.Messages_stat1
+            stat2 = translation.Messages_stat2
+            total = translation.Messages_total
+            untranslated = total - stat1 - stat2
+            percent = math.floor (100 * (float(stat1) / total))
+            span = pulse.html.Span ('%i%%' % percent)
+            span.add_class ('percent')
+            row.append (span)
 
-                row.append (pulse.utils.gettext ('%i.%i.%i') %
-                            (stat.stat1, stat.stat2, untranslated))
-                imgstat = db.Statistic.select_statistic (translation, 'ImageMessages')
-                try:
-                    imgstat = imgstat[0]
-                    span = pulse.html.Span(str(imgstat.stat1))
-                    span.add_class ('img')
-                    fspan = pulse.html.Span (span, '/', str(imgstat.total), divider=pulse.html.SPACE)
-                    row.append (fspan)
-                except IndexError:
-                    pass
-            except IndexError:
-                pass
+            row.append (pulse.utils.gettext ('%i.%i.%i') %
+                        (stat1, stat2, untranslated))
+            istat1 = translation.ImageMessages_stat1
+            istat2 = translation.ImageMessages_stat2
+            itotal = translation.ImageMessages_total
+            span = pulse.html.Span(str(istat1))
+            span.add_class ('img')
+            fspan = pulse.html.Span (span, '/', str(itotal), divider=pulse.html.SPACE)
+            row.append (fspan)
             idx = grid.add_row (*row)
             grid.add_row_class (idx, 'po')
             if percent >= 80:

@@ -97,7 +97,15 @@ class PulseDebugCursor (object):
         elif text.startswith ('SELECT '):
             select = True
             i = text.index (' FROM ')
-            text = text[:7] + '...' + text[i:]
+            ellip = '...'
+            try:
+                j = text.index ('(')
+                if j < i:
+                    ellip = '... '
+                    i = j
+            except ValueError:
+                pass
+            text = text[:7] + ellip + text[i:]
         elif text.startswith ('UPDATE '):
             PulseDebugCursor.was_insert = False
             i = text.index (' SET ')
@@ -541,21 +549,29 @@ class Branch (PulseRecord, models.Model):
     @classmethod
     def select_with_statistic (cls, stattype, **kw):
         sel = cls.objects.filter (**kw)
-        sel = sel.extra (select = {'maxdaynum' :
-                                   'SELECT daynum FROM Statistic' +
-                                   ' WHERE Statistic.branch_id = Branch.id' +
-                                   ' AND Statistic.type = %s' +
-                                   ' ORDER BY daynum DESC LIMIT 1'},
-                         params = [stattype])
-        sel = sel.extra (tables = ['Statistic'],
-                         where = ['Statistic.type = %s',
-                                  'Statistic.branch_id = Branch.id',
-                                  'daynum = maxdaynum'],
-                         params = [stattype],
-                         select = {stattype + '_daynum' : 'Statistic.daynum',
-                                   stattype + '_stat1' : 'Statistic.stat1',
-                                   stattype + '_stat2' : 'Statistic.stat2',
-                                   stattype + '_total' : 'Statistic.total'})
+        if isinstance (stattype, basestring):
+            stattype = [stattype]
+        for stype in stattype:
+            tname = stype + '_Statistic'
+            # I'm splicing stype directly in, because it turns out that when we use
+            # params, Django merges stuff together in whatever order it sees fit and
+            # gets the order of the parameters wrong when there are multiple types.
+            # The statistic types are completely under our control, and we only ever
+            # use alphanumeric, so there's no real risk of an injection.
+            sel = sel.extra (tables = ['Statistic AS ' + tname],
+                             select = {stype + '_maxdaynum' :
+                                       'SELECT daynum FROM Statistic' +
+                                       ' WHERE Statistic.branch_id = Branch.id' +
+                                       ' AND Statistic.type = "' + stype + '"' +
+                                       ' ORDER BY daynum DESC LIMIT 1',
+                                       stype + '_daynum' : tname + '.daynum',
+                                       stype + '_stat1' : tname + '.stat1',
+                                       stype + '_stat2' : tname + '.stat2',
+                                       stype + '_total' : tname + '.total'
+                                       },
+                             where = [tname + '.type = "' + stype + '"',
+                                      tname + '.branch_id = Branch.id',
+                                      tname + '.daynum = ' + stype + '_maxdaynum'])
         return sel
 
 
