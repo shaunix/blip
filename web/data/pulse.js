@@ -42,178 +42,26 @@ function expander (id) {
   });
 }
 
+
+/******************************************************************************/
+/** Replace Content **/
+
+function replace (id, url) {
+  var el = $('#' + id);
+  var par = el.parents('.info-content');
+  if (par.length > 0) {
+    par.before ('<div class="infomask" id="infomask' + id + '">')
+    var mask = $('#infomask' + id);
+    mask.css ('height', par[0].clientHeight + 'px');
+    mask.css ('width', par[0].clientWidth + 'px');
+    mask.fadeIn('fast');
+  }
+  el.load(url, function () { mask.fadeOut('fast', function () { mask.remove() }) });
+}
+
+
 /******************************************************************************/
 /** FIXME **/
-
-function plink (id) {
-  popup_toggle_id ('p', id);
-}
-function mlink (id) {
-  popup_toggle_id ('m', id);
-}
-
-function popup_toggle_id (cls, id) {
-  i = 1;
-  els = document.getElementsByTagName ('div');
-  for (var i=0; i < els.length; i++) {
-    el = els[i];
-    if (el.id == cls + 'cont' + id) {
-      if (el.style.display == 'block') {
-        el.style.display = 'none';
-      }
-      else if (el.className == cls + 'stub') {
-        lnkid = cls + 'link' + el.id.substring((cls + 'cont').length);
-        lnk = document.getElementById (lnkid);
-        replace_content (el.id, el.innerHTML, popup_show_el, lnk);
-      }
-      else {
-        lnkid = cls + 'link' + el.id.substring((cls + 'cont').length);
-        lnk = document.getElementById (lnkid);
-        popup_show_el (el, lnk);
-      }
-    }
-    else if (el.className == cls + 'cont' || el.className == cls + 'stub') {
-      el.style.display = 'none';
-    }
-  }
-}
-
-function popup_show_el (el, lnk) {
-  var left = get_offsetLeft(lnk) - 3;
-  el.style.left = left + 'px';
-  el.style.display = 'block';
-  /* This is redundant, but it makes get_offsetLeft work */
-  el.style.position = 'absolute';
-  bot = get_offsetTop(el) + el.clientHeight;
-  if (bot > window.innerHeight) {
-    if (el.clientHeight > window.innerHeight) {
-      newy = el.offsetTop;
-    } else {
-      newy = bot - window.innerHeight + 10
-    }
-    if (newy > window.pageYOffset) {
-      window.scrollTo (0, newy);
-    }
-  }
-}
-
-function get_offsetLeft (el) {
-  left = 0;
-  do {
-    if (el.style.position == 'absolute') { break }
-    left += el.offsetLeft;
-  } while (el = el.offsetParent);
-  return left;
-}
-
-function get_offsetTop (el) {
-  top = 0;
-  do {
-    top += el.offsetTop;
-  } while (el = el.offsetParent);
-  return top;
-}
-
-
-function ellip (id) {
-  var lnk = document.getElementById ('elliplnk-' + id);
-  lnk.parentNode.removeChild (lnk);
-  var txt = document.getElementById ('elliptxt-' + id);
-  txt.className = '';
-}
-
-function tab (id) {
-  var el = document.getElementById (id);
-  var par = el.parentNode;
-  for (var div = par.firstChild; div; div = div.nextSibling) {
-    if (div.className == 'tabbed-tabs') {
-      var tabs = div.getElementsByTagName('td');
-      for (var i=0; i < tabs.length; i++) {
-        var tab = tabs[i];
-        if (tab.className == 'tabbed-tab-expanded') {
-          if (tab.id != (id + '--tab')) {
-            tab.className = 'tabbed-tab-collapsed';
-          }
-        }
-        else if (tab.className == 'tabbed-tab-collapsed') {
-          if (tab.id == (id + '--tab')) {
-            tab.className = 'tabbed-tab-expanded';
-          }
-        }
-      }
-    }
-    else if (div.className == 'tabbed-expanded') {
-      if (div.id != id) {
-        div.className = 'tabbed-collapsed';
-      }
-    }
-    else if (div.className == 'tabbed-collapsed') {
-      if (div.id == id) {
-        div.className = 'tabbed-expanded';
-      }
-    }
-  }
-}
-
-function replace_content (id, url, func, data) {
-  var httpreq = false;
-  var gecko = true;
-  if (window.XMLHttpRequest) {
-    httpreq = new XMLHttpRequest();
-  }
-  else if (window.ActiveXObject) {
-    gecko = false;
-    try {
-      httpreq = new ActiveXObject("Msxml2.XMLHTTP");
-    } catch (e) {
-      try {
-        httpreq = new ActiveXObject("Microsoft.XMLHTTP");
-      } catch (e) {}
-    }
-  }
-
-  var el = document.getElementById (id);
-  for (var par = el.parentNode; par; par = par.parentNode) {
-    if (par.className == 'info-content') {
-      break
-    }
-  }
-  var mask = null;
-  if (par) {
-    mask = document.createElement('div');
-    mask.className = 'infomask';
-    mask.style.width = par.clientWidth + 'px';
-    mask.style.height = par.clientHeight + 'px';
-    par.parentNode.insertBefore(mask, par);
-  }
-
-  /* we should show some sort of activity thingy */
-  httpreq.onreadystatechange = function() {
-    if (httpreq.readyState == 4) {
-      if (httpreq.status == 200) {
-        if (gecko) {
-          range = document.createRange ();
-          range.selectNode (el);
-          el.parentNode.replaceChild (range.createContextualFragment(httpreq.responseText), el);
-        } else {
-          el.outerHTML = httpreq.responseText;
-        }
-        if (func) {
-alert('foo');
-          el = document.getElementById (id);
-alert(el);
-          func (el, data);
-        }
-      } else {
-        /* FIXME: i18n */
-        el.innerHTML = 'Could not load content';
-      }
-      par.parentNode.removeChild(mask);
-    }
-  }
-  httpreq.open('GET', url, true);
-  httpreq.send(null);
-}
 
 function KeyedThing (key, title, thing, extras) {
   this.key = key;
@@ -371,3 +219,113 @@ function has_class (el, cls) {
   }
   return false;
 }
+function plink (id) {
+  popup_toggle_id ('p', id);
+}
+function mlink (id) {
+  popup_toggle_id ('m', id);
+}
+
+function popup_toggle_id (cls, id) {
+  i = 1;
+  els = document.getElementsByTagName ('div');
+  for (var i=0; i < els.length; i++) {
+    el = els[i];
+    if (el.id == cls + 'cont' + id) {
+      if (el.style.display == 'block') {
+        el.style.display = 'none';
+      }
+      else if (el.className == cls + 'stub') {
+        lnkid = cls + 'link' + el.id.substring((cls + 'cont').length);
+        lnk = document.getElementById (lnkid);
+        replace_content (el.id, el.innerHTML, popup_show_el, lnk);
+      }
+      else {
+        lnkid = cls + 'link' + el.id.substring((cls + 'cont').length);
+        lnk = document.getElementById (lnkid);
+        popup_show_el (el, lnk);
+      }
+    }
+    else if (el.className == cls + 'cont' || el.className == cls + 'stub') {
+      el.style.display = 'none';
+    }
+  }
+}
+
+function popup_show_el (el, lnk) {
+  var left = get_offsetLeft(lnk) - 3;
+  el.style.left = left + 'px';
+  el.style.display = 'block';
+  /* This is redundant, but it makes get_offsetLeft work */
+  el.style.position = 'absolute';
+  bot = get_offsetTop(el) + el.clientHeight;
+  if (bot > window.innerHeight) {
+    if (el.clientHeight > window.innerHeight) {
+      newy = el.offsetTop;
+    } else {
+      newy = bot - window.innerHeight + 10
+    }
+    if (newy > window.pageYOffset) {
+      window.scrollTo (0, newy);
+    }
+  }
+}
+
+function get_offsetLeft (el) {
+  left = 0;
+  do {
+    if (el.style.position == 'absolute') { break }
+    left += el.offsetLeft;
+  } while (el = el.offsetParent);
+  return left;
+}
+
+function get_offsetTop (el) {
+  top = 0;
+  do {
+    top += el.offsetTop;
+  } while (el = el.offsetParent);
+  return top;
+}
+
+
+function ellip (id) {
+  var lnk = document.getElementById ('elliplnk-' + id);
+  lnk.parentNode.removeChild (lnk);
+  var txt = document.getElementById ('elliptxt-' + id);
+  txt.className = '';
+}
+
+function tab (id) {
+  var el = document.getElementById (id);
+  var par = el.parentNode;
+  for (var div = par.firstChild; div; div = div.nextSibling) {
+    if (div.className == 'tabbed-tabs') {
+      var tabs = div.getElementsByTagName('td');
+      for (var i=0; i < tabs.length; i++) {
+        var tab = tabs[i];
+        if (tab.className == 'tabbed-tab-expanded') {
+          if (tab.id != (id + '--tab')) {
+            tab.className = 'tabbed-tab-collapsed';
+          }
+        }
+        else if (tab.className == 'tabbed-tab-collapsed') {
+          if (tab.id == (id + '--tab')) {
+            tab.className = 'tabbed-tab-expanded';
+          }
+        }
+      }
+    }
+    else if (div.className == 'tabbed-expanded') {
+      if (div.id != id) {
+        div.className = 'tabbed-collapsed';
+      }
+    }
+    else if (div.className == 'tabbed-collapsed') {
+      if (div.id == id) {
+        div.className = 'tabbed-expanded';
+      }
+    }
+  }
+}
+

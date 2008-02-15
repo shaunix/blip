@@ -363,7 +363,7 @@ def output_ajax_commits (branch, path=[], query={}, http=True, fd=None):
     return 0
 
 
-def output_ajax_commits (branch, path=[], query={}, http=True, fd=None):
+def output_ajax_revfiles (branch, path=[], query={}, http=True, fd=None):
     page = pulse.html.Fragment ()
     revnum = query.get('rev', None)
     page.add_content ('foo')

@@ -172,6 +172,7 @@ td.col-first { padding: 0; }
   -moz-border-radius-bottomright: 6px;
 }
 .infomask {
+  display: none;
   text-align: center;
   font-weight: bold;
   position: absolute;

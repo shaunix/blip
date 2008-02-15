@@ -779,7 +779,7 @@ class Graph (Widget):
                 cmt = pulse.utils.gettext ('last week: %i commits') % tot
             else:
                 cmt = pulse.utils.gettext ('%i weeks ago: %i commits') % (ago, tot)
-            jslink = 'javascript:replace_content(\'commits\', '
+            jslink = 'javascript:replace(\'commits\', '
             jslink += '\'%s?ajax=commits&weeknum=%i\')' % (url, weeknum)
             graph.add_comment (c, cmt, jslink)
         return graph
