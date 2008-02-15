@@ -211,7 +211,7 @@ div.slinksmask {
 }
 
 a.plink:hover { text-decoration: none; }
-div.plink {
+div.pcont {
   position: absolute;
   display: none;
   padding: 0;
@@ -219,18 +219,33 @@ div.plink {
   border: solid 2px #ffffff;
   opacity: 0.9;
 }
-div.plink pre {
+.pcont-content {
   padding: 1em;
   border: solid 1px #555753;
   color: #000000;
 }
-div.plink div {
+.pcont-links {
   padding: 0 1em 0 1em;
   border-bottom: solid 1px #555753;
   border-left: solid 1px #555753;
   border-right: solid 1px #555753;
   background-color: #fff9cf;
-  text-align: right;
+}
+
+div.mstub { display: none; }
+div.mcont {
+  position: absolute;
+  display: none;
+  padding: 0;
+  border-left: solid 2px #eeeeec;
+  border-right: solid 2px #eeeeec;
+  border-bottom: solid 2px #eeeeec;
+  opacity: 0.9;
+}
+div.mcont-cont {
+  padding: 0 0.5em 0 0.5em;
+  border: solid 1px #555753;
+  background-color: #fff9cf;
 }
 
 div.graph { margin: 0.5em; }

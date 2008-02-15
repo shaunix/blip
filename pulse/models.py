@@ -99,7 +99,7 @@ class PulseDebugCursor (object):
             i = text.index (' FROM ')
             ellip = '...'
             try:
-                j = text.index ('(')
+                j = text.index ('(SELECT ')
                 if j < i:
                     ellip = '... '
                     i = j

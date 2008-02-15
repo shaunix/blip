@@ -83,6 +83,8 @@ def main (path=[], query={}, http=True, fd=None):
 
     if query.get('ajax', None) == 'commits':
         return output_ajax_commits (branch, path, query, http, fd)
+    elif query.get('ajax', None) == 'revfiles':
+        return output_ajax_revfiles (branch, path, query, http, fd)
     else:
         return output_branch (branch, path, query, http, fd)
 
@@ -343,6 +345,30 @@ def output_branch (branch, path=[], query={}, http=True, fd=None):
 
 def output_ajax_commits (branch, path=[], query={}, http=True, fd=None):
     page = pulse.html.Fragment ()
+    weeknum = int(query.get('weeknum', 0))
+    thisweek = pulse.utils.weeknum (datetime.datetime.now())
+    ago = thisweek - weeknum
+    revs = db.Revision.select_revisions (branch=branch, weeknum=weeknum)
+    cnt = revs.count()
+    revs = revs[:20]
+    if ago == 0:
+        title = pulse.utils.gettext('Showing %i of %i commits from this week:') % (len(revs), cnt)
+    elif ago == 1:
+        title = pulse.utils.gettext('Showing %i of %i commits from last week:') % (len(revs), cnt)
+    else:
+        title = pulse.utils.gettext('Showing %i of %i commits from %i weeks ago:') % (len(revs), cnt, ago)
+    div = get_commits_div (branch, revs, title)
+    page.add_content (div)
+    page.output(fd=fd)
+    return 0
+
+
+def output_ajax_commits (branch, path=[], query={}, http=True, fd=None):
+    page = pulse.html.Fragment ()
+    revnum = query.get('rev', None)
+    page.add_content ('foo')
+    page.output(fd=fd)
+    return 0
     weeknum = int(query.get('weeknum', 0))
     thisweek = pulse.utils.weeknum (datetime.datetime.now())
     ago = thisweek - weeknum

@@ -302,6 +302,8 @@ class Page (Widget, HttpComponent, ContentComponent):
         p (fd, '  <title>%s</title>', self._title)
         p (fd, '  <meta http-equiv="Content-type" content="text/html; charset=utf-8">')
         p (fd, '  <link rel="stylesheet" href="%spulse.css">', pulse.config.data_root)
+        p (fd, '  <script language="javascript" type="text/javascript" src="%sjquery.js"></script>',
+           pulse.config.data_root)
         p (fd, '  <script language="javascript" type="text/javascript" src="%spulse.js"></script>',
            pulse.config.data_root)
         p (fd, '</head><body>')
@@ -463,7 +465,7 @@ class ContainerBox (Widget, SortableComponent, ContentComponent, LinkBoxesCompon
             if self._title != None and slinks > 0:
                 p (fd, '<table><tr><td>')
             if self._title != None:
-                p (fd, '<a href="javascript:exp_toggle(\'%s\')">', self._id, False)
+                p (fd, '<a href="javascript:expander(\'%s\')">', self._id, False)
                 p (fd, '<img id="img-%s" class="exp-img" src="%sexpander-open.png"> %s</a>',
                    (self._id, pulse.config.data_root, self._title))
             if self._title != None and slinks > 0:
@@ -751,8 +753,8 @@ class Graph (Widget):
             for comment in self._comments:
                 i += 1
                 p (fd, '<area shape="rect" coords="%s"', ','.join(map(str, comment[0])), False)
-                p (fd, ' onmouseover="javascript:showcomment(%i, %i, %i)"', (Graph._count, i, comment[0][0]), False)
-                p (fd, ' onmouseout="javascript:hidecomment(%i, %i)"', (Graph._count, i), False)
+                p (fd, ' onmouseover="javascript:comment(%i, %i, %i)"', (Graph._count, i, comment[0][0]), False)
+                p (fd, ' onmouseout="javascript:comment(%i, %i)"', (Graph._count, i), False)
                 if comment[2] != None:
                     p (fd, ' href="%s"', comment[2])
                 p (fd, '>')
@@ -809,6 +811,44 @@ class EllipsizedLabel (Widget):
             p (fd, None, self._label)
 
 
+class MenuLink (Widget):
+    _count = 0
+
+    def __init__ (self, id, txt, **kw):
+        self._menu_only = kw.pop ('menu_only', False)
+        super (MenuLink, self).__init__ (**kw)
+        self._id = id
+        self._txt = txt
+        self._links = []
+        self._menu_url = None
+
+    def add_link (self, *args):
+        if isinstance (args[0], Widget):
+            self._links.append (args[0])
+        else:
+            self._links.append (Link(*args))
+
+    def set_menu_url (self, url):
+        self._menu_url = url
+
+    def output (self, fd=sys.stdout):
+        MenuLink._count += 1
+        if self._menu_only != True:
+            p (fd, '<a class="mlink" id="mlink%s" href="javascript:mlink(\'%s\')">%s</a>',
+               (self._id, self._id, self._txt))
+        if self._menu_url != None:
+            p (fd, '<div class="mstub" id="mcont%s">%s</div>',
+               (self._id, self._menu_url))
+        else:
+            p (fd, '<div class="mcont" id="mcont%s">', self._id)
+            p (fd, '<div class="mcont-cont">')
+            for link in self._links:
+                p (fd, '<div>', None, False)
+                p (fd, link, None, False)
+                p (fd, '</div>')
+            p (fd, '</div></div>')
+
+
 class PopupLink (Widget):
     _count = 0
 
@@ -818,22 +858,25 @@ class PopupLink (Widget):
         self._full = full
         self._links = []
 
-    def add_link (self, url, txt):
-        self._links.append ((url, txt))
+    def add_link (self, *args):
+        if isinstance (args[0], Widget):
+            self._links.append (args[0])
+        else:
+            self._links.append (Link(*args))
 
     def output (self, fd=sys.stdout):
         PopupLink._count += 1
-        p (fd, '<a class="plink" href="javascript:plink(\'%i\')">%s</a>',
-           (PopupLink._count, self._short))
-        p (fd, '<div class="plink" id="plink%i">', PopupLink._count)
+        p (fd, '<a class="plink" id="plink%i" href="javascript:plink(\'%i\')">%s</a>',
+           (PopupLink._count, PopupLink._count, self._short))
+        p (fd, '<div class="pcont" id="pcont%i">', PopupLink._count)
         while len(self._full) > 0 and self._full[-1] == '\n': self._full = self._full[:-1]
-        p (fd, '<pre>%s\n</pre>', self._full)
+        p (fd, '<pre class="pcont-content">%s\n</pre>', self._full)
         if self._links != []:
-            p (fd, '<div>', None, False)
+            p (fd, '<div class="pcont-links">', None, False)
             for i in range(len(self._links)):
                 if i != 0:
                     p (fd, BULLET)
-                p (fd, '<a href="%s">%s</a>', (self._links[i][0], self._links[i][1]), False)
+                p (fd, self._links[i])
             p (fd, '</div>')
         p (fd, '</div>')
 
@@ -886,8 +929,11 @@ class PopupLink (Widget):
                     base += branch.scm_module + '/trunk'
                 else:
                     base += branch.scm_module + '/branches/' + branch.scm_branch
-                url = base + '?view=revision&revision=' + rev.revision
-                lnk.add_link (url, pulse.utils.gettext ('info'))
+                mlink = MenuLink (rev.revision, 'files')
+                mlink.set_menu_url (branch.pulse_url + '?ajax=revfiles&rev=' + rev.revision)
+                lnk.add_link (mlink)
+                infourl = base + '?view=revision&revision=' + rev.revision
+                lnk.add_link (infourl, pulse.utils.gettext ('info'))
 
         return lnk
 

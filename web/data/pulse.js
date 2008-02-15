@@ -1,91 +1,119 @@
-function exp_toggle (id) {
-  var el = document.getElementById (id);
-  open = true;
-  for (var div = el.firstChild; div; div = div.nextSibling) {
-    if (div.className == 'exp-content') {
-      div.className = 'exp-hidden';
-      open = false;
-    }
-    else if (div.className == 'exp-hidden') {
-      div.className = 'exp-content';
-    }
-  }
-  img = document.getElementById ('img-' + id);
-  if (img && img.className == 'exp-img') {
-    if (open) {
-      img.src = img.src.replace('closed', 'open');
-    } else {
-      img.src = img.src.replace('open', 'closed');
-    }
-  }
-  slink = document.getElementById ('slink-' + id);
-  if (slink && slink.className == 'slinks') {
-    mask = document.getElementById ('slink-' + id + '-mask');
-    if (!open) {
-      if (!mask) {
-        mask = document.createElement ('div');
-        mask.id = 'slink-' + id + '-mask';
-        mask.className = 'slinksmask';
-        mask.style.width = slink.parentNode.clientWidth + 'px';
-        mask.style.height = slink.parentNode.clientHeight + 'px';
-        slink.parentNode.insertBefore(mask, slink);
+/******************************************************************************/
+/** Graph comments **/
+
+function comment (i, j, x) {
+  var left = $('#graph-' + i).offset().left + x - 10;
+  var el = $('#comment-' + i + '-' + j);
+  el.css('left', left + 'px');
+  el.css('z-index', '10');
+  el.toggle();
+}
+
+
+/******************************************************************************/
+/** Expanders **/
+
+function expander (id) {
+  var div = $('#' + id + ' .exp-content');
+  div.slideToggle('fast', function () {
+    var open = div.css('display') != 'none';
+
+    var img = $('#img-' + id);
+    if (open)
+      img.attr('src', img.attr('src').replace('closed', 'open'))
+    else
+      img.attr('src', img.attr('src').replace('open', 'closed'))
+
+    var slinks = $('#slink-' + id).parent();
+    if (slinks.length > 0) {
+      var mask = $('#slink-' + id + '-mask');
+      if (open) {
+        mask.fadeOut();
+      } else {
+        if (mask.length == 0) {
+          slinks.prepend ('<div id="slink-' + id + '-mask" class="slinksmask"></div>');
+          mask = $('#slink-' + id + '-mask');
+          mask.css ('height', slinks[0].clientHeight + 'px');
+          mask.css ('width', slinks[0].clientWidth + 'px');
+        }
+        mask.fadeIn();
       }
-      mask.style.display = 'block';
-    } else {
-      mask.style.display = 'none';
+    }
+  });
+}
+
+/******************************************************************************/
+/** FIXME **/
+
+function plink (id) {
+  popup_toggle_id ('p', id);
+}
+function mlink (id) {
+  popup_toggle_id ('m', id);
+}
+
+function popup_toggle_id (cls, id) {
+  i = 1;
+  els = document.getElementsByTagName ('div');
+  for (var i=0; i < els.length; i++) {
+    el = els[i];
+    if (el.id == cls + 'cont' + id) {
+      if (el.style.display == 'block') {
+        el.style.display = 'none';
+      }
+      else if (el.className == cls + 'stub') {
+        lnkid = cls + 'link' + el.id.substring((cls + 'cont').length);
+        lnk = document.getElementById (lnkid);
+        replace_content (el.id, el.innerHTML, popup_show_el, lnk);
+      }
+      else {
+        lnkid = cls + 'link' + el.id.substring((cls + 'cont').length);
+        lnk = document.getElementById (lnkid);
+        popup_show_el (el, lnk);
+      }
+    }
+    else if (el.className == cls + 'cont' || el.className == cls + 'stub') {
+      el.style.display = 'none';
     }
   }
 }
 
-function plink (id) {
-  i = 1;
-  el = document.getElementById ('plink' + i);
-  while (el) {
-    if (i != id) {
-      el.style.display = 'none';
+function popup_show_el (el, lnk) {
+  var left = get_offsetLeft(lnk) - 3;
+  el.style.left = left + 'px';
+  el.style.display = 'block';
+  /* This is redundant, but it makes get_offsetLeft work */
+  el.style.position = 'absolute';
+  bot = get_offsetTop(el) + el.clientHeight;
+  if (bot > window.innerHeight) {
+    if (el.clientHeight > window.innerHeight) {
+      newy = el.offsetTop;
+    } else {
+      newy = bot - window.innerHeight + 10
     }
-    else if (el.style.display == 'block') {
-      el.style.display = 'none';
-      break;
+    if (newy > window.pageYOffset) {
+      window.scrollTo (0, newy);
     }
-    else {
-      el.style.display = 'block';
-      bot = el.offsetTop + el.clientHeight;
-      if (bot > window.innerHeight) {
-        if (el.clientHeight > window.innerHeight) {
-          newy = el.offsetTop;
-        } else {
-          newy = bot - window.innerHeight + 10
-        }
-        if (newy > window.pageYOffset) {
-          window.scrollTo (0, newy);
-        }
-      }
-    }
-    i++;
-    el = document.getElementById ('plink' + i);
   }
 }
 
 function get_offsetLeft (el) {
-  if (el) {
-    return el.offsetLeft + get_offsetLeft (el.offsetParent);
-  } else {
-    return 0;
-  }
+  left = 0;
+  do {
+    if (el.style.position == 'absolute') { break }
+    left += el.offsetLeft;
+  } while (el = el.offsetParent);
+  return left;
 }
 
-function showcomment (i, j, x) {
-  gr = document.getElementById ('graph-' + i);
-  el = document.getElementById ('comment-' + i + '-' + j);
-  left = get_offsetLeft(gr) + x - 10;
-  el.style.left = left + 'px';
-  el.style.display = 'block';
+function get_offsetTop (el) {
+  top = 0;
+  do {
+    top += el.offsetTop;
+  } while (el = el.offsetParent);
+  return top;
 }
-function hidecomment (i, j) {
-  el = document.getElementById ('comment-' + i + '-' + j);
-  el.style.display = 'none';
-}
+
 
 function ellip (id) {
   var lnk = document.getElementById ('elliplnk-' + id);
@@ -127,12 +155,14 @@ function tab (id) {
   }
 }
 
-function replace_content (id, url) {
+function replace_content (id, url, func, data) {
   var httpreq = false;
+  var gecko = true;
   if (window.XMLHttpRequest) {
     httpreq = new XMLHttpRequest();
   }
   else if (window.ActiveXObject) {
+    gecko = false;
     try {
       httpreq = new ActiveXObject("Msxml2.XMLHTTP");
     } catch (e) {
@@ -161,7 +191,19 @@ function replace_content (id, url) {
   httpreq.onreadystatechange = function() {
     if (httpreq.readyState == 4) {
       if (httpreq.status == 200) {
-        el.innerHTML = httpreq.responseText;
+        if (gecko) {
+          range = document.createRange ();
+          range.selectNode (el);
+          el.parentNode.replaceChild (range.createContextualFragment(httpreq.responseText), el);
+        } else {
+          el.outerHTML = httpreq.responseText;
+        }
+        if (func) {
+alert('foo');
+          el = document.getElementById (id);
+alert(el);
+          func (el, data);
+        }
       } else {
         /* FIXME: i18n */
         el.innerHTML = 'Could not load content';
