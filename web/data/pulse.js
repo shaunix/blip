@@ -61,6 +61,30 @@ function replace (id, url) {
 
 
 /******************************************************************************/
+/** Popup links **/
+
+function plink (id) {
+  $('.pcont').not('#pcont' + id).fadeOut('fast');
+  var plink = $('#plink' + id);
+  var pcont = $('#pcont' + id);
+  pcont.fadeIn('fast');
+  var paway = function () {
+    pcont.fadeOut('fast');
+    plink.unbind('click', paway);
+    $('body').unbind('click', daway);
+    return false;
+  };
+  var daway = function () {
+    pcont.fadeOut('fast');
+    plink.unbind('click', paway);
+    $('body').unbind('click', daway);
+  }
+  plink.click (paway);
+  $('body').click (daway);
+}
+
+
+/******************************************************************************/
 /** FIXME **/
 
 function KeyedThing (key, title, thing, extras) {
@@ -218,57 +242,6 @@ function has_class (el, cls) {
     }
   }
   return false;
-}
-function plink (id) {
-  popup_toggle_id ('p', id);
-}
-function mlink (id) {
-  popup_toggle_id ('m', id);
-}
-
-function popup_toggle_id (cls, id) {
-  i = 1;
-  els = document.getElementsByTagName ('div');
-  for (var i=0; i < els.length; i++) {
-    el = els[i];
-    if (el.id == cls + 'cont' + id) {
-      if (el.style.display == 'block') {
-        el.style.display = 'none';
-      }
-      else if (el.className == cls + 'stub') {
-        lnkid = cls + 'link' + el.id.substring((cls + 'cont').length);
-        lnk = document.getElementById (lnkid);
-        replace_content (el.id, el.innerHTML, popup_show_el, lnk);
-      }
-      else {
-        lnkid = cls + 'link' + el.id.substring((cls + 'cont').length);
-        lnk = document.getElementById (lnkid);
-        popup_show_el (el, lnk);
-      }
-    }
-    else if (el.className == cls + 'cont' || el.className == cls + 'stub') {
-      el.style.display = 'none';
-    }
-  }
-}
-
-function popup_show_el (el, lnk) {
-  var left = get_offsetLeft(lnk) - 3;
-  el.style.left = left + 'px';
-  el.style.display = 'block';
-  /* This is redundant, but it makes get_offsetLeft work */
-  el.style.position = 'absolute';
-  bot = get_offsetTop(el) + el.clientHeight;
-  if (bot > window.innerHeight) {
-    if (el.clientHeight > window.innerHeight) {
-      newy = el.offsetTop;
-    } else {
-      newy = bot - window.innerHeight + 10
-    }
-    if (newy > window.pageYOffset) {
-      window.scrollTo (0, newy);
-    }
-  }
 }
 
 function get_offsetLeft (el) {
