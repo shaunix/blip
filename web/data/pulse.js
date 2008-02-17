@@ -64,37 +64,39 @@ function replace (id, url) {
 /** Popup links **/
 
 function plink (id) {
-  $('.pcont').not('#pcont' + id).fadeOut('fast');
   var plink = $('#plink' + id);
   var pcont = $('#pcont' + id);
   pcont.fadeIn('fast');
-  var paway = function () {
-    pcont.fadeOut('fast');
-    plink.unbind('click', paway);
-    $('body').unbind('click', daway);
-    return false;
-  };
-  var daway = function () {
-    pcont.fadeOut('fast');
-    plink.unbind('click', paway);
-    $('body').unbind('click', daway);
+  var away = function (e) {
+    var e = e || window.event;
+    var target = e.target || e.srcElement;
+    do {
+      if (target == pcont[0])
+        break;
+      if (target == plink[0])
+        break;
+    } while (target = target.parentNode);
+    if (target != pcont[0]) {
+      pcont.fadeOut('fast');
+      $('body').unbind('click', away);
+      return (target != plink[0]);
+    }
   }
-  plink.click (paway);
-  $('body').click (daway);
+  $('body').click (away);
 }
 
 
 /******************************************************************************/
 /** FIXME **/
 
-function KeyedThing (key, title, thing, extras) {
+function keyedThing (key, title, thing, extras) {
   this.key = key;
   this.title = title;
   this.thing = thing;
   this.extras = extras;
 }
 intre = /^-?\d+%?$/;
-function lowercmp (s1, s2) {
+function lowerCmp (s1, s2) {
   t1 = s1.toLowerCase();
   t2 = s2.toLowerCase();
   if (t1 < t2)
@@ -104,7 +106,7 @@ function lowercmp (s1, s2) {
   else
     return 0;
 }
-function titlecmp (thing1, thing2) {
+function titleCmp (thing1, thing2) {
   k1 = thing1.title;
   k2 = thing2.title;
   if (k1 == k2)
@@ -114,13 +116,13 @@ function titlecmp (thing1, thing2) {
   else if (k2 == null)
     return -1;
   else
-    return lowercmp(k1, k2);
+    return lowerCmp(k1, k2);
 }
-function keycmp (thing1, thing2) {
+function keyCmp (thing1, thing2) {
   k1 = thing1.key;
   k2 = thing2.key;
   if (k1 == k2)
-    return titlecmp (thing1, thing2)
+    return titleCmp (thing1, thing2)
   else if (k1 == null)
     return 1;
   else if (k2 == null)
@@ -131,28 +133,39 @@ function keycmp (thing1, thing2) {
     return n2 - n1;
   }
   else
-    return lowercmp(k1, k2);
+    return lowerCmp(k1, k2);
   return 0;
 }
 function sort (tag, cls, key) {
-  var things = []
-  var els = document.getElementsByTagName (tag);
+  var things = [];
 
+  var els = $(tag + '.' + cls);
+  els.each (function () {
+    var extras = []
+    if (tag == 'dt') {
+      /* FIXME: do this with jquery */
+      dd = this.nextSibling;
+      while (dd) {
+        if (dd.nodeType == 1) {
+          if (dd.tagName == 'DD') {
+            extras.push (dd);
+          } else {
+            break;
+          }
+        }
+        dd = dd.nextSibling;
+      }
+    }
+  });
+  return;
+}
+/*
   for (var i = 0; i < els.length; i++) {
     el = els[i];
     if (has_class (el, cls)) {
       var extras = [];
       if (tag == 'dt') {
         dd = el.nextSibling;
-        while (dd) {
-          if (dd.nodeType == 1) {
-            if (dd.tagName == 'DD') {
-              extras.push (dd);
-            } else {
-              break;
-            }
-          }
-          dd = dd.nextSibling;
       }}
 
       var el_key = null;
@@ -186,10 +199,12 @@ function sort (tag, cls, key) {
         }
         el.className = newcls.join(' ');
       }
-      keyed = new KeyedThing (el_key, el_title, el, extras);
+      keyed = new keyedThing (el_key, el_title, el, extras);
       things.push (keyed);
+
     }
   }
+
   dummies = []
   for (var i = 0; i < things.length; i++) {
     dummy = document.createElement (tag);
@@ -200,7 +215,7 @@ function sort (tag, cls, key) {
     }
     things[i].thing.parentNode.replaceChild (dummy, things[i].thing);
   }
-  things.sort (keycmp);
+  things.sort (keyCmp);
   for (var i = 0; i < things.length; i++) {
     dummies[i].parentNode.replaceChild (things[i].thing, dummies[i]);
     for (var j = 0; j < things[i].extras.length; j++) {
@@ -233,7 +248,7 @@ function sort (tag, cls, key) {
       }
     }
   }
-}
+*/
 function has_class (el, cls) {
   var el_cls = el.className.split(' ');
   for (var i = 0; i < el_cls.length; i++) {
