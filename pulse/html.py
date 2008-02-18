@@ -421,11 +421,15 @@ class InfoBox (Widget, ContentComponent, LinkBoxesComponent):
 
     def output (self, fd=sys.stdout):
         p (fd, '<div class="info" id="%s">', self._id)
-        p (fd, '<div class="info-title">%s</div>', self._title)
-        p (fd, '<div class="info-content">')
+        p (fd, '<div class="info-title">', None, False)
+        p (fd, '<a href="javascript:info(\'%s\')">', self._id, False)
+        p (fd, '<img id="infoimg-%s" class="info-img" src="%sexpander-open.png"></a>',
+           (self._id, pulse.config.data_root), False)
+        p (fd, '%s</div>', self._title)
+        p (fd, '<div class="info-content"><div>')
         ContentComponent.output (self, fd=fd)
         LinkBoxesComponent.output (self, fd=fd)
-        p (fd, '</div></div>')
+        p (fd, '</div></div></div>')
 
 
 class ContainerBox (Widget, SortableComponent, ContentComponent, LinkBoxesComponent):

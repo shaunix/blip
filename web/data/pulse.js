@@ -26,7 +26,7 @@ function comment (i, j, x) {
 function expander (id) {
   var div = $('#' + id + ' .exp-content');
   div.slideToggle('fast', function () {
-    var open = div.css('display') != 'none';
+    var open = div.is(':visible');
 
     var img = $('#img-' + id);
     if (open)
@@ -49,6 +49,21 @@ function expander (id) {
         mask.fadeIn();
       }
     }
+  });
+}
+
+
+/******************************************************************************/
+/** Info Boxes **/
+
+function info (id) {
+  var div = $('#' + id).children('.info-content').children('div');
+  div.slideToggle('slow', function () {
+    var img = $('#infoimg-' + id);
+    if (div.is(':visible'))
+      img.attr('src', img.attr('src').replace('up', 'open'))
+    else
+      img.attr('src', img.attr('src').replace('open', 'up'))
   });
 }
 
