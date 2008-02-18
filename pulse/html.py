@@ -814,7 +814,7 @@ class EllipsizedLabel (Widget):
 class MenuLink (Widget):
     _count = 0
 
-    def __init__ (self, id, txt, **kw):
+    def __init__ (self, id, txt=None, **kw):
         self._menu_only = kw.pop ('menu_only', False)
         super (MenuLink, self).__init__ (**kw)
         self._id = id
@@ -835,7 +835,7 @@ class MenuLink (Widget):
         MenuLink._count += 1
         if self._menu_only != True:
             p (fd, '<a class="mlink" id="mlink%s" href="javascript:mlink(\'%s\')">%s</a>',
-               (self._id, self._id, self._txt))
+               (self._id, self._id, self._txt or self._id))
         if self._menu_url != None:
             p (fd, '<div class="mstub" id="mcont%s">%s</div>',
                (self._id, self._menu_url))
@@ -930,7 +930,7 @@ class PopupLink (Widget):
                 else:
                     base += branch.scm_module + '/branches/' + branch.scm_branch
                 mlink = MenuLink (rev.revision, 'files')
-                mlink.set_menu_url (branch.pulse_url + '?ajax=revfiles&rev=' + rev.revision)
+                mlink.set_menu_url (branch.pulse_url + '?ajax=revfiles&revid=' + str(rev.id))
                 lnk.add_link (mlink)
                 infourl = base + '?view=revision&revision=' + rev.revision
                 lnk.add_link (infourl, pulse.utils.gettext ('info'))

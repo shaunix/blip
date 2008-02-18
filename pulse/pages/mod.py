@@ -365,24 +365,33 @@ def output_ajax_commits (branch, path=[], query={}, http=True, fd=None):
 
 def output_ajax_revfiles (branch, path=[], query={}, http=True, fd=None):
     page = pulse.html.Fragment ()
-    revnum = query.get('rev', None)
-    page.add_content ('foo')
-    page.output(fd=fd)
-    return 0
-    weeknum = int(query.get('weeknum', 0))
-    thisweek = pulse.utils.weeknum (datetime.datetime.now())
-    ago = thisweek - weeknum
-    revs = db.Revision.select_revisions (branch=branch, weeknum=weeknum)
-    cnt = revs.count()
-    revs = revs[:20]
-    if ago == 0:
-        title = pulse.utils.gettext('Showing %i of %i commits from this week:') % (len(revs), cnt)
-    elif ago == 1:
-        title = pulse.utils.gettext('Showing %i of %i commits from last week:') % (len(revs), cnt)
-    else:
-        title = pulse.utils.gettext('Showing %i of %i commits from %i weeks ago:') % (len(revs), cnt, ago)
-    div = get_commits_div (branch, revs, title)
-    page.add_content (div)
+
+    if branch.scm_server.endswith ('/svn/'):
+        base = branch.scm_server[:-4] + 'viewvc/'
+        colon = base.find (':')
+        if colon < 0:
+            page.output(fd=fd)
+            return 404
+        if base[:colon] != 'http':
+            base = 'http' + base[colon:]
+        if branch.scm_path != None:
+            base += branch.scm_path
+        elif branch.scm_branch == 'trunk':
+            base += branch.scm_module + '/trunk/'
+        else:
+            base += branch.scm_module + '/branches/' + branch.scm_branch + '/'
+
+    revid = query.get('revid', None)
+    revision = db.Revision.objects.get(id=int(revid))
+    files = db.RevisionFile.objects.filter (revision=revision)
+
+    mlink = pulse.html.MenuLink (revision.revision, menu_only=True)
+    page.add_content (mlink)
+    for file in files:
+        url = base + file.filename
+        url += '?r1=%s&r2=%s' % (file.prevrev, file.filerev)
+        mlink.add_link (url, file.filename)
+
     page.output(fd=fd)
     return 0
 
