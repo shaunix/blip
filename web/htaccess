@@ -1,8 +1,6 @@
-Options +ExecCGI
 DirectoryIndex index.cgi
 
 RewriteEngine on
-RewriteBase /~shaunm/pulse/web/
 RewriteRule ^data/.* - [L]
 RewriteRule ^files/.* - [L]
 RewriteRule ^index.cgi([/?].*)?$ - [L]
