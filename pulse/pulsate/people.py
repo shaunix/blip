@@ -41,7 +41,7 @@ def update_person (person, **kw):
     except IndexError:
         of = None
 
-    revs = db.Revision.select_revisions (person=person, filename__isnull=True,
+    revs = db.Revision.select_revisions (person=person,
                                          weeknum__gt=(thisweek - 24))
 
     if of != None:
