@@ -163,5 +163,5 @@ def get_commits_div (person, revs, title):
         span.add_content (rev.datetime.strftime('%Y-%m-%d %T'))
         dl.add_term (span)
         comment = rev.comment
-        dl.add_entry (pulse.html.PopupLink.from_revision (rev.branch, rev))
+        dl.add_entry (pulse.html.PopupLink.from_revision (rev))
     return div

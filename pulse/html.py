@@ -881,7 +881,7 @@ class PopupLink (Widget):
         p (fd, '</div>')
 
     @classmethod
-    def from_revision (cls, branch, rev, **kw):
+    def from_revision (cls, rev, **kw):
         comment = rev.comment
         if comment.strip() == '':
             return AdmonBox (AdmonBox.warning,
@@ -915,6 +915,9 @@ class PopupLink (Widget):
 
         lnk = cls (line, comment, **kw)
 
+        branch = kw.get ('branch', None)
+        if branch == None:
+            branch = rev.branch
         if branch.scm_type == 'svn':
             if branch.scm_server.endswith ('/svn/'):
                 base = branch.scm_server[:-4] + 'viewvc/'
