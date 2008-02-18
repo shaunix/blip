@@ -208,14 +208,15 @@ div.exp-content { padding-left: 1em; }
 div.exp-hidden { display: none; }
 div.exp-title table { width: 100%; }
 
-div.slinks { text-align: right; color: #555753; padding-right: 2em; font-weight: normal; }
-span.slinks { background-color: #eeeeec; padding: 0 0.5em 0 0.5em; }
-div.slinks a.slink { color: #204a87; }
-div.slinksmask {
+div.mask {
   position: absolute;
   background-color: white;
   opacity: 0.6;
 }
+
+div.slinks { text-align: right; color: #555753; padding-right: 2em; font-weight: normal; }
+span.slinks { background-color: #eeeeec; padding: 0 0.5em 0 0.5em; }
+div.slinks a.slink { color: #204a87; }
 
 a.plink:hover { text-decoration: none; }
 div.pcont {

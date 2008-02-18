@@ -41,7 +41,7 @@ function expander (id) {
         mask.fadeOut();
       } else {
         if (mask.length == 0) {
-          slinks.prepend ('<div id="slink-' + id + '-mask" class="slinksmask"></div>');
+          slinks.prepend ('<div id="slink-' + id + '-mask" class="mask"></div>');
           mask = $('#slink-' + id + '-mask');
           mask.css ('height', slinks.height() + 'px');
           mask.css ('width', slinks.width() + 'px');
@@ -120,9 +120,9 @@ function plink (id) {
 
 function mlink (id) {
   var mcont = $('#mcont' + id);
+  var mlink = $('#mlink' + id);
 
   var show = function (mcont) {
-    var mlink = $('#mlink' + id);
     var pcont = mlink.parents('.pcont');
     if (pcont.length > 0)
       mcont.css ('left', mlink.offset().left - pcont.offset().left - 5 + 'px');
@@ -158,6 +158,12 @@ function mlink (id) {
   }
 
   if (mcont.hasClass('mstub')) {
+    mlink.prepend ('<div id="mlink-' + id + '-mask" class="mask"></div>');
+    var mask = $('#mlink-' + id + '-mask');
+    mask.css ('height', mlink.height() + 'px');
+    mask.css ('width', mlink.width() + 'px');
+    mask.css ('background-color', mlink.parent().css('background-color'));
+    mask.fadeIn('fast');
     $.get(mcont.html(), function (data) {
       if (document.createRange) {
         range = document.createRange();
@@ -168,6 +174,7 @@ function mlink (id) {
       }
       var cont = $('#mcont' + id);
       show(cont);
+      mask.fadeOut('fast');
     });
   } else {
     show(mcont);
@@ -338,6 +345,10 @@ function sort (tag, cls, key) {
     }
   }
 */
+
+
+/******************************************************************************/
+
 function has_class (el, cls) {
   var el_cls = el.className.split(' ');
   for (var i = 0; i < el_cls.length; i++) {
