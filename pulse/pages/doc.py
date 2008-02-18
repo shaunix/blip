@@ -189,7 +189,7 @@ def output_doc (doc, path=[], query={}, http=True, fd=None):
     pad.add_content (div)
     xmlfiles = doc.data.get('xmlfiles', [])
     if len(xmlfiles) > 10:
-        jslink = 'javascript:replace_content(\'xmlfiles\', '
+        jslink = 'javascript:replace(\'xmlfiles\', '
         jslink += '\'%s%s?ajax=xmlfiles\'' % (pulse.config.web_root, doc.ident[1:])
         jslink += ')'
         div.add_content (pulse.html.Link (jslink,
