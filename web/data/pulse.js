@@ -54,6 +54,15 @@ function expander (id) {
 
 
 /******************************************************************************/
+/** Ellipsized text **/
+
+function ellip (id) {
+  $('#elliplnk-' + id).remove();
+  $('#elliptxt-' + id).fadeIn('fast');
+}
+
+
+/******************************************************************************/
 /** Replace Content **/
 
 function replace (id, url) {
@@ -330,48 +339,3 @@ function get_offsetTop (el) {
   } while (el = el.offsetParent);
   return top;
 }
-
-
-/******************************************************************************/
-/** FIXME **/
-
-function ellip (id) {
-  var lnk = document.getElementById ('elliplnk-' + id);
-  lnk.parentNode.removeChild (lnk);
-  var txt = document.getElementById ('elliptxt-' + id);
-  txt.className = '';
-}
-
-function tab (id) {
-  var el = document.getElementById (id);
-  var par = el.parentNode;
-  for (var div = par.firstChild; div; div = div.nextSibling) {
-    if (div.className == 'tabbed-tabs') {
-      var tabs = div.getElementsByTagName('td');
-      for (var i=0; i < tabs.length; i++) {
-        var tab = tabs[i];
-        if (tab.className == 'tabbed-tab-expanded') {
-          if (tab.id != (id + '--tab')) {
-            tab.className = 'tabbed-tab-collapsed';
-          }
-        }
-        else if (tab.className == 'tabbed-tab-collapsed') {
-          if (tab.id == (id + '--tab')) {
-            tab.className = 'tabbed-tab-expanded';
-          }
-        }
-      }
-    }
-    else if (div.className == 'tabbed-expanded') {
-      if (div.id != id) {
-        div.className = 'tabbed-collapsed';
-      }
-    }
-    else if (div.className == 'tabbed-collapsed') {
-      if (div.id == id) {
-        div.className = 'tabbed-expanded';
-      }
-    }
-  }
-}
-
