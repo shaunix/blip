@@ -2,11 +2,21 @@
 /** Graph comments **/
 
 function comment (i, j, x) {
-  var left = $('#graph-' + i).offset().left + x - 10;
-  var el = $('#comment-' + i + '-' + j);
-  el.css('left', left + 'px');
-  el.css('z-index', '10');
-  el.toggle();
+  /* I'm not using JQuery here, because it's fairly trivial to do
+   * what I'm doing, and because there was a noticeable lag when
+   * I was using JQuery.  Perhaps a better JQuery programmer could
+   * make it better, but this works perfectly.
+   */
+  var el = document.getElementById ('comment-' + i + '-' + j);
+  if (el.style.display != 'block') {
+    if (el.style.left == '') {
+      var left = get_offsetLeft (document.getElementById('graph-' + i)) + x - 10;
+      el.style.left = left + 'px';
+    }
+    el.style.display = 'block';
+  } else {
+    el.style.display = 'none';
+  }
 }
 
 
@@ -33,8 +43,8 @@ function expander (id) {
         if (mask.length == 0) {
           slinks.prepend ('<div id="slink-' + id + '-mask" class="slinksmask"></div>');
           mask = $('#slink-' + id + '-mask');
-          mask.css ('height', slinks[0].clientHeight + 'px');
-          mask.css ('width', slinks[0].clientWidth + 'px');
+          mask.css ('height', slinks.height() + 'px');
+          mask.css ('width', slinks.width() + 'px');
         }
         mask.fadeIn();
       }
@@ -52,8 +62,8 @@ function replace (id, url) {
   if (par.length > 0) {
     par.before ('<div class="infomask" id="infomask' + id + '">')
     var mask = $('#infomask' + id);
-    mask.css ('height', par[0].clientHeight + 'px');
-    mask.css ('width', par[0].clientWidth + 'px');
+    mask.css ('height', par.height() + 'px');
+    mask.css ('width', par.width() + 'px');
     mask.fadeIn('fast');
   }
   el.load(url, function () { mask.fadeOut('fast', function () { mask.remove() }) });
@@ -67,6 +77,17 @@ function plink (id) {
   var plink = $('#plink' + id);
   var pcont = $('#pcont' + id);
   pcont.fadeIn('fast');
+  var bot = pcont.offset().top + pcont.height();
+  if (bot > window.innerHeight) {
+    var newy;
+    if (pcont[0].clientHeight > window.innerHeight)
+      newy = pcont[0].offsetTop;
+    else
+      newy = bot - window.innerHeight + 10;
+    if (newy > window.pageYOffset)
+      window.scrollTo (0, newy);
+  }
+/* FIXME: scrolling */
   var away = function (e) {
     var e = e || window.event;
     var target = e.target || e.srcElement;
