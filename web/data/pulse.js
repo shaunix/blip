@@ -183,7 +183,7 @@ function mlink (id) {
 
 
 /******************************************************************************/
-/** FIXME **/
+/** Sort links **/
 
 function keyedThing (key, title, thing, extras) {
   this.key = key;
@@ -236,128 +236,84 @@ function sort (tag, cls, key) {
   var things = [];
 
   var els = $(tag + '.' + cls);
-  els.each (function () {
-    var extras = []
-    if (tag == 'dt') {
-      /* FIXME: do this with jquery */
-      dd = this.nextSibling;
-      while (dd) {
-        if (dd.nodeType == 1) {
-          if (dd.tagName == 'DD') {
-            extras.push (dd);
-          } else {
-            break;
-          }
-        }
-        dd = dd.nextSibling;
+  els.each (function (el) {
+    var el = $(this);
+    var extras = [];
+    if (el.is('dt')) {
+      dd = el;
+      while ((dd = dd.next()).is('dd'))
+        extras.push(dd[0]);
+    }
+
+    var el_key = null;
+    var el_title = null;
+    var these = Array.concat (el[0], extras);
+    for (var j = 0; j < these.length; j++) {
+      var par = $(these[j]);
+      var spans = par.find('span');
+      spans.each(function () {
+        var span = $(this);
+        if (span.hasClass(key))
+          el_key = span.html()
+        else if (span.hasClass('title'))
+          el_title = span.html()
+      });
+    }
+    if (el_key == null)
+      el.addClass('nokey');
+    else
+      el.removeClass('nokey');
+    var keyed = new keyedThing (el_key, el_title, el[0], extras);
+    things.push(keyed);
+  });
+
+  var dummies = [];
+  for (var i = 0; i < things.length; i++) {
+    var dummy = document.createElement(tag);
+    dummies.push(dummy);
+    for (var j = 0; j < things[i].extras.length; j++) {
+      var ex = things[i].extras[j];
+      ex.parentNode.removeChild(ex);
+    }
+    things[i].thing.parentNode.replaceChild(dummy, things[i].thing);
+  }
+
+  things.sort(keyCmp);
+  for (var i = 0; i < things.length; i++) {
+    dummies[i].parentNode.replaceChild(things[i].thing, dummies[i]);
+    for (var j = 0; j < things[i].extras.length; j++)
+      things[i].thing.parentNode.insertBefore(things[i].extras[j], things[i].thing.nextSibling);
+  }
+
+  var slinks = $('#slink-' + cls);
+  slinks.find('.slink').each(function () {
+    var slink = $(this);
+    if (slink.is('#slink-' + tag + '-' + cls + '-' + key)) {
+      if (slink.is('a')) {
+        var span = document.createElement('span');
+        span.id = slink[0].id;
+        span.className = slink[0].className;
+        span.innerHTML = slink.html();
+        slink[0].parentNode.replaceChild(span, slink[0]);
+      }
+    }
+    else {
+      if (slink.is('span')) {
+        var a = document.createElement('a');
+        a.id = slink[0].id
+        a.className = slink[0].className;
+        a.innerHTML = slink.html();
+        dat = slink[0].id.split('-');
+        a.href = 'javascript:sort(\'' + dat[1] + '\', \'' + dat[2]+ '\', \'' + dat[3] + '\')'
+        slink[0].parentNode.replaceChild(a, slink[0]);
       }
     }
   });
-  return;
 }
-/*
-  for (var i = 0; i < els.length; i++) {
-    el = els[i];
-    if (has_class (el, cls)) {
-      var extras = [];
-      if (tag == 'dt') {
-        dd = el.nextSibling;
-      }}
-
-      var el_key = null;
-      var el_title = null;
-      var these = Array.concat ([el], extras);
-      for (var j = 0; j < these.length; j++) {
-        var thisel = these[j];
-        var spans = thisel.getElementsByTagName ('span');
-
-        for (var k = 0; k < spans.length; k++) {
-          if (has_class (spans[k], key)) {
-            el_key = spans[k].innerHTML;
-            break;
-          }
-          else if (has_class (spans[k], 'title')) {
-            el_title = spans[k].innerHTML;
-          }
-        }
-      }
-
-      if (el_key == null) {
-        el.className = el.className + ' nokey';
-      }
-      else if (has_class (el, 'nokey')) {
-        oldcls = el.className.split(' ');
-        newcls = [];
-        for (var ci = 0; ci < oldcls.length; ci++) {
-          if (oldcls[ci] != 'nokey') {
-            newcls.push(oldcls[ci])
-          }
-        }
-        el.className = newcls.join(' ');
-      }
-      keyed = new keyedThing (el_key, el_title, el, extras);
-      things.push (keyed);
-
-    }
-  }
-
-  dummies = []
-  for (var i = 0; i < things.length; i++) {
-    dummy = document.createElement (tag);
-    dummies.push (dummy);
-    for (var j = 0; j < things[i].extras.length; j++) {
-      var ex = things[i].extras[j];
-      ex.parentNode.removeChild (ex);
-    }
-    things[i].thing.parentNode.replaceChild (dummy, things[i].thing);
-  }
-  things.sort (keyCmp);
-  for (var i = 0; i < things.length; i++) {
-    dummies[i].parentNode.replaceChild (things[i].thing, dummies[i]);
-    for (var j = 0; j < things[i].extras.length; j++) {
-      things[i].thing.parentNode.insertBefore (things[i].extras[j], things[i].thing.nextSibling);
-    }
-  }
-  td = document.getElementById ('slink-' + cls);
-  for (var i = 0; i < td.childNodes.length; i++) {
-    child = td.childNodes[i];
-    if (child.className == 'slink') {
-      if (child.id == ('slink-' + tag + '-' + cls + '-' + key)) {
-        if (child.tagName == 'A') {
-          span = document.createElement('span');
-          span.id = child.id;
-          span.className = child.className;
-          span.innerHTML = child.innerHTML;
-          child.parentNode.replaceChild (span, child);
-        }
-      }
-      else {
-        if (child.tagName == 'SPAN') {
-          a = document.createElement('a');
-          a.id = child.id;
-          a.className = child.className;
-          a.innerHTML = child.innerHTML;
-          dat = child.id.split('-');
-          a.href = 'javascript:sort(\'' + dat[1] + '\', \'' + dat[2]+ '\', \'' + dat[3] + '\')'
-          child.parentNode.replaceChild (a, child);
-        }
-      }
-    }
-  }
-*/
 
 
 /******************************************************************************/
-
-function has_class (el, cls) {
-  var el_cls = el.className.split(' ');
-  for (var i = 0; i < el_cls.length; i++) {
-    if (cls == el_cls[i]) {
-      return true;
-    }
-  }
-  return false;
-}
+/** Utility functions **/
 
 function get_offsetLeft (el) {
   left = 0;
@@ -375,6 +331,9 @@ function get_offsetTop (el) {
   return top;
 }
 
+
+/******************************************************************************/
+/** FIXME **/
 
 function ellip (id) {
   var lnk = document.getElementById ('elliplnk-' + id);
