@@ -155,13 +155,17 @@ def get_commits_div (person, revs, title):
     div.add_content (title)
     dl = pulse.html.DefinitionList()
     div.add_content (dl)
+    branches = {}
     for rev in revs:
+        if not branches.has_key (rev.branch_id):
+            branches[rev.branch_id] = rev.branch
+        branch = branches[rev.branch_id]
         # FIXME: i18n word order
         span = pulse.html.Span (divider=pulse.html.SPACE)
-        span.add_content (pulse.html.Link (rev.branch.pulse_url, rev.branch.branch_module))
+        span.add_content (pulse.html.Link (branch.pulse_url, branch.branch_module))
         span.add_content ('on')
         span.add_content (rev.datetime.strftime('%Y-%m-%d %T'))
         dl.add_term (span)
         comment = rev.comment
-        dl.add_entry (pulse.html.PopupLink.from_revision (rev))
+        dl.add_entry (pulse.html.PopupLink.from_revision (rev, branch=branch))
     return div
