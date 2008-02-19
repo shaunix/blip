@@ -401,7 +401,11 @@ def get_commits_div (branch, revs, title):
     div.add_content (title)
     dl = pulse.html.DefinitionList()
     div.add_content (dl)
+    curweek = None
     for rev in revs:
+        if curweek != None and curweek != rev.weeknum:
+            dl.add_divider ()
+        curweek = rev.weeknum
         # FIXME: i18n word order
         span = pulse.html.Span (divider=pulse.html.SPACE)
         span.add_content (rev.revision)

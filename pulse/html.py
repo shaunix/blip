@@ -710,6 +710,9 @@ class DefinitionList (Widget):
 
     def add_entry (self, entry, class_name=None):
         self._all.append (('dd', entry, class_name))
+
+    def add_divider (self):
+        self._all.append (('dt', None, 'hr'))
         
     def output (self, fd=sys.stdout):
         if self._id != None:
@@ -718,10 +721,13 @@ class DefinitionList (Widget):
             p (fd, '<dl>')
         for tag, content, cname in self._all:
             if cname != None:
-                p (fd, '<%s class="%%s">' % tag, cname)
+                p (fd, '<%s class="%%s">' % tag, cname, False)
             else:
-                p (fd, '<%s>' % tag)
-            p (fd, None, content)
+                p (fd, '<%s>' % tag, None, False)
+            if content:
+                p (fd, None, content, False)
+            else:
+                p (fd, '<hr>', None, False)
             p (fd, '</%s>' % tag)
         p (fd, '</dl>')
 

@@ -156,7 +156,11 @@ def get_commits_div (person, revs, title):
     dl = pulse.html.DefinitionList()
     div.add_content (dl)
     branches = {}
+    curweek = None
     for rev in revs:
+        if curweek != None and curweek != rev.weeknum:
+            dl.add_divider ()
+        curweek = rev.weeknum
         if not branches.has_key (rev.branch_id):
             branches[rev.branch_id] = rev.branch
         branch = branches[rev.branch_id]
