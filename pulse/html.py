@@ -870,11 +870,16 @@ class PopupLink (Widget):
 
     def output (self, fd=sys.stdout):
         PopupLink._count += 1
-        p (fd, '<a class="plink" id="plink%i" href="javascript:plink(\'%i\')">%s</a>',
-           (PopupLink._count, PopupLink._count, self._short))
+        p (fd, '<a class="plink" id="plink%i" href="javascript:plink(\'%i\')">',
+           (PopupLink._count, PopupLink._count), False)
+        p (fd, None, self._short, False)
+        p (fd, '</a>')
         p (fd, '<div class="pcont" id="pcont%i">', PopupLink._count)
-        while len(self._full) > 0 and self._full[-1] == '\n': self._full = self._full[:-1]
-        p (fd, '<pre class="pcont-content">%s\n</pre>', self._full)
+        if isinstance (self._full, basestring):
+            while len(self._full) > 0 and self._full[-1] == '\n': self._full = self._full[:-1]
+        p (fd, '<pre class="pcont-content">', None, False)
+        p (fd, None, self._full)
+        p (fd, '</pre>')
         if self._links != []:
             p (fd, '<div class="pcont-links">', None, False)
             for i in range(len(self._links)):
@@ -888,36 +893,37 @@ class PopupLink (Widget):
     def from_revision (cls, rev, **kw):
         comment = rev.comment
         if comment.strip() == '':
-            return AdmonBox (AdmonBox.warning,
-                             pulse.utils.gettext ('No comment'))
-        datere = re.compile ('^\d\d\d\d-\d\d-\d\d ')
-        colonre = re.compile ('^\* [^:]*:(.*)')
-        maybe = ''
-        for line in comment.split('\n'):
-            line = line.strip()
-            if line == '':
-                pass
-            elif datere.match(line):
-                maybe = line
-            else:
-                cm = colonre.match(line)
-                if cm:
-                    line = cm.group(1).strip()
-                    if line != '':
-                        break
+            lnk = cls (AdmonBox (AdmonBox.warning, pulse.utils.gettext ('No comment')),
+                       '', **kw)
+        else:
+            datere = re.compile ('^\d\d\d\d-\d\d-\d\d ')
+            colonre = re.compile ('^\* [^:]*:(.*)')
+            maybe = ''
+            for line in comment.split('\n'):
+                line = line.strip()
+                if line == '':
+                    pass
+                elif datere.match(line):
+                    maybe = line
                 else:
-                    break
-        if line == '': line = maybe
-        if len(line) > 40:
-            i = 30
-            while i < len(line):
-                if line[i] == ' ':
-                    break
-                i += 1
-            if i < len(comment):
-                line = line[:i] + '...'
+                    cm = colonre.match(line)
+                    if cm:
+                        line = cm.group(1).strip()
+                        if line != '':
+                            break
+                    else:
+                        break
+            if line == '': line = maybe
+            if len(line) > 40:
+                i = 30
+                while i < len(line):
+                    if line[i] == ' ':
+                        break
+                    i += 1
+                if i < len(comment):
+                    line = line[:i] + '...'
 
-        lnk = cls (line, comment, **kw)
+            lnk = cls (line, comment, **kw)
 
         branch = kw.get ('branch', None)
         if branch == None:
