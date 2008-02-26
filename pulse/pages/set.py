@@ -50,19 +50,23 @@ def main (path=[], query={}, http=True, fd=None):
 def output_top (path=[], query={}, http=True, fd=None):
     page = pulse.html.Page (http=http)
     page.set_title (pulse.utils.gettext ('Sets'))
+    cont = pulse.html.ContainerBox ()
+    page.add_content (cont)
 
     sets = db.ReleaseSet.objects.filter (parent__isnull=True)
     sets = pulse.utils.attrsorted (list(sets), 'title')
-    # We should probably max this a 3 if we get more sets
-    columns = pulse.html.ColumnBox (len(sets))
-    page.add_content (columns)
-    for i in range(len(sets)):
-        set = sets[i]
-        box = pulse.html.InfoBox ('set', set.title)
-        columns.add_to_column (i, box)
-        dl = pulse.html.DefinitionList ()
-        box.add_content (dl)
-        add_set_entries (set, dl)
+    for set in sets:
+        lbox = cont.add_link_box (set)
+        subsets = pulse.utils.attrsorted (set.subsets.all(), ['title'])
+        if len(subsets) > 0:
+            setcont = pulse.html.ContainerBox ()
+            setcont.set_columns (3)
+            lbox.add_content (setcont)
+            for subset in subsets:
+                sublbox = setcont.add_link_box (subset)
+                add_set_info (subset, sublbox)
+        else:
+            add_set_info (set, lbox)
 
     page.output(fd=fd)
 
@@ -83,14 +87,13 @@ def output_set (set, path=[], query={}, http=True, fd=None):
     subsets = pulse.utils.attrsorted (set.subsets.all(), ['title'])
     if len(subsets) > 0:
         if len(path) < 3 or path[2] == 'set':
-            columns = pulse.html.ColumnBox (2)
+            cont = pulse.html.ContainerBox ()
+            cont.set_columns (2)
             tabbed.add_tab (True, pulse.utils.gettext ('Subsets (%i)') % len(subsets))
-            tabbed.add_content (columns)
-            dls = [columns.add_to_column (i, pulse.html.DefinitionList()) for i in range(2)]
-            for subset, col, pos in pulse.utils.split (subsets, 2):
-                dl = dls[col]
-                dl.add_term (pulse.html.Link (subset))
-                add_set_entries (subset, dl)
+            tabbed.add_content (cont)
+            for subset in subsets:
+                lbox = cont.add_link_box (subset)
+                add_set_info (subset, lbox)
         else:
             tabbed.add_tab (set.pulse_url + '/set',
                             pulse.utils.gettext ('Subsets (%i)') % len(subsets))
@@ -159,17 +162,10 @@ def get_supersets (set):
         return supers + [superset]
 
 
-def add_set_entries (set, dl):
-    subsets = pulse.utils.attrsorted (set.subsets.all(), ['title'])
-    if len(subsets) > 0:
-        for subset in subsets:
-            subdl = pulse.html.DefinitionList ()
-            subdl.add_term (pulse.html.Link (subset))
-            add_set_entries (subset, subdl)
-            dl.add_entry (subdl)
-        return
-
+def add_set_info (set, lbox):
     cnt = db.SetModule.count_related (subj=set)
+    dl = pulse.html.DefinitionList ()
+    lbox.add_content (dl)
     dl.add_entry (pulse.utils.gettext ('%i modules') % cnt)
     if cnt == 0: return
 
