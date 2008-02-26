@@ -160,17 +160,19 @@ def update_branch (moduleset, key, update=True):
     records[record.ident]['pkgdatas'].append ((moduleset, key))
     return record
 
-def update_set (data, update=True):
+def update_set (data, update=True, parent=None):
     ident = '/set/' + data['id']
     record = pulse.models.ReleaseSet.get_record (ident, 'Set')
+    record.parent = parent
+
+    if data.has_key ('name'):
+        record.update (name=data['name'])
 
     # Sets may contain either other sets or modules, not both
     if data.has_key ('set'):
         rels = []
         for subset in data['set'].keys():
-            subrecord = update_set (data['set'][subset], update=update)
-            subrecord.parent = record
-            subrecord.save()
+            subrecord = update_set (data['set'][subset], update=update, parent=record)
     elif (data.has_key ('jhbuild_scm_type')   and
           data.has_key ('jhbuild_scm_server') and
           data.has_key ('jhbuild_scm_module') and
@@ -217,6 +219,7 @@ def update_set (data, update=True):
                 rels.append (pulse.models.SetModule.set_related (record, branch))
         record.set_relations (pulse.models.SetModule, rels)
 
+    record.save()
     return record
 
 def update_deps ():

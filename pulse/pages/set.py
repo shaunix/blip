@@ -57,13 +57,16 @@ def output_top (path=[], query={}, http=True, fd=None):
     sets = pulse.utils.attrsorted (list(sets), 'title')
     for set in sets:
         lbox = cont.add_link_box (set)
+        lbox.set_show_icon (False)
+        lbox.set_heading (True)
         subsets = pulse.utils.attrsorted (set.subsets.all(), ['title'])
         if len(subsets) > 0:
             setcont = pulse.html.ContainerBox ()
-            setcont.set_columns (3)
+            setcont.set_columns (min (len(subsets), 3))
             lbox.add_content (setcont)
             for subset in subsets:
                 sublbox = setcont.add_link_box (subset)
+                sublbox.set_show_icon (False)
                 add_set_info (subset, sublbox)
         else:
             add_set_info (set, lbox)
@@ -93,6 +96,7 @@ def output_set (set, path=[], query={}, http=True, fd=None):
             tabbed.add_content (cont)
             for subset in subsets:
                 lbox = cont.add_link_box (subset)
+                lbox.set_show_icon (False)
                 add_set_info (subset, lbox)
         else:
             tabbed.add_tab (set.pulse_url + '/set',

@@ -195,6 +195,10 @@ table.lbox { margin: 0.2em 0 0.2em 0; width: 100%;}
 td.lbox-icon { width: 24px; }
 td.lbox-icon img { width: 24px; }
 td.lbox-text { padding: 0 0.5em 0 0.5em; }
+div.lbox-heading {
+  font-size: 1.2em;
+  border-bottom: solid 1px #888a85;
+}
 div.lbox-desc {
   font-style: italic;
   color: #555753;

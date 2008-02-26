@@ -495,6 +495,7 @@ class LinkBox (Widget, FactsComponent, ContentComponent):
         super (LinkBox, self).__init__ (**kw)
         self._url = self._title = self._icon = self._desc = None
         self._show_icon = True
+        self._heading = False
         if isinstance (args[0], db.PulseRecord):
             if args[0].linkable:
                 self._url = args[0].pulse_url
@@ -522,6 +523,9 @@ class LinkBox (Widget, FactsComponent, ContentComponent):
     def set_show_icon (self, show):
         self._show_icon = show
 
+    def set_heading (self, heading):
+        self._heading = heading
+
     def set_description (self, description):
         self._desc = description
 
@@ -543,7 +547,10 @@ class LinkBox (Widget, FactsComponent, ContentComponent):
                 p (fd, '<img class="icon" src="%s" alt="%s">', (self._icon, self._title))
             p (fd, '</td>')
         p (fd, '<td class="lbox-text">')
-        p (fd, '<div class="lbox-title">')
+        if self._heading == True:
+            p (fd, '<div class="lbox-heading">')
+        else:
+            p (fd, '<div class="lbox-title">')
         if self._url != None:
             p (fd, '<a href="%s"><span class="title">%s</span></a>', (self._url, self._title))
         else:
