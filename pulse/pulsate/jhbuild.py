@@ -131,7 +131,9 @@ class ModuleSet:
                         break
                 self._metas[node.getAttribute ('id')] = meta
             elif node.tagName == 'include':
-                self.parse (os.path.join (os.path.dirname (filename), node.getAttribute ('href')))
+                href = node.getAttribute ('href')
+                if not href.startswith ('http:'):
+                    self.parse (os.path.join (os.path.dirname (filename), href))
 
 
 def update_branch (moduleset, key, update=True):
@@ -172,7 +174,6 @@ def update_set (data, update=True):
     elif (data.has_key ('jhbuild_scm_type')   and
           data.has_key ('jhbuild_scm_server') and
           data.has_key ('jhbuild_scm_module') and
-          data.has_key ('jhbuild_scm_branch') and
           data.has_key ('jhbuild_scm_dir')    and
           data.has_key ('jhbuild_scm_file')):
 
@@ -187,7 +188,8 @@ def update_set (data, update=True):
             checkout = pulse.scm.Checkout (scm_type=data['jhbuild_scm_type'],
                                            scm_server=data['jhbuild_scm_server'],
                                            scm_module=data['jhbuild_scm_module'],
-                                           scm_branch=data['jhbuild_scm_branch'],
+                                           scm_branch=data.get('jhbuild_scm_branch'),
+                                           scm_path=data.get('jhbuild_scm_path'),
                                            update=update)
             checkouts[coid] = checkout
         filename = os.path.join (checkout.directory,
