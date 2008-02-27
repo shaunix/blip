@@ -186,7 +186,7 @@ def output_branch (branch, path=[], query={}, http=True, fd=None):
     box = pulse.html.InfoBox ('dependencies', pulse.utils.gettext ('Dependencies'))
     columns.add_to_column (0, box)
     deps = db.ModuleDependency.get_related (subj=branch)
-    deps = pulse.utils.attrsorted (list(deps), 'pred', 'scm_module')
+    deps = pulse.utils.attrsorted (list(deps), ['pred', 'scm_module'])
     d1 = pulse.html.Div()
     d2 = pulse.html.Div()
     box.add_content (d1)
