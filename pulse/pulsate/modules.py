@@ -22,6 +22,7 @@ import datetime
 import math
 import os
 import os.path
+import re
 import shutil
 import sys
 
@@ -361,9 +362,14 @@ def process_configure (branch, checkout, **kw):
                 infunc = 'AM_INIT_AUTOMAKE'
                 functxts[infunc] = ''
                 line = line[17:]
-            elif '=' in line:
-                varname, varval = line.split('=')
-                vars[varname.strip()] = varval.strip()
+            else:
+                equals = line.find ('=')
+                if equals > 0 and line[equals-1] != '>':
+                    varname = line[:equals].strip()
+                    varval = line[equals+1:].strip()
+                    if len(varval) > 0 and varval[0] == varval[-1] == '"':
+                        varval = varval[1:-1]
+                    vars[varname] = varval
         if infunc != None:
             rparen = line.find (')')
             if rparen >= 0:
@@ -383,19 +389,22 @@ def process_configure (branch, checkout, **kw):
         initargs[i] = arg
 
     tarversion = initargs[1]
-    if tarversion.startswith('$'):
-        if vars.has_key (tarversion[1:]):
-            tarversion = vars[tarversion[1:]]
-
     if len(initargs) >= 4:
         tardata = initargs[3]
     else:
         tarname = initargs[0]
-    if tarname.startswith('$'):
-        if vars.has_key (tarname[1:]):
-            tarname = vars[tarname[1:]]
 
-    data = {'tarversion' : tarversion, 'tarname' : tarname}
+    def subvar (var):
+        r = re.compile ('(\$[A-Za-z_][A-Za-z0-9_]*)')
+        ret = ''
+        for el in r.split(var):
+            if r.match (el) and vars.has_key (el[1:]):
+                ret += subvar (vars[el[1:]])
+            else:
+                ret += el
+        return ret
+
+    data = {'tarversion' : subvar (tarversion), 'tarname' : subvar (tarname)}
 
     branch.update (data)
     branch.save()
