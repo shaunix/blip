@@ -67,8 +67,9 @@ def update_branch (branch, **kw):
     gdu_docs = []
     gtk_docs = []
     def visit (arg, dirname, names):
-        if checkout.ignoredir in names:
-            names.remove (checkout.ignoredir)
+        for ignore in (checkout.ignoredir, 'test', 'tests'):
+            if ignore in names:
+                names.remove (ignore)
         for name in names:
             filename = os.path.join (dirname, name)
             if not os.path.isfile (filename):
@@ -181,6 +182,12 @@ def update_branch (branch, **kw):
         branch.icon_name = default_child.icon_name
         if default_child.data.has_key ('screenshot'):
             branch.data['screenshot'] = default_child.data['screenshot']
+    else:
+        branch.name = {'C' : branch.scm_module}
+        branch.desc = {}
+        branch.icon_dir = None
+        branch.icon_name = None
+        branch.data.pop ('screenshot', None)
 
     branch.save()
     
@@ -340,20 +347,23 @@ def process_configure (branch, checkout, **kw):
     pulse.utils.log ('Processing file %s' % rel_scm)
                      
     functxts = {}
+    vars = {}
     infunc = None
     ac_inittxt = None
     am_inittxt = None
     for line in open (filename):
-        if infunc != None:
-            pass
-        elif line.startswith ('AC_INIT('):
-            infunc = 'AC_INIT'
-            functxts[infunc] = ''
-            line = line[8:]
-        elif line.startswith ('AM_INIT_AUTOMAKE('):
-            infunc = 'AM_INIT_AUTOMAKE'
-            functxts[infunc] = ''
-            line = line[17:]
+        if infunc == None:
+            if line.startswith ('AC_INIT('):
+                infunc = 'AC_INIT'
+                functxts[infunc] = ''
+                line = line[8:]
+            elif line.startswith ('AM_INIT_AUTOMAKE('):
+                infunc = 'AM_INIT_AUTOMAKE'
+                functxts[infunc] = ''
+                line = line[17:]
+            elif '=' in line:
+                varname, varval = line.split('=')
+                vars[varname.strip()] = varval.strip()
         if infunc != None:
             rparen = line.find (')')
             if rparen >= 0:
@@ -371,11 +381,22 @@ def process_configure (branch, checkout, **kw):
             arg = arg[1:-1]
         arg = arg.strip()
         initargs[i] = arg
-    data = {'tarversion' : initargs[1]}
+
+    tarversion = initargs[1]
+    if tarversion.startswith('$'):
+        if vars.has_key (tarversion[1:]):
+            tarversion = vars[tarversion[1:]]
+
     if len(initargs) >= 4:
-        data['tarname'] = initargs[3]
+        tardata = initargs[3]
     else:
-        data['tarname'] = initargs[0]
+        tarname = initargs[0]
+    if tarname.startswith('$'):
+        if vars.has_key (tarname[1:]):
+            tarname = vars[tarname[1:]]
+
+    data = {'tarversion' : tarversion, 'tarname' : tarname}
+
     branch.update (data)
     branch.save()
 
