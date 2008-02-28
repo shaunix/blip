@@ -18,6 +18,7 @@
 # Suite 330, Boston, MA  0211-1307  USA.
 #
 
+import commands
 import datetime
 import math
 import os
@@ -97,6 +98,7 @@ def update_branch (branch, **kw):
     os.path.walk (checkout.directory, visit, None)
 
     process_configure (branch, checkout, **kw)
+    return
     if branch.name == {}:
         branch.name = {'C' : branch.scm_module}
 
@@ -346,13 +348,22 @@ def process_configure (branch, checkout, **kw):
             pulse.utils.log ('Skipping file %s' % rel_scm)
             return
     pulse.utils.log ('Processing file %s' % rel_scm)
-                     
-    functxts = {}
+
+    owd = os.getcwd ()
+    try:
+        os.chdir (checkout.directory)
+        (status, output) = commands.getstatusoutput ('autoconf "%s" 2>/dev/null' % filename)
+    finally:
+        os.chdir (owd)
+    if status != 256:
+        output = open(filename).read()
     vars = {}
+    functxts = {}
     infunc = None
     ac_inittxt = None
     am_inittxt = None
-    for line in open (filename):
+    varre = re.compile ('^([A-Z_]+)=\'?([^\']*)\'?')
+    for line in output.split('\n'):
         if infunc == None:
             if line.startswith ('AC_INIT('):
                 infunc = 'AC_INIT'
@@ -362,14 +373,17 @@ def process_configure (branch, checkout, **kw):
                 infunc = 'AM_INIT_AUTOMAKE'
                 functxts[infunc] = ''
                 line = line[17:]
+            elif line.startswith ('AS_VERSION('):
+                infunc = 'AS_VERSION'
+                functxts[infunc] = ''
+                line = line[11:]
             else:
-                equals = line.find ('=')
-                if equals > 0 and line[equals-1] != '>':
-                    varname = line[:equals].strip()
-                    varval = line[equals+1:].strip()
+                m = varre.match (line)
+                if m:
+                    varval = m.group(2).strip()
                     if len(varval) > 0 and varval[0] == varval[-1] == '"':
                         varval = varval[1:-1]
-                    vars[varname] = varval
+                    vars[m.group(1)] = varval
         if infunc != None:
             rparen = line.find (')')
             if rparen >= 0:
@@ -377,34 +391,52 @@ def process_configure (branch, checkout, **kw):
                 infunc = None
             else:
                 functxts[infunc] += line.strip()
-    initargs = functxts['AC_INIT'].split(',')
+
+    initargs = functxts.get('AC_INIT', '').split(',')
     if len(initargs) < 2:
-        initargs = functxts['AM_INIT_AUTOMAKE'].split(',')
+        initargs = functxts.get('AM_INIT_AUTOMAKE', '').split(',')
+    if len(initargs) < 2:
+        initargs = ['', '']
     for i in range(len(initargs)):
         arg = initargs[i]
         arg = arg.strip()
-        if arg[0] == '[' and arg[-1] == ']':
+        if len(arg) > 0 and arg[0] == '[' and arg[-1] == ']':
             arg = arg[1:-1]
         arg = arg.strip()
         initargs[i] = arg
-
-    tarversion = initargs[1]
-    if len(initargs) >= 4:
-        tardata = initargs[3]
-    else:
-        tarname = initargs[0]
+    if functxts.has_key ('AS_VERSION'):
+        versargs = functxts['AS_VERSION'].split(',')
+        initargs[0] = versargs[0].strip()
+        initargs[1] = '.'.join ([s.strip() for s in versargs[2:5]])
 
     def subvar (var):
-        r = re.compile ('(\$[A-Za-z_][A-Za-z0-9_]*)')
+        r1 = re.compile ('(\$\{?[A-Za-z_][A-Za-z0-9_]*\}?)')
+        r2 = re.compile ('\$\{?([A-Za-z_][A-Za-z0-9_]*)\}?')
         ret = ''
-        for el in r.split(var):
-            if r.match (el) and vars.has_key (el[1:]):
-                ret += subvar (vars[el[1:]])
+        for el in r1.split(var):
+            m = r2.match(el)
+            if m and vars.has_key (m.group(1)):
+                ret += subvar (vars[m.group(1)])
             else:
                 ret += el
         return ret
 
-    data = {'tarversion' : subvar (tarversion), 'tarname' : subvar (tarname)}
+    tarname = vars.get ('PACKAGE_TARNAME', '').strip()
+    if tarname == '':
+        tarname = vars.get ('PACKAGE_NAME', '').strip()
+    if tarname == '':
+        if len(initargs) >= 4:
+            tarname = initargs[3]
+        else:
+            tarname = initargs[0]
+    tarname = subvar (tarname)
+
+    tarversion = vars.get ('PACKAGE_VERSION', '').strip()
+    if tarversion == '':
+        tarversion = initargs[1]
+    tarversion = subvar (tarversion)
+
+    data = {'tarname' : tarname, 'tarversion' : tarversion }
 
     branch.update (data)
     branch.save()
