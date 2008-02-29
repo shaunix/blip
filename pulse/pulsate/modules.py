@@ -20,6 +20,7 @@
 
 import commands
 import datetime
+import Image
 import math
 import os
 import os.path
@@ -98,7 +99,6 @@ def update_branch (branch, **kw):
     os.path.walk (checkout.directory, visit, None)
 
     process_configure (branch, checkout, **kw)
-    return
     if branch.name == {}:
         branch.name = {'C' : branch.scm_module}
 
@@ -807,14 +807,26 @@ def locate_icon (record, icon, images):
         iconfile = icon + '.png'
     candidates = []
     for img in images:
+        base = os.path.basename (img)
         if os.path.basename (img) == iconfile:
             candidates.append (img)
+            continue
+        if base.startswith (icon) and base.endswith ('.png'):
+            mid = base[len(icon):-4]
+            if re.match ('[\.-]\d\d$', mid):
+                candidates.append (img)
     use = None
+    img22 = None
+    img24 = None
     for img in candidates:
-        if '24x24' in img:
-            use = img
+        im = Image.open (img)
+        w, h = im.size
+        if w == h == 24:
+            img24 = img
             break
-    # FIXME: try actually looking at sizes, pick closest
+        elif w == h == 22:
+            img22 = img
+    use = img24 or img22
     if use != None:
         if not os.path.isdir (icondir):
             os.makedirs (icondir)

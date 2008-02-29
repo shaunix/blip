@@ -192,8 +192,7 @@ td.col-first { padding: 0; }
 }
 
 table.lbox { margin: 0.2em 0 0.2em 0; width: 100%;}
-td.lbox-icon { width: 24px; }
-td.lbox-icon img { width: 24px; }
+td.lbox-icon { width: 24px; text-align: center; }
 td.lbox-text { padding: 0 0.5em 0 0.5em; }
 div.lbox-heading {
   font-size: 1.2em;
