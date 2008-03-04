@@ -32,12 +32,11 @@ def main (path=[], query={}, http=True, fd=None):
     person = None
     if len(path) == 1:
         return output_top (path, query, http, fd)
-    if len(path) == 3:
-        person = db.Entity.objects.filter (ident=('/' + '/'.join(path)), type='Person')
-        try:
-            person = person[0]
-        except IndexError:
-            person = None
+    person = db.Entity.objects.filter (ident=('/' + '/'.join(path)), type='Person')
+    try:
+        person = person[0]
+    except IndexError:
+        person = None
     if person == None:
         kw = {'http': http}
         kw['title'] = pulse.utils.gettext ('Person Not Found')

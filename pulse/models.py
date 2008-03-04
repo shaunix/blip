@@ -527,6 +527,8 @@ class Branch (PulseRecord, models.Model):
 
     def delete_relations (self):
         # FIXME: remove branchable if orphaned
+        for rev in Revision.objects.filter (branch=self):
+            rev.delete()
         PulseRecord.delete_relations (self)
 
     def get_title_default (self):
@@ -654,6 +656,11 @@ class Revision (models.Model):
             return self.revision[:6]
         else:
             return self.revision
+
+    def delete (self):
+        for rfile in RevisionFile.objects.filter (revision=self):
+            rfile.delete()
+        models.Model.delete (self)
 
     @classmethod
     def get_last_revision (cls, **kw):

@@ -46,7 +46,11 @@ def server_name (scm_type, scm_server):
         else:
             return name
     elif scm_type in ('git', 'svn'):
-        return scm_server.split('://')[1].split('/')[0]
+        lst = scm_server.split('://')[1].split('/')
+        if lst[1].startswith ('~'):
+            return lst[0] + lst[1]
+        else:
+            return lst[0]
     else:
         return None
 
@@ -406,7 +410,11 @@ class Checkout (object):
                             if line.strip() == '':
                                 blank = True
                             else:
-                                comment += line
+                                blank = False
+                                if line.startswith ('    '):
+                                    comment += line[4:]
+                                else:
+                                    comment += line
                             line = fd.readline()
                         while line:
                             revfiles.append ((line.strip(), revnumber, parnumber))
