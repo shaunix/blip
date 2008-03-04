@@ -161,8 +161,8 @@ class Checkout (object):
             self._location = url + '@' + self.scm_branch
             self._location_dir = url + '/%s@' + self.scm_branch
             self._location_dirfile = url + '/%s/%s@' + self.scm_branch
-        self._co = ('git clone %s %s && (cd %s && git checkout origin/%s)' %
-                    (url, self.scm_branch, self.scm_branch, self.scm_branch))
+        self._co = ('git clone %s %s && (cd %s && git checkout -b %s origin/%s)' %
+                    (url, self.scm_branch, self.scm_branch, self.scm_branch, self.scm_branch))
         self._up = 'git fetch origin && git rebase origin/' + self.scm_branch
 
     def _init_svn (self):
