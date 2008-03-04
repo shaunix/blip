@@ -122,4 +122,29 @@
   </set>
 </group>
 
+<group>
+  <defaults>
+    <module>
+      <scm_type>svn</scm_type>
+      <scm_server>http://svn.gnome.org/svn/</scm_server>
+      <scm_module>%(id)</scm_module>
+    </module>
+  </defaults>
+  <set id="gnome-infrastructure">
+    <name>Gnome Infrastructure</name>
+    <module id="damned-lies">
+    </module>
+    <module id="library-web">
+    </module>
+    <module id="release-notes">
+      <scm_branch>gnome-2-22</scm_branch>
+    </module>
+    <module id="pulse">
+      <scm_type>git</scm_type>
+      <scm_server>http://www.gnome.org/~shaunm/git/</scm_server>
+      <scm_path>pulse.git</scm_path>
+    </module>
+  </set>
+</group>
+
 </group>

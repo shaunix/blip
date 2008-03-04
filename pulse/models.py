@@ -647,6 +647,14 @@ class Revision (models.Model):
     weeknum = models.IntegerField (null=True)
     comment = models.TextField ()
 
+    def display_revision (self, branch=None):
+        if branch == None:
+            branch = self.branch
+        if branch.scm_type == 'git':
+            return self.revision[:6]
+        else:
+            return self.revision
+
     @classmethod
     def get_last_revision (cls, **kw):
         revs = cls.select_revisions (**kw)
@@ -673,7 +681,7 @@ class RevisionFile (models.Model):
     revision = models.ForeignKey (Revision, related_name='files')
     filename = models.CharField (maxlength=200)
     filerev = models.CharField (maxlength=80)
-    prevrev = models.CharField (maxlength=80)
+    prevrev = models.CharField (maxlength=80, null=True)
 
 
 class Statistic (models.Model):

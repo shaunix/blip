@@ -355,7 +355,7 @@ def get_commits_div (doc, revs, title):
             dl.add_divider ()
         curweek = rev.weeknum
         span = pulse.html.Span (divider=pulse.html.SPACE)
-        span.add_content (rev.revision)
+        span.add_content (rev.display_revision (branch))
         span.add_content ('on')
         span.add_content (rev.datetime.strftime('%Y-%m-%d %T'))
         span.add_content ('by')

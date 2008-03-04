@@ -408,7 +408,7 @@ def get_commits_div (branch, revs, title):
         curweek = rev.weeknum
         # FIXME: i18n word order
         span = pulse.html.Span (divider=pulse.html.SPACE)
-        span.add_content (rev.revision)
+        span.add_content (rev.display_revision (branch))
         span.add_content ('on')
         span.add_content (rev.datetime.strftime('%Y-%m-%d %T'))
         span.add_content ('by')

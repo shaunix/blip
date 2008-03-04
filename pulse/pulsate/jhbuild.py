@@ -23,7 +23,7 @@ import sys
 
 import xml.dom.minidom
 
-import pulse.models
+import pulse.models as db
 import pulse.scm
 import pulse.xmldata
 
@@ -150,7 +150,7 @@ def update_branch (moduleset, key, update=True):
         return None
     ident = '/'.join (['/mod', servername, pkg_data['scm_module'], pkg_data['scm_branch']])
 
-    record = pulse.models.Branch.get_record (ident, 'Module')
+    record = db.Branch.get_record (ident, 'Module')
     record.update (data)
     record.save()
     pkg_data['__record__'] = record
@@ -162,7 +162,7 @@ def update_branch (moduleset, key, update=True):
 
 def update_set (data, update=True, parent=None):
     ident = '/set/' + data['id']
-    record = pulse.models.ReleaseSet.get_record (ident, 'Set')
+    record = db.ReleaseSet.get_record (ident, 'Set')
     record.parent = parent
 
     if data.has_key ('name'):
@@ -173,6 +173,28 @@ def update_set (data, update=True, parent=None):
         rels = []
         for subset in data['set'].keys():
             subrecord = update_set (data['set'][subset], update=update, parent=record)
+    elif (data.has_key ('module')):
+        rels = []
+        for xml_data in data['module'].values():
+            mod_data = {}
+            for k in xml_data.keys():
+                if k[:4] == 'scm_':
+                    mod_data[k] = xml_data[k]
+            servername = pulse.scm.server_name (mod_data['scm_type'], mod_data['scm_server'])
+            if servername == None:
+                continue
+            if mod_data.get ('scm_branch', '') == '':
+                mod_data['scm_branch'] = pulse.scm.default_branches.get (mod_data['scm_type'])
+            if mod_data.get ('scm_branch', '') == '':
+                continue
+            ident = '/'.join (['/mod', servername, mod_data['scm_module'], mod_data['scm_branch']])
+            branch = db.Branch.get_record (ident, 'Module')
+            if branch == None:
+                continue
+            branch.update (mod_data)
+            rels.append (db.SetModule.set_related (record, branch))
+            branch.save()
+        record.set_relations (db.SetModule, rels)
     elif (data.has_key ('jhbuild_scm_type')   and
           data.has_key ('jhbuild_scm_server') and
           data.has_key ('jhbuild_scm_module') and
@@ -216,8 +238,8 @@ def update_set (data, update=True, parent=None):
         for pkg in packages:
             branch = update_branch (moduleset, pkg, update=update)
             if branch != None:
-                rels.append (pulse.models.SetModule.set_related (record, branch))
-        record.set_relations (pulse.models.SetModule, rels)
+                rels.append (db.SetModule.set_related (record, branch))
+        record.set_relations (db.SetModule, rels)
 
     record.save()
     return record
@@ -247,13 +269,13 @@ def update_deps ():
             depdata = moduleset.get_package (dep)
             if not depdata.has_key ('__record__'): continue
             deprec = depdata['__record__']
-            rel = pulse.models.ModuleDependency.set_related (rec, deprec)
+            rel = db.ModuleDependency.set_related (rec, deprec)
             pkgrels.append (rel)
             direct = (dep in pkgdata['deps'])
             if rel.direct != direct:
                 rel.direct = direct
                 rel.save()
-        rec.set_relations (pulse.models.ModuleDependency, pkgrels)
+        rec.set_relations (db.ModuleDependency, pkgrels)
 
 known_deps = {}
 def get_deps (moduleset, pkg, seen=[]):

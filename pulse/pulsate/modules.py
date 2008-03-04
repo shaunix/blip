@@ -206,9 +206,19 @@ def check_history (branch, checkout):
     pulse.utils.log ('Checking history for %s' % branch.ident)
     serverid = '.'.join (pulse.scm.server_name (checkout.scm_type, checkout.scm_server).split('.')[-2:])
     for hist in checkout.read_history (since=since):
-        # FIXME: this doesn't work for git
-        pident = '/person/' + serverid + '/' + hist['author'][0]
-        pers = db.Entity.get_record (pident, 'Person')
+        ptype = 'Person'
+        if hist['author'][0] != None:
+            pident = '/person/' + serverid + '/' + hist['author'][0]
+        elif hist['author'][2] != None:
+            pident = '/person/' + hist['author'][2]
+        else:
+            pident = '/ghost/' + hist['author'][1]
+            ptype = 'Ghost'
+        pers = db.Entity.get_record (pident, ptype)
+        if hist['author'][1] != None:
+            if pers.name == None or pers.name == {}:
+                pers.update (name=hist['author'][1])
+                pers.save()
         rev = db.Revision (branch=branch, person=pers,
                            revision=hist['revision'],
                            comment=hist['comment'],
