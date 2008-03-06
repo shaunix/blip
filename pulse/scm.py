@@ -435,11 +435,11 @@ class Checkout (object):
         try:
             os.chdir (self.directory)
             if getattr (self, 'scm_path', None) != None:
-                prefix = self.scm_path
+                prefix = self.scm_path + '/'
             elif self.scm_branch == 'trunk':
-                prefix = 'trunk'
+                prefix = None
             else:
-                prefix = self.scm_module + '/branches/' + self.scm_branch
+                prefix = 'branches/' + self.scm_branch + '/'
             cmd = 'svn log -v'
             if since != None:
                 cmd += ' -r' + since + ':HEAD'
@@ -466,7 +466,9 @@ class Checkout (object):
                             break
                         filename = line.strip()[3:]
                         if filename.startswith (prefix):
-                            filename = filename[len(prefix)+1:]
+                            filename = filename[len(prefix):]
+                        elif filename.startswith ('trunk/'):
+                            filename = filename[6:]
                         else:
                             filename = '../' + filename
                         i = filename.find ('(from ')
