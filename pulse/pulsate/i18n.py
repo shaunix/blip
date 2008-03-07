@@ -54,7 +54,7 @@ def update_intltool (po, **kw):
     if checkout == None:
         checkout = get_checkout (po, update=kw.get('update', True))
 
-    potfile = get_intltool_potfile (po, checkout)
+    potfile = get_intltool_potfile (po.parent, checkout, **kw)
     if potfile == None: return
 
     filepath = os.path.join (checkout.directory, po.scm_dir, po.scm_file)
@@ -102,7 +102,7 @@ def update_xml2po (po, **kw):
     if checkout == None:
         checkout = get_checkout (po, update=kw.get('update', True))
 
-    potfile = get_xml2po_potfile (po, checkout)
+    potfile = get_xml2po_potfile (po.parent, checkout, **kw)
     if potfile == None: return
 
     filepath = os.path.join (checkout.directory, po.scm_dir, po.scm_file)
@@ -144,26 +144,33 @@ def update_xml2po (po, **kw):
     
 
 intltool_potfiles = {}
-def get_intltool_potfile (po, checkout):
-    indir = os.path.join (checkout.directory, po.scm_dir)
+def get_intltool_potfile (domain, checkout, **kw):
+    indir = os.path.join (checkout.directory, domain.scm_dir)
     if intltool_potfiles.has_key (indir):
         return intltool_potfiles[indir]
 
-    if po.scm_dir == 'po':
-        potname = po.scm_module
+    if domain.scm_dir == 'po':
+        potname = domain.scm_module
     else:
-        potname = po.scm_dir
+        potname = domain.scm_dir
     potfile = potname + '.pot'
-    of = db.OutputFile.objects.filter (type='l10n', ident=po.parent.ident, filename=potfile)
+    of = db.OutputFile.objects.filter (type='l10n', ident=domain.ident, filename=potfile)
     try:
         of = of[0]
-        of.datetime = datetime.datetime.now()
     except IndexError:
-        of = db.OutputFile (type='l10n', ident=po.parent.ident, filename=potfile,
+        of = db.OutputFile (type='l10n', ident=domain.ident, filename=potfile,
                             datetime=datetime.datetime.now())
 
     potfile_abs = of.get_file_path()
     potfile_rel = pulse.utils.relative_path (potfile_abs, pulse.config.web_l10n_dir)
+
+    if kw.get('timestamps', True):
+        dt = of.data.get ('mod_datetime')
+        if dt != None and dt == domain.parent.mod_datetime:
+            pulse.utils.log ('Skipping POT file %s' % potfile_rel)
+            intltool_potfiles[indir] = of
+            return of
+
     potdir = os.path.dirname (potfile_abs)
     if not os.path.exists (potdir):
         os.makedirs (potdir)
@@ -188,6 +195,7 @@ def get_intltool_potfile (po, checkout):
         popo.finish ()
         num = popo.get_num_messages ()
         of.datetime = datetime.datetime.now()
+        of.data['mod_datetime'] = domain.parent.mod_datetime
         of.statistic = num
         of.data['md5'] = m.hexdigest ()
         of.save()
@@ -200,8 +208,8 @@ def get_intltool_potfile (po, checkout):
 
 
 xml2po_potfiles = {}
-def get_xml2po_potfile (po, checkout):
-    indir = os.path.dirname (os.path.join (checkout.directory, po.scm_dir))
+def get_xml2po_potfile (doc, checkout, **kw):
+    indir = os.path.dirname (os.path.join (checkout.directory, doc.scm_dir))
     if xml2po_potfiles.has_key (indir):
         return xml2po_potfiles[indir]
 
@@ -210,16 +218,23 @@ def get_xml2po_potfile (po, checkout):
                 for fname in ([makefile['DOC_MODULE']+'.xml'] + makefile.get('DOC_INCLUDES', '').split())]
     potname = makefile['DOC_MODULE']
     potfile = potname + '.pot'
-    of = db.OutputFile.objects.filter (type='l10n', ident=po.parent.ident, filename=potfile)
+    of = db.OutputFile.objects.filter (type='l10n', ident=doc.ident, filename=potfile)
     try:
         of = of[0]
-        of.datetime = datetime.datetime.now()
     except IndexError:
-        of = db.OutputFile (type='l10n', ident=po.parent.ident, filename=potfile,
+        of = db.OutputFile (type='l10n', ident=doc.ident, filename=potfile,
                             datetime=datetime.datetime.now())
 
     potfile_abs = of.get_file_path()
     potfile_rel = pulse.utils.relative_path (potfile_abs, pulse.config.web_l10n_dir)
+
+    if kw.get('timestamps', True):
+        dt = of.data.get ('mod_datetime')
+        if dt != None and dt == doc.parent.mod_datetime:
+            pulse.utils.log ('Skipping POT file %s' % potfile_rel)
+            xml2po_potfiles[indir] = of
+            return of
+
     potdir = os.path.dirname (potfile_abs)
     if not os.path.exists (potdir):
         os.makedirs (potdir)
@@ -245,6 +260,7 @@ def get_xml2po_potfile (po, checkout):
         popo.finish ()
         num = popo.get_num_messages ()
         of.datetime = datetime.datetime.now()
+        of.data['mod_datetime'] = doc.parent.mod_datetime
         of.statistic = num
         of.data['md5'] = m.hexdigest ()
         of.save()
