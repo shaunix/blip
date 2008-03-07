@@ -76,8 +76,8 @@ class Checkout (object):
         self.scm_type = kw.get('scm_type')
         self.scm_server = kw.get('scm_server')
         self.scm_module = kw.get('scm_module')
-        self.scm_branch = kw.get('scm_type')
-        self.scm_path = kw.get('scm_type')
+        self.scm_branch = kw.get('scm_branch')
+        self.scm_path = kw.get('scm_path')
 
         if (hasattr (Checkout, '_init_' + self.scm_type) and self.scm_type in default_branches):
             initfunc = getattr (Checkout, '_init_' + self.scm_type)
