@@ -23,9 +23,11 @@ import xml.dom.minidom
 
 import pulse.utils as utils
 
-def get_data (file):
-    dom = xml.dom.minidom.parse (file)
+
+def get_data (fd):
+    dom = xml.dom.minidom.parse (fd)
     return get_group_data (dom.firstChild)
+
 
 def get_group_data (node, **kw):
     if kw.has_key ('data'):
@@ -48,6 +50,7 @@ def get_group_data (node, **kw):
                       %el.nodeName)
     return data
 
+
 def get_defaults_data (node, **kw):
     defs = {}
     for obj in node.childNodes:
@@ -66,6 +69,7 @@ def get_defaults_data (node, **kw):
                     else:
                         data[key] = keyvalue (el)
     return defs
+
 
 def get_node_data (node, **kw):
     if kw.has_key ('data'):
@@ -114,6 +118,7 @@ def get_node_data (node, **kw):
                     del (ndata['__node__'])
 
     return data
+
 
 def apply_defaults_list (data, **kw):
     ndatas = []
@@ -184,6 +189,7 @@ def apply_defaults_list (data, **kw):
     for ndata in ndatas:
         apply_defaults_list (ndata, **kw)
 
+
 def merge_defaults_data (data, defs, ndatas, **kw):
     data.setdefault ('__defaults__', {})
     for key in defs.keys():
@@ -219,6 +225,7 @@ def merge_defaults_data (data, defs, ndatas, **kw):
             #FIXME: be stricter
             pass
 
+
 def keyvalue(node, allow_item=True):
     s = []
     l = []
@@ -232,9 +239,11 @@ def keyvalue(node, allow_item=True):
     else:
         return ''.join (s)
 
+
 class CrossReferenceError (utils.PulseException):
     def __init__ (self, str):
         utils.PulseException.__init__ (self, str)
+
 
 class CrossReferenceResolver:
     pat = re.compile ('%\(([^)]*)\)')

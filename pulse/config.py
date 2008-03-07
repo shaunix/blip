@@ -18,6 +18,10 @@
 # Suite 330, Boston, MA  0211-1307  USA.
 #
 
+"""
+Confinguration settings for Pulse
+"""
+
 import os
 
 

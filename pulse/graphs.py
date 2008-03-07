@@ -18,26 +18,39 @@
 # Suite 330, Boston, MA  0211-1307  USA.
 #
 
+"""
+Generate various types of graphs
+"""
+
 from math import pi
 
 import colorsys
 import os
 import os.path
-import re
 
 import cairo
 
 class Graph:
+    """
+    Base class for all graphs
+    """
+
     def __init__ (self, width=200, height=40):
         self.width = width
         self.height = height
-        self.surface = cairo.ImageSurface (cairo.FORMAT_ARGB32, self.width, self.height)
+        self.surface = cairo.ImageSurface (cairo.FORMAT_ARGB32,
+                                           self.width, self.height)
         self.context = cairo.Context (self.surface)
-        # FIXME: make the whole thing white first
-        #self.context.set_source_rgb (1.0, 1.0, 1.0)
-        #self.context.fill_preserve ()
 
     def draw_border (self, thickness=2, radius=6):
+        """
+        Draw a border around a graph
+
+        This function may be called by graph implementations to draw a border
+        around the drawing context.  The thickness and radius for rounded
+        corners can be controlled with the thickness and radius arguments.
+        """
+
         self.context.new_path ()
         self.context.set_line_width (thickness)
         offset = thickness + 1
@@ -51,7 +64,8 @@ class Graph:
                           offset + radius,
                           radius, 3 * pi / 2, 2 * pi)
 
-        self.context.line_to (self.width - offset, self.height - offset - radius)
+        self.context.line_to (self.width - offset,
+                              self.height - offset - radius)
         self.context.arc (self.width - offset - radius,
                           self.height - offset - radius,
                           radius, 2 * pi, pi / 2)
@@ -66,6 +80,10 @@ class Graph:
         self.context.stroke ()
 
     def save (self, filename):
+        """
+        Save the graph to a PNG file
+        """
+
         filedir = os.path.dirname (filename)
         if not os.path.exists (filedir):
             os.makedirs (filedir)
@@ -73,6 +91,16 @@ class Graph:
 
 
 class BarGraph (Graph):
+    """
+    Simple bar graph
+
+    BarGraph takes a list of statistics and a maximum value and constructs
+    a bar graph, where the height of each bar is determined by the ratio
+    of the corresponding value to the maximum value.  For values greater
+    than the maximum, the bar is darkened by an amount proportional to
+    the ratio.
+    """
+
     def __init__ (self, stats, top, width=None, height=40):
         if width == None:
             width = 6 * len(stats) + 2
@@ -86,86 +114,24 @@ class BarGraph (Graph):
             self.context.new_path ()
             self.context.set_line_width (2)
             self.context.move_to (6*i + 2.5, self.height)
-            self.context.rel_line_to (0, -0.5 - (self.height * min(stat,1)))
+            self.context.rel_line_to (0, -0.5 - (self.height * min(stat, 1)))
             self.context.close_path ()
             if stat > 1:
-                v = alum_hsv[2] / stat
-                self.context.set_source_rgb (*colorsys.hsv_to_rgb (alum_hsv[0], alum_hsv[1], v))
+                value = alum_hsv[2] / stat
+                self.context.set_source_rgb (
+                    *colorsys.hsv_to_rgb (alum_hsv[0], alum_hsv[1], value))
             else:
                 self.context.set_source_rgb (*alum_rgb)
             self.context.stroke ()
 
     def get_coords (self):
+        """
+        Get the coordinates for each bar
+
+        Returns a list of coordinates for each bar in the graph, corresponding
+        to each statistic passed in.  Each coordinate is a tuple of the form
+        (left, top, right, bottom), where pixel coordinates run left-to-right
+        and top-to-bottom.  This is the form expected for image maps in HTML.
+        """
+
         return [(6*i, 0, 6*i + 5, self.height) for i in range(len(self._stats))]
-
-    def save_data (self, filename, data=[]):
-        fd = open(filename, 'w')
-        for i in range(len(self._stats)):
-            stat = self._stats[i]
-            coords = [6*i, 0, 6*i + 5, self.height]
-            fd.write(','.join(map(str, coords)))
-            fd.write(':' + str(stat) + ':')
-            if i < len(data):
-                fd.write(str(data[i]))
-            fd.write('\n')
-        fd.close()
-
-
-class PulseGraph (Graph):
-    def __init__ (self, stats, width=200, height=40):
-        Graph.__init__ (self, width=width, height=height)
-        self.context.set_antialias (cairo.ANTIALIAS_GRAY)
-
-        border_thickness = 1
-        inner_width = self.width - (2 * border_thickness) - 2
-        inner_height = self.height - (2 * border_thickness) - 4
-
-        self.context.new_path ()
-
-        cellWidth = (inner_width * 1.0) / len(stats)
-        tickWidth = cellWidth / 9.0
-
-        baseline = (3.0 / 4.0) * inner_height
-        x = border_thickness + 1
-        self.context.move_to (x, baseline)
-
-        for stat in stats:
-            amp = (baseline - border_thickness - 2) * stat
-            x += tickWidth
-            self.context.line_to (x, baseline)
-            x += tickWidth
-            self.context.line_to (x, baseline + (amp / 4))
-            x += 2 * tickWidth
-            self.context.line_to (x, baseline - amp)
-            x += 2 * tickWidth
-            self.context.line_to (x, baseline + (amp / 3))
-            x += tickWidth
-            self.context.line_to (x, baseline)
-            x += 2 * tickWidth
-            self.context.line_to (x, baseline)
-
-        self.context.set_line_cap (cairo.LINE_CAP_ROUND)
-        self.context.set_line_join (cairo.LINE_JOIN_ROUND)
-
-        self.context.set_line_width (2)
-        self.context.set_source_rgb (0.6, 0.6, 0.6)
-        self.context.stroke_preserve ()
-
-        self.context.set_line_width (1)
-        self.context.set_source_rgb (0.6, 0.4, 0.4)
-        self.context.stroke ()
-
-        self.draw_border (thickness=border_thickness, radius=4)
-
-
-def load_graph_data (filename):
-    if not os.path.exists(filename):
-        return []
-    pat = re.compile('^([^:]*):([^:]*):(.*)$')
-    data = []
-    for line in open(filename):
-        m = pat.match(line)
-        if m:
-            coords = map(int, m.group(1).split(','))
-            data.append((coords, int(m.group(2)), m.group(3)))
-    return data

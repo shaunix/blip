@@ -22,7 +22,18 @@ import codecs
 import ConfigParser
 import re
 
+import pulse.utils
+
+
 class Automake (object):
+    """
+    Parse a Makefile.am file
+
+    This class parses a Makefile.am file, allowing you to extract information
+    from them.  Directives for make are ignored.  This is only useful for
+    extracting variables.
+    """
+
     def __init__ (self, filename):
         self._variables = {}
         self._lines = []
@@ -30,7 +41,8 @@ class Automake (object):
         fd = open (filename)
         line = fd.readline ()
         while line:
-            if '#' in line: line = line[line.index('#')]
+            if '#' in line:
+                line = line[line.index('#')]
             match = regexp.match (line)
             if match:
                 varname = match.group(1)
@@ -39,7 +51,8 @@ class Automake (object):
                     vartxt = vartxt[:-1]
                     line = fd.readline ()
                     while line:
-                        if '#' in line: line = line[line.index('#')]
+                        if '#' in line:
+                            line = line[line.index('#')]
                         vartxt += line.strip()
                         if vartxt.endswith ('\\'):
                             vartxt = vartxt[:-1]
@@ -55,23 +68,38 @@ class Automake (object):
                 line = fd.readline ()
 
     def get_lines (self):
+        """
+        Get the canonicalized lines from the automake file
+        """
         return self._lines
 
     def __getitem__ (self, key):
+        """
+        Get the value of an automake variable
+        """
         return self._variables[key]
 
     def get (self, key, val=None):
+        """
+        Get the value of an automake variable, or return a default
+        """
         return self._variables.get(key, val)
 
     def has_key (self, key):
+        """
+        Check if the variable is set in the automake file
+        """
         return self._variables.has_key (key)
 
+
 class KeyFile (object):
-    def __init__ (self, f):
-        if isinstance (f, basestring):
-            fd = codecs.open (f, 'r', 'utf-8')
-        else:
-            fd = f
+    """
+    Parse a KeyFile, like those defined by the Desktop Entry Specification
+    """
+    
+    def __init__ (self, fd):
+        if isinstance (fd, basestring):
+            fd = codecs.open (fd, 'r', 'utf-8')
         cfg = ConfigParser.ConfigParser()
         cfg.optionxform = str
         cfg.readfp (fd)
@@ -79,13 +107,13 @@ class KeyFile (object):
         for group in cfg.sections ():
             self._data[group] = {}
             for key, value in cfg.items (group):
-                lb = key.find ('[')
-                rb = key.find (']')
+                left = key.find ('[')
+                right = key.find (']')
                 if not isinstance (value, unicode):
                     value = unicode(value, 'utf-8')
-                if lb >= 0 and rb > lb:
-                    keybase = key[0:lb]
-                    keylang = key[lb+1:rb]
+                if left >= 0 and right > left:
+                    keybase = key[0:left]
+                    keylang = key[left+1:right]
                     self._data[group].setdefault (keybase, {})
                     if isinstance (self._data[group][keybase], basestring):
                         self._data[group][keybase] = {'C' : self._data[group][keybase]}
@@ -95,31 +123,48 @@ class KeyFile (object):
                         if isinstance (self._data[group][key], dict):
                             self._data[group][key]['C'] = value
                         else:
-                            raise pulse.utils.PulseException ('Duplicate entry for %s in %s' % (key, fd.nae))
+                            raise pulse.utils.PulseException ('Duplicate entry for %s in %s'
+                                                              % (key, fd.name))
                     else:
                         self._data[group][key] = value
 
     def get_groups (self):
+        """
+        Get the groups from the key file
+        """
         return self._data.keys()
 
     def has_group (self, group):
+        """
+        Check if the key file has a group
+        """
         return self._data.has_key (group)
 
     def get_keys (self, group):
+        """
+        Get the keys that are set in a group in the key file
+        """
         return self._data[group].keys()
 
     def has_key (self, group, key):
+        """
+        Check if a key is set in a group in the key file
+        """
         return self._data[group].has_key (key)
 
     def get_value (self, group, key):
+        """
+        Get the value of a key in a group in the key file
+        """
         return self._data[group][key]
 
+
 class Po:
-    def __init__ (self, f=None):
-        if isinstance (f, basestring):
-            self._fd = codecs.open (f, 'r', 'utf-8')
-        elif isinstance (f, file):
-            self._fd = f
+    def __init__ (self, fd=None):
+        if isinstance (fd, basestring):
+            self._fd = codecs.open (fd, 'r', 'utf-8')
+        elif isinstance (fd, file):
+            self._fd = fd
         else:
             self._fd = None
         self._msgstrs = {}
@@ -181,16 +226,20 @@ class Po:
             self._comments[key] = self._msg.get('comment')
             self._msgstrs[key] = self._msg.get('msgstr')
             img = self._msg['msgid'].startswith ('@@image: ')
-            if img: self._num_images += 1
+            if img:
+                self._num_images += 1
             if self._msg.get('msgstr', '') == '':
                 self._num_untranslated += 1
-                if img: self._num_untranslated_images += 1
+                if img:
+                    self._num_untranslated_images += 1
             elif self._msg.get('fuzzy', False):
                 self._num_fuzzy += 1
-                if img: self._num_fuzzy_images += 1
+                if img:
+                    self._num_fuzzy_images += 1
             else:
                 self._num_translated += 1
-                if img: self._num_translated_images += 1
+                if img:
+                    self._num_translated_images += 1
         self._inkey = ''
         self._msg = {}
 

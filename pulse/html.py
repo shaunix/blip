@@ -19,6 +19,15 @@
 # Suite 330, Boston, MA  0211-1307  USA.
 #
 
+"""
+Generate HTML output
+
+This module allows you to construct an HTML page using widgets,
+in much the same way as you would construct a user interface in
+a graphical toolkit.  High-level widgets are provided for various
+common interface elements in Pulse pages.
+"""
+
 import datetime
 import cgi
 import md5
@@ -29,20 +38,47 @@ import pulse.config
 import pulse.models as db
 import pulse.utils
 
+
 SPACE = ' '
 BULLET = u' • '
 TRIANGLE = u' ‣ '
 
+
 class Widget (object):
+    """
+    Base class for all widgets
+    """
+
     def __init__ (self, **kw):
         super (Widget, self).__init__ (**kw)
+
     def output (self, fd=sys.stdout):
+        """
+        Output the HTML for this widget
+
+        This is an abstract method that subclasses must implement.
+        """
         pass
 
+
 class Component (object):
+    """
+    Base class for all components
+
+    Components are effectively interfaces that widgets can implement.
+    Their output methods are called at an appropriate place within a
+    widget's output method to create a portion of that widget's HTML.
+    """
+
     def __init__ (self, **kw):
         super (Component, self).__init__ (**kw)
+
     def output (self, fd=sys.stdout):
+        """
+        Output the HTML for this component
+
+        This is an abstract method that subclasses must implement.
+        """
         pass
 
 
@@ -51,33 +87,40 @@ class Component (object):
 
 class ContentComponent (Component):
     """
-    A simple component for widgets that have generic content.  The output
-    method will call output on each of the added widgets.  Some widgets
-    may use this component only for the add_content method, and control
-    how the added widgets are output by mapping over get_content.
+    Simple component for widgets with generic content
+
+    The output method will call output on each of the added widgets.  Some
+    widgets may use this component only for the add_content method, and
+    control how the added widgets are output by mapping over get_content.
     """
+
     def __init__ (self, **kw):
         super (ContentComponent, self).__init__ (**kw)
         self._content = []
 
     def add_content (self, content):
+        """Add a widget or text to this container"""
         self._content.append (content)
 
     def get_content (self):
+        """Get a list of all added content"""
         return self._content
 
     def output (self, fd=sys.stdout):
-        for s in self._content:
-            p (fd, None, s)
+        """Output the HTML"""
+        for cont in self._content:
+            p (fd, None, cont)
 
 
 class SublinksComponent (Component):
     """
-    A component for widgets that contain sublinks.  Sublinks are a list of
-    links found under the title of a widget.  They may provide alternate
-    pages or a heirarchy of parent pages, depending on context.  The ouput
-    method will create the sublinks.
+    Component for widgets that contain sublinks
+
+    Sublinks are a list of links found under the title of a widget.  They
+    may provide alternate pages or a heirarchy of parent pages, depending
+    on context.  The ouput method will create the sublinks.
     """
+
     def __init__ (self, **kw):
         super (SublinksComponent, self).__init__ (**kw)
         self._sublinks = []
@@ -90,6 +133,7 @@ class SublinksComponent (Component):
         self._divider = div
 
     def output (self, fd=sys.stdout):
+        """Output the HTML"""
         if len(self._sublinks) > 0:
             p (fd, '<div class="sublinks">', None, False)
             for i in range(len(self._sublinks)):
@@ -104,11 +148,13 @@ class SublinksComponent (Component):
 
 class FactsComponent (Component):
     """
-    A component for widgets that contain fact tables.  Fact tables are
-    key-value tables providing more information about whatever thing
-    the widget is showing.  The output method will create the table of
+    Component for widgets that contain fact tables
+
+    Fact tables are key-value tables providing more information about whatever
+    thing the widget is showing.  The output method will create the table of
     facts.
     """
+
     def __init__ (self, **kw):
         super (FactsComponent, self).__init__ (**kw)
         self._facts = []
@@ -121,6 +167,7 @@ class FactsComponent (Component):
         self._facts.append (None)
 
     def output (self, fd=sys.stdout):
+        """Output the HTML"""
         if len (self._facts) == 0:
             return
         p (fd, '<table class="facts">')
@@ -139,7 +186,7 @@ class FactsComponent (Component):
                 else:
                     p (fd, '<td class="fact-val" colspan="2">', None, False)
                 def factout (f):
-                    if isinstance (f, basestring) or isinstance (f, Widget) or isinstance (f, Component):
+                    if isinstance (f, (basestring, Widget, Component)):
                         p (fd, None, f, False)
                     elif isinstance (f, db.PulseRecord):
                         p (fd, Link(f))
@@ -155,9 +202,11 @@ class FactsComponent (Component):
 
 class SortableComponent (Component):
     """
-    A component for widgets that have sortable content.  The output method
-    will create the link bar for sorting the content.
+    Component for widgets that have sortable content
+
+    The output method will create the link bar for sorting the content.
     """
+
     def __init__ (self, *args, **kw):
         super (SortableComponent, self).__init__ (**kw)
         self._slinktag = kw.get ('sortable_tag', None)
@@ -183,6 +232,7 @@ class SortableComponent (Component):
         return self._slinks
 
     def output (self, fd=sys.stdout):
+        """Output the HTML"""
         slinktag = self._slinktag or 'table'
         slinkclass = self._slinkclass or 'lbox'
         p (fd, '<div class="slinks"><span class="slinks" id="slink-%s">', slinkclass)
@@ -190,7 +240,8 @@ class SortableComponent (Component):
             if i != 0: p (fd, u' • ')
             slink = self._slinks[i]
             if slink[2]:
-                p (fd, '<a class="slink" id="slink-%s-%s-%s" href="javascript:sort(\'%s\', \'%s\', \'%s\')">%s</a>',
+                p (fd, ('<a class="slink" id="slink-%s-%s-%s"'
+                        ' href="javascript:sort(\'%s\', \'%s\', \'%s\')">%s</a>'),
                    (slinktag, slinkclass, slink[0],
                     slinktag, slinkclass, slink[0], slink[1]),
                    False)
@@ -203,8 +254,12 @@ class SortableComponent (Component):
 
 class LinkBoxesComponent (Component):
     """
-    A component for widgets containing link boxes, possibly in multiple columns.
+    Component for widgets containing link boxes
+
+    This provides a convenience routine for adding link boxes, and can
+    display the link boxes in multiple columns.
     """
+
     def __init__ (self, **kw):
         super (LinkBoxesComponent, self).__init__ (**kw)
         self._boxes = []
@@ -219,6 +274,7 @@ class LinkBoxesComponent (Component):
         self._columns = columns
 
     def output (self, fd=sys.stdout):
+        """Output the HTML"""
         if self._columns > 1:
             p (fd, '<table class="cols"><tr>')
             p (fd, '<td class="col col-first">')
@@ -245,17 +301,20 @@ class LinkBoxesComponent (Component):
 
 class HttpComponent (Component):
     """
-    A component for widgets that may need to output HTTP headers.  Widgets using
-    this component are generally top-level that are not added to any other widgets.
-    The output method will generate the HTTP headers, if the http paramater has
-    not been set to False.
+    Component for widgets that output HTTP headers
+
+    Widgets using this component are generally top-level that are not added to
+    any other widgets.  The output method will generate the HTTP headers, if the
+    http paramater has not been set to False.
     """
+
     def __init__ (self, **kw):
         super (HttpComponent, self).__init__ (**kw)
         self._http = kw.get ('http', True)
         self._status = kw.get ('status', 200)
 
     def output (self, fd=sys.stdout):
+        """Output the HTML"""
         if self._http == True:
             if self._status == 404:
                 p (fd, 'Status: 404 Not found')
@@ -270,10 +329,13 @@ class HttpComponent (Component):
 
 class Page (Widget, HttpComponent, ContentComponent):
     """
-    A complete web page.  The output method creates all the standard HTML for
-    the top and bottom of the page, and call output_page_content in between.
-    Subclasses should override output_page_content.
+    Complete web page
+
+    The output method creates all the standard HTML for the top and bottom
+    of the page, and call output_page_content in between.  Subclasses should
+    override output_page_content.
     """
+
     def __init__ (self, **kw):
         super (Page, self).__init__ (**kw)
         self._title = kw.get ('title')
@@ -296,8 +358,10 @@ class Page (Widget, HttpComponent, ContentComponent):
             pass
 
     def output (self, fd=sys.stdout):
+        """Output the HTML"""
         HttpComponent.output (self, fd=fd)
-        p (fd, '<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">')
+        p (fd, ('<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN"'
+                ' "http://www.w3.org/TR/html4/strict.dtd">'))
         p (fd, '<html><head>')
         p (fd, '  <title>%s</title>', self._title)
         p (fd, '  <meta http-equiv="Content-type" content="text/html; charset=utf-8">')
@@ -308,17 +372,22 @@ class Page (Widget, HttpComponent, ContentComponent):
            pulse.config.data_root)
         p (fd, '</head><body>')
         p (fd, '<ul id="general">')
-        p (fd, '  <li id="siteaction-gnome_home" class="home"><a href="http://www.gnome.org/">Home</a></li>')
-        p (fd, '  <li id="siteaction-gnome_news"><a href="http://news.gnome.org">News</a></li>')
-        p (fd, '  <li id="siteaction-gnome_projects"><a href="http://www.gnome.org/projects/">Projects</a></li>')
-        p (fd, '  <li id="siteaction-gnome_art"><a href="http://art.gnome.org">Art</a></li>')
-        p (fd, '  <li id="siteaction-gnome_support"><a href="http://www.gnome.org/support/">Support</a></li>')
-        p (fd, '  <li id="siteaction-gnome_development"><a href="http://developer.gnome.org">Development</a></li>')
-        p (fd, '  <li id="siteaction-gnome_community"><a href="http://www.gnome.org/community/">Community</a></li>')
+        p (fd, ('  <li id="siteaction-gnome_home" class="home">'
+                '<a href="http://www.gnome.org/">Home</a></li>'))
+        p (fd, ('  <li id="siteaction-gnome_news">'
+                '<a href="http://news.gnome.org">News</a></li>'))
+        p (fd, ('  <li id="siteaction-gnome_projects">'
+                '<a href="http://www.gnome.org/projects/">Projects</a></li>'))
+        p (fd, ('  <li id="siteaction-gnome_art">'
+                '<a href="http://art.gnome.org">Art</a></li>'))
+        p (fd, ('  <li id="siteaction-gnome_support">'
+                '<a href="http://www.gnome.org/support/">Support</a></li>'))
+        p (fd, ('  <li id="siteaction-gnome_development">'
+                '<a href="http://developer.gnome.org">Development</a></li>'))
+        p (fd, ('  <li id="siteaction-gnome_community">'
+                '<a href="http://www.gnome.org/community/">Community</a></li>'))
         p (fd, '</ul>')
-        p (fd, '<div id="header">')
-        p (fd, '  <h1>Pulse</h1>')
-        p (fd, '</div>')
+        p (fd, '<div id="header"><h1>Pulse</h1></div>')
         p (fd, '<div id="body">')
         p (fd, '<h1>')
         if self._icon != None:
@@ -344,23 +413,30 @@ class Page (Widget, HttpComponent, ContentComponent):
 
 class Fragment (Widget, HttpComponent, ContentComponent):
     """
-    A fragment of a web page.  Unlike Page, Fragment will not output any
-    boilerplate HTML.  Instead, it only outputs the HTTP headers and the
-    added content.  This is generally used for AJAX content.
+    Fragment of a web page
+
+    Unlike Page, Fragment will not output any boilerplate HTML.  Instead, it
+    only outputs the HTTP headers and the added content.  This is generally
+    used for AJAX content.
     """
+
     def __init__ (self, **kw):
         super (Fragment, self).__init__ (**kw)
 
     def output (self, fd=sys.stdout):
+        """Output the HTML"""
         HttpComponent.output (self, fd=fd)
         ContentComponent.output (self, fd=fd)
 
 
 class RecordPage (Page, SublinksComponent, FactsComponent):
     """
-    A convenience wrapper for Page that knows how to extract information
-    from database records.
+    Convenience wrapper for Page for Records
+
+    This convenience class knows how to extract basic information from Records
+    and insert it into the page.
     """
+
     def __init__ (self, record, **kw):
         kw.setdefault ('title', record.title)
         kw.setdefault ('icon', record.icon_url)
@@ -373,7 +449,10 @@ class RecordPage (Page, SublinksComponent, FactsComponent):
 
 
 class PageNotFound (Page):
-    """A 404 page."""
+    """
+    A 404 page.
+    """
+
     def __init__ (self, message, **kw):
         kw.setdefault ('title', pulse.utils.gettext('Page Not Found'))
         super (PageNotFound, self).__init__ (**kw)
@@ -396,7 +475,10 @@ class PageNotFound (Page):
 
 
 class PageError (Page):
-    """A 500 page."""
+    """
+    A 500 page.
+    """
+
     def __init__ (self, message, **kw):
         kw.setdefault ('title', pulse.utils.gettext('Bad Monkeys'))
         super (PageError, self).__init__ (**kw)
@@ -420,6 +502,7 @@ class InfoBox (Widget, ContentComponent, LinkBoxesComponent):
         self._title = title
 
     def output (self, fd=sys.stdout):
+        """Output the HTML"""
         p (fd, '<div class="info" id="%s">', self._id)
         p (fd, '<div class="info-title">', None, False)
         p (fd, '<a href="javascript:info(\'%s\')">', self._id, False)
@@ -456,6 +539,7 @@ class ContainerBox (Widget, SortableComponent, ContentComponent, LinkBoxesCompon
         self._title = title
 
     def output (self, fd=sys.stdout):
+        """Output the HTML"""
         if self._title != None or self._id != None:
             if self._id == None:
                 self._id = md5.md5(self._title).hexdigest()
@@ -539,6 +623,7 @@ class LinkBox (Widget, FactsComponent, ContentComponent):
         self._graphs.append (url)
 
     def output (self, fd=sys.stdout):
+        """Output the HTML"""
         cls = ' '.join(['lbox'] + self._classes)
         p (fd, '<table class="%s"><tr>', cls)
         if self._show_icon:
@@ -586,6 +671,7 @@ class ColumnBox (Widget):
         return content
 
     def output (self, fd=sys.stdout):
+        """Output the HTML"""
         p (fd, '<table class="cols"><tr>', None)
         width = str (100 / len(self._columns))
         for i in range(len(self._columns)):
@@ -618,6 +704,7 @@ class GridBox (Widget):
         self._rows[idx]['classes'].append (cls)
 
     def output (self, fd=sys.stdout):
+        """Output the HTML"""
         if len (self._rows) == 0:
             return
         cls = ' '.join(['grid'] + self._classes)
@@ -646,6 +733,7 @@ class PaddingBox (Widget, ContentComponent):
         super (PaddingBox, self).__init__ (**kw)
 
     def output (self, fd=sys.stdout):
+        """Output the HTML"""
         content = self.get_content()
         for i in range(len(content)):
             s = content[i]
@@ -662,9 +750,9 @@ class AdmonBox (Widget):
     information = "information"
     warning = "warning"
     
-    def __init__ (self, type, title, **kw):
+    def __init__ (self, kind, title, **kw):
         super (AdmonBox, self).__init__ (**kw)
-        self._type = type
+        self._kind = kind
         self._title = title
         self._classes = []
 
@@ -672,10 +760,11 @@ class AdmonBox (Widget):
         self._classes.append (cls)
 
     def output (self, fd=sys.stdout):
+        """Output the HTML"""
         cls = ' '.join(['admon'] + self._classes)
-        p (fd, '<div class="admon-%s %s">', (self._type, cls))
+        p (fd, '<div class="admon-%s %s">', (self._kind, cls))
         p (fd, '<img src="%sadmon-%s-16.png" width="16" height="16">',
-           (pulse.config.data_root, self._type))
+           (pulse.config.data_root, self._kind))
         p (fd, None, self._title)
         p (fd, '</div>')
 
@@ -689,6 +778,7 @@ class TabbedBox (Widget, ContentComponent):
         self._tabs.append ((url, title))
 
     def output (self, fd=sys.stdout):
+        """Output the HTML"""
         p (fd, '<div class="tabbed">')
         p (fd, '<div class="tabbed-tabs">')
         for url, title in self._tabs:
@@ -712,16 +802,17 @@ class DefinitionList (Widget):
         self._id = kw.get('id', None)
         self._all = []
 
-    def add_term (self, term, class_name=None):
-        self._all.append (('dt', term, class_name))
+    def add_term (self, term, classname=None):
+        self._all.append (('dt', term, classname))
 
-    def add_entry (self, entry, class_name=None):
-        self._all.append (('dd', entry, class_name))
+    def add_entry (self, entry, classname=None):
+        self._all.append (('dd', entry, classname))
 
     def add_divider (self):
         self._all.append (('dt', None, 'hr'))
         
     def output (self, fd=sys.stdout):
+        """Output the HTML"""
         if self._id != None:
             p (fd, '<dl id="%s">', self._id)
         else:
@@ -744,6 +835,7 @@ class DefinitionList (Widget):
 
 class Rule (Widget):
     def output (self, fd=sys.stdout):
+        """Output the HTML"""
         p (fd, '<div class="hr"><hr></div>')
 
 
@@ -759,6 +851,7 @@ class Graph (Widget):
         self._comments.append ((coords, comment, href))
 
     def output (self, fd=sys.stdout):
+        """Output the HTML"""
         if len(self._comments) == 0:
             p (fd, '<div class="graph"><img src="%s"></div>', self._url)
         else:
@@ -769,9 +862,12 @@ class Graph (Widget):
             i = 0
             for comment in self._comments:
                 i += 1
-                p (fd, '<area shape="rect" coords="%s"', ','.join(map(str, comment[0])), False)
-                p (fd, ' onmouseover="javascript:comment(%i, %i, %i)"', (Graph._count, i, comment[0][0]), False)
-                p (fd, ' onmouseout="javascript:comment(%i, %i)"', (Graph._count, i), False)
+                p (fd, '<area shape="rect" coords="%s"',
+                   ','.join(map(str, comment[0])), False)
+                p (fd, ' onmouseover="javascript:comment(%i, %i, %i)"',
+                   (Graph._count, i, comment[0][0]), False)
+                p (fd, ' onmouseout="javascript:comment(%i, %i)"',
+                   (Graph._count, i), False)
                 if comment[2] != None:
                     p (fd, ' href="%s"', comment[2])
                 p (fd, '>')
@@ -809,6 +905,7 @@ class EllipsizedLabel (Widget):
         self._size = size
 
     def output (self, fd=sys.stdout):
+        """Output the HTML"""
         if len (self._label) > self._size:
             i = self._size - 10
             if i <= 0: i = self._size
@@ -821,9 +918,11 @@ class EllipsizedLabel (Widget):
             else:
                 id = md5.md5(self._label).hexdigest()[:6]
                 p (fd, None, self._label[:i])
-                p (fd, '<span class="elliplnk" id="elliplnk-%s">(<a href="javascript:ellip(\'%s\')">%s</a>)</span>',
+                p (fd, ('<span class="elliplnk" id="elliplnk-%s">('
+                        '<a href="javascript:ellip(\'%s\')">%s</a>)</span>'),
                    (id, id, pulse.utils.gettext ('more')))
-                p (fd, '<span class="elliptxt" id="elliptxt-%s">%s</span>', (id, self._label[i+1:]))
+                p (fd, '<span class="elliptxt" id="elliptxt-%s">%s</span>',
+                   (id, self._label[i+1:]))
         else:
             p (fd, None, self._label)
 
@@ -849,6 +948,7 @@ class MenuLink (Widget):
         self._menu_url = url
 
     def output (self, fd=sys.stdout):
+        """Output the HTML"""
         MenuLink._count += 1
         if self._menu_only != True:
             p (fd, '<a class="mlink" id="mlink%s" href="javascript:mlink(\'%s\')">%s</a>',
@@ -882,6 +982,7 @@ class PopupLink (Widget):
             self._links.append (Link(*args))
 
     def output (self, fd=sys.stdout):
+        """Output the HTML"""
         PopupLink._count += 1
         p (fd, '<a class="plink" id="plink%i" href="javascript:plink(\'%i\')">',
            (PopupLink._count, PopupLink._count), False)
@@ -979,6 +1080,7 @@ class Span (Widget, ContentComponent):
         self._classes.append (cls)
 
     def output (self, fd=sys.stdout):
+        """Output the HTML"""
         if len(self._classes) > 0:
             p (fd, '<span class="%s">', ' '.join(self._classes), False)
         else:
@@ -999,6 +1101,7 @@ class Div (Widget, ContentComponent):
             self.add_content (arg)
 
     def output (self, fd=sys.stdout):
+        """Output the HTML"""
         if self._id != None:
             p (fd, '<div id="%s">', self._id)
         else:
@@ -1015,6 +1118,7 @@ class Pre (Widget, ContentComponent):
             self.add_content (arg)
 
     def output (self, fd=sys.stdout):
+        """Output the HTML"""
         if self._id != None:
             p (fd, '<pre id="%s">', self._id)
         else:
@@ -1039,6 +1143,7 @@ class Link (Widget):
         self._icon = kw.get('icon', None)
     
     def output (self, fd=sys.stdout):
+        """Output the HTML"""
         if self._href != None:
             p (fd, '<a href="%s">', self._href, False)
         if self._icon != None:

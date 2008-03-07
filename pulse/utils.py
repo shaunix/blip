@@ -18,6 +18,8 @@
 # Suite 330, Boston, MA  0211-1307  USA.
 #
 
+"""Various utility functions"""
+
 from datetime import datetime
 import math
 import os.path
@@ -25,28 +27,53 @@ import sys
 
 
 # Just a dummy until we hook up gettext
-def gettext (str):
-    return str
+def gettext (msg):
+    """
+    Return a translated string
+    """
+    return msg
 
 
 def daynum (when=datetime.now()):
+    """
+    Return the number of days since the epoch for a given date
+    """
     return (when - datetime(1970, 1, 1, 0, 0, 0)).days
 
 
 epoch_week = datetime(1970, 1, 5, 0, 0, 0)
 def weeknum (dt):
+    """
+    Return the number of weeks since the epoch for a given date
+    """
     return ((dt - epoch_week).days // 7) + 1
 
 
 def score (stats):
-    score = 0
+    """
+    Calculate the score for a list of statistics
+
+    The score associated with a list is a weighted sum of the values,
+    where earlier values are weighted down as the square root of their
+    distance from the end of the list.
+    """
+    ret = 0
     den = math.sqrt (len(stats))
     for i in range(len(stats)):
-        score += (math.sqrt(i + 1) / den) * stats[i]
-    return int(score)
+        ret += (math.sqrt(i + 1) / den) * stats[i]
+    return int(ret)
 
 
 def split (things, num):
+    """
+    Split a list into num sublists
+
+    This function is used to split lists into sublists, trying to minimize
+    the difference between lengths of sublists.  Instead of just returning
+    a list of sublists, it returns an interator which yields tuples with
+    a list item, which sublist that item belongs to, and the position of
+    that item in the sublist.
+    """
     each = len(things) // num
     ext = len(things) % num
     idx = i = start = 0
@@ -58,11 +85,31 @@ def split (things, num):
         i += 1
         idx += 1
 
-def isorted (list):
-    return sorted (list, lambda x, y: cmp (x.lower(), y.lower()))
 
-def attrsorted (list, *attrs):
+def isorted (lst):
+    """
+    Perform a case-insensitive lexicographic sort
+    """
+    return sorted (lst, lambda x, y: cmp (x.lower(), y.lower()))
+
+
+def attrsorted (lst, *attrs):
+    """
+    Sort a list of objects based on given object attributes
+
+    The list is first sorted by comparing the value of the first attribute
+    for each object.  When the values for two objects are equal, they are
+    sorted according to the second attribute, third attribute, and so on.
+
+    An attribute may also be a tuple or list.  In this case, the value to
+    be compared for an object is obtained by successively extracting the
+    attributes.  For example, an attribute of ('foo', 'bar') would use the
+    value of obj.foo.bar for the object obj.
+
+    All string comparisons are case-insensitive.
+    """
     def attrget (obj, attr):
+        """Get an attribute or list of attributes from an object"""
         if isinstance (attr, basestring):
             return getattr (obj, attr)
         elif len(attr) > 0:
@@ -71,18 +118,27 @@ def attrsorted (list, *attrs):
             return obj.lower()
         else:
             return obj
-    def lcmp (x, y):
-        return cmp (isinstance(x, basestring) and x.lower() or x,
-                    isinstance(y, basestring) and y.lower() or y)
-    def attrcmp (x, y, attrs):
-        v = lcmp (attrget(x, attrs[0]), attrget(y, attrs[0]))
-        if v == 0 and len(attrs) > 1:
-            return attrcmp (x, y, attrs[1:])
+
+    def lcmp (val1, val2):
+        """Compare two objects, case-insensitive if strings"""
+        return cmp (isinstance(val1, basestring) and val1.lower() or val1,
+                    isinstance(val2, basestring) and val2.lower() or val2)
+
+    def attrcmp (val1, val2, attrs):
+        """Compare two objects based on some attributes"""
+        cmpval = lcmp (attrget(val1, attrs[0]), attrget(val2, attrs[0]))
+        if cmpval == 0 and len(attrs) > 1:
+            return attrcmp (val1, val2, attrs[1:])
         else:
-            return v
-    return sorted (list, lambda x, y: attrcmp (x, y, attrs))
+            return cmpval
+
+    return sorted (lst, lambda val1, val2: attrcmp (val1, val2, attrs))
+
 
 def relative_path (path, base):
+    """
+    Return path relative to base
+    """
     spath = os.path.abspath (path).split (os.sep)
     sbase = os.path.abspath (base).split (os.sep)
 
@@ -93,92 +149,70 @@ def relative_path (path, base):
     newpath = ([os.pardir] * len(sbase)) + spath
     return os.path.join (*newpath)
 
+
 class odict (dict):
-    def __init__ (self, d=None):
-        if d != None:
-            dict.__init__ (self, d)
-            self._keys = d.keys()
+    """
+    An ordered dictionary
+
+    Things placed in an odict are returned in the order they were inserted.
+    """
+
+    def __init__ (self, mapping=None):
+        if mapping != None:
+            super (odict, self).__init__ (mapping)
+            self._keys = mapping.keys()
         else:
-            dict.__init__ (self)
+            super (odict, self).__init__ ()
             self._keys = []
+
     def __setitem__ (self, key, item):
         dict.__setitem__ (self, key, item)
-        if key not in self._keys: self._keys.append (key)
+        if key not in self._keys:
+            self._keys.append (key)
+
     def __delitem__ (self, key):
         dict.__delitem__ (self, key)
         self._keys.remove (key)
-    def keys(self):
-        return self._keys
-    def values (self):
-        return map (lambda key: self[key], self._keys)
-    def setdefault (self, key, item):
-        if key not in self._keys: self.__setitem__ (key, item)
 
-class attrdict (dict):
-    def __init__ (self, objs):
-        self.adds = {}
-        self.dels = set()
-        self.objs = objs
-    def __setitem__ (self, key, item):
-        self.adds[key] = item
-        if key in self.dels:
-            self.dels.remove (key)
-    def __delitem__ (self, key):
-        self.dels.add (key)
-    def __getitem__ (self, key):
-        if key in self.dels:
-            raise KeyError (key)
-        if self.adds.has_key (key):
-            return self.adds[key]
-        for obj in self.objs:
-            try:
-                ret = getattr (obj, key)
-            except:
-                continue
-            return ret
-        raise KeyError (key)
-    def has_key (self, key):
-        if key in self.dels:
-            return False
-        if self.adds.has_key (key):
-            return True
-        for obj in self.objs:
-            try:
-                getattr (obj, key)
-                return True
-            except:
-                pass
-        return False
-    def has_val (self, key):
-        if key in self.dels:
-            return False
-        if self.adds.has_key (key):
-            return (self.adds[key] != None)
-        for obj in self.objs:
-            try:
-                v = getattr (obj, key)
-                return (v != None)
-            except:
-                pass
-        return False
-    def append (self, obj):
-        self.objs.append (obj)
-    def prepend (self, obj):
-        self.objs.insert (0, obj)
-    def remove (self, obj):
-        self.objs.remove (obj)
+    def keys(self):
+        """Return the keys in the order they were added"""
+        return self._keys
+
+    def values (self):
+        """Return the values in the order they were added"""
+        return [self[key] for key in self._keys]
+
+    def setdefault (self, key, item):
+        """Set a value only if no value has been set for the key"""
+        if key not in self._keys:
+            self.__setitem__ (key, item)
+
 
 class PulseException (Exception):
-    def __init__ (self, str):
-        Exception.__init__ (self, str)
+    """Base class for exceptions that Pulse raises"""
+    def __init__ (self, msg):
+        Exception.__init__ (self, msg)
 
-def log (str, fd=sys.stdout):
-    print >>fd, '[%s] %s' % (datetime.now().strftime ('%Y-%m-%d %H:%M:%S'), str)
-def warn (str, fd=sys.stderr):
-    print >>fd, '[%s] %s' % (datetime.now().strftime ('%Y-%m-%d %H:%M:%S'), str)
+
+def log (msg, fd=sys.stdout):
+    """Write a log message"""
+    print >> fd, '[%s] %s' % (datetime.now().strftime ('%Y-%m-%d %H:%M:%S'), msg)
+
+def warn (msg, fd=sys.stderr):
+    """Write a warning message"""
+    print >> fd, '[%s] %s' % (datetime.now().strftime ('%Y-%m-%d %H:%M:%S'), msg)
+
 
 def import_ (name):
+    """
+    Dynamically import and return a module
+
+    Python's built-in __import__ function returns the top-level module of
+    an imported module.  For instance, __import__('foo.bar') will import
+    foo.bar, but will return a reference to foo.  import_ will return a
+    reference to bar.
+    """
     mod = __import__ (name)
-    for c in name.split ('.')[1:]:
-        mod = getattr (mod, c)
+    for modname in name.split ('.')[1:]:
+        mod = getattr (mod, modname)
     return mod

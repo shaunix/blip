@@ -55,8 +55,8 @@ def server_name (scm_type, scm_server):
         return None
 
 class CheckoutError (pulse.utils.PulseException):
-    def __init__ (self, str):
-        pulse.utils.PulseException.__init__ (self, str)
+    def __init__ (self, msg):
+        pulse.utils.PulseException.__init__ (self, msg)
 
 class Checkout (object):
     @classmethod
@@ -69,19 +69,17 @@ class Checkout (object):
                     **kw)
 
     def __init__ (self, **kw):
-        
-        updateQ = kw.get ('update', False)
-        checkoutQ = kw.get ('checkout', True)
-
         if not kw.has_key ('scm_type'):
             raise CheckoutError (
                 'Checkout could not determine the type of SCM server to use')
 
-        for key in kw.keys ():
-            if key[:4] == 'scm_':
-                self.__setattr__ (key, kw[key])
+        self.scm_type = kw.get('scm_type')
+        self.scm_server = kw.get('scm_server')
+        self.scm_module = kw.get('scm_module')
+        self.scm_branch = kw.get('scm_type')
+        self.scm_path = kw.get('scm_type')
 
-        if hasattr (Checkout, '_init_' + self.scm_type) and self.scm_type in default_branches:
+        if (hasattr (Checkout, '_init_' + self.scm_type) and self.scm_type in default_branches):
             initfunc = getattr (Checkout, '_init_' + self.scm_type)
         else:
             raise CheckoutError (
@@ -110,27 +108,34 @@ class Checkout (object):
             self._branch_dir = self.scm_branch
 
         if os.path.exists (self.directory):
-            if updateQ:
+            if kw.get ('update', False):
                 self.update ()
         else:
-            if checkoutQ:
+            if kw.get ('checkout', True):
                 self.checkout ()
+
+        self.ignoredir = None
+        self._location = None
+        self._location_dir = None
+        self._location_dirfile = None
+        self._up = None
+        self._co = None
 
     def _init_cvs (self):
         if not hasattr (self, 'scm_module'):
             raise CheckoutError ('Checkout did not receive a module')
         if not hasattr (self, 'scm_server'):
-            raise CheckoutError ('Checkout did not receive a server for ' % self.scm_module)
+            raise CheckoutError ('Checkout did not receive a server for '
+                                 % self.scm_module)
 
         self.ignoredir = 'CVS'
 
-        if self.scm_branch == 'HEAD':
-            self._location = self.scm_server + ' ' + self.scm_module
-        else:
-            self._location = self.scm_server + ' ' + self.scm_module + '@' + self.scm_branch
+        self._location = self.scm_server + ' ' + self.scm_module
+        if self.scm_branch != 'HEAD':
+            self._location += '@' + self.scm_branch
         self._location_dir = self._location + ' %s'
         self._location_dirfile = self._location_dir + '/%s'
-        self._co = 'cvs -z3 -d%s co -r %s -d %s %s' %(
+        self._co = 'cvs -z3 -d%s co -r %s -d %s %s' % (
             self.scm_server,
             self.scm_branch,
             self.scm_branch,
@@ -141,7 +146,8 @@ class Checkout (object):
         if not hasattr (self, 'scm_module'):
             raise CheckoutError ('Checkout did not receive a module')
         if not hasattr (self, 'scm_server'):
-            raise CheckoutError ('Checkout did not receive a server for ' + self.scm_module)
+            raise CheckoutError ('Checkout did not receive a server for '
+                                 + self.scm_module)
 
         self.ignoredir = '.git'
 
@@ -162,26 +168,29 @@ class Checkout (object):
             self._location_dir = url + '/%s@' + self.scm_branch
             self._location_dirfile = url + '/%s/%s@' + self.scm_branch
         self._co = ('git clone %s %s && (cd %s && git checkout -b %s origin/%s)' %
-                    (url, self.scm_branch, self.scm_branch, self.scm_branch, self.scm_branch))
+                    (url, self.scm_branch,
+                     self.scm_branch, self.scm_branch, self.scm_branch))
         self._up = 'git fetch origin && git rebase origin/' + self.scm_branch
 
     def _init_svn (self):
         if not hasattr (self, 'scm_module'):
             raise CheckoutError ('Checkout did not receive a module')
         if not hasattr (self, 'scm_server'):
-            raise CheckoutError ('Checkout did not receive a server for ' + self.scm_module)
+            raise CheckoutError ('Checkout did not receive a server for '
+                                 + self.scm_module)
 
         self.ignoredir = '.svn'
 
         if self.scm_server[-1] != '/':
             self.scm_server = self.scm_server + '/'
 
+        url = self.scm_server
         if getattr (self, 'scm_path', None) != None:
-            url = self.scm_server + self.scm_path
+            url += self.scm_path
         elif self.scm_branch == 'trunk':
-            url = self.scm_server + self.scm_module + '/trunk'
+            url += self.scm_module + '/trunk'
         else:
-            url = self.scm_server + self.scm_module + '/branches/' + self.scm_branch
+            url += self.scm_module + '/branches/' + self.scm_branch
 
         self._location = url
         self._location_dir = url + '/%s'
@@ -207,8 +216,11 @@ class Checkout (object):
 
 
     def checkout (self):
-        pulse.utils.log ('Checking out %s from %s' % (self._name, self._server_dir))
-        topdir = os.path.join (pulse.config.scm_dir, self._server_dir, self._module_dir)
+        pulse.utils.log ('Checking out %s from %s'
+                         % (self._name, self._server_dir))
+        topdir = os.path.join (pulse.config.scm_dir,
+                               self._server_dir,
+                               self._module_dir)
         if not os.path.exists (topdir):
             os.makedirs (topdir)
         owd = os.getcwd ()
@@ -451,7 +463,7 @@ class Checkout (object):
             while line:
                 line = fd.readline()
                 if not line: break
-                (revnumber, revauthor, revdate, diff) = line.split('|')
+                (revnumber, revauthor, revdate) = line.split('|')[:3]
                 revnumber = revnumber[1:].strip()
                 prevrev = str(int(revnumber) - 1)
                 revauthor = (revauthor.strip(), None, None)
