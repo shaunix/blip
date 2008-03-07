@@ -325,7 +325,7 @@ def get_xmlfiles (doc, xmlfiles):
     for xmlfile in xmlfiles:
         span = pulse.html.Span (xmlfile)
         span.add_class ('title')
-        dl.add_term (span, class_name='actfile')
+        dl.add_term (span, classname='actfile')
         files = [os.path.join (doc.scm_dir, xmlfile)]
         commit = db.Revision.get_last_revision (branch=doc.parent, files=files)
         if commit != None:

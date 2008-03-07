@@ -90,6 +90,13 @@ class Checkout (object):
 
         self._name = '%s (%s)' % (self.scm_module, self.scm_branch)
 
+        self.ignoredir = None
+        self._location = None
+        self._location_dir = None
+        self._location_dirfile = None
+        self._up = None
+        self._co = None
+
         initfunc (self)
 
         if kw.get('server_dir') != None:
@@ -113,13 +120,6 @@ class Checkout (object):
         else:
             if kw.get ('checkout', True):
                 self.checkout ()
-
-        self.ignoredir = None
-        self._location = None
-        self._location_dir = None
-        self._location_dirfile = None
-        self._up = None
-        self._co = None
 
     def _init_cvs (self):
         if not hasattr (self, 'scm_module'):
