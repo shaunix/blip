@@ -238,7 +238,7 @@ def check_history (branch, checkout):
 
 def update_graph (branch, **kw):
     now = datetime.datetime.now()
-    thisweek = pulse.utils.weeknum (now)
+    thisweek = pulse.utils.weeknum (datetime.datetime.utcnow())
     of = db.OutputFile.objects.filter (type='graphs', ident=branch.ident, filename='commits.png')
     try:
         of = of[0]

@@ -34,7 +34,7 @@ def help_extra (fd=None):
 
 def update_person (person, **kw):
     now = datetime.datetime.now()
-    thisweek = pulse.utils.weeknum (now)
+    thisweek = pulse.utils.weeknum (datetime.datetime.utcnow())
     of = db.OutputFile.objects.filter (type='graphs', ident=person.ident, filename='commits.png')
     try:
         of = of[0]

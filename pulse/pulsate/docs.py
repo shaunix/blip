@@ -110,7 +110,7 @@ def update_gdu_docbook (doc, **kw):
 
 def update_graph (doc, **kw):
     now = datetime.datetime.now()
-    thisweek = pulse.utils.weeknum (now)
+    thisweek = pulse.utils.weeknum (datetime.datetime.utcnow())
     of = db.OutputFile.objects.filter (type='graphs', ident=doc.ident, filename='commits.png')
     try:
         of = of[0]
