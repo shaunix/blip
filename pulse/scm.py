@@ -477,7 +477,7 @@ class Checkout (object):
                         if line == '\n' or line == sep:
                             break
                         filename = line.strip()[3:]
-                        if filename.startswith (prefix):
+                        if prefix != None and filename.startswith (prefix):
                             filename = filename[len(prefix):]
                         elif filename.startswith ('trunk/'):
                             filename = filename[6:]
