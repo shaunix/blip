@@ -238,7 +238,7 @@ def check_history (branch, checkout):
 
 def update_graph (branch, **kw):
     now = datetime.datetime.now()
-    thisweek = pulse.utils.weeknum (now)
+    thisweek = pulse.utils.weeknum (datetime.datetime.utcnow())
     of = db.OutputFile.objects.filter (type='graphs', ident=branch.ident, filename='commits.png')
     try:
         of = of[0]
@@ -458,6 +458,7 @@ def process_podir (branch, checkout, podir, **kw):
     bserver, bmodule, bbranch = branch.ident.split('/')[2:]
     ident = '/'.join(['/i18n', bserver, bmodule, os.path.basename (podir), bbranch])
     domain = db.Branch.get_record (ident, 'Domain')
+    domain.parent = branch
 
     data = {}
     for key in ('scm_type', 'scm_server', 'scm_module', 'scm_branch', 'scm_path'):
@@ -500,6 +501,8 @@ def process_podir (branch, checkout, podir, **kw):
         translation.update (ldata)
         translation.save()
     domain.set_children ('Translation', translations)
+    domain.save()
+
     if kw.get('do_i18n', True):
         for po in translations:
             pulse.pulsate.i18n.update_intltool (po, checkout=checkout, **kw)
@@ -514,6 +517,8 @@ def process_gdu_docdir (branch, checkout, docdir, makefile, **kw):
     doc_module = makefile['DOC_MODULE']
     ident = '/'.join(['/doc', bserver, bmodule, doc_module, bbranch])
     document = db.Branch.get_record (ident, 'Document')
+    document.parent = branch
+
     relpath = pulse.utils.relative_path (docdir, checkout.directory)
 
     data = {}
