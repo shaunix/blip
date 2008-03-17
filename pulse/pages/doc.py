@@ -172,42 +172,38 @@ def output_doc (doc, path=[], query={}, http=True, fd=None):
         box.add_content (pulse.html.AdmonBox (pulse.html.AdmonBox.warning,
                                               pulse.utils.gettext ('No developers') ))
 
-    # Files
+    # Activity
     box = pulse.html.InfoBox ('activity', pulse.utils.gettext ('Activity'))
-    pad = pulse.html.PaddingBox ()
-    box.add_content (pad)
     columns.add_to_column (0, box)
     of = db.OutputFile.objects.filter (type='graphs', ident=doc.ident, filename='commits.png')
     try:
         of = of[0]
         graph = pulse.html.Graph.activity_graph (of, doc.pulse_url)
-        pad.add_content (graph)
+        box.add_content (graph)
     except IndexError:
         pass
-
-    div = pulse.html.Div (id='xmlfiles')
-    pad.add_content (div)
-    xmlfiles = doc.data.get('xmlfiles', [])
-    if len(xmlfiles) > 10:
-        jslink = 'javascript:replace(\'xmlfiles\', '
-        jslink += '\'%s%s?ajax=xmlfiles\'' % (pulse.config.web_root, doc.ident[1:])
-        jslink += ')'
-        div.add_content (pulse.html.Link (jslink,
-                                          pulse.utils.gettext ('View all %i files') % len(xmlfiles)))
-    else:
-        div.add_content (get_xmlfiles (doc, xmlfiles))
-
-    cont = pulse.html.ContainerBox()
-    cont.set_title (pulse.utils.gettext ('History'))
-    pad.add_content (cont)
-
     files = [os.path.join (doc.scm_dir, f) for f in doc.data.get ('xmlfiles', [])]
     revs = db.Revision.select_revisions (branch=doc.parent, files=files)
     cnt = revs.count()
     revs = revs[:10]
     div = get_commits_div (doc, revs,
                            pulse.utils.gettext('Showing %i of %i commits:') % (len(revs), cnt))
-    cont.add_content (div)
+    box.add_content (div)
+
+    # Files
+    box = pulse.html.InfoBox ('files', pulse.utils.gettext ('Files'))
+    columns.add_to_column (0, box)
+    xmlfiles = doc.data.get('xmlfiles', [])
+    if len(xmlfiles) > 10:
+        div = pulse.html.Div (id='xmlfiles')
+        jslink = 'javascript:replace(\'xmlfiles\', '
+        jslink += '\'%s%s?ajax=xmlfiles\'' % (pulse.config.web_root, doc.ident[1:])
+        jslink += ')'
+        div.add_content (pulse.html.Link (jslink,
+                                          pulse.utils.gettext ('View all %i files') % len(xmlfiles)))
+    else:
+        div = get_xmlfiles (doc, xmlfiles)
+    box.add_content (div)
 
     # Translations
     box = pulse.html.InfoBox ('translations', pulse.utils.gettext ('Translations'))
@@ -314,8 +310,7 @@ def output_ajax_commits (doc, path=[], query={}, http=True, fd=None):
 
 def get_xmlfiles (doc, xmlfiles):
     cont = pulse.html.ContainerBox()
-    cont.set_id ('actfile')
-    cont.set_title (pulse.utils.gettext ('Files'))
+    cont.set_id ('xmlfiles')
     dl = pulse.html.DefinitionList()
     cont.add_content (dl)
     if len(xmlfiles) > 1:
@@ -325,7 +320,7 @@ def get_xmlfiles (doc, xmlfiles):
     for xmlfile in xmlfiles:
         span = pulse.html.Span (xmlfile)
         span.add_class ('title')
-        dl.add_term (span, classname='actfile')
+        dl.add_term (span, classname='xmlfiles')
         files = [os.path.join (doc.scm_dir, xmlfile)]
         commit = db.Revision.get_last_revision (branch=doc.parent, files=files)
         if commit != None:
