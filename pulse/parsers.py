@@ -18,6 +18,8 @@
 # Suite 330, Boston, MA  0211-1307  USA.
 #
 
+"""Various useful parsers of varying quality"""
+
 import codecs
 import ConfigParser
 import re
@@ -160,6 +162,14 @@ class KeyFile (object):
 
 
 class Po:
+    """
+    Parse a PO file
+
+    You can pass a file descriptor, a filename, or None to the constructor.
+    If a file descriptor of filename is passed, it will automatically parse
+    the file.  Otherwise, you must manually pass data to the feed method
+    and call the finish method when you're done.
+    """
     def __init__ (self, fd=None):
         if isinstance (fd, basestring):
             self._fd = codecs.open (fd, 'r', 'utf-8')
@@ -185,6 +195,9 @@ class Po:
             self.finish ()
 
     def feed (self, line):
+        """
+        Pass a line of data to the parser
+        """
         line = line.strip()
         if line.startswith ('#~'):
             return
@@ -221,6 +234,9 @@ class Po:
                 self._msg[self._inkey] += '\n'
 
     def finish (self):
+        """
+        Finish parsing manually-fed data
+        """
         if self._msg.has_key ('msgid'):
             key = (self._msg['msgid'], self._msg.get('msgctxt'))
             self._comments[key] = self._msg.get('comment')
@@ -244,19 +260,37 @@ class Po:
         self._msg = {}
 
     def has_message (self, msgid, msgctxt=None):
+        """
+        Check if the PO file has a given message
+        """
         return self._msgstrs.has_key ((msgid, msgctxt))
 
     def get_message_str (self, msgid, msgctxt=None):
+        """
+        Get the translated message string for a given message
+        """
         return self._msgstrs[(msgid, msgctxt)]
         
     def get_message_comment (self, msgid, msgctxt=None):
+        """
+        Get the translator comment for a given message
+        """
         return self._comments[(msgid, msgctxt)]
 
     def get_num_messages (self):
+        """
+        Get the total number of messages in this PO file
+        """
         return len(self._msgstrs)
 
     def get_stats (self):
+        """
+        Get the number of translated, fuzzy, and untranslated messages as a tuple
+        """
         return (self._num_translated, self._num_fuzzy, self._num_untranslated)
 
     def get_image_stats (self):
+        """
+        Get the statistics for documentation image message only
+        """
         return (self._num_translated_images, self._num_fuzzy_images, self._num_untranslated_images)
