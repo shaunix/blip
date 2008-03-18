@@ -289,14 +289,27 @@ def output_branch (branch, path=[], query={}, http=True, fd=None):
             of = db.OutputFile.objects.filter (type='l10n', ident=domain.ident, filename=potfile)
             try:
                 of = of[0]
+                div = pulse.html.Div()
+                pad.add_content (div)
+
+                linkdiv = pulse.html.Div()
                 linkspan = pulse.html.Span (divider=pulse.html.SPACE)
-                pad.add_content (linkspan)
+                linkdiv.add_content (linkspan)
+                div.add_content (linkdiv)
                 linkspan.add_content (pulse.html.Link (of.pulse_url,
                                                        pulse.utils.gettext ('POT file'),
                                                        icon='download' ))
                 # FIXME: i18n reordering
                 linkspan.add_content (pulse.utils.gettext ('(%i messages)') % of.statistic)
                 linkspan.add_content (pulse.utils.gettext ('on %s') % of.datetime.strftime('%Y-%m-%d %T'))
+                missing = of.data.get ('missing', [])
+                if len(missing) > 0:
+                    msg = pulse.utils.gettext('%i missing files') % len(missing)
+                    admon = pulse.html.AdmonBox (pulse.html.AdmonBox.warning, msg, tag='span')
+                    mdiv = pulse.html.Div()
+                    popup = pulse.html.PopupLink (admon, '\n'.join(missing))
+                    mdiv.add_content (popup)
+                    div.add_content (mdiv)
             except IndexError:
                 pad.add_content (pulse.html.AdmonBox (pulse.html.AdmonBox.warning,
                                                        pulse.utils.gettext ('No POT file') ))

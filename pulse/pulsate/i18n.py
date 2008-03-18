@@ -179,9 +179,15 @@ def get_intltool_potfile (domain, checkout, **kw):
     try:
         os.chdir (indir)
         pulse.utils.log ('Creating POT file %s' % potfile_rel)
+        (mstatus, moutput) = commands.getstatusoutput ('rm -f missing notexist && intltool-update -m')
         (status, output) = commands.getstatusoutput (cmd)
     finally:
         os.chdir (owd)
+    missing = []
+    if mstatus == 0:
+        mfile = os.path.join (indir, 'missing')
+        if os.access (mfile, os.R_OK):
+            missing = [line.strip() for line in open(mfile).readlines()]
     if status == 0:
         m = md5.new()
         y = False
@@ -196,6 +202,7 @@ def get_intltool_potfile (domain, checkout, **kw):
         num = popo.get_num_messages ()
         of.datetime = datetime.datetime.now()
         of.data['mod_datetime'] = domain.parent.mod_datetime
+        of.data['missing'] = missing
         of.statistic = num
         of.data['md5'] = m.hexdigest ()
         of.save()

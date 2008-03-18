@@ -754,6 +754,7 @@ class AdmonBox (Widget):
         super (AdmonBox, self).__init__ (**kw)
         self._kind = kind
         self._title = title
+        self._tag = kw.get('tag', 'div')
         self._classes = []
 
     def add_class (self, cls):
@@ -762,11 +763,11 @@ class AdmonBox (Widget):
     def output (self, fd=sys.stdout):
         """Output the HTML"""
         cls = ' '.join(['admon'] + self._classes)
-        p (fd, '<div class="admon-%s %s">', (self._kind, cls))
+        p (fd, '<%s class="admon-%s %s">', (self._tag, self._kind, cls))
         p (fd, '<img src="%sadmon-%s-16.png" width="16" height="16">',
            (pulse.config.data_root, self._kind))
         p (fd, None, self._title)
-        p (fd, '</div>')
+        p (fd, '</%s>', self._tag)
 
 
 class TabbedBox (Widget, ContentComponent):
