@@ -20,7 +20,6 @@
 
 import datetime
 import math
-import os
 
 import pulse.config
 import pulse.graphs
@@ -33,9 +32,9 @@ people_cache = {}
 
 def main (path=[], query={}, http=True, fd=None):
     if len(path) == 3:
-        modules = db.Branchable.objects.filter(ident=('/' + '/'.join(path)))
+        branchables = db.Branchable.objects.filter(ident=('/' + '/'.join(path)))
         try:
-            module = modules[0]
+            branchable = branchables[0]
         except IndexError:
             kw = {'http': http}
             kw['title'] = pulse.utils.gettext ('Module Not Found')
@@ -47,14 +46,15 @@ def main (path=[], query={}, http=True, fd=None):
             page.output(fd=fd)
             return 404
 
-        branch = module.branch
+        branch = branchable.default
         if branch == None:
             kw = {'http': http}
             kw['title'] = pulse.utils.gettext ('Default Branch Not Found')
             # FIXME: this is not a good place to redirect
             kw['pages'] = [('mod', pulse.utils.gettext ('All Modules'))]
             page = pulse.html.PageNotFound (
-                pulse.utils.gettext ('Pulse could not find a default branch for the module %s') % path[2],
+                pulse.utils.gettext ('Pulse could not find a default branch for the module %s')
+                % path[2],
                 **kw)
             page.output(fd=fd)
             return 404
@@ -108,8 +108,8 @@ def output_branch (branch, path=[], query={}, http=True, fd=None):
 
     sep = False
     try:
-        desc = branch.localized_desc
-        page.add_fact (pulse.utils.gettext ('Description'), desc)
+        page.add_fact (pulse.utils.gettext ('Description'),
+                       branch.localized_desc)
         sep = True
     except:
         pass
@@ -117,12 +117,13 @@ def output_branch (branch, path=[], query={}, http=True, fd=None):
     rels = db.SetModule.get_related (pred=branch)
     if len(rels) > 0:
         sets = pulse.utils.attrsorted ([rel.subj for rel in rels], 'title')
-        span = pulse.html.Span (*[pulse.html.Link(rel.subj) for rel in rels])
+        span = pulse.html.Span (*[pulse.html.Link(set) for set in sets])
         span.set_divider (pulse.html.BULLET)
         page.add_fact (pulse.utils.gettext ('Release Sets'), span)
         sep = True
 
-    if sep: page.add_fact_sep ()
+    if sep:
+        page.add_fact_sep ()
 
     page.add_fact (pulse.utils.gettext ('Location'), checkout.location)
 
@@ -201,53 +202,16 @@ def output_branch (branch, path=[], query={}, http=True, fd=None):
         else:
             d2.add_content (div)
 
-    # Applications
-    apps = branch.select_children ('Application')
-    apps = pulse.utils.attrsorted (list(apps), 'title')
-    if len(apps) > 0:
-        box = pulse.html.InfoBox ('applications', pulse.utils.gettext ('Applications'))
-        columns.add_to_column (1, box)
-        for app in apps:
-            lbox = box.add_link_box (app)
-            doc = db.Documentation.get_related (subj=app)
-            try:
-                doc = doc[0]
-                lbox.add_fact (pulse.utils.gettext ('Documentaion'), doc.pred)
-            except IndexError:
-                pass
+    # Programs and Libraries
+    for branchtype, boxid, title in (
+        ('Application', 'applications', pulse.utils.gettext ('Applications')),
+        ('Capplet', 'capplets', pulse.utils.gettext ('Capplets')),
+        ('Applet', 'applets', pulse.utils.gettext ('Applets')),
+        ('Library', 'libraries', pulse.utils.gettext ('Libraries')) ):
 
-    # Capplets
-    capps = branch.select_children ('Capplet')
-    capps = pulse.utils.attrsorted (list(capps), 'title')
-    if len(capps) > 0:
-        box = pulse.html.InfoBox ('capplets', pulse.utils.gettext ('Capplets'))
-        columns.add_to_column (1, box)
-        for capp in capps:
-            lbox = box.add_link_box (capp)
-            doc = db.Documentation.get_related (subj=capp)
-            try:
-                doc = doc[0]
-                lbox.add_fact (pulse.utils.gettext ('Documentaion'), doc.pred)
-            except IndexError:
-                pass
-
-    # Applets
-    applets = branch.select_children ('Applet')
-    applets = pulse.utils.attrsorted (list(applets), 'title')
-    if len(applets) > 0:
-        box = pulse.html.InfoBox ('applets', pulse.utils.gettext ('Applets'))
-        columns.add_to_column (1, box)
-        for applet in applets:
-            box.add_link_box (applet)
-
-    # Libraries
-    libs = branch.select_children ('Library')
-    libs = pulse.utils.attrsorted (list(libs), 'title')
-    if len(libs) > 0:
-        box = pulse.html.InfoBox ('libraries', pulse.utils.gettext ('Libraries'))
-        columns.add_to_column (1, box)
-        for lib in libs:
-            box.add_link_box (lib)
+        box = get_info_box (branch, branchtype, boxid, title)
+        if box != None:
+            columns.add_to_column (1, box)
 
     # Documents
     box = pulse.html.InfoBox ('documents', pulse.utils.gettext ('Documents'))
@@ -300,8 +264,10 @@ def output_branch (branch, path=[], query={}, http=True, fd=None):
                                                        pulse.utils.gettext ('POT file'),
                                                        icon='download' ))
                 # FIXME: i18n reordering
-                linkspan.add_content (pulse.utils.gettext ('(%i messages)') % of.statistic)
-                linkspan.add_content (pulse.utils.gettext ('on %s') % of.datetime.strftime('%Y-%m-%d %T'))
+                linkspan.add_content (pulse.utils.gettext ('(%i messages)')
+                                      % of.statistic)
+                linkspan.add_content (pulse.utils.gettext ('on %s')
+                                      % of.datetime.strftime('%Y-%m-%d %T'))
                 missing = of.data.get ('missing', [])
                 if len(missing) > 0:
                     msg = pulse.utils.gettext('%i missing files') % len(missing)
@@ -365,11 +331,14 @@ def output_ajax_commits (branch, path=[], query={}, http=True, fd=None):
     cnt = revs.count()
     revs = revs[:20]
     if ago == 0:
-        title = pulse.utils.gettext('Showing %i of %i commits from this week:') % (len(revs), cnt)
+        title = (pulse.utils.gettext('Showing %i of %i commits from this week:')
+                 % (len(revs), cnt))
     elif ago == 1:
-        title = pulse.utils.gettext('Showing %i of %i commits from last week:') % (len(revs), cnt)
+        title = (pulse.utils.gettext('Showing %i of %i commits from last week:')
+                 % (len(revs), cnt))
     else:
-        title = pulse.utils.gettext('Showing %i of %i commits from %i weeks ago:') % (len(revs), cnt, ago)
+        title = (pulse.utils.gettext('Showing %i of %i commits from %i weeks ago:')
+                 % (len(revs), cnt, ago))
     div = get_commits_div (branch, revs, title)
     page.add_content (div)
     page.output(fd=fd)
@@ -407,6 +376,23 @@ def output_ajax_revfiles (branch, path=[], query={}, http=True, fd=None):
 
     page.output(fd=fd)
     return 0
+
+
+def get_info_box (branch, branchtype, boxid, title):
+    objs = branch.select_children (branchtype)
+    objs = pulse.utils.attrsorted (list(objs), 'title')
+    if len(objs) > 0:
+        box = pulse.html.InfoBox (boxid, title)
+        for obj in objs:
+            lbox = box.add_link_box (obj)
+            doc = db.Documentation.get_related (subj=obj)
+            try:
+                doc = doc[0]
+                lbox.add_fact (pulse.utils.gettext ('Documentaion'), doc.pred)
+            except IndexError:
+                pass
+        return box
+    return None
 
 
 def get_commits_div (branch, revs, title):

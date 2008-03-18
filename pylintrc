@@ -27,8 +27,10 @@ indent-string="    "
 
 
 [MESSAGES CONTROL]
+# W0102 complains about using [] and {} as default params
 # W0142 complains about using *args and **kw
-disable-msg=W0142
+# W0704 complains about except doing nothing but pass
+disable-msg=W0102,W0142,W0704
 
 
 [REPORTS]
