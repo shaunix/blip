@@ -18,8 +18,7 @@
 # Suite 330, Boston, MA  0211-1307  USA.
 #
 
-import math
-import os
+"""Output information about applications"""
 
 import pulse.config
 import pulse.html
@@ -27,9 +26,12 @@ import pulse.models as db
 import pulse.scm
 import pulse.utils
 
-people_cache = {}
+import pulse.pages.mod
+
+people_cache = pulse.pages.mod.people_cache
 
 def main (path=[], query={}, http=True, fd=None):
+    """Output information about applications"""
     if len(path) == 4:
         branchables = db.Branchable.objects.filter (ident=('/' + '/'.join(path)))
         try:
@@ -40,7 +42,8 @@ def main (path=[], query={}, http=True, fd=None):
             # FIXME: this is not a good place to redirect
             kw['pages'] = [('app', pulse.utils.gettext ('All Applications'))]
             page = pulse.html.PageNotFound (
-                pulse.utils.gettext ('Pulse could not find the application %s') % path[3],
+                pulse.utils.gettext ('Pulse could not find the application %s')
+                % path[3],
                 **kw)
             page.output(fd=fd)
             return 404
@@ -52,7 +55,9 @@ def main (path=[], query={}, http=True, fd=None):
             # FIXME: this is not a good place to redirect
             kw['pages'] = [('app', pulse.utils.gettext ('All Applications'))]
             page = pulse.html.PageNotFound (
-                pulse.utils.gettext ('Pulse could not find a default branch for the application %s') % path[3],
+                pulse.utils.gettext ('Pulse could not find a default branch'
+                                     ' for the application %s')
+                % path[3],
                 **kw)
             page.output(fd=fd)
             return 404
@@ -65,7 +70,8 @@ def main (path=[], query={}, http=True, fd=None):
             kw = {'http': http}
             kw['title'] = pulse.utils.gettext ('Application Not Found')
             page = pulse.html.PageNotFound (
-                (pulse.utils.gettext ('Pulse could not find the branch %s of the application %s')
+                (pulse.utils.gettext ('Pulse could not find the branch %s'
+                                      ' of the application %s')
                  % (path[4], path[3])),
                 **kw)
             page.output(fd=fd)
@@ -74,20 +80,24 @@ def main (path=[], query={}, http=True, fd=None):
         # FIXME: redirect to /set or something
         pass
 
-    return output_app (app, path, query, http, fd)
+    return output_app (app, path=path, query=query, http=http, fd=fd)
 
 
-def output_app (app, path=[], query={}, http=True, fd=None):
+def output_app (app, **kw):
+    """Output information about an application"""
+    http = kw.get ('http', True)
+    fd = kw.get ('fd', None)
     page = pulse.html.RecordPage (app, http=http)
     checkout = pulse.scm.Checkout.from_record (app, checkout=False, update=False)
 
-    branches = pulse.utils.attrsorted (list(app.branchable.branches.all()), 'scm_branch')
+    branches = pulse.utils.attrsorted (list(app.branchable.branches.all()),
+                                       'scm_branch')
     if len(branches) > 1:
-        for b in branches:
-            if b.ident != app.ident:
-                page.add_sublink (b.pulse_url, b.ident.split('/')[-1])
+        for branch in branches:
+            if branch.ident != app.ident:
+                page.add_sublink (branch.pulse_url, branch.ident.split('/')[-1])
             else:
-                page.add_sublink (None, b.ident.split('/')[-1])
+                page.add_sublink (None, branch.ident.split('/')[-1])
 
     if app.data.has_key ('screenshot'):
         page.add_screenshot (app.data['screenshot'])
@@ -103,16 +113,19 @@ def output_app (app, path=[], query={}, http=True, fd=None):
     rels = db.SetModule.get_related (pred=app.parent)
     if len(rels) > 0:
         sets = pulse.utils.attrsorted ([rel.subj for rel in rels], 'title')
-        span = pulse.html.Span (*[pulse.html.Link(set.pulse_url + '/prog', set.title) for set in sets])
+        span = [pulse.html.Link(obj.pulse_url + '/prog', obj.title) for obj in sets]
+        span = pulse.html.Span (*span)
         span.set_divider (pulse.html.BULLET)
         page.add_fact (pulse.utils.gettext ('Release Sets'), span)
         sep = True
 
     page.add_fact (pulse.utils.gettext ('Module'), pulse.html.Link (app.parent))
 
-    if sep: page.add_fact_sep ()
+    if sep:
+        page.add_fact_sep ()
     
-    page.add_fact (pulse.utils.gettext ('Location'), checkout.get_location (app.scm_dir, app.scm_file))
+    page.add_fact (pulse.utils.gettext ('Location'),
+                   checkout.get_location (app.scm_dir, app.scm_file))
 
     if app.mod_datetime != None:
         span = pulse.html.Span(divider=pulse.html.SPACE)
@@ -127,22 +140,8 @@ def output_app (app, path=[], query={}, http=True, fd=None):
     page.add_content (columns)
 
     # Developers
-    box = pulse.html.InfoBox ('developers', pulse.utils.gettext ('Developers'))
+    box = pulse.pages.mod.get_developers_box (app.parent)
     columns.add_to_column (0, box)
-    rels = db.ModuleEntity.get_related (subj=app.parent)
-    if len(rels) > 0:
-        people = {}
-        for rel in rels:
-            people[rel.pred] = rel
-            people_cache[rel.pred.id] = rel.pred
-        for person in pulse.utils.attrsorted (people.keys(), 'title'):
-            lbox = box.add_link_box (person)
-            rel = people[person]
-            if rel.maintainer:
-                lbox.add_badge ('maintainer')
-    else:
-        box.add_content (pulse.html.AdmonBox (pulse.html.AdmonBox.warning,
-                                              pulse.utils.gettext ('No developers') ))
 
     # Documentation
     rels = db.Documentation.get_related (subj=app)

@@ -82,39 +82,39 @@ def main (path=[], query={}, http=True, fd=None):
         pass
 
     if query.get('ajax', None) == 'commits':
-        return output_ajax_commits (branch, path, query, http, fd)
+        return output_ajax_commits (branch, path=path, query=query, http=http, fd=fd)
     elif query.get('ajax', None) == 'revfiles':
-        return output_ajax_revfiles (branch, path, query, http, fd)
+        return output_ajax_revfiles (branch, path=path, query=query, http=http, fd=fd)
     else:
-        return output_branch (branch, path, query, http, fd)
+        return output_module (branch, path=path, query=query, http=http, fd=fd)
 
 
-def output_branch (branch, path=[], query={}, http=True, fd=None):
-    module = branch.branchable
-    checkout = pulse.scm.Checkout.from_record (branch, checkout=False, update=False)
+def output_module (module, **kw):
+    branchable = module.branchable
+    checkout = pulse.scm.Checkout.from_record (module, checkout=False, update=False)
 
-    page = pulse.html.RecordPage (branch, http=http)
+    page = pulse.html.RecordPage (module, http=kw.get('http', True))
 
-    branches = pulse.utils.attrsorted (list(module.branches.all()), 'scm_branch')
+    branches = pulse.utils.attrsorted (list(branchable.branches.all()), 'scm_branch')
     if len(branches) > 1:
-        for b in branches:
-            if b.ident != branch.ident:
-                page.add_sublink (b.pulse_url, b.ident.split('/')[-1])
+        for branch in branches:
+            if branch.ident != module.ident:
+                page.add_sublink (branch.pulse_url, branch.ident.split('/')[-1])
             else:
-                page.add_sublink (None, b.ident.split('/')[-1])
+                page.add_sublink (None, branch.ident.split('/')[-1])
 
-    if branch.data.has_key ('screenshot'):
-        page.add_screenshot (branch.data['screenshot'])
+    if module.data.has_key ('screenshot'):
+        page.add_screenshot (module.data['screenshot'])
 
     sep = False
     try:
         page.add_fact (pulse.utils.gettext ('Description'),
-                       branch.localized_desc)
+                       module.localized_desc)
         sep = True
     except:
         pass
 
-    rels = db.SetModule.get_related (pred=branch)
+    rels = db.SetModule.get_related (pred=module)
     if len(rels) > 0:
         sets = pulse.utils.attrsorted ([rel.subj for rel in rels], 'title')
         span = pulse.html.Span (*[pulse.html.Link(set) for set in sets])
@@ -127,66 +127,56 @@ def output_branch (branch, path=[], query={}, http=True, fd=None):
 
     page.add_fact (pulse.utils.gettext ('Location'), checkout.location)
 
-    if branch.mod_datetime != None:
+    if module.mod_datetime != None:
         span = pulse.html.Span(divider=pulse.html.SPACE)
         # FIXME: i18n, word order, but we want to link person
-        span.add_content (branch.mod_datetime.strftime('%Y-%m-%d %T'))
-        if branch.mod_person != None:
+        span.add_content (module.mod_datetime.strftime('%Y-%m-%d %T'))
+        if module.mod_person != None:
             span.add_content (' by ')
-            people_cache[branch.mod_person.id] = branch.mod_person
-            span.add_content (pulse.html.Link (branch.mod_person))
+            people_cache[module.mod_person.id] = module.mod_person
+            span.add_content (pulse.html.Link (module.mod_person))
         page.add_fact (pulse.utils.gettext ('Last Modified'), span)
 
-    if branch.data.has_key ('tarname'):
+    if module.data.has_key ('tarname'):
         page.add_fact_sep ()
-        page.add_fact (pulse.utils.gettext ('Tarball Name'), branch.data['tarname'])
-    if branch.data.has_key ('tarversion'):
-        if not branch.data.has_key ('tarname'):
+        page.add_fact (pulse.utils.gettext ('Tarball Name'), module.data['tarname'])
+    if module.data.has_key ('tarversion'):
+        if not module.data.has_key ('tarname'):
             page.add_fact_sep ()
-        page.add_fact (pulse.utils.gettext ('Version'), branch.data['tarversion'])
+        page.add_fact (pulse.utils.gettext ('Version'), module.data['tarversion'])
 
     page.add_fact_sep ()
-    page.add_fact (pulse.utils.gettext ('Score'), str(branch.mod_score))
+    page.add_fact (pulse.utils.gettext ('Score'), str(module.mod_score))
 
     columns = pulse.html.ColumnBox (2)
     page.add_content (columns)
 
     # Developers
-    box = pulse.html.InfoBox ('developers', pulse.utils.gettext ('Developers'))
-    developers = db.ModuleEntity.get_related (subj=branch)
-    developers = pulse.utils.attrsorted (list(developers), ['pred', 'title'])
-    if len(developers) > 0:
-        for rel in developers:
-            lbox = box.add_link_box (rel.pred)
-            if rel.maintainer:
-                lbox.add_badge ('maintainer')
-    else:
-        box.add_content (pulse.html.AdmonBox (pulse.html.AdmonBox.warning,
-                                              pulse.utils.gettext ('No developers') ))
+    box = get_developers_box (module)
     columns.add_to_column (0, box)
 
     # Activity
     box = pulse.html.InfoBox ('activity', pulse.utils.gettext ('Activity'))
     columns.add_to_column (0, box)
-    of = db.OutputFile.objects.filter (type='graphs', ident=branch.ident, filename='commits.png')
+    of = db.OutputFile.objects.filter (type='graphs', ident=module.ident, filename='commits.png')
     try:
         of = of[0]
-        graph = pulse.html.Graph.activity_graph (of, branch.pulse_url)
+        graph = pulse.html.Graph.activity_graph (of, module.pulse_url)
         box.add_content (graph)
     except IndexError:
         pass
 
-    revs = db.Revision.select_revisions (branch=branch)
+    revs = db.Revision.select_revisions (branch=module)
     cnt = revs.count()
     revs = revs[:10]
-    div = get_commits_div (branch, revs,
+    div = get_commits_div (module, revs,
                            pulse.utils.gettext('Showing %i of %i commits:') % (len(revs), cnt))
     box.add_content (div)
 
     # Dependencies
     box = pulse.html.InfoBox ('dependencies', pulse.utils.gettext ('Dependencies'))
     columns.add_to_column (0, box)
-    deps = db.ModuleDependency.get_related (subj=branch)
+    deps = db.ModuleDependency.get_related (subj=module)
     deps = pulse.utils.attrsorted (list(deps), ['pred', 'scm_module'])
     d1 = pulse.html.Div()
     d2 = pulse.html.Div()
@@ -209,14 +199,14 @@ def output_branch (branch, path=[], query={}, http=True, fd=None):
         ('Applet', 'applets', pulse.utils.gettext ('Applets')),
         ('Library', 'libraries', pulse.utils.gettext ('Libraries')) ):
 
-        box = get_info_box (branch, branchtype, boxid, title)
+        box = get_info_box (module, branchtype, boxid, title)
         if box != None:
             columns.add_to_column (1, box)
 
     # Documents
     box = pulse.html.InfoBox ('documents', pulse.utils.gettext ('Documents'))
     columns.add_to_column (1, box)
-    docs = branch.select_children ('Document')
+    docs = module.select_children ('Document')
     docs = pulse.utils.attrsorted (list(docs), 'title')
     if len(docs) > 0:
         for doc in docs:
@@ -230,7 +220,7 @@ def output_branch (branch, path=[], query={}, http=True, fd=None):
     # Translations
     box = pulse.html.InfoBox ('translations', pulse.utils.gettext ('Translations'))
     columns.add_to_column (1, box)
-    domains = branch.select_children ('Domain')
+    domains = module.select_children ('Domain')
     domains = pulse.utils.attrsorted (list(domains), 'title')
     if len(domains) > 0:
         for domain in domains:
@@ -317,17 +307,18 @@ def output_branch (branch, path=[], query={}, http=True, fd=None):
         box.add_content (pulse.html.AdmonBox (pulse.html.AdmonBox.warning,
                                               pulse.utils.gettext ('No domains') ))
 
-    page.output(fd=fd)
+    page.output(fd=kw.get('fd', None))
 
     return 0
 
 
-def output_ajax_commits (branch, path=[], query={}, http=True, fd=None):
+def output_ajax_commits (module, **kw):
+    query = kw.get ('query', {})
     page = pulse.html.Fragment ()
     weeknum = int(query.get('weeknum', 0))
     thisweek = pulse.utils.weeknum (datetime.datetime.now())
     ago = thisweek - weeknum
-    revs = db.Revision.select_revisions (branch=branch, weeknum=weeknum)
+    revs = db.Revision.select_revisions (branch=module, weeknum=weeknum)
     cnt = revs.count()
     revs = revs[:20]
     if ago == 0:
@@ -339,29 +330,30 @@ def output_ajax_commits (branch, path=[], query={}, http=True, fd=None):
     else:
         title = (pulse.utils.gettext('Showing %i of %i commits from %i weeks ago:')
                  % (len(revs), cnt, ago))
-    div = get_commits_div (branch, revs, title)
+    div = get_commits_div (module, revs, title)
     page.add_content (div)
-    page.output(fd=fd)
+    page.output(fd=kw.get('fd', None))
     return 0
 
 
-def output_ajax_revfiles (branch, path=[], query={}, http=True, fd=None):
+def output_ajax_revfiles (module, **kw):
+    query = kw.get ('query', {})
     page = pulse.html.Fragment ()
 
-    if branch.scm_server.endswith ('/svn/'):
-        base = branch.scm_server[:-4] + 'viewvc/'
+    if module.scm_server.endswith ('/svn/'):
+        base = module.scm_server[:-4] + 'viewvc/'
         colon = base.find (':')
         if colon < 0:
-            page.output(fd=fd)
+            page.output(fd=kw.get('fd', None))
             return 404
         if base[:colon] != 'http':
             base = 'http' + base[colon:]
-        if branch.scm_path != None:
-            base += branch.scm_path
-        elif branch.scm_branch == 'trunk':
-            base += branch.scm_module + '/trunk/'
+        if module.scm_path != None:
+            base += module.scm_path
+        elif module.scm_branch == 'trunk':
+            base += module.scm_module + '/trunk/'
         else:
-            base += branch.scm_module + '/branches/' + branch.scm_branch + '/'
+            base += module.scm_module + '/branches/' + module.scm_branch + '/'
 
     revid = query.get('revid', None)
     revision = db.Revision.objects.get(id=int(revid))
@@ -374,12 +366,31 @@ def output_ajax_revfiles (branch, path=[], query={}, http=True, fd=None):
         url += '?r1=%s&r2=%s' % (file.prevrev, file.filerev)
         mlink.add_link (url, file.filename)
 
-    page.output(fd=fd)
+    page.output(fd=kw.get('fd', None))
     return 0
 
 
-def get_info_box (branch, branchtype, boxid, title):
-    objs = branch.select_children (branchtype)
+def get_developers_box (module):
+    box = pulse.html.InfoBox ('developers', pulse.utils.gettext ('Developers'))
+    rels = db.ModuleEntity.get_related (subj=module)
+    if len(rels) > 0:
+        people = {}
+        for rel in rels:
+            people[rel.pred] = rel
+            people_cache[rel.pred.id] = rel.pred
+        for person in pulse.utils.attrsorted (people.keys(), 'title'):
+            lbox = box.add_link_box (person)
+            rel = people[person]
+            if rel.maintainer:
+                lbox.add_badge ('maintainer')
+    else:
+        box.add_content (pulse.html.AdmonBox (pulse.html.AdmonBox.warning,
+                                              pulse.utils.gettext ('No developers') ))
+    return box
+
+
+def get_info_box (module, branchtype, boxid, title):
+    objs = module.select_children (branchtype)
     objs = pulse.utils.attrsorted (list(objs), 'title')
     if len(objs) > 0:
         box = pulse.html.InfoBox (boxid, title)
@@ -395,7 +406,7 @@ def get_info_box (branch, branchtype, boxid, title):
     return None
 
 
-def get_commits_div (branch, revs, title):
+def get_commits_div (module, revs, title):
     div = pulse.html.Div (id='commits')
     div.add_content (title)
     dl = pulse.html.DefinitionList()
@@ -407,7 +418,7 @@ def get_commits_div (branch, revs, title):
         curweek = rev.weeknum
         # FIXME: i18n word order
         span = pulse.html.Span (divider=pulse.html.SPACE)
-        span.add_content (rev.display_revision (branch))
+        span.add_content (rev.display_revision (module))
         span.add_content ('on')
         span.add_content (rev.datetime.strftime('%Y-%m-%d %T'))
         span.add_content ('by')
@@ -416,5 +427,5 @@ def get_commits_div (branch, revs, title):
         person = people_cache[rev.person_id]
         span.add_content (pulse.html.Link (person))
         dl.add_term (span)
-        dl.add_entry (pulse.html.PopupLink.from_revision (rev, branch=branch))
+        dl.add_entry (pulse.html.PopupLink.from_revision (rev, branch=module))
     return div
