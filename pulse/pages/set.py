@@ -18,7 +18,7 @@
 # Suite 330, Boston, MA  0211-1307  USA.
 #
 
-import os
+"""Output information about release sets"""
 
 import pulse.config
 import pulse.html
@@ -27,15 +27,17 @@ import pulse.utils
 
 people_cache = {}
 
-def main (path=[], query={}, http=True, fd=None):
+def main (path, query, http=True, fd=None):
+    """Output information about release sets"""
+    kw = {'path' : path, 'query' : query, 'http' : http, 'fd' : fd}
     if len(path) == 1:
-        return output_top (path=path, query=query, http=http, fd=fd)
+        return output_top (**kw)
     
     ident = '/' + '/'.join(path[:2])
     sets = db.ReleaseSet.objects.filter (ident=ident)
     try:
-        set = sets[0]
-        return output_set (set, path, query, http, fd)
+        rset = sets[0]
+        return output_set (rset, **kw)
     except IndexError:
         kw = {'http': http}
         kw['title'] = pulse.utils.gettext ('Set Not Found')
@@ -47,19 +49,20 @@ def main (path=[], query={}, http=True, fd=None):
         return 404
 
 
-def output_top (path=[], query={}, http=True, fd=None):
-    page = pulse.html.Page (http=http)
+def output_top (**kw):
+    """Output a page showing all release sets"""
+    page = pulse.html.Page (http=kw.get('http', True))
     page.set_title (pulse.utils.gettext ('Sets'))
     cont = pulse.html.ContainerBox ()
     page.add_content (cont)
 
     sets = db.ReleaseSet.objects.filter (parent__isnull=True)
     sets = pulse.utils.attrsorted (list(sets), 'title')
-    for set in sets:
-        lbox = cont.add_link_box (set)
+    for rset in sets:
+        lbox = cont.add_link_box (rset)
         lbox.set_show_icon (False)
         lbox.set_heading (True)
-        subsets = pulse.utils.attrsorted (set.subsets.all(), ['title'])
+        subsets = pulse.utils.attrsorted (rset.subsets.all(), ['title'])
         if len(subsets) > 0:
             setcont = pulse.html.ContainerBox ()
             setcont.set_columns (min (len(subsets), 3))
@@ -69,25 +72,27 @@ def output_top (path=[], query={}, http=True, fd=None):
                 sublbox.set_show_icon (False)
                 add_set_info (subset, sublbox)
         else:
-            add_set_info (set, lbox)
+            add_set_info (rset, lbox)
 
-    page.output(fd=fd)
+    page.output(fd=kw.get('fd'))
 
     return 0
 
 
-def output_set (set, path=[], query={}, http=True, fd=None):
-    page = pulse.html.RecordPage (set, http=http)
+def output_set (rset, **kw):
+    """Output information about a release set"""
+    path = kw.get('path', [])
+    page = pulse.html.RecordPage (rset, http=kw.get('http', True))
 
     tabbed = pulse.html.TabbedBox ()
     page.add_content (tabbed)
 
     page.set_sublinks_divider (pulse.html.TRIANGLE)
     page.add_sublink (pulse.config.web_root + 'set', pulse.utils.gettext ('Sets'))
-    for super in get_supersets (set):
-        page.add_sublink (super.pulse_url, super.title)
+    for superset in get_supersets (rset):
+        page.add_sublink (superset.pulse_url, superset.title)
 
-    subsets = pulse.utils.attrsorted (set.subsets.all(), ['title'])
+    subsets = pulse.utils.attrsorted (rset.subsets.all(), ['title'])
     if len(subsets) > 0:
         if len(path) < 3 or path[2] == 'set':
             cont = pulse.html.ContainerBox ()
@@ -99,7 +104,7 @@ def output_set (set, path=[], query={}, http=True, fd=None):
                 lbox.set_show_icon (False)
                 add_set_info (subset, lbox)
         else:
-            tabbed.add_tab (set.pulse_url + '/set',
+            tabbed.add_tab (rset.pulse_url + '/set',
                             pulse.utils.gettext ('Subsets (%i)') % len(subsets))
 
     count = False
@@ -110,12 +115,12 @@ def output_set (set, path=[], query={}, http=True, fd=None):
         count = True
 
     if count:
-        modcnt = db.SetModule.count_related (subj=set)
+        modcnt = db.SetModule.count_related (subj=rset)
         if modcnt > 0 or len(subsets) == 0:
-            tabbed.add_tab (set.pulse_url + '/mod',
+            tabbed.add_tab (rset.pulse_url + '/mod',
                             pulse.utils.gettext ('Modules (%i)') % modcnt)
     else:
-        mods = [mod.pred for mod in db.SetModule.get_related (subj=set)]
+        mods = [mod.pred for mod in db.SetModule.get_related (subj=rset)]
         mods = pulse.utils.attrsorted (mods, 'title')
         modcnt = len(mods)
         cont = pulse.html.ContainerBox ()
@@ -128,7 +133,8 @@ def output_set (set, path=[], query={}, http=True, fd=None):
         for i in range(modcnt):
             mod = mods[i]
             lbox = cont.add_link_box (mod)
-            lbox.add_graph (pulse.config.graphs_root + '/'.join(mod.ident.split('/')[1:] + ['commits.png']))
+            lbox.add_graph (pulse.config.graphs_root +
+                            '/'.join(mod.ident.split('/')[1:] + ['commits.png']) )
             span = pulse.html.Span (mod.branch_module)
             span.add_class ('module')
             lbox.add_fact (pulse.utils.gettext ('module'), pulse.html.Link (mod.pulse_url, span))
@@ -150,15 +156,16 @@ def output_set (set, path=[], query={}, http=True, fd=None):
                 lbox.add_fact (pulse.utils.gettext ('score'), span)
 
     if modcnt > 0:
-        add_more_tabs (set, tabbed, path=path, query=query)
+        add_more_tabs (rset, tabbed, path)
 
-    page.output(fd=fd)
+    page.output(fd=kw.get('fd'))
 
     return 0
 
 
-def get_supersets (set):
-    superset = set.parent
+def get_supersets (rset):
+    """Get a list of the supersets of a release set"""
+    superset = rset.parent
     if superset == None:
         return []
     else:
@@ -166,12 +173,14 @@ def get_supersets (set):
         return supers + [superset]
 
 
-def add_set_info (set, lbox):
-    cnt = db.SetModule.count_related (subj=set)
+def add_set_info (rset, lbox):
+    """Add information to a release set link box"""
+    cnt = db.SetModule.count_related (subj=rset)
     dl = pulse.html.DefinitionList ()
     lbox.add_content (dl)
     dl.add_entry (pulse.utils.gettext ('%i modules') % cnt)
-    if cnt == 0: return
+    if cnt == 0:
+        return
 
     things = (('Document', pulse.utils.gettext ('%i documents'), 'doc'),
               ('Domain', pulse.utils.gettext ('%i domains'), 'i18n'),
@@ -181,15 +190,16 @@ def add_set_info (set, lbox):
               )
     for typ, txt, ext in things:
         if isinstance (typ, tuple):
-            cnt = db.Branch.objects.filter (type__in=typ, parent__set_module_subjs__subj=set)
+            cnt = db.Branch.objects.filter (type__in=typ, parent__set_module_subjs__subj=rset)
         else:
-            cnt = db.Branch.objects.filter (type=typ, parent__set_module_subjs__subj=set)
+            cnt = db.Branch.objects.filter (type=typ, parent__set_module_subjs__subj=rset)
         cnt = cnt.count()
         if cnt > 0:
-            dl.add_entry (pulse.html.Link (set.pulse_url + '/' + ext, txt % cnt))
+            dl.add_entry (pulse.html.Link (rset.pulse_url + '/' + ext, txt % cnt))
 
 
-def add_more_tabs (set, tabbed, path=[], query={}):
+def add_more_tabs (rset, tabbed, path):
+    """Add various tabs to a release set page"""
     things = ({ 'types'  : 'Document',
                 'subs'   : ('*', 'gtk-doc'),
                 'tabtxt' : pulse.utils.gettext ('Documents (%i)'),
@@ -212,36 +222,37 @@ def add_more_tabs (set, tabbed, path=[], query={}):
                 'tabtxt' : pulse.utils.gettext ('Libraries (%i)'),
                 'tabext' : 'lib' }
               )
-    for d in things:
-        types = d['types']
-        graphs = d.get ('graphs', False)
-        if len(path) > 2 and path[2] == d['tabext']:
+    for thing in things:
+        types = thing['types']
+        graphs = thing.get ('graphs', False)
+        if len(path) > 2 and path[2] == thing['tabext']:
             if isinstance (types, tuple):
                 pad = pulse.html.PaddingBox()
                 tabbed.add_content (pad)
                 sections = []
                 for i in range(len(types)):
-                    objs = db.Branch.objects.filter (type=types[i], parent__set_module_subjs__subj=set)
+                    objs = db.Branch.objects.filter (type=types[i],
+                                                     parent__set_module_subjs__subj=rset)
                     objs = pulse.utils.attrsorted (list(objs), 'title')
-                    cont = pulse.html.ContainerBox (id=d['exts'][i],
-                                                    title=d['txts'][i] % len(objs))
+                    cont = pulse.html.ContainerBox (id=thing['exts'][i],
+                                                    title=thing['txts'][i] % len(objs))
                     if not graphs:
                         cont.set_columns (2)
                     pad.add_content (cont)
                     sections.append ((objs, cont))
-            elif d.has_key ('subs'):
+            elif thing.has_key ('subs'):
                 pad = pulse.html.PaddingBox()
                 tabbed.add_content (pad)
                 s = {}
-                subs = d['subs']
+                subs = thing['subs']
                 for i in range(len(subs)):
                     sub = subs[i]
-                    cont = pulse.html.ContainerBox (id=d['exts'][i])
+                    cont = pulse.html.ContainerBox (id=thing['exts'][i])
                     if not graphs:
                         cont.set_columns (2)
                     pad.add_content (cont)
                     s[sub] = ([], cont)
-                objs = db.Branch.objects.filter (type=types, parent__set_module_subjs__subj=set)
+                objs = db.Branch.objects.filter (type=types, parent__set_module_subjs__subj=rset)
                 objs = pulse.utils.attrsorted (list(objs), 'title')
                 for obj in objs:
                     stype = obj.subtype
@@ -252,10 +263,10 @@ def add_more_tabs (set, tabbed, path=[], query={}):
                 sections = []
                 for i in range(len(subs)):
                     sub = subs[i]
-                    s[sub][1].set_title (d['txts'][i] % len(s[sub][0]))
+                    s[sub][1].set_title (thing['txts'][i] % len(s[sub][0]))
                     sections.append (s[sub])
             else:
-                objs = db.Branch.objects.filter (type=types, parent__set_module_subjs__subj=set)
+                objs = db.Branch.objects.filter (type=types, parent__set_module_subjs__subj=rset)
                 objs = pulse.utils.attrsorted (list(objs), 'title')
                 cont = pulse.html.ContainerBox ()
                 if not graphs:
@@ -277,7 +288,8 @@ def add_more_tabs (set, tabbed, path=[], query={}):
                     if graphs:
                         if isinstance (graphs, tuple):
                             for graph in graphs:
-                                lbox.add_graph (pulse.config.graphs_root + obj.ident[1:] + '/' + graph)
+                                lbox.add_graph (pulse.config.graphs_root +
+                                                obj.ident[1:] + '/' + graph)
                         else:
                             lbox.add_graph (pulse.config.graphs_root + obj.ident[1:] + '/' + graphs)
                     if obj.error != None:
@@ -347,13 +359,15 @@ def add_more_tabs (set, tabbed, path=[], query={}):
                     cont.add_sort_link ('docs', pulse.utils.gettext ('docs'))
                 if slink_messages:
                     cont.add_sort_link ('messages', pulse.utils.gettext ('messages'))
-            tabbed.add_tab (True, d['tabtxt'] % total)
+            tabbed.add_tab (True, thing['tabtxt'] % total)
         else:
             if isinstance (types, tuple):
-                objs = db.Branch.objects.filter (type__in=types, parent__set_module_subjs__subj=set)
+                objs = db.Branch.objects.filter (type__in=types,
+                                                 parent__set_module_subjs__subj=rset)
             else:
-                objs = db.Branch.objects.filter (type=types, parent__set_module_subjs__subj=set)
+                objs = db.Branch.objects.filter (type=types,
+                                                 parent__set_module_subjs__subj=rset)
             cnt = objs.count()
             if cnt > 0:
-                tabbed.add_tab (set.pulse_url + '/' + d['tabext'],
-                                d['tabtxt'] % cnt)
+                tabbed.add_tab (rset.pulse_url + '/' + thing['tabext'],
+                                thing['tabtxt'] % cnt)

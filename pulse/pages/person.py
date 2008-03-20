@@ -28,10 +28,11 @@ import pulse.models as db
 import pulse.scm
 import pulse.utils
 
-def main (path=[], query={}, http=True, fd=None):
+def main (path, query, http=True, fd=None):
     person = None
+    kw = {'path' : path, 'query' : query, 'http' : http, 'fd' : fd}
     if len(path) == 1:
-        return output_top (path, query, http, fd)
+        return output_top (**kw)
     person = db.Entity.objects.filter (ident=('/' + '/'.join(path)), type='Person')
     try:
         person = person[0]
@@ -47,26 +48,27 @@ def main (path=[], query={}, http=True, fd=None):
         return 404
 
     if query.get('ajax', None) == 'commits':
-        return output_ajax_commits (person, path, query, http, fd)
+        return output_ajax_commits (person, **kw)
     else:
-        return output_person (person, path, query, http, fd)
+        return output_person (person, **kw)
 
 
-def output_top (path=[], query={}, http=True, fd=None):
-    page = pulse.html.Page (http=http)
+def output_top (**kw):
+    page = pulse.html.Page (http=kw.get('http', True))
     page.set_title (pulse.utils.gettext ('People'))
     people = db.Entity.objects.filter (type='Person').order_by ('-mod_score')
     page.add_content(pulse.html.Div(pulse.utils.gettext('42 most active people:')))
     for person in people[:42]:
         lbox = pulse.html.LinkBox (person)
         lbox.add_fact (pulse.utils.gettext ('score'), str(person.mod_score))
-        lbox.add_graph (pulse.config.graphs_root + '/'.join(person.ident.split('/')[1:] + ['commits.png']))
+        lbox.add_graph (pulse.config.graphs_root
+                        + '/'.join(person.ident.split('/')[1:] + ['commits.png']))
         page.add_content (lbox)
-    page.output (fd=fd)
+    page.output (fd=kw.get('fd'))
 
 
-def output_person (person, path=[], query={}, http=True, fd=None):
-    page = pulse.html.RecordPage (person, http=http)
+def output_person (person, **kw):
+    page = pulse.html.RecordPage (person, http=kw.get('http', True))
 
     if person.nick != None:
         page.add_fact (pulse.utils.gettext ('Nick'), person.nick)
@@ -124,13 +126,14 @@ def output_person (person, path=[], query={}, http=True, fd=None):
             brs.append (doc.branchable_id)
             docbox.add_link_box (doc)
 
-    page.output(fd=fd)
+    page.output(fd=kw.get('fd'))
 
     return 0
 
 
-def output_ajax_commits (person, path=[], query={}, http=True, fd=None):
-    page = pulse.html.Fragment ()
+def output_ajax_commits (person, **kw):
+    page = pulse.html.Fragment (http=kw.get('http', True))
+    query = kw.get('query', {})
     weeknum = int(query.get('weeknum', 0))
     thisweek = pulse.utils.weeknum (datetime.datetime.now())
     ago = thisweek - weeknum
@@ -145,7 +148,7 @@ def output_ajax_commits (person, path=[], query={}, http=True, fd=None):
         title = pulse.utils.gettext('Showing %i of %i commits from %i weeks ago:') % (len(revs), cnt, ago)
     div = get_commits_div (person, revs, title)
     page.add_content (div)
-    page.output(fd=fd)
+    page.output(fd=kw.get('fd'))
     return 0
 
 

@@ -18,6 +18,8 @@
 # Suite 330, Boston, MA  0211-1307  USA.
 #
 
+"""Output information about documents"""
+
 import datetime
 import math
 import os
@@ -31,7 +33,8 @@ import pulse.utils
 
 people_cache = {}
 
-def main (path=[], query={}, http=True, fd=None):
+def main (path, query, http=True, fd=None):
+    """Output information about documents"""
     if len(path) == 4:
         branchables = db.Branchable.objects.filter (ident=('/' + '/'.join(path)))
         try:
@@ -54,7 +57,9 @@ def main (path=[], query={}, http=True, fd=None):
             # FIXME: this is not a good place to redirect
             kw['pages'] = [('mod', pulse.utils.gettext ('All Modules'))]
             page = pulse.html.PageNotFound (
-                pulse.utils.gettext ('Pulse could not find a default branch for the document %s') % path[3],
+                pulse.utils.gettext ('Pulse could not find a default branch'
+                                     ' for the document %s')
+                % path[3],
                 **kw)
             page.output(fd=fd)
             return 404
@@ -67,7 +72,8 @@ def main (path=[], query={}, http=True, fd=None):
             kw = {'http': http}
             kw['title'] = pulse.utils.gettext ('Document Not Found')
             page = pulse.html.PageNotFound (
-                pulse.utils.gettext ('Pulse could not find the branch %s of the document %s') % (path[4], path[3]),
+                pulse.utils.gettext ('Pulse could not find the branch %s of the document %s')
+                % (path[4], path[3]),
                 **kw)
             page.output(fd=fd)
             return 404
@@ -75,25 +81,27 @@ def main (path=[], query={}, http=True, fd=None):
         # FIXME: redirect to /set or something
         pass
 
+    kw = {'path' : path, 'query' : query, 'http' : http, 'fd' : fd}
     if query.get('ajax', None) == 'commits':
-        return output_ajax_commits (doc, path, query, http, fd)
+        return output_ajax_commits (doc, **kw)
     elif query.get('ajax', None) == 'xmlfiles':
-        return output_ajax_xmlfiles (doc, path, query, http, fd)
+        return output_ajax_xmlfiles (doc, **kw)
     else:
-        return output_doc (doc, path, query, http, fd)
+        return output_doc (doc, **kw)
 
 
-def output_doc (doc, path=[], query={}, http=True, fd=None):
-    page = pulse.html.RecordPage (doc, http=http)
+def output_doc (doc, **kw):
+    """Output information about a document"""
+    page = pulse.html.RecordPage (doc, http=kw.get('http', True))
     checkout = pulse.scm.Checkout.from_record (doc, checkout=False, update=False)
 
     branches = pulse.utils.attrsorted (list(doc.branchable.branches.all()), 'scm_branch')
     if len(branches) > 1:
-        for b in branches:
-            if b.ident != doc.ident:
-                page.add_sublink (b.pulse_url, b.ident.split('/')[-1])
+        for branch in branches:
+            if branch.ident != doc.ident:
+                page.add_sublink (branch.pulse_url, branch.ident.split('/')[-1])
             else:
-                page.add_sublink (None, b.ident.split('/')[-1])
+                page.add_sublink (None, branch.ident.split('/')[-1])
 
     if doc.data.has_key ('screenshot'):
         page.add_screenshot (doc.data['screenshot'])
@@ -114,7 +122,8 @@ def output_doc (doc, path=[], query={}, http=True, fd=None):
     rels = db.SetModule.get_related (pred=doc.parent)
     if len(rels) > 0:
         sets = pulse.utils.attrsorted ([rel.subj for rel in rels], 'title')
-        span = pulse.html.Span (*[pulse.html.Link(set.pulse_url + '/doc', set.title) for set in sets])
+        span = pulse.html.Span (*[pulse.html.Link(rset.pulse_url + '/doc', rset.title)
+                                  for rset in sets])
         span.set_divider (pulse.html.BULLET)
         page.add_fact (pulse.utils.gettext ('Release Sets'), span)
         sep = True
@@ -129,9 +138,11 @@ def output_doc (doc, path=[], query={}, http=True, fd=None):
         page.add_fact (pulse.utils.gettext ('Describes'), span)
         sep = True
 
-    if sep: page.add_fact_sep ()
+    if sep:
+        page.add_fact_sep ()
     
-    page.add_fact (pulse.utils.gettext ('Location'), checkout.get_location (doc.scm_dir, doc.scm_file))
+    page.add_fact (pulse.utils.gettext ('Location'),
+                   checkout.get_location (doc.scm_dir, doc.scm_file))
 
     if doc.mod_datetime != None:
         span = pulse.html.Span(divider=pulse.html.SPACE)
@@ -200,7 +211,8 @@ def output_doc (doc, path=[], query={}, http=True, fd=None):
         jslink += '\'%s%s?ajax=xmlfiles\'' % (pulse.config.web_root, doc.ident[1:])
         jslink += ')'
         div.add_content (pulse.html.Link (jslink,
-                                          pulse.utils.gettext ('View all %i files') % len(xmlfiles)))
+                                          pulse.utils.gettext ('View all %i files')
+                                          % len(xmlfiles)))
     else:
         div = get_xmlfiles (doc, xmlfiles)
     box.add_content (div)
@@ -261,7 +273,6 @@ def output_doc (doc, path=[], query={}, http=True, fd=None):
             row.append (pulse.utils.gettext ('%i.%i.%i') %
                         (stat1, stat2, untranslated))
             istat1 = translation.ImageMessages_stat1
-            istat2 = translation.ImageMessages_stat2
             itotal = translation.ImageMessages_total
             span = pulse.html.Span(str(istat1))
             span.add_class ('img')
@@ -274,21 +285,22 @@ def output_doc (doc, path=[], query={}, http=True, fd=None):
             elif percent >= 50:
                 grid.add_row_class (idx, 'po50')
 
-    page.output(fd=fd)
+    page.output(fd=kw.get('fd'))
 
     return 0
 
 
-def output_ajax_xmlfiles (doc, path=[], query={}, http=True, fd=None):
-    page = pulse.html.Fragment ()
+def output_ajax_xmlfiles (doc, **kw):
+    page = pulse.html.Fragment (http=kw.get('http', True))
     xmlfiles = doc.data.get('xmlfiles', [])
     page.add_content (get_xmlfiles (doc, xmlfiles))
-    page.output(fd=fd)
+    page.output(fd=kw.get('fd'))
     return 0
 
 
-def output_ajax_commits (doc, path=[], query={}, http=True, fd=None):
-    page = pulse.html.Fragment ()
+def output_ajax_commits (doc, **kw):
+    page = pulse.html.Fragment (http=kw.get('http', True))
+    query = kw.get('query', {})
     weeknum = int(query.get('weeknum', 0))
     thisweek = pulse.utils.weeknum (datetime.datetime.now())
     ago = thisweek - weeknum
@@ -297,14 +309,17 @@ def output_ajax_commits (doc, path=[], query={}, http=True, fd=None):
     cnt = revs.count()
     revs = revs[:20]
     if ago == 0:
-        title = pulse.utils.gettext('Showing %i of %i commits from this week:') % (len(revs), cnt)
+        title = (pulse.utils.gettext('Showing %i of %i commits from this week:')
+                 % (len(revs), cnt))
     elif ago == 1:
-        title = pulse.utils.gettext('Showing %i of %i commits from last week:') % (len(revs), cnt)
+        title = (pulse.utils.gettext('Showing %i of %i commits from last week:')
+                 % (len(revs), cnt))
     else:
-        title = pulse.utils.gettext('Showing %i of %i commits from %i weeks ago:') % (len(revs), cnt, ago)
+        title = (pulse.utils.gettext('Showing %i of %i commits from %i weeks ago:')
+                 % (len(revs), cnt, ago))
     div = get_commits_div (doc, revs, title)
     page.add_content (div)
-    page.output(fd=fd)
+    page.output(fd=kw.get('fd'))
     return 0
 
 

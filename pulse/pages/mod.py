@@ -30,7 +30,7 @@ import pulse.utils
 
 people_cache = {}
 
-def main (path=[], query={}, http=True, fd=None):
+def main (path, query, http=True, fd=None):
     if len(path) == 3:
         branchables = db.Branchable.objects.filter(ident=('/' + '/'.join(path)))
         try:
@@ -73,7 +73,8 @@ def main (path=[], query={}, http=True, fd=None):
             else:
                 kw['pages'] = []
             page = pulse.html.PageNotFound (
-                pulse.utils.gettext ('Pulse could not find the branch %s of the module %s') % (path[3], path[2]),
+                pulse.utils.gettext ('Pulse could not find the branch %s of the module %s')
+                % (path[3], path[2]),
                 **kw)
             page.output(fd=fd)
             return 404
@@ -81,12 +82,13 @@ def main (path=[], query={}, http=True, fd=None):
         # FIXME: redirect to /set or something
         pass
 
+    kw = {'path' : path, 'query' : query, 'http' : http, 'fd' : fd}
     if query.get('ajax', None) == 'commits':
-        return output_ajax_commits (branch, path=path, query=query, http=http, fd=fd)
+        return output_ajax_commits (branch, **kw)
     elif query.get('ajax', None) == 'revfiles':
-        return output_ajax_revfiles (branch, path=path, query=query, http=http, fd=fd)
+        return output_ajax_revfiles (branch, **kw)
     else:
-        return output_module (branch, path=path, query=query, http=http, fd=fd)
+        return output_module (branch, **kw)
 
 
 def output_module (module, **kw):
@@ -117,7 +119,7 @@ def output_module (module, **kw):
     rels = db.SetModule.get_related (pred=module)
     if len(rels) > 0:
         sets = pulse.utils.attrsorted ([rel.subj for rel in rels], 'title')
-        span = pulse.html.Span (*[pulse.html.Link(set) for set in sets])
+        span = pulse.html.Span (*[pulse.html.Link(rset) for rset in sets])
         span.set_divider (pulse.html.BULLET)
         page.add_fact (pulse.utils.gettext ('Release Sets'), span)
         sep = True
@@ -307,14 +309,14 @@ def output_module (module, **kw):
         box.add_content (pulse.html.AdmonBox (pulse.html.AdmonBox.warning,
                                               pulse.utils.gettext ('No domains') ))
 
-    page.output(fd=kw.get('fd', None))
+    page.output(fd=kw.get('fd'))
 
     return 0
 
 
 def output_ajax_commits (module, **kw):
     query = kw.get ('query', {})
-    page = pulse.html.Fragment ()
+    page = pulse.html.Fragment (http=kw.get('http', True))
     weeknum = int(query.get('weeknum', 0))
     thisweek = pulse.utils.weeknum (datetime.datetime.now())
     ago = thisweek - weeknum
@@ -332,19 +334,19 @@ def output_ajax_commits (module, **kw):
                  % (len(revs), cnt, ago))
     div = get_commits_div (module, revs, title)
     page.add_content (div)
-    page.output(fd=kw.get('fd', None))
+    page.output(fd=kw.get('fd'))
     return 0
 
 
 def output_ajax_revfiles (module, **kw):
     query = kw.get ('query', {})
-    page = pulse.html.Fragment ()
+    page = pulse.html.Fragment (http=kw.get('http', True))
 
     if module.scm_server.endswith ('/svn/'):
         base = module.scm_server[:-4] + 'viewvc/'
         colon = base.find (':')
         if colon < 0:
-            page.output(fd=kw.get('fd', None))
+            page.output(fd=kw.get('fd'))
             return 404
         if base[:colon] != 'http':
             base = 'http' + base[colon:]
@@ -366,7 +368,7 @@ def output_ajax_revfiles (module, **kw):
         url += '?r1=%s&r2=%s' % (file.prevrev, file.filerev)
         mlink.add_link (url, file.filename)
 
-    page.output(fd=kw.get('fd', None))
+    page.output(fd=kw.get('fd'))
     return 0
 
 

@@ -83,11 +83,11 @@ def main ():
     else:
         if not http:
             mod = pulse.utils.import_ ('pulse.pages.' + path[0])
-            retcode = mod.main (path=path, query=query, http=http, fd=fd)
+            retcode = mod.main (path, query, http=http, fd=fd)
         else:
             try:
                 mod = pulse.utils.import_ ('pulse.pages.' + path[0])
-                retcode =  mod.main (path=path, query=query, http=http, fd=fd)
+                retcode =  mod.main (path, query, http=http, fd=fd)
             except:
                 kw = {'http': http}
                 kw['title'] = pulse.utils.gettext ('Bad Monkeys')

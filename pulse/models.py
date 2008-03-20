@@ -26,7 +26,6 @@ import sys
 import time
 
 os.environ['DJANGO_SETTINGS_MODULE'] = 'pulse.config'
-from django.core import validators
 import django.db
 import django.db.backends.util
 from django.db import models
@@ -676,7 +675,7 @@ class Revision (models.Model):
         sel = cls.objects.filter (**kw)
         if files != None and len(files) > 0:
             where = '(SELECT COUNT(*) FROM RevisionFile where revision_id = Revision.id AND filename IN ('
-            where += ','.join(['%s' for f in files])
+            where += ','.join(['%s'] * len(files))
             where += ')) > 0'
             sel = sel.extra (where=[where], params=files)
         return sel.order_by ('-datetime')

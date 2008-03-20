@@ -30,7 +30,7 @@ import pulse.pages.mod
 
 people_cache = pulse.pages.mod.people_cache
 
-def main (path=[], query={}, http=True, fd=None):
+def main (path, query, http=True, fd=None):
     """Output information about applications"""
     if len(path) == 4:
         branchables = db.Branchable.objects.filter (ident=('/' + '/'.join(path)))
@@ -85,9 +85,7 @@ def main (path=[], query={}, http=True, fd=None):
 
 def output_app (app, **kw):
     """Output information about an application"""
-    http = kw.get ('http', True)
-    fd = kw.get ('fd', None)
-    page = pulse.html.RecordPage (app, http=http)
+    page = pulse.html.RecordPage (app, http=kw.get('http', True))
     checkout = pulse.scm.Checkout.from_record (app, checkout=False, update=False)
 
     branches = pulse.utils.attrsorted (list(app.branchable.branches.all()),
@@ -157,6 +155,6 @@ def output_app (app, **kw):
         box.add_content (pulse.html.AdmonBox (pulse.html.AdmonBox.warning,
                                               pulse.utils.gettext ('No documentation') ))
 
-    page.output(fd=fd)
+    page.output(fd=kw.get('fd'))
 
     return 0

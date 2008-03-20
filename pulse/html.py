@@ -119,6 +119,8 @@ class SublinksComponent (Component):
     Sublinks are a list of links found under the title of a widget.  They
     may provide alternate pages or a heirarchy of parent pages, depending
     on context.  The ouput method will create the sublinks.
+
+    FIXME: document **kw
     """
 
     def __init__ (self, **kw):
@@ -205,6 +207,8 @@ class SortableComponent (Component):
     Component for widgets that have sortable content
 
     The output method will create the link bar for sorting the content.
+
+    FIXME: document **kw
     """
 
     def __init__ (self, *args, **kw):
@@ -258,6 +262,8 @@ class LinkBoxesComponent (Component):
 
     This provides a convenience routine for adding link boxes, and can
     display the link boxes in multiple columns.
+
+    FIXME: document **kw
     """
 
     def __init__ (self, **kw):
@@ -266,11 +272,13 @@ class LinkBoxesComponent (Component):
         self._columns = kw.get('columns', 1)
 
     def add_link_box (self, *args, **kw):
+        """Add a link box"""
         lbox = LinkBox (*args, **kw)
         self._boxes.append (lbox)
         return lbox
 
     def set_columns (self, columns):
+        """Set the number of columns"""
         self._columns = columns
 
     def output (self, fd=sys.stdout):
@@ -306,6 +314,8 @@ class HttpComponent (Component):
     Widgets using this component are generally top-level that are not added to
     any other widgets.  The output method will generate the HTTP headers, if the
     http paramater has not been set to False.
+
+    FIXME: document **kw
     """
 
     def __init__ (self, **kw):
@@ -334,6 +344,8 @@ class Page (Widget, HttpComponent, ContentComponent):
     The output method creates all the standard HTML for the top and bottom
     of the page, and call output_page_content in between.  Subclasses should
     override output_page_content.
+
+    FIXME: document **kw
     """
 
     def __init__ (self, **kw):
@@ -343,12 +355,22 @@ class Page (Widget, HttpComponent, ContentComponent):
         self._screenshot_file = None
 
     def set_title (self, title):
+        """Set the title of the page"""
         self._title = title
 
     def set_icon (self, icon):
+        """Set the icon URL of the page"""
         self._icon = icon
 
     def add_screenshot (self, screenshot):
+        """
+        Add a screenshot to the page
+
+        The screenshot argument is expected to be a dictionary which maps
+        language codes to integer IDs, where the IDs are the id attribute
+        of an OutputFile.  Information such as height, width, and thumbnail
+        are retreived from the OutputFile.
+        """
         try:
             # FIXME: i18n
             screen = screenshot['C']
@@ -408,6 +430,7 @@ class Page (Widget, HttpComponent, ContentComponent):
         p (fd, '</div></body></html>')
         
     def output_page_content (self, fd=sys.stdout):
+        """Output the contents of the page"""
         ContentComponent.output (self, fd=fd)
 
 
@@ -443,6 +466,7 @@ class RecordPage (Page, SublinksComponent, FactsComponent):
         super (RecordPage, self).__init__ (**kw)
 
     def output_page_content (self, fd=sys.stdout):
+        """Output the contents of the page"""
         SublinksComponent.output (self, fd=fd)
         FactsComponent.output (self, fd=fd)
         Page.output_page_content (self, fd=fd)
@@ -450,7 +474,9 @@ class RecordPage (Page, SublinksComponent, FactsComponent):
 
 class PageNotFound (Page):
     """
-    A 404 page.
+    A page for when an object is not found
+
+    FIXME: document **kw
     """
 
     def __init__ (self, message, **kw):
@@ -460,6 +486,7 @@ class PageNotFound (Page):
         self._message = message
 
     def output_page_content (self, fd=sys.stdout):
+        """Output the contents of the page"""
         p (fd, '<div class="notfound">')
         p (fd, '<div class="message">%s</div>', self._message)
         if len(self._pages) > 0:
@@ -476,7 +503,9 @@ class PageNotFound (Page):
 
 class PageError (Page):
     """
-    A 500 page.
+    A page for when an error has occurred
+
+    FIXME: document **kw
     """
 
     def __init__ (self, message, **kw):
@@ -486,6 +515,7 @@ class PageError (Page):
         self._message = message
     
     def output_page_content (self, fd=sys.stdout):
+        """Output the contents of the page"""
         p (fd, '<div class="servererror">')
         p (fd, '<div class="message">%s</div>', self._message)
         p (fd, '</div>')
@@ -496,9 +526,15 @@ class PageError (Page):
 ## Boxes
 
 class InfoBox (Widget, ContentComponent, LinkBoxesComponent):
-    def __init__ (self, id, title, **kw):
+    """
+    A box containing information
+
+    An info box is a framed and titled box that contains various related bits
+    of information.  Most pages are constructed primarily of info boxes.
+    """
+    def __init__ (self, boxid, title, **kw):
         super (InfoBox, self).__init__ (**kw)
-        self._id = id
+        self._id = boxid
         self._title = title
 
     def output (self, fd=sys.stdout):
@@ -516,6 +552,17 @@ class InfoBox (Widget, ContentComponent, LinkBoxesComponent):
 
 
 class ContainerBox (Widget, SortableComponent, ContentComponent, LinkBoxesComponent):
+    """
+    An all-purpose container box
+
+    A container box wraps arbitrary content with various useful things.
+    If a title has been set, a container box will allow the box to be
+    expanded and collapsed.  If sort links have been added, a sort link
+    bar will be output.
+
+    FIXME: document **kw
+    """
+
     def __init__ (self, **kw):
         self._id = kw.get('id', None)
         self._title = kw.get('title', None)
@@ -524,18 +571,27 @@ class ContainerBox (Widget, SortableComponent, ContentComponent, LinkBoxesCompon
         super (ContainerBox, self).__init__ (**kw)
 
     def add_link_box (self, *args, **kw):
+        """
+        Add a link box
+
+        This overrides the same method from LinkBoxesComponent to call
+        add_class on the added link box, allowing the link boxes to be
+        resorted.
+        """
         lbox = LinkBoxesComponent.add_link_box (self, *args, **kw)
         scls = self.get_sortable_class()
         if scls != None:
             lbox.add_class (scls)
         return lbox
 
-    def set_id (self, id):
+    def set_id (self, boxid):
+        """Set the id of the container"""
         if self.get_sortable_class() == None:
-            self.set_sortable_class (id)
-        self._id = id
+            self.set_sortable_class (boxid)
+        self._id = boxid
 
     def set_title (self, title):
+        """Set the title of the container"""
         self._title = title
 
     def output (self, fd=sys.stdout):
@@ -575,6 +631,15 @@ class ContainerBox (Widget, SortableComponent, ContentComponent, LinkBoxesCompon
 
 
 class LinkBox (Widget, FactsComponent, ContentComponent):
+    """
+    A block-level link to an object with optional extra information
+
+    Link boxes display a link to some object, optionally including an icon,
+    a graph, and a fact table.
+
+    FIXME: document **kw
+    """
+
     def __init__ (self, *args, **kw):
         super (LinkBox, self).__init__ (**kw)
         self._url = self._title = self._icon = self._desc = None
@@ -709,7 +774,7 @@ class GridBox (Widget):
             return
         cls = ' '.join(['grid'] + self._classes)
         p (fd, '<table class="%s">', cls)
-        cols = max (map (lambda x: len(x['data']), self._rows))
+        cols = max ([len(x['data']) for x in self._rows])
         for row in self._rows:
             cls = row.get('classes', None)
             if cls != None:
@@ -841,6 +906,10 @@ class Rule (Widget):
 
 
 class Graph (Widget):
+    """
+    A generated graph with optional comments
+    """
+
     _count = 0
 
     def __init__ (self, url, **kw):
@@ -849,6 +918,13 @@ class Graph (Widget):
         self._comments = []
 
     def add_comment (self, coords, comment, href=None):
+        """
+        Add a comment to the graph
+
+        Comments are displayed as tooltips when the user hovers over the
+        area defined by coords.  If the href argument is not None, that
+        area will be a link to href.
+        """
         self._comments.append ((coords, comment, href))
 
     def output (self, fd=sys.stdout):
@@ -883,9 +959,10 @@ class Graph (Widget):
 
     @classmethod
     def activity_graph (cls, of, url):
+        """A convenience constructor to make a graph from an OutputFile"""
         graph = cls (of.pulse_url)
         thisweek = pulse.utils.weeknum (datetime.datetime.now())
-        for (c, tot, weeknum) in of.data.get ('coords', []):
+        for (coords, tot, weeknum) in of.data.get ('coords', []):
             ago = thisweek - weeknum
             if ago == 0:
                 cmt = pulse.utils.gettext ('this week: %i commits') % tot
@@ -895,11 +972,19 @@ class Graph (Widget):
                 cmt = pulse.utils.gettext ('%i weeks ago: %i commits') % (ago, tot)
             jslink = 'javascript:replace(\'commits\', '
             jslink += '\'%s?ajax=commits&weeknum=%i\')' % (url, weeknum)
-            graph.add_comment (c, cmt, jslink)
+            graph.add_comment (coords, cmt, jslink)
         return graph
 
 
 class EllipsizedLabel (Widget):
+    """
+    A text label that gets ellipsized if it exceeds a certain length
+
+    The constructor takes a string and a maximum length.  If the string is
+    longer than the maximum length, it will be cut on a word boundary, and
+    a (more) link will be inserted to show the remaining text.
+    """
+    
     def __init__ (self, label, size, **kw):
         super (EllipsizedLabel, self).__init__ (**kw)
         self._label = label
@@ -909,7 +994,8 @@ class EllipsizedLabel (Widget):
         """Output the HTML"""
         if len (self._label) > self._size:
             i = self._size - 10
-            if i <= 0: i = self._size
+            if i <= 0:
+                i = self._size
             while i < len(self._label):
                 if self._label[i] == ' ':
                     break
@@ -917,13 +1003,13 @@ class EllipsizedLabel (Widget):
             if i == len(self._label):
                 p (fd, None, self._label)
             else:
-                id = md5.md5(self._label).hexdigest()[:6]
+                hexid = md5.md5(self._label).hexdigest()[:6]
                 p (fd, None, self._label[:i])
                 p (fd, ('<span class="elliplnk" id="elliplnk-%s">('
                         '<a href="javascript:ellip(\'%s\')">%s</a>)</span>'),
-                   (id, id, pulse.utils.gettext ('more')))
+                   (hexid, hexid, pulse.utils.gettext ('more')))
                 p (fd, '<span class="elliptxt" id="elliptxt-%s">%s</span>',
-                   (id, self._label[i+1:]))
+                   (hexid, self._label[i+1:]))
         else:
             p (fd, None, self._label)
 
@@ -931,10 +1017,10 @@ class EllipsizedLabel (Widget):
 class MenuLink (Widget):
     _count = 0
 
-    def __init__ (self, id, txt=None, **kw):
+    def __init__ (self, boxid, txt=None, **kw):
         self._menu_only = kw.pop ('menu_only', False)
         super (MenuLink, self).__init__ (**kw)
-        self._id = id
+        self._id = boxid
         self._txt = txt
         self._links = []
         self._menu_url = None
@@ -1021,14 +1107,15 @@ class PopupLink (Widget):
                 elif datere.match(line):
                     maybe = line
                 else:
-                    cm = colonre.match(line)
-                    if cm:
-                        line = cm.group(1).strip()
+                    cmatch = colonre.match(line)
+                    if cmatch:
+                        line = cmatch.group(1).strip()
                         if line != '':
                             break
                     else:
                         break
-            if line == '': line = maybe
+            if line == '':
+                line = maybe
             if len(line) > 40:
                 i = 30
                 while i < len(line):
@@ -1159,41 +1246,69 @@ class Link (Widget):
 ################################################################################
 ## Utility Functions
 
-def p (fd, s, arg=None, nl=True):
+def p (fd, obj, arg=None, newline=True):
+    """
+    Generalized thing printer
+
+    This function is used to print widgets, components, and plain old strings
+    in a consistent manner that avoids littering the rest of the code with a
+    bunch of conditionals.
+
+    A widget or component can be printed by passing it in as the obj argument,
+    or by passing None for obj and passing the object in as the arg argument.
+
+    If obj is a string and arg is None, obj is simply printed.  If arg is not
+    None, it is interpolated in, except all substituted values are escaped to
+    be safe for HTML.  Note that obj itself is not escaped, since that is used
+    to print the actual HTML.  If obj is None, it is treated as "%s".
+
+    String printing can suppress a trailing newline by passing in False for
+    the newline argument.
+    """
     if fd == None:
         fd = sys.stdout
-    if isinstance (s, Widget) or isinstance (s, Component):
-        s.output (fd=fd)
-    elif s == None and (isinstance (arg, Widget) or isinstance (arg, Component)):
+    if isinstance (obj, Widget) or isinstance (obj, Component):
+        obj.output (fd=fd)
+    elif obj == None and (isinstance (arg, Widget) or isinstance (arg, Component)):
         arg.output (fd=fd)
     else:
-        if s == None:
+        if obj == None:
             outstr = esc(arg)
         elif arg == None:
-            outstr = s
+            outstr = obj
         else:
-            outstr = s % esc(arg)
-        if nl:
+            outstr = obj % esc(arg)
+        if newline:
             outstr += '\n'
         try:
             fd.write(outstr.encode('utf-8'))
         except:
             fd.write(outstr)
 
-def esc (s):
-    if isinstance (s, basestring):
-        return cgi.escape (s, True)
-    elif isinstance (s, tuple):
-        return tuple (map (esc, s))
-    elif isinstance (s, dict):
-        return escdict (s)
+def esc (obj):
+    """
+    Make some object safe for HTML output
+
+    This function works on everything you can put on the right-hand side of
+    an interpolation.  Strings are simply escaped, tuples have their elements
+    escaped, and dictionaries are wrapped with escdict.
+    """
+    if isinstance (obj, basestring):
+        return cgi.escape (obj, True)
+    elif isinstance (obj, tuple):
+        return tuple (map (esc, obj))
+    elif isinstance (obj, dict):
+        return escdict (obj)
     else:
-        return s
+        return obj
 
 class escdict (dict):
+    """
+    A dictionary wrapper that HTML escaped its values
+    """
     def __init__ (self, *args):
         dict.__init__ (self, *args)
 
     def __getitem__ (self, key):
+        """Get the value for key, HTML escaped"""
         return esc (dict.__getitem__ (self, key))
-
