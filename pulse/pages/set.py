@@ -234,6 +234,8 @@ def add_more_tabs (rset, tabbed, path):
                     objs = db.Branch.objects.filter (type=types[i],
                                                      parent__set_module_subjs__subj=rset)
                     objs = pulse.utils.attrsorted (list(objs), 'title')
+                    if len(objs) == 0:
+                        continue
                     cont = pulse.html.ContainerBox (id=thing['exts'][i],
                                                     title=thing['txts'][i] % len(objs))
                     if not graphs:
@@ -243,28 +245,34 @@ def add_more_tabs (rset, tabbed, path):
             elif thing.has_key ('subs'):
                 pad = pulse.html.PaddingBox()
                 tabbed.add_content (pad)
-                s = {}
+
+                subinfo = {}
                 subs = thing['subs']
                 for i in range(len(subs)):
                     sub = subs[i]
                     cont = pulse.html.ContainerBox (id=thing['exts'][i])
                     if not graphs:
                         cont.set_columns (2)
-                    pad.add_content (cont)
-                    s[sub] = ([], cont)
+                    subinfo[sub] = ([], cont)
+
                 objs = db.Branch.objects.filter (type=types, parent__set_module_subjs__subj=rset)
                 objs = pulse.utils.attrsorted (list(objs), 'title')
                 for obj in objs:
-                    stype = obj.subtype
-                    if s.has_key (stype):
-                        s[stype][0].append (obj)
-                    elif s.has_key ('*'):
-                        s['*'][0].append (obj)
+                    subtype = obj.subtype
+                    if subinfo.has_key (subtype):
+                        subinfo[subtype][0].append (obj)
+                    elif subinfo.has_key ('*'):
+                        subinfo['*'][0].append (obj)
+
                 sections = []
                 for i in range(len(subs)):
                     sub = subs[i]
-                    s[sub][1].set_title (thing['txts'][i] % len(s[sub][0]))
-                    sections.append (s[sub])
+                    sublen = len(subinfo[sub][0])
+                    if sublen == 0:
+                        continue
+                    subinfo[sub][1].set_title (thing['txts'][i] % sublen)
+                    pad.add_content (subinfo[sub][1])
+                    sections.append (subinfo[sub])
             else:
                 objs = db.Branch.objects.filter (type=types, parent__set_module_subjs__subj=rset)
                 objs = pulse.utils.attrsorted (list(objs), 'title')
