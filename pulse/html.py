@@ -20,7 +20,7 @@
 #
 
 """
-Generate HTML output
+Generate HTML output.
 
 This module allows you to construct an HTML page using widgets,
 in much the same way as you would construct a user interface in
@@ -46,15 +46,15 @@ TRIANGLE = u' ‣ '
 
 class Widget (object):
     """
-    Base class for all widgets
+    Base class for all widgets.
     """
 
     def __init__ (self, **kw):
         super (Widget, self).__init__ (**kw)
 
-    def output (self, fd=sys.stdout):
+    def output (self, fd=None):
         """
-        Output the HTML for this widget
+        Output the HTML for this widget.
 
         This is an abstract method that subclasses must implement.
         """
@@ -63,7 +63,7 @@ class Widget (object):
 
 class Component (object):
     """
-    Base class for all components
+    Base class for all components.
 
     Components are effectively interfaces that widgets can implement.
     Their output methods are called at an appropriate place within a
@@ -73,9 +73,9 @@ class Component (object):
     def __init__ (self, **kw):
         super (Component, self).__init__ (**kw)
 
-    def output (self, fd=sys.stdout):
+    def output (self, fd=None):
         """
-        Output the HTML for this component
+        Output the HTML for this component.
 
         This is an abstract method that subclasses must implement.
         """
@@ -87,7 +87,7 @@ class Component (object):
 
 class ContentComponent (Component):
     """
-    Simple component for widgets with generic content
+    Simple component for widgets with generic content.
 
     The output method will call output on each of the added widgets.  Some
     widgets may use this component only for the add_content method, and
@@ -99,22 +99,22 @@ class ContentComponent (Component):
         self._content = []
 
     def add_content (self, content):
-        """Add a widget or text to this container"""
+        """Add a widget or text to this container."""
         self._content.append (content)
 
     def get_content (self):
-        """Get a list of all added content"""
+        """Get a list of all added content."""
         return self._content
 
-    def output (self, fd=sys.stdout):
-        """Output the HTML"""
+    def output (self, fd=None):
+        """Output the HTML."""
         for cont in self._content:
             p (fd, None, cont)
 
 
 class SublinksComponent (Component):
     """
-    Component for widgets that contain sublinks
+    Component for widgets that contain sublinks.
 
     Sublinks are a list of links found under the title of a widget.  They
     may provide alternate pages or a heirarchy of parent pages, depending
@@ -134,8 +134,8 @@ class SublinksComponent (Component):
     def set_sublinks_divider (self, div):
         self._divider = div
 
-    def output (self, fd=sys.stdout):
-        """Output the HTML"""
+    def output (self, fd=None):
+        """Output the HTML."""
         if len(self._sublinks) > 0:
             p (fd, '<div class="sublinks">', None, False)
             for i in range(len(self._sublinks)):
@@ -150,7 +150,7 @@ class SublinksComponent (Component):
 
 class FactsComponent (Component):
     """
-    Component for widgets that contain fact tables
+    Component for widgets that contain fact tables.
 
     Fact tables are key-value tables providing more information about whatever
     thing the widget is showing.  The output method will create the table of
@@ -168,8 +168,8 @@ class FactsComponent (Component):
     def add_fact_sep (self):
         self._facts.append (None)
 
-    def output (self, fd=sys.stdout):
-        """Output the HTML"""
+    def output (self, fd=None):
+        """Output the HTML."""
         if len (self._facts) == 0:
             return
         p (fd, '<table class="facts">')
@@ -187,15 +187,15 @@ class FactsComponent (Component):
                     p (fd, '<td class="fact-val">', None, False)
                 else:
                     p (fd, '<td class="fact-val" colspan="2">', None, False)
-                def factout (f):
-                    if isinstance (f, (basestring, Widget, Component)):
-                        p (fd, None, f, False)
-                    elif isinstance (f, db.PulseRecord):
-                        p (fd, Link(f))
-                    elif hasattr (f, '__getitem__'):
-                        for ff in f:
+                def factout (val):
+                    if isinstance (val, (basestring, Widget, Component)):
+                        p (fd, None, val, False)
+                    elif isinstance (val, db.PulseRecord):
+                        p (fd, Link(val))
+                    elif hasattr (val, '__getitem__'):
+                        for subval in val:
                             p (fd, '<div>', None, False)
-                            factout (ff)
+                            factout (subval)
                             p (fd, '</div>')
                 factout (fact['content'])
                 p (fd, '</td></tr>')
@@ -204,14 +204,15 @@ class FactsComponent (Component):
 
 class SortableComponent (Component):
     """
-    Component for widgets that have sortable content
+    Component for widgets that have sortable content.
 
     The output method will create the link bar for sorting the content.
+    FIXME: explaing tag and class and how sort keys are gathered.
 
     FIXME: document **kw
     """
 
-    def __init__ (self, *args, **kw):
+    def __init__ (self, **kw):
         super (SortableComponent, self).__init__ (**kw)
         self._slinktag = kw.get ('sortable_tag', None)
         self._slinkclass = kw.get ('sortable_class', None)
@@ -235,8 +236,8 @@ class SortableComponent (Component):
     def get_sort_links (self):
         return self._slinks
 
-    def output (self, fd=sys.stdout):
-        """Output the HTML"""
+    def output (self, fd=None):
+        """Output the HTML."""
         slinktag = self._slinktag or 'table'
         slinkclass = self._slinkclass or 'lbox'
         p (fd, '<div class="slinks"><span class="slinks" id="slink-%s">', slinkclass)
@@ -258,7 +259,7 @@ class SortableComponent (Component):
 
 class LinkBoxesComponent (Component):
     """
-    Component for widgets containing link boxes
+    Component for widgets containing link boxes.
 
     This provides a convenience routine for adding link boxes, and can
     display the link boxes in multiple columns.
@@ -272,17 +273,17 @@ class LinkBoxesComponent (Component):
         self._columns = kw.get('columns', 1)
 
     def add_link_box (self, *args, **kw):
-        """Add a link box"""
+        """Add a link box."""
         lbox = LinkBox (*args, **kw)
         self._boxes.append (lbox)
         return lbox
 
     def set_columns (self, columns):
-        """Set the number of columns"""
+        """Set the number of columns."""
         self._columns = columns
 
-    def output (self, fd=sys.stdout):
-        """Output the HTML"""
+    def output (self, fd=None):
+        """Output the HTML."""
         if self._columns > 1:
             p (fd, '<table class="cols"><tr>')
             p (fd, '<td class="col col-first">')
@@ -309,7 +310,7 @@ class LinkBoxesComponent (Component):
 
 class HttpComponent (Component):
     """
-    Component for widgets that output HTTP headers
+    Component for widgets that output HTTP headers.
 
     Widgets using this component are generally top-level that are not added to
     any other widgets.  The output method will generate the HTTP headers, if the
@@ -323,8 +324,8 @@ class HttpComponent (Component):
         self._http = kw.get ('http', True)
         self._status = kw.get ('status', 200)
 
-    def output (self, fd=sys.stdout):
-        """Output the HTML"""
+    def output (self, fd=None):
+        """Output the HTML."""
         if self._http == True:
             if self._status == 404:
                 p (fd, 'Status: 404 Not found')
@@ -339,13 +340,15 @@ class HttpComponent (Component):
 
 class Page (Widget, HttpComponent, ContentComponent):
     """
-    Complete web page
+    Complete web page.
 
     The output method creates all the standard HTML for the top and bottom
     of the page, and call output_page_content in between.  Subclasses should
     override output_page_content.
 
-    FIXME: document **kw
+    Keyword arguments:
+    title -- The title of the page.
+    icon  -- The URL of an icon for the page.
     """
 
     def __init__ (self, **kw):
@@ -355,16 +358,16 @@ class Page (Widget, HttpComponent, ContentComponent):
         self._screenshot_file = None
 
     def set_title (self, title):
-        """Set the title of the page"""
+        """Set the title of the page."""
         self._title = title
 
     def set_icon (self, icon):
-        """Set the icon URL of the page"""
+        """Set the URL of an icon for the page."""
         self._icon = icon
 
     def add_screenshot (self, screenshot):
         """
-        Add a screenshot to the page
+        Add a screenshot to the page.
 
         The screenshot argument is expected to be a dictionary which maps
         language codes to integer IDs, where the IDs are the id attribute
@@ -379,8 +382,8 @@ class Page (Widget, HttpComponent, ContentComponent):
         except:
             pass
 
-    def output (self, fd=sys.stdout):
-        """Output the HTML"""
+    def output (self, fd=None):
+        """Output the HTML."""
         HttpComponent.output (self, fd=fd)
         p (fd, ('<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN"'
                 ' "http://www.w3.org/TR/html4/strict.dtd">'))
@@ -429,14 +432,14 @@ class Page (Widget, HttpComponent, ContentComponent):
         self.output_page_content (fd=fd)
         p (fd, '</div></body></html>')
         
-    def output_page_content (self, fd=sys.stdout):
-        """Output the contents of the page"""
+    def output_page_content (self, fd=None):
+        """Output the contents of the page."""
         ContentComponent.output (self, fd=fd)
 
 
 class Fragment (Widget, HttpComponent, ContentComponent):
     """
-    Fragment of a web page
+    Fragment of a web page.
 
     Unlike Page, Fragment will not output any boilerplate HTML.  Instead, it
     only outputs the HTTP headers and the added content.  This is generally
@@ -446,15 +449,15 @@ class Fragment (Widget, HttpComponent, ContentComponent):
     def __init__ (self, **kw):
         super (Fragment, self).__init__ (**kw)
 
-    def output (self, fd=sys.stdout):
-        """Output the HTML"""
+    def output (self, fd=None):
+        """Output the HTML."""
         HttpComponent.output (self, fd=fd)
         ContentComponent.output (self, fd=fd)
 
 
 class RecordPage (Page, SublinksComponent, FactsComponent):
     """
-    Convenience wrapper for Page for Records
+    Convenience wrapper for Page for Records.
 
     This convenience class knows how to extract basic information from Records
     and insert it into the page.
@@ -465,8 +468,8 @@ class RecordPage (Page, SublinksComponent, FactsComponent):
         kw.setdefault ('icon', record.icon_url)
         super (RecordPage, self).__init__ (**kw)
 
-    def output_page_content (self, fd=sys.stdout):
-        """Output the contents of the page"""
+    def output_page_content (self, fd=None):
+        """Output the contents of the page."""
         SublinksComponent.output (self, fd=fd)
         FactsComponent.output (self, fd=fd)
         Page.output_page_content (self, fd=fd)
@@ -474,7 +477,7 @@ class RecordPage (Page, SublinksComponent, FactsComponent):
 
 class PageNotFound (Page):
     """
-    A page for when an object is not found
+    A page for when an object is not found.
 
     FIXME: document **kw
     """
@@ -485,8 +488,8 @@ class PageNotFound (Page):
         self._pages = kw.get ('pages', [])
         self._message = message
 
-    def output_page_content (self, fd=sys.stdout):
-        """Output the contents of the page"""
+    def output_page_content (self, fd=None):
+        """Output the contents of the page."""
         p (fd, '<div class="notfound">')
         p (fd, '<div class="message">%s</div>', self._message)
         if len(self._pages) > 0:
@@ -503,7 +506,7 @@ class PageNotFound (Page):
 
 class PageError (Page):
     """
-    A page for when an error has occurred
+    A page for when an error has occurred.
 
     FIXME: document **kw
     """
@@ -514,8 +517,8 @@ class PageError (Page):
         self._pages = kw.get ('pages', [])
         self._message = message
     
-    def output_page_content (self, fd=sys.stdout):
-        """Output the contents of the page"""
+    def output_page_content (self, fd=None):
+        """Output the contents of the page."""
         p (fd, '<div class="servererror">')
         p (fd, '<div class="message">%s</div>', self._message)
         p (fd, '</div>')
@@ -527,18 +530,18 @@ class PageError (Page):
 
 class InfoBox (Widget, ContentComponent, LinkBoxesComponent):
     """
-    A box containing information
+    A box containing information.
 
     An info box is a framed and titled box that contains various related bits
     of information.  Most pages are constructed primarily of info boxes.
     """
-    def __init__ (self, boxid, title, **kw):
+    def __init__ (self, id_, title, **kw):
         super (InfoBox, self).__init__ (**kw)
-        self._id = boxid
+        self._id = id_
         self._title = title
 
-    def output (self, fd=sys.stdout):
-        """Output the HTML"""
+    def output (self, fd=None):
+        """Output the HTML."""
         p (fd, '<div class="info" id="%s">', self._id)
         p (fd, '<div class="info-title">', None, False)
         p (fd, '<a href="javascript:info(\'%s\')">', self._id, False)
@@ -553,7 +556,7 @@ class InfoBox (Widget, ContentComponent, LinkBoxesComponent):
 
 class ContainerBox (Widget, SortableComponent, ContentComponent, LinkBoxesComponent):
     """
-    An all-purpose container box
+    An all-purpose container box.
 
     A container box wraps arbitrary content with various useful things.
     If a title has been set, a container box will allow the box to be
@@ -572,11 +575,10 @@ class ContainerBox (Widget, SortableComponent, ContentComponent, LinkBoxesCompon
 
     def add_link_box (self, *args, **kw):
         """
-        Add a link box
+        Add a link box.
 
-        This overrides the same method from LinkBoxesComponent to call
-        add_class on the added link box, allowing the link boxes to be
-        resorted.
+        This extends the method from LinkBoxesComponent to call add_class
+        on the added link box, allowing the link boxes to be sorted.
         """
         lbox = LinkBoxesComponent.add_link_box (self, *args, **kw)
         scls = self.get_sortable_class()
@@ -584,18 +586,18 @@ class ContainerBox (Widget, SortableComponent, ContentComponent, LinkBoxesCompon
             lbox.add_class (scls)
         return lbox
 
-    def set_id (self, boxid):
-        """Set the id of the container"""
+    def set_id (self, id_):
+        """Set the id of the container."""
         if self.get_sortable_class() == None:
-            self.set_sortable_class (boxid)
-        self._id = boxid
+            self.set_sortable_class (id_)
+        self._id = id_
 
     def set_title (self, title):
-        """Set the title of the container"""
+        """Set the title of the container."""
         self._title = title
 
-    def output (self, fd=sys.stdout):
-        """Output the HTML"""
+    def output (self, fd=None):
+        """Output the HTML."""
         if self._title != None or self._id != None:
             if self._id == None:
                 self._id = md5.md5(self._title).hexdigest()
@@ -632,7 +634,7 @@ class ContainerBox (Widget, SortableComponent, ContentComponent, LinkBoxesCompon
 
 class LinkBox (Widget, FactsComponent, ContentComponent):
     """
-    A block-level link to an object with optional extra information
+    A block-level link to an object with optional extra information.
 
     Link boxes display a link to some object, optionally including an icon,
     a graph, and a fact table.
@@ -687,8 +689,8 @@ class LinkBox (Widget, FactsComponent, ContentComponent):
     def add_graph (self, url):
         self._graphs.append (url)
 
-    def output (self, fd=sys.stdout):
-        """Output the HTML"""
+    def output (self, fd=None):
+        """Output the HTML."""
         cls = ' '.join(['lbox'] + self._classes)
         p (fd, '<table class="%s"><tr>', cls)
         if self._show_icon:
@@ -729,14 +731,14 @@ class LinkBox (Widget, FactsComponent, ContentComponent):
 class ColumnBox (Widget):
     def __init__ (self, num, **kw):
         super (ColumnBox, self).__init__ (**kw)
-        self._columns = [[] for i in range(num)]
+        self._columns = [[]] * num
 
     def add_to_column (self, index, content):
         self._columns[index].append (content)
         return content
 
-    def output (self, fd=sys.stdout):
-        """Output the HTML"""
+    def output (self, fd=None):
+        """Output the HTML."""
         p (fd, '<table class="cols"><tr>', None)
         width = str (100 / len(self._columns))
         for i in range(len(self._columns)):
@@ -768,8 +770,8 @@ class GridBox (Widget):
         self._rows[idx].setdefault ('classes', [])
         self._rows[idx]['classes'].append (cls)
 
-    def output (self, fd=sys.stdout):
-        """Output the HTML"""
+    def output (self, fd=None):
+        """Output the HTML."""
         if len (self._rows) == 0:
             return
         cls = ' '.join(['grid'] + self._classes)
@@ -794,19 +796,19 @@ class GridBox (Widget):
 
 
 class PaddingBox (Widget, ContentComponent):
+    """A box which puts vertical padding between its children."""
     def __init__ (self, **kw):
         super (PaddingBox, self).__init__ (**kw)
 
-    def output (self, fd=sys.stdout):
-        """Output the HTML"""
+    def output (self, fd=None):
+        """Output the HTML."""
         content = self.get_content()
         for i in range(len(content)):
-            s = content[i]
             if i == 0:
-                p (fd, None, s)
+                p (fd, None, content[i])
             else:
                 p (fd, '<div class="pad">')
-                p (fd, None, s)
+                p (fd, None, content[i])
                 p (fd, '</div>')
 
 
@@ -822,13 +824,13 @@ class AdmonBox (Widget):
         self._tag = kw.get('tag', 'div')
         self._classes = []
 
-    def add_class (self, cls):
-        self._classes.append (cls)
+    def add_class (self, class_):
+        self._classes.append (class_)
 
-    def output (self, fd=sys.stdout):
-        """Output the HTML"""
-        cls = ' '.join(['admon'] + self._classes)
-        p (fd, '<%s class="admon-%s %s">', (self._tag, self._kind, cls))
+    def output (self, fd=None):
+        """Output the HTML."""
+        class_ = ' '.join(['admon'] + self._classes)
+        p (fd, '<%s class="admon-%s %s">', (self._tag, self._kind, class_))
         p (fd, '<img src="%sadmon-%s-16.png" width="16" height="16">',
            (pulse.config.data_root, self._kind))
         p (fd, None, self._title)
@@ -841,10 +843,16 @@ class TabbedBox (Widget, ContentComponent):
         self._tabs = []
 
     def add_tab (self, url, title):
+        """
+        Add a tab to the box.
+
+        This function takes a URL and a title for the new tab.  If the
+        URL is None, the new tab is considered to be the active tab.
+        """
         self._tabs.append ((url, title))
 
-    def output (self, fd=sys.stdout):
-        """Output the HTML"""
+    def output (self, fd=None):
+        """Output the HTML."""
         p (fd, '<div class="tabbed">')
         p (fd, '<div class="tabbed-tabs">')
         for url, title in self._tabs:
@@ -877,8 +885,8 @@ class DefinitionList (Widget):
     def add_divider (self):
         self._all.append (('dt', None, 'hr'))
         
-    def output (self, fd=sys.stdout):
-        """Output the HTML"""
+    def output (self, fd=None):
+        """Output the HTML."""
         if self._id != None:
             p (fd, '<dl id="%s">', self._id)
         else:
@@ -900,14 +908,14 @@ class DefinitionList (Widget):
 ## Other...
 
 class Rule (Widget):
-    def output (self, fd=sys.stdout):
-        """Output the HTML"""
+    def output (self, fd=None):
+        """Output the HTML."""
         p (fd, '<div class="hr"><hr></div>')
 
 
 class Graph (Widget):
     """
-    A generated graph with optional comments
+    A generated graph with optional comments.
     """
 
     _count = 0
@@ -919,7 +927,7 @@ class Graph (Widget):
 
     def add_comment (self, coords, comment, href=None):
         """
-        Add a comment to the graph
+        Add a comment to the graph.
 
         Comments are displayed as tooltips when the user hovers over the
         area defined by coords.  If the href argument is not None, that
@@ -927,8 +935,8 @@ class Graph (Widget):
         """
         self._comments.append ((coords, comment, href))
 
-    def output (self, fd=sys.stdout):
-        """Output the HTML"""
+    def output (self, fd=None):
+        """Output the HTML."""
         if len(self._comments) == 0:
             p (fd, '<div class="graph"><img src="%s"></div>', self._url)
         else:
@@ -959,7 +967,7 @@ class Graph (Widget):
 
     @classmethod
     def activity_graph (cls, of, url):
-        """A convenience constructor to make a graph from an OutputFile"""
+        """A convenience constructor to make an activity graph from an OutputFile."""
         graph = cls (of.pulse_url)
         thisweek = pulse.utils.weeknum (datetime.datetime.now())
         for (coords, tot, weeknum) in of.data.get ('coords', []):
@@ -978,7 +986,7 @@ class Graph (Widget):
 
 class EllipsizedLabel (Widget):
     """
-    A text label that gets ellipsized if it exceeds a certain length
+    A text label that gets ellipsized if it exceeds a certain length.
 
     The constructor takes a string and a maximum length.  If the string is
     longer than the maximum length, it will be cut on a word boundary, and
@@ -990,8 +998,8 @@ class EllipsizedLabel (Widget):
         self._label = label
         self._size = size
 
-    def output (self, fd=sys.stdout):
-        """Output the HTML"""
+    def output (self, fd=None):
+        """Output the HTML."""
         if len (self._label) > self._size:
             i = self._size - 10
             if i <= 0:
@@ -1015,12 +1023,22 @@ class EllipsizedLabel (Widget):
 
 
 class MenuLink (Widget):
+    """
+    A link that pops down a menu of links.
+
+    The constructor takes an ID and the text of the link.  The text
+    may be omitted if menu_only is True.
+
+    Keyword arguments:
+    menu_only -- Only output the menu, not the link.
+    """
+
     _count = 0
 
-    def __init__ (self, boxid, txt=None, **kw):
+    def __init__ (self, id_, txt=None, **kw):
         self._menu_only = kw.pop ('menu_only', False)
         super (MenuLink, self).__init__ (**kw)
-        self._id = boxid
+        self._id = id_
         self._txt = txt
         self._links = []
         self._menu_url = None
@@ -1034,8 +1052,8 @@ class MenuLink (Widget):
     def set_menu_url (self, url):
         self._menu_url = url
 
-    def output (self, fd=sys.stdout):
-        """Output the HTML"""
+    def output (self, fd=None):
+        """Output the HTML."""
         MenuLink._count += 1
         if self._menu_only != True:
             p (fd, '<a class="mlink" id="mlink%s" href="javascript:mlink(\'%s\')">%s</a>',
@@ -1068,8 +1086,8 @@ class PopupLink (Widget):
         else:
             self._links.append (Link(*args))
 
-    def output (self, fd=sys.stdout):
-        """Output the HTML"""
+    def output (self, fd=None):
+        """Output the HTML."""
         PopupLink._count += 1
         p (fd, '<a class="plink" id="plink%i" href="javascript:plink(\'%i\')">',
            (PopupLink._count, PopupLink._count), False)
@@ -1154,6 +1172,16 @@ class PopupLink (Widget):
 
 
 class Span (Widget, ContentComponent):
+    """
+    A simple inline span.
+
+    Any non-keyword arguments passed to the constructor are taken to
+    be child content, and are automatically added with add_content.
+
+    Keyword arguments:
+    divider -- An optional divider to place between each element.
+    """
+
     def __init__ (self, *args, **kw):
         super (Span, self).__init__ (**kw)
         for arg in args:
@@ -1162,13 +1190,15 @@ class Span (Widget, ContentComponent):
         self._classes = []
 
     def set_divider (self, divider):
+        """Set a divider to be placed between child elements."""
         self._divider = divider
 
-    def add_class (self, cls):
-        self._classes.append (cls)
+    def add_class (self, class_):
+        """Add an HTML class to the span."""
+        self._classes.append (class_)
 
-    def output (self, fd=sys.stdout):
-        """Output the HTML"""
+    def output (self, fd=None):
+        """Output the HTML."""
         if len(self._classes) > 0:
             p (fd, '<span class="%s">', ' '.join(self._classes), False)
         else:
@@ -1182,14 +1212,24 @@ class Span (Widget, ContentComponent):
 
 
 class Div (Widget, ContentComponent):
+    """
+    A simple block.
+
+    Any non-keyword arguments passed to the constructor are taken to
+    be child content, and are automatically added with add_content.
+
+    Keyword arguments:
+    id -- An optional HTML id for the div tag.
+    """
+
     def __init__ (self, *args, **kw):
         super (Div, self).__init__ (**kw)
         self._id = kw.get('id', None)
         for arg in args:
             self.add_content (arg)
 
-    def output (self, fd=sys.stdout):
-        """Output the HTML"""
+    def output (self, fd=None):
+        """Output the HTML."""
         if self._id != None:
             p (fd, '<div id="%s">', self._id)
         else:
@@ -1199,14 +1239,24 @@ class Div (Widget, ContentComponent):
 
 
 class Pre (Widget, ContentComponent):
+    """
+    A simple pre-formatted block.
+
+    Any non-keyword arguments passed to the constructor are taken to
+    be child content, and are automatically added with add_content.
+
+    Keyword arguments:
+    id -- An optional HTML id for the pre tag.
+    """
+
     def __init__ (self, *args, **kw):
         super (Pre, self).__init__ (**kw)
         self._id = kw.get('id', None)
         for arg in args:
             self.add_content (arg)
 
-    def output (self, fd=sys.stdout):
-        """Output the HTML"""
+    def output (self, fd=None):
+        """Output the HTML."""
         if self._id != None:
             p (fd, '<pre id="%s">', self._id)
         else:
@@ -1216,6 +1266,20 @@ class Pre (Widget, ContentComponent):
 
 
 class Link (Widget):
+    """
+    A link to another page.
+
+    This widget constructs a link to another page.  The constructor
+    can be called multiple ways.  If it is passed a PulseRecord, it
+    automatically extracts the URL and title from that object.  If
+    it is passed two strings, it considers them to be the URL and
+    text of the link.  Otherwise, if it is passed a single string,
+    it is used as both the URL and title.
+
+    Keyword arguments:
+    icon -- The name of an icon in Pulse to prefix the link text with.
+    """
+
     def __init__ (self, *args, **kw):
         super (Link, self).__init__ (**kw)
         self._href = self._text = None
@@ -1230,8 +1294,8 @@ class Link (Widget):
             self._href = self._text = args[0]
         self._icon = kw.get('icon', None)
     
-    def output (self, fd=sys.stdout):
-        """Output the HTML"""
+    def output (self, fd=None):
+        """Output the HTML."""
         if self._href != None:
             p (fd, '<a href="%s">', self._href, False)
         if self._icon != None:
@@ -1248,7 +1312,7 @@ class Link (Widget):
 
 def p (fd, obj, arg=None, newline=True):
     """
-    Generalized thing printer
+    Generalized thing printer.
 
     This function is used to print widgets, components, and plain old strings
     in a consistent manner that avoids littering the rest of the code with a
@@ -1287,7 +1351,7 @@ def p (fd, obj, arg=None, newline=True):
 
 def esc (obj):
     """
-    Make some object safe for HTML output
+    Make some object safe for HTML output.
 
     This function works on everything you can put on the right-hand side of
     an interpolation.  Strings are simply escaped, tuples have their elements
@@ -1304,11 +1368,11 @@ def esc (obj):
 
 class escdict (dict):
     """
-    A dictionary wrapper that HTML escaped its values
+    A dictionary wrapper that HTML escaped its values.
     """
     def __init__ (self, *args):
         dict.__init__ (self, *args)
 
     def __getitem__ (self, key):
-        """Get the value for key, HTML escaped"""
+        """Get the value for key, HTML escaped."""
         return esc (dict.__getitem__ (self, key))
