@@ -70,7 +70,7 @@ def update_branch (branch, **kw):
     gdu_docs = []
     gtk_docs = []
     def visit (arg, dirname, names):
-        for ignore in (checkout.ignoredir, 'test', 'tests'):
+        for ignore in (checkout.ignoredir, 'examples', 'test', 'tests'):
             if ignore in names:
                 names.remove (ignore)
         for name in names:
