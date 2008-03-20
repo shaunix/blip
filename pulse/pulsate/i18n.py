@@ -84,6 +84,12 @@ def update_intltool (po, **kw):
     finally:
         os.chdir (owd)
 
+    files = [os.path.join (po.scm_dir, po.scm_file)]
+    revision = db.Revision.get_last_revision (branch=po.parent.parent, files=files)
+    if revision != None:
+        po.mod_datetime = revision.datetime
+        po.mod_person = revision.person
+
     # FIXME: things like .desktop files might not be reprocessed because
     # they haven't changed, but translators might have updated the name
     # or description.  Rather than trying to make those things run when
@@ -137,6 +143,12 @@ def update_xml2po (po, **kw):
                                     stats[0], stats[1], total)
     finally:
         os.chdir (owd)
+
+    files = [os.path.join (po.scm_dir, po.scm_file)]
+    revision = db.Revision.get_last_revision (branch=po.parent.parent, files=files)
+    if revision != None:
+        po.mod_datetime = revision.datetime
+        po.mod_person = revision.person
 
     po.data['md5'] = potfile.data.get('md5', None)
     po.save()

@@ -285,7 +285,8 @@ def output_module (module, **kw):
                 for translation in translations:
                     span = pulse.html.Span (translation.scm_file[:-3])
                     span.add_class ('title')
-                    row = [span]
+                    link = pulse.html.Link (translation.pulse_url, span)
+                    row = [link]
                     percent = 0
                     stat1 = translation.Messages_stat1
                     stat2 = translation.Messages_stat2
