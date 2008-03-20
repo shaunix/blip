@@ -49,8 +49,8 @@
     </languages>
     <memberof>/team/gnome.org/i18n</memberof>
     <bug_type>bugzilla</bug_type>
-	  <bug_server idref="http://bugzilla.gnome.org/"/>
-	  <bug_product>l10n</bug_product>
+    <bug_server idref="http://bugzilla.gnome.org/"/>
+    <bug_product>l10n</bug_product>
   </team>
 </defaults>
 
