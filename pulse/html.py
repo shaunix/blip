@@ -731,7 +731,7 @@ class LinkBox (Widget, FactsComponent, ContentComponent):
 class ColumnBox (Widget):
     def __init__ (self, num, **kw):
         super (ColumnBox, self).__init__ (**kw)
-        self._columns = [[]] * num
+        self._columns = [[] for i in range(num)]
 
     def add_to_column (self, index, content):
         self._columns[index].append (content)
