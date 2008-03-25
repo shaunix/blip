@@ -20,6 +20,7 @@
 
 import datetime
 import Image
+import libxml2
 import math
 import os
 import os.path
@@ -28,7 +29,6 @@ import shutil
 import StringIO
 import time
 import urllib
-import xml.dom.minidom
 
 import pulse.graphs
 import pulse.models as db
@@ -190,58 +190,62 @@ def process_docbook_docfile (docfile, doc, **kw):
     abstract = None
     credits = []
     try:
-        dom = xml.dom.minidom.parse (docfile)
+        ctxt = libxml2.newParserCtxt()
+        xmldoc = ctxt.ctxtReadFile (docfile, None, 0)
+        xmldoc.xincludeProcess()
+        root = xmldoc.getRootElement()
     except Exception, e:
         pulse.utils.warn ('Failed to load file %s' % rel_scm)
         doc.error = str(e)
         doc.save()
         return
     doc.error = None
-    for node in dom.documentElement.childNodes:
-        if node.nodeType != node.ELEMENT_NODE:
+    for node in pulse.utils.xmliter (root):
+        if node.type != 'element':
             continue
-        if node.tagName[-4:] == 'info':
-            infonodes = node.childNodes[0:]
+        if node.name[-4:] == 'info':
+            infonodes = list (pulse.utils.xmliter (node))
             i = 0
             while i < len(infonodes):
                 infonode = infonodes[i]
-                if infonode.nodeType != infonode.ELEMENT_NODE:
+                if infonode.type != 'element':
                     i += 1
                     continue
-                if infonode.tagName == 'title':
+                if infonode.name == 'title':
                     if title == None:
-                        title = strvalue (infonode)
-                elif infonode.tagName == 'abstract' and infonode.getAttribute ('role') == 'description':
-                    abstract = strvalue (infonode)
-                elif infonode.tagName == 'authorgroup':
-                    infonodes.extend (infonode.childNodes)
-                elif infonode.tagName in ('author', 'editor', 'othercredit'):
+                        title = infonode.getContent()
+                elif infonode.name == 'abstract' and infonode.prop('role') == 'description':
+                    abstract = infonode.getContent()
+                elif infonode.name == 'authorgroup':
+                    infonodes.extend (list (pulse.utils.xmliter (infonode)))
+                elif infonode.name in ('author', 'editor', 'othercredit'):
                     cr_name, cr_email = personname (infonode)
-                    maint = (infonode.getAttribute ('role') == 'maintainer')
-                    credits.append ((cr_name, cr_email, infonode.tagName, maint))
-                elif infonode.tagName == 'collab':
+                    maint = (infonode.prop('role') == 'maintainer')
+                    credits.append ((cr_name, cr_email, infonode.name, maint))
+                elif infonode.name == 'collab':
                     cr_name = None
-                    for ch in infonode.childNodes:
-                        if ch.nodeType == ch.ELEMENT_NODE and ch.tagName == 'collabname':
-                            cr_name = strvalue (ch)
+                    for ch in pulse.utils.xmliter (infonode):
+                        if ch.type == 'element' and ch.name == 'collabname':
+                            cr_name = ch.getContent()
                     if cr_name != None:
-                        maint = (infonode.getAttribute ('role') == 'maintainer')
+                        maint = (infonode.prop('role') == 'maintainer')
                         credits.append ((cr_name, None, 'collab', maint))
-                elif infonode.tagName in ('corpauthor', 'corpcredit'):
-                    maint = (infonode.getAttribute ('role') == 'maintainer')
-                    credits.append ((strvalue (infonode), None, infonode.tagName, maint))
-                elif infonode.tagName == 'publisher':
+                elif infonode.name in ('corpauthor', 'corpcredit'):
+                    maint = (infonode.prop('role') == 'maintainer')
+                    credits.append ((infonode.getContent(), None, infonode.name, maint))
+                elif infonode.name == 'publisher':
                     cr_name = None
-                    for ch in infonode.childNodes:
-                        if ch.nodeType == ch.ELEMENT_NODE and ch.tagName == 'publishername':
-                            cr_name = strvalue (ch)
+                    for ch in pulse.utils.xmliter (infonode):
+                        if ch.type == 'element' and ch.name == 'publishername':
+                            cr_name = ch.getContent()
                     if cr_name != None:
-                        maint = (infonode.getAttribute ('role') == 'maintainer')
+                        maint = (infonode.prop('role') == 'maintainer')
                         credits.append ((cr_name, None, 'publisher', maint))
                 i += 1
-        elif node.tagName == 'title':
-            title = strvalue (node)
+        elif node.name == 'title':
+            title = node.getContent()
             break
+
     if title != None:
         doc.update (name=normalize(title))
     if abstract != None:
@@ -249,27 +253,29 @@ def process_docbook_docfile (docfile, doc, **kw):
 
     doc.credits = credits
 
-    imgs = dom.getElementsByTagName ('imagedata')
+    # FIXME
+    imgs = xmldoc.xpathEval ('//imagedata')
     doc.data['figures'] = []
     doc.data['screens'] = {}
     for img in imgs:
-        if not img.hasAttribute ('fileref'): continue
-        ref = img.getAttribute ('fileref')
+        fileref = img.prop ('fileref')
+        if fileref == None:
+            continue
 
-        par = img.parentNode
+        par = img.parent
         is_screenshot = False
-        while par.nodeType == par.ELEMENT_NODE:
-            if par.tagName == 'screenshot':
+        while par.type == 'element':
+            if par.name == 'screenshot':
                 is_screenshot = True
             if is_screenshot:
-                if par.hasAttribute ('id'):
-                    parid = par.getAttribute ('id')
-                    doc.data['screens'].setdefault (parid, ref)
-            par = par.parentNode
+                parid = par.prop ('id')
+                if parid != None:
+                    doc.data['screens'].setdefault (parid, fileref)
+            par = par.parent
         if is_screenshot:
-            doc.data['screens'].setdefault (None, ref)
+            doc.data['screens'].setdefault (None, fileref)
 
-        doc.data['figures'].append (ref)
+        doc.data['figures'].append (fileref)
 
     db.Timestamp.set_timestamp (rel_scm, mtime)
 
@@ -432,15 +438,6 @@ def copy_image (infile, of):
 ################################################################################
 ## XML Utilities
 
-def strvalue(node):
-    s = ''
-    for child in node.childNodes:
-        if child.nodeType == child.TEXT_NODE:
-            s += child.data
-        elif child.nodeType == child.ELEMENT_NODE:
-            s += strvalue (child)
-    return s
-
 def normalize (s):
     if s == None:
         return s
@@ -450,19 +447,19 @@ def personname (node):
     name = [None, None, None, None, None]
     namestr = None
     email = None
-    for child in node.childNodes:
-        if child.nodeType != child.ELEMENT_NODE:
+    for child in pulse.utils.xmliter (node):
+        if child.type != 'element':
             continue
-        if child.tagName == 'personname':
+        if child.name == 'personname':
             namestr = personname(child)[0]
-        elif child.tagName == 'email':
-            email = strvalue (child)
+        elif child.name == 'email':
+            email = child.getContent()
         elif namestr == None:
             try:
-                i = ['honorific', 'firstname', 'othername', 'surname', 'lineage'].index(child.tagName)
+                i = ['honorific', 'firstname', 'othername', 'surname', 'lineage'].index(child.name)
                 if name[i] == None:
-                    name[i] = strvalue (child)
-            except:
+                    name[i] = child.getContent()
+            except ValueError:
                 pass
     if namestr == None:
         while None in name:
