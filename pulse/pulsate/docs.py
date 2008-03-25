@@ -200,10 +200,12 @@ def process_docbook_docfile (docfile, doc, **kw):
         doc.save()
         return
     doc.error = None
+    seen = 0
     for node in pulse.utils.xmliter (root):
         if node.type != 'element':
             continue
         if node.name[-4:] == 'info':
+            seen += 1
             infonodes = list (pulse.utils.xmliter (node))
             i = 0
             while i < len(infonodes):
@@ -243,7 +245,9 @@ def process_docbook_docfile (docfile, doc, **kw):
                         credits.append ((cr_name, None, 'publisher', maint))
                 i += 1
         elif node.name == 'title':
+            seen += 1
             title = node.getContent()
+        if seen > 1:
             break
 
     if title != None:
