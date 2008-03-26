@@ -144,6 +144,10 @@ def update_xml2po (po, **kw):
     finally:
         os.chdir (owd)
 
+    po.data['figures'] = {}
+    for figure in po.parent.data.get('figures', []):
+        po.data['figures'][figure] = popo.get_image_status (figure)
+
     files = [os.path.join (po.scm_dir, po.scm_file)]
     revision = db.Revision.get_last_revision (branch=po.parent.parent, files=files)
     if revision != None:

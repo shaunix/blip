@@ -75,6 +75,7 @@ def main (path, query, http=True, fd=None):
 
 def output_translation (po, branchable, **kw):
     """Output information about a translation"""
+    lang = po.scm_file[:-3]
     page = pulse.html.RecordPage (po, http=kw.get('http', True))
     checkout = pulse.scm.Checkout.from_record (po, checkout=False, update=False)
 
@@ -106,6 +107,31 @@ def output_translation (po, branchable, **kw):
             span.add_content (' by ')
             span.add_content (pulse.html.Link (po.mod_person))
         page.add_fact (pulse.utils.gettext ('Last Modified'), span)
+
+    columns = pulse.html.ColumnBox (2)
+    page.add_content (columns)
+
+    # Developers
+    box = pulse.html.InfoBox ('developers', pulse.utils.gettext ('Developers'))
+    columns.add_to_column (0, box)
+    # FIXME
+
+    # Figures
+    if parent.type == 'Document':
+        box = pulse.html.InfoBox ('figures', pulse.utils.gettext ('Figures'))
+        columns.add_to_column (1, box)
+        dl = pulse.html.DefinitionList ()
+        box.add_content (dl)
+        figures = sorted (parent.data.get('figures', []))
+        for figure in figures:
+            dl.add_term (figure)
+            status = po.data.get('figures', {}).get(figure)
+            if status == 'translated':
+                dl.add_entry (pulse.utils.gettext ('translated'))
+            elif status == 'fuzzy':
+                dl.add_entry (pulse.utils.gettext ('fuzzy'))
+            else:
+                dl.add_entry (pulse.utils.gettext ('untranslated'))
 
     page.output(fd=kw.get('fd'))
 

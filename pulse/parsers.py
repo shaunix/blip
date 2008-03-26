@@ -18,7 +18,7 @@
 # Suite 330, Boston, MA  0211-1307  USA.
 #
 
-"""Various useful parsers of varying quality"""
+"""Various useful parsers of varying quality."""
 
 import codecs
 import ConfigParser
@@ -29,7 +29,7 @@ import pulse.utils
 
 class Automake (object):
     """
-    Parse a Makefile.am file
+    Parse a Makefile.am file.
 
     This class parses a Makefile.am file, allowing you to extract information
     from them.  Directives for make are ignored.  This is only useful for
@@ -70,25 +70,25 @@ class Automake (object):
                 line = fd.readline ()
 
     def get_lines (self):
-        """Get the canonicalized lines from the automake file"""
+        """Get the canonicalized lines from the automake file."""
         return self._lines
 
     def __getitem__ (self, key):
-        """Get the value of an automake variable"""
+        """Get the value of an automake variable."""
         return self._variables[key]
 
     def get (self, key, val=None):
-        """Get the value of an automake variable, or return a default"""
+        """Get the value of an automake variable, or return a default."""
         return self._variables.get(key, val)
 
     def has_key (self, key):
-        """Check if the variable is set in the automake file"""
+        """Check if the variable is set in the automake file."""
         return self._variables.has_key (key)
 
 
 class KeyFile (object):
     """
-    Parse a KeyFile, like those defined by the Desktop Entry Specification
+    Parse a KeyFile, like those defined by the Desktop Entry Specification.
     """
 
     def __init__ (self, fd):
@@ -123,29 +123,29 @@ class KeyFile (object):
                         self._data[group][key] = value
 
     def get_groups (self):
-        """Get the groups from the key file"""
+        """Get the groups from the key file."""
         return self._data.keys()
 
     def has_group (self, group):
-        """Check if the key file has a group"""
+        """Check if the key file has a group."""
         return self._data.has_key (group)
 
     def get_keys (self, group):
-        """Get the keys that are set in a group in the key file"""
+        """Get the keys that are set in a group in the key file."""
         return self._data[group].keys()
 
     def has_key (self, group, key):
-        """Check if a key is set in a group in the key file"""
+        """Check if a key is set in a group in the key file."""
         return self._data[group].has_key (key)
 
     def get_value (self, group, key):
-        """Get the value of a key in a group in the key file"""
+        """Get the value of a key in a group in the key file."""
         return self._data[group][key]
 
 
 class Po:
     """
-    Parse a PO file
+    Parse a PO file.
 
     You can pass a file descriptor, a filename, or None to the constructor.
     If a file descriptor of filename is passed, it will automatically parse
@@ -161,6 +161,7 @@ class Po:
         else:
             self._fd = None
         self._msgstrs = {}
+        self._images = {}
         self._comments = {}
         self._num_translated = 0
         self._num_untranslated = 0
@@ -178,7 +179,7 @@ class Po:
             self.finish ()
 
     def feed (self, line):
-        """Pass a line of data to the parser"""
+        """Pass a line of data to the parser."""
         line = line.strip()
         if line.startswith ('#~'):
             return
@@ -215,49 +216,66 @@ class Po:
                 self._msg[self._inkey] += '\n'
 
     def finish (self):
-        """Finish parsing manually-fed data"""
+        """Finish parsing manually-fed data."""
         if self._msg.has_key ('msgid'):
             key = (self._msg['msgid'], self._msg.get('msgctxt'))
             self._comments[key] = self._msg.get('comment')
             self._msgstrs[key] = self._msg.get('msgstr')
             img = self._msg['msgid'].startswith ('@@image: ')
+            imgname = None
             if img:
                 self._num_images += 1
+                imgname = re.match('@@image: \'([^\']*)\';', self._msg['msgid'])
+                if imgname:
+                    imgname = imgname.group(1)
+                else:
+                    imgname = None
             if self._msg.get('msgstr', '') == '':
                 self._num_untranslated += 1
                 if img:
                     self._num_untranslated_images += 1
+                    if imgname:
+                        self._images[imgname] = 'untranslated'
             elif self._msg.get('fuzzy', False):
                 self._num_fuzzy += 1
                 if img:
                     self._num_fuzzy_images += 1
+                    if imgname:
+                        self._images[imgname] = 'fuzzy'
             else:
                 self._num_translated += 1
                 if img:
                     self._num_translated_images += 1
+                    if imgname:
+                        self._images[imgname] = 'translated'
         self._inkey = ''
         self._msg = {}
 
     def has_message (self, msgid, msgctxt=None):
-        """Check if the PO file has a given message"""
+        """Check if the PO file has a given message."""
         return self._msgstrs.has_key ((msgid, msgctxt))
 
     def get_message_str (self, msgid, msgctxt=None):
-        """Get the translated message string for a given message"""
+        """Get the translated message string for a given message."""
         return self._msgstrs[(msgid, msgctxt)]
         
     def get_message_comment (self, msgid, msgctxt=None):
-        """Get the translator comment for a given message"""
+        """Get the translator comment for a given message."""
         return self._comments[(msgid, msgctxt)]
 
     def get_num_messages (self):
-        """Get the total number of messages in this PO file"""
+        """Get the total number of messages in this PO file."""
         return len(self._msgstrs)
 
     def get_stats (self):
-        """Get the number of translated, fuzzy, and untranslated messages as a tuple"""
+        """Get the number of translated, fuzzy, and untranslated messages as a tuple."""
         return (self._num_translated, self._num_fuzzy, self._num_untranslated)
 
     def get_image_stats (self):
-        """Get the statistics for documentation image message only"""
+        """Get the statistics for documentation image message only."""
         return (self._num_translated_images, self._num_fuzzy_images, self._num_untranslated_images)
+
+    def get_image_status (self, img):
+        """Get the status of an image."""
+        return self._images.get(img)
+
