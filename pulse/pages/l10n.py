@@ -118,20 +118,56 @@ def output_translation (po, branchable, **kw):
 
     # Figures
     if parent.type == 'Document':
-        box = pulse.html.InfoBox ('figures', pulse.utils.gettext ('Figures'))
-        columns.add_to_column (1, box)
-        dl = pulse.html.DefinitionList ()
-        box.add_content (dl)
         figures = sorted (parent.data.get('figures', []))
-        for figure in figures:
-            dl.add_term (figure)
-            status = po.data.get('figures', {}).get(figure)
-            if status == 'translated':
-                dl.add_entry (pulse.utils.gettext ('translated'))
-            elif status == 'fuzzy':
-                dl.add_entry (pulse.utils.gettext ('fuzzy'))
-            else:
-                dl.add_entry (pulse.utils.gettext ('untranslated'))
+        if len(figures) > 0:
+            ofs = db.OutputFile.objects.filter (type='figures', ident=parent.ident,
+                                                subdir__in=['C', lang])
+            ofs_by_source_C = {}
+            ofs_by_source_lc = {}
+            for of in ofs:
+                if of.subdir == 'C':
+                    ofs_by_source_C[of.source] = of
+                else:
+                    ofs_by_source_lc[of.source] = of
+            box = pulse.html.InfoBox ('figures', pulse.utils.gettext ('Figures'))
+            columns.add_to_column (1, box)
+            dl = pulse.html.DefinitionList ()
+            box.add_content (dl)
+            for figure in figures:
+                of = ofs_by_source_C.get(figure)
+                if of:
+                    dl.add_term (pulse.html.Link (of.pulse_url, figure))
+                else:
+                    dl.add_term (figure)
+
+                status = po.data.get('figures', {}).get(figure)
+                if status == 'translated':
+                    entry = pulse.utils.gettext ('translated')
+                elif status == 'fuzzy':
+                    entry = pulse.utils.gettext ('fuzzy')
+                else:
+                    entry = pulse.utils.gettext ('untranslated')
+                of = ofs_by_source_lc.get(figure)
+                if of:
+                    dl.add_entry (pulse.html.Link (of.pulse_url, entry))
+                else:
+                    dl.add_entry (entry)
+
+                files = [os.path.join (po.scm_dir, of.source)]
+                commit = db.Revision.get_last_revision (branch=module, files=files)
+                if commit != None:
+                    span = pulse.html.Span(divider=pulse.html.SPACE)
+                    # FIXME: i18n, word order, but we want to link person
+                    mspan = pulse.html.Span()
+                    mspan.add_content (commit.datetime.strftime('%Y-%m-%d %T'))
+                    mspan.add_class ('mtime')
+                    span.add_content (mspan)
+                    span.add_content (' by ')
+                    if not commit.person_id in people_cache:
+                        people_cache[commit.person_id] = commit.person
+                    person = people_cache[commit.person_id]
+                    span.add_content (pulse.html.Link (person))
+                    dl.add_entry (span)
 
     page.output(fd=kw.get('fd'))
 
