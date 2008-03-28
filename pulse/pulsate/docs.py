@@ -279,7 +279,8 @@ def process_docbook_docfile (docfile, doc, **kw):
         if is_screenshot:
             doc.data['screens'].setdefault (None, fileref)
 
-        doc.data['figures'].append (fileref)
+        if not fileref in doc.data['figures']:
+            doc.data['figures'].append (fileref)
 
     db.Timestamp.set_timestamp (rel_scm, mtime)
 
