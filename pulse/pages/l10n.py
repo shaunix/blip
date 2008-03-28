@@ -150,24 +150,23 @@ def output_translation (po, branchable, **kw):
                 of = ofs_by_source_lc.get(figure)
                 if of:
                     dl.add_entry (pulse.html.Link (of.pulse_url, entry))
+                    files = [os.path.join (po.scm_dir, of.source)]
+                    commit = db.Revision.get_last_revision (branch=module, files=files)
+                    if commit != None:
+                        span = pulse.html.Span(divider=pulse.html.SPACE)
+                        # FIXME: i18n, word order, but we want to link person
+                        mspan = pulse.html.Span()
+                        mspan.add_content (commit.datetime.strftime('%Y-%m-%d %T'))
+                        mspan.add_class ('mtime')
+                        span.add_content (mspan)
+                        span.add_content (' by ')
+                        if not commit.person_id in people_cache:
+                            people_cache[commit.person_id] = commit.person
+                        person = people_cache[commit.person_id]
+                        span.add_content (pulse.html.Link (person))
+                        dl.add_entry (span)
                 else:
                     dl.add_entry (entry)
-
-                files = [os.path.join (po.scm_dir, of.source)]
-                commit = db.Revision.get_last_revision (branch=module, files=files)
-                if commit != None:
-                    span = pulse.html.Span(divider=pulse.html.SPACE)
-                    # FIXME: i18n, word order, but we want to link person
-                    mspan = pulse.html.Span()
-                    mspan.add_content (commit.datetime.strftime('%Y-%m-%d %T'))
-                    mspan.add_class ('mtime')
-                    span.add_content (mspan)
-                    span.add_content (' by ')
-                    if not commit.person_id in people_cache:
-                        people_cache[commit.person_id] = commit.person
-                    person = people_cache[commit.person_id]
-                    span.add_content (pulse.html.Link (person))
-                    dl.add_entry (span)
 
     page.output(fd=kw.get('fd'))
 
