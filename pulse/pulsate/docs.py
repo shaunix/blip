@@ -329,7 +329,7 @@ def process_credits (doc, **kw):
             except IndexError:
                 ent = None
         if ent == None:
-            ident = '/ghost/' + urllib.quote (cr_name.encode('utf-8'))
+            ident = '/ghost/' + urllib.quote (cr_name)
             ent = db.Entity.get_record (ident, 'Ghost')
             ent.update (name=cr_name)
             if cr_email != None:
