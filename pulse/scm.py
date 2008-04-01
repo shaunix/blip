@@ -279,16 +279,19 @@ class Checkout (object):
             os.chdir (self.directory)
             cmd = 'svn info .'
             fd = codecs.getreader('utf-8')(os.popen (cmd), 'ignore')
+            revnumber = revdate = None
             for line in fd:
                 if line.startswith ('Last Changed Rev: '):
                     revnumber = line[18:].strip()
                 elif line.startswith ('Last Changed Date: '):
                     revdate = line[19:].strip()
                     break
-            retval = (revnumber, parse_date_svn (revdate))
+            if revnumber != None and revdate != None:
+                retval = (revnumber, parse_date_svn (revdate))
         finally:
             os.chdir (owd)
-        return retval
+        if retval != None:
+            return retval
 
 
     ############################################################################
