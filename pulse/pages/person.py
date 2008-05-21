@@ -53,6 +53,17 @@ def main (path, query, http=True, fd=None):
         return output_person (person, **kw)
 
 
+def synopsis ():
+    """Construct an info box for the front page"""
+    box = pulse.html.InfoBox ('people', pulse.utils.gettext ('People'))
+    people = db.Entity.objects.filter (type='Person').order_by ('-mod_score')
+    box.add_content(pulse.html.Div(pulse.utils.gettext('12 most active people:')))
+    for person in people[:12]:
+        lbox = box.add_link_box (person)
+        lbox.add_fact (pulse.utils.gettext ('score'), str(person.mod_score))
+    return box
+
+
 def output_top (**kw):
     page = pulse.html.Page (http=kw.get('http', True))
     page.set_title (pulse.utils.gettext ('People'))

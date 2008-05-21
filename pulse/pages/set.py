@@ -49,6 +49,25 @@ def main (path, query, http=True, fd=None):
         return 404
 
 
+def synopsis ():
+    """Construct an info box for the front page"""
+    box = pulse.html.InfoBox ('sets', pulse.utils.gettext ('Sets'))
+    sets = db.ReleaseSet.objects.filter (parent__isnull=True)
+    sets = pulse.utils.attrsorted (list(sets), 'title')
+    for rset in sets:
+        lbox = box.add_link_box (rset)
+        lbox.set_show_icon (False)
+        subsets = pulse.utils.attrsorted (rset.subsets.all(), ['title'])
+        if len(subsets) > 0:
+            dl = pulse.html.DefinitionList ()
+            lbox.add_content (dl)
+            for subset in subsets:
+                dl.add_entry (pulse.html.Link (subset))
+        else:
+            add_set_info (rset, lbox)
+    return box
+
+
 def output_top (**kw):
     """Output a page showing all release sets"""
     page = pulse.html.Page (http=kw.get('http', True))

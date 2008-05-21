@@ -73,12 +73,14 @@ def main ():
     if len (path) == 0:
         page = html.Page (http=http)
         page.set_title (pulse.utils.gettext ('Pulse'))
-        cont = html.ContainerBox ()
+        cont = html.ColumnBox (2)
         page.add_content (cont)
+        i = 0
         for type in pulse.pages.__all__:
             mod = pulse.utils.import_ ('pulse.pages.' + type)
-            if hasattr (mod, 'main'):
-                cont.add_link_box (pulse.config.web_root + type, type)
+            if hasattr (mod, 'synopsis'):
+                cont.add_to_column (i % 2, mod.synopsis ())
+                i += 1
         page.output (fd=fd)
     else:
         if not http:

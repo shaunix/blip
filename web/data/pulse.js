@@ -58,7 +58,7 @@ function expander (id) {
 
 function info (id) {
   var div = $('#' + id).children('.info-content').children('div');
-  div.slideToggle('slow', function () {
+  div.slideToggle('fast', function () {
     var img = $('#infoimg-' + id);
     if (div.is(':visible'))
       img.attr('src', img.attr('src').replace('up', 'open'))
