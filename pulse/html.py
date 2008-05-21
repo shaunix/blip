@@ -528,6 +528,19 @@ class PageError (Page):
 ################################################################################
 ## Boxes
 
+class AjaxBox (Widget):
+    """
+    A box that loads its contents over AJAX.
+    """
+    def __init__ (self, url, **kw):
+        super (AjaxBox, self).__init__ (**kw)
+        self._url = url
+
+    def output (self, fd=None):
+        """Output the HTML."""
+        p (fd, '<div class="ajax">%s</div>', self._url)
+
+
 class InfoBox (Widget, ContentComponent, LinkBoxesComponent):
     """
     A box containing information.

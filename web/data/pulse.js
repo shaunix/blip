@@ -1,4 +1,15 @@
 /******************************************************************************/
+/** AJAX boxes **/
+$(document).ready(function () {
+  $('.ajax').each(function (i) {
+    $(this).load($(this).text(), function (data) {
+      $(this).slideDown();
+    });
+  });
+});
+
+
+/******************************************************************************/
 /** Graph comments **/
 
 function comment (i, j, x) {

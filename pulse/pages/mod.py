@@ -85,6 +85,8 @@ def main (path, query, http=True, fd=None):
     kw = {'path' : path, 'query' : query, 'http' : http, 'fd' : fd}
     if query.get('ajax', None) == 'commits':
         return output_ajax_commits (branch, **kw)
+    if query.get('ajax', None) == 'domain':
+        return output_ajax_domain (branch, **kw)
     elif query.get('ajax', None) == 'revfiles':
         return output_ajax_revfiles (branch, **kw)
     else:
@@ -168,11 +170,7 @@ def output_module (module, **kw):
     except IndexError:
         pass
 
-    revs = db.Revision.select_revisions (branch=module)
-    cnt = revs.count()
-    revs = revs[:10]
-    div = get_commits_div (module, revs,
-                           pulse.utils.gettext('Showing %i of %i commits:') % (len(revs), cnt))
+    div = pulse.html.AjaxBox (module.pulse_url + '?ajax=commits')
     box.add_content (div)
 
     # Dependencies
@@ -227,85 +225,18 @@ def output_module (module, **kw):
     if len(domains) > 0:
         for domain in domains:
             domainid = domain.ident.split('/')[-2].replace('-', '_')
-            translations = db.Branch.select_with_statistic ('Messages',
-                                                            type='Translation', parent=domain)
-            translations = pulse.utils.attrsorted (list(translations), 'title')
+            translations = db.Branch.objects.filter (type='Translation', parent=domain)
             cont = pulse.html.ContainerBox ()
             cont.set_id ('po_' + domainid)
             cont.set_title (pulse.utils.gettext ('%s (%s)')
-                            % (domain.title, len(translations)))
+                            % (domain.title, translations.count()))
+            cont.set_sortable_tag ('tr')
+            cont.set_sortable_class ('po_' + domainid)
+            cont.add_sort_link ('title', pulse.utils.gettext ('lang'), False)
+            cont.add_sort_link ('percent', pulse.utils.gettext ('percent'))
+            div = pulse.html.AjaxBox (module.pulse_url + '?ajax=domain&domain=' + domain.ident)
+            cont.add_content (div)
             box.add_content (cont)
-            pad = pulse.html.PaddingBox ()
-            cont.add_content (pad)
-
-            if domain.scm_dir == 'po':
-                potfile = domain.scm_module + '.pot'
-            else:
-                potfile = domain.scm_dir + '.pot'
-            of = db.OutputFile.objects.filter (type='l10n', ident=domain.ident, filename=potfile)
-            try:
-                of = of[0]
-                div = pulse.html.Div()
-                pad.add_content (div)
-
-                linkdiv = pulse.html.Div()
-                linkspan = pulse.html.Span (divider=pulse.html.SPACE)
-                linkdiv.add_content (linkspan)
-                div.add_content (linkdiv)
-                linkspan.add_content (pulse.html.Link (of.pulse_url,
-                                                       pulse.utils.gettext ('POT file'),
-                                                       icon='download' ))
-                # FIXME: i18n reordering
-                linkspan.add_content (pulse.utils.gettext ('(%i messages)')
-                                      % of.statistic)
-                linkspan.add_content (pulse.utils.gettext ('on %s')
-                                      % of.datetime.strftime('%Y-%m-%d %T'))
-                missing = of.data.get ('missing', [])
-                if len(missing) > 0:
-                    msg = pulse.utils.gettext('%i missing files') % len(missing)
-                    admon = pulse.html.AdmonBox (pulse.html.AdmonBox.warning, msg, tag='span')
-                    mdiv = pulse.html.Div()
-                    popup = pulse.html.PopupLink (admon, '\n'.join(missing))
-                    mdiv.add_content (popup)
-                    div.add_content (mdiv)
-            except IndexError:
-                pad.add_content (pulse.html.AdmonBox (pulse.html.AdmonBox.warning,
-                                                       pulse.utils.gettext ('No POT file') ))
-
-            if len(translations) == 0:
-                pad.add_content (pulse.html.AdmonBox (pulse.html.AdmonBox.warning,
-                                                       pulse.utils.gettext ('No translations') ))
-            else:
-                cont.set_sortable_tag ('tr')
-                cont.set_sortable_class ('po_' + domainid)
-                cont.add_sort_link ('title', pulse.utils.gettext ('lang'), False)
-                cont.add_sort_link ('percent', pulse.utils.gettext ('percent'))
-                grid = pulse.html.GridBox ()
-                pad.add_content (grid)
-                for translation in translations:
-                    span = pulse.html.Span (translation.scm_file[:-3])
-                    span.add_class ('title')
-                    link = pulse.html.Link (translation.pulse_url, span)
-                    row = [link]
-                    percent = 0
-                    stat1 = translation.Messages_stat1
-                    stat2 = translation.Messages_stat2
-                    total = translation.Messages_total
-                    untranslated = total - stat1 - stat2
-                    percent = math.floor (100 * (float(stat1) / total))
-                    span = pulse.html.Span ('%i%%' % percent)
-                    span.add_class ('percent')
-                    row.append (span)
-
-                    row.append (pulse.utils.gettext ('%i.%i.%i') %
-                                (stat1, stat2, untranslated))
-                    idx = grid.add_row (*row)
-                    grid.add_row_class (idx, 'po')
-                    grid.add_row_class (idx, 'po_' + domainid)
-                    if percent >= 80:
-                        grid.add_row_class (idx, 'po80')
-                    elif percent >= 50:
-                        grid.add_row_class (idx, 'po50')
     else:
         box.add_content (pulse.html.AdmonBox (pulse.html.AdmonBox.warning,
                                               pulse.utils.gettext ('No domains') ))
@@ -315,16 +246,107 @@ def output_module (module, **kw):
     return 0
 
 
+def output_ajax_domain (module, **kw):
+    query = kw.get ('query', {})
+    page = pulse.html.Fragment (http=kw.get('http', True))
+    ident = query.get('domain', None)
+
+    domain = db.Branch.objects.get (ident=ident)
+    domainid = domain.ident.split('/')[-2].replace('-', '_')
+    translations = db.Branch.select_with_statistic ('Messages',
+                                                    type='Translation', parent=domain)
+    translations = pulse.utils.attrsorted (list(translations), 'title')
+    pad = pulse.html.PaddingBox ()
+    page.add_content (pad)
+
+    if domain.scm_dir == 'po':
+        potfile = domain.scm_module + '.pot'
+    else:
+        potfile = domain.scm_dir + '.pot'
+    of = db.OutputFile.objects.filter (type='l10n', ident=domain.ident, filename=potfile)
+    try:
+        of = of[0]
+        div = pulse.html.Div()
+        pad.add_content (div)
+
+        linkdiv = pulse.html.Div()
+        linkspan = pulse.html.Span (divider=pulse.html.SPACE)
+        linkdiv.add_content (linkspan)
+        div.add_content (linkdiv)
+        linkspan.add_content (pulse.html.Link (of.pulse_url,
+                                               pulse.utils.gettext ('POT file'),
+                                               icon='download' ))
+        # FIXME: i18n reordering
+        linkspan.add_content (pulse.utils.gettext ('(%i messages)')
+                              % of.statistic)
+        linkspan.add_content (pulse.utils.gettext ('on %s')
+                              % of.datetime.strftime('%Y-%m-%d %T'))
+        missing = of.data.get ('missing', [])
+        if len(missing) > 0:
+            msg = pulse.utils.gettext('%i missing files') % len(missing)
+            admon = pulse.html.AdmonBox (pulse.html.AdmonBox.warning, msg, tag='span')
+            mdiv = pulse.html.Div()
+            popup = pulse.html.PopupLink (admon, '\n'.join(missing))
+            mdiv.add_content (popup)
+            div.add_content (mdiv)
+    except IndexError:
+        pad.add_content (pulse.html.AdmonBox (pulse.html.AdmonBox.warning,
+                                               pulse.utils.gettext ('No POT file') ))
+
+    if len(translations) == 0:
+        pad.add_content (pulse.html.AdmonBox (pulse.html.AdmonBox.warning,
+                                               pulse.utils.gettext ('No translations') ))
+    else:
+        grid = pulse.html.GridBox ()
+        pad.add_content (grid)
+        for translation in translations:
+            span = pulse.html.Span (translation.scm_file[:-3])
+            span.add_class ('title')
+            link = pulse.html.Link (translation.pulse_url, span)
+            row = [link]
+            percent = 0
+            stat1 = translation.Messages_stat1
+            stat2 = translation.Messages_stat2
+            total = translation.Messages_total
+            untranslated = total - stat1 - stat2
+            percent = math.floor (100 * (float(stat1) / total))
+            span = pulse.html.Span ('%i%%' % percent)
+            span.add_class ('percent')
+            row.append (span)
+
+            row.append (pulse.utils.gettext ('%i.%i.%i') %
+                        (stat1, stat2, untranslated))
+            idx = grid.add_row (*row)
+            grid.add_row_class (idx, 'po')
+            grid.add_row_class (idx, 'po_' + domainid)
+            if percent >= 80:
+                grid.add_row_class (idx, 'po80')
+            elif percent >= 50:
+                grid.add_row_class (idx, 'po50')
+
+    page.output(fd=kw.get('fd'))
+    return 0
+
+
 def output_ajax_commits (module, **kw):
     query = kw.get ('query', {})
     page = pulse.html.Fragment (http=kw.get('http', True))
-    weeknum = int(query.get('weeknum', 0))
-    thisweek = pulse.utils.weeknum (datetime.datetime.now())
-    ago = thisweek - weeknum
-    revs = db.Revision.select_revisions (branch=module, weeknum=weeknum)
-    cnt = revs.count()
-    revs = revs[:20]
-    if ago == 0:
+    weeknum = query.get('weeknum', None)
+    if weeknum != None:
+        weeknum = int(weeknum)
+        thisweek = pulse.utils.weeknum (datetime.datetime.now())
+        ago = thisweek - weeknum
+        revs = db.Revision.select_revisions (branch=module, weeknum=weeknum)
+        cnt = revs.count()
+        revs = revs[:20]
+    else:
+        revs = db.Revision.select_revisions (branch=module)
+        cnt = revs.count()
+        revs = revs[:10]
+    if weeknum == None:
+        title = (pulse.utils.gettext('Showing %i of %i commits:')
+                 % (len(revs), cnt))
+    elif ago == 0:
         title = (pulse.utils.gettext('Showing %i of %i commits from this week:')
                  % (len(revs), cnt))
     elif ago == 1:
