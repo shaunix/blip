@@ -61,16 +61,12 @@ def output_top (**kw):
     for rset in sets:
         lbox = cont.add_link_box (rset)
         lbox.set_show_icon (False)
-        lbox.set_heading (True)
         subsets = pulse.utils.attrsorted (rset.subsets.all(), ['title'])
         if len(subsets) > 0:
-            setcont = pulse.html.ContainerBox ()
-            setcont.set_columns (min (len(subsets), 3))
-            lbox.add_content (setcont)
+            dl = pulse.html.DefinitionList ()
+            lbox.add_content (dl)
             for subset in subsets:
-                sublbox = setcont.add_link_box (subset)
-                sublbox.set_show_icon (False)
-                add_set_info (subset, sublbox)
+                dl.add_entry (pulse.html.Link (subset))
         else:
             add_set_info (rset, lbox)
 
@@ -101,6 +97,7 @@ def output_set (rset, **kw):
             tabbed.add_content (cont)
             for subset in subsets:
                 lbox = cont.add_link_box (subset)
+                lbox.set_url (None)
                 lbox.set_show_icon (False)
                 add_set_info (subset, lbox)
         else:
@@ -178,7 +175,8 @@ def add_set_info (rset, lbox):
     cnt = db.SetModule.count_related (subj=rset)
     dl = pulse.html.DefinitionList ()
     lbox.add_content (dl)
-    dl.add_entry (pulse.utils.gettext ('%i modules') % cnt)
+    dl.add_entry (pulse.html.Link (rset.pulse_url + '/mod',
+                                   pulse.utils.gettext ('%i modules') % cnt))
     if cnt == 0:
         return
 
