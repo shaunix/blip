@@ -139,29 +139,37 @@
   </set>
 </set>
 
-<group>
-  <defaults>
-    <set>
-      <jhbuild_scm_type>svn</jhbuild_scm_type>
-      <jhbuild_scm_server>https://stage.maemo.org/svn/maemo/projects/haf/</jhbuild_scm_server>
-      <jhbuild_scm_module>jhbuild_modules</jhbuild_scm_module>
-      <jhbuild_scm_path>jhbuild_modules</jhbuild_scm_path>
-      <jhbuild_scm_dir></jhbuild_scm_dir>
-    </set>
-  </defaults>
-
-  <set id="mobile">
-    <name>Mobile and Embedded</name>
-    <set id="hildon">
-      <name>Hildon</name>
-      <jhbuild_scm_file>hildon-desktop.modules</jhbuild_scm_file>
-    </set>
-    <set id="maemo">
-      <name>Maemo</name>
-      <jhbuild_scm_file>maemo.modules</jhbuild_scm_file>
-    </set>
+<set id="mobile">
+  <name>Mobile and Embedded</name>
+  <set id="hildon">
+    <name>Hildon</name>
+    <jhbuild_scm_type>svn</jhbuild_scm_type>
+    <jhbuild_scm_server>https://stage.maemo.org/svn/maemo/projects/haf/</jhbuild_scm_server>
+    <jhbuild_scm_module>jhbuild_modules</jhbuild_scm_module>
+    <jhbuild_scm_path>jhbuild_modules</jhbuild_scm_path>
+    <jhbuild_scm_dir></jhbuild_scm_dir>
+    <jhbuild_scm_file>hildon-desktop.modules</jhbuild_scm_file>
   </set>
-</group>
+  <set id="maemo">
+    <name>Maemo</name>
+    <jhbuild_scm_type>svn</jhbuild_scm_type>
+    <jhbuild_scm_server>https://stage.maemo.org/svn/maemo/projects/haf/</jhbuild_scm_server>
+    <jhbuild_scm_module>jhbuild_modules</jhbuild_scm_module>
+    <jhbuild_scm_path>jhbuild_modules</jhbuild_scm_path>
+    <jhbuild_scm_dir></jhbuild_scm_dir>
+    <jhbuild_scm_file>maemo.modules</jhbuild_scm_file>
+  </set>
+  <set id="matchbox">
+    <name>Matchbox</name>
+    <jhbuild_scm_file>mobile-2.24.modules</jhbuild_scm_file>
+    <jhbuild_metamodule>meta-matchbox</jhbuild_metamodule>
+  </set>
+  <set id="pimlico">
+    <name>Pimlico</name>
+    <jhbuild_scm_file>mobile-2.24.modules</jhbuild_scm_file>
+    <jhbuild_metamodule>meta-pimlico</jhbuild_metamodule>
+  </set>
+</set>
 
 <group>
   <defaults>
