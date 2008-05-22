@@ -127,9 +127,10 @@ function plink (id) {
     if (pcont.height() > window.innerHeight)
       newy = pcont.offset().top;
     else
-      newy = bot - window.innerHeight + 10;
+      newy = bot - window.innerHeight + 20;
     if (newy > window.pageYOffset)
-      window.scrollTo (0, newy);
+      for (var i = window.pageYOffset; i <= newy; i += 2)
+        window.scrollTo (0, i);
   }
   var away = function (e) {
     var e = e || window.event;
@@ -170,9 +171,10 @@ function mlink (id) {
       if (mcont.height() > window.innerHeight)
         newy = mcont.offset().top;
       else
-        newy = bot - window.innerHeight + 10;
+        newy = bot - window.innerHeight + 20;
       if (newy > window.pageYOffset)
-        window.scrollTo (0, newy);
+        for (var i = window.pageYOffset; i <= newy; i += 2)
+          window.scrollTo (0, i);
     }
     var away = function (e) {
       var e = e || window.event;
