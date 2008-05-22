@@ -84,6 +84,8 @@ def main (path, query, http=True, fd=None):
     kw = {'path' : path, 'query' : query, 'http' : http, 'fd' : fd}
     if query.get('ajax', None) == 'commits':
         return output_ajax_commits (doc, **kw)
+    elif query.get('ajax', None) == 'figures':
+        return output_ajax_figures (doc, **kw)
     elif query.get('ajax', None) == 'xmlfiles':
         return output_ajax_xmlfiles (doc, **kw)
     else:
@@ -206,13 +208,7 @@ def output_doc (doc, **kw):
     columns.add_to_column (0, box)
     xmlfiles = doc.data.get('xmlfiles', [])
     if len(xmlfiles) > 10:
-        div = pulse.html.Div (id='xmlfiles')
-        jslink = 'javascript:replace(\'xmlfiles\', '
-        jslink += '\'%s%s?ajax=xmlfiles\'' % (pulse.config.web_root, doc.ident[1:])
-        jslink += ')'
-        div.add_content (pulse.html.Link (jslink,
-                                          pulse.utils.gettext ('View all %i files')
-                                          % len(xmlfiles)))
+        div = pulse.html.AjaxBox (doc.pulse_url + '?ajax=xmlfiles')
     else:
         div = get_xmlfiles (doc, xmlfiles)
     box.add_content (div)
@@ -220,37 +216,13 @@ def output_doc (doc, **kw):
     # Figures
     figures = sorted (doc.data.get('figures', []))
     if len(figures) > 0:
-        ofs = db.OutputFile.objects.filter (type='figures', ident=doc.ident, subdir='C')
-        ofs_by_source = {}
-        for of in ofs:
-            ofs_by_source[of.source] = of
         box = pulse.html.InfoBox ('figures', pulse.utils.gettext ('Figures'))
         columns.add_to_column (1, box)
-        dl = pulse.html.DefinitionList ()
-        box.add_content (dl)
-        for figure in figures:
-            of = ofs_by_source.get(figure)
-            if of:
-                dl.add_term (pulse.html.Link (of.pulse_url, figure))
-                files = [os.path.join (doc.scm_dir, of.source)]
-                commit = db.Revision.get_last_revision (branch=doc.parent, files=files)
-                if commit != None:
-                    span = pulse.html.Span(divider=pulse.html.SPACE)
-                    # FIXME: i18n, word order, but we want to link person
-                    mspan = pulse.html.Span()
-                    mspan.add_content (commit.datetime.strftime('%Y-%m-%d %T'))
-                    mspan.add_class ('mtime')
-                    span.add_content (mspan)
-                    span.add_content (' by ')
-                    if not commit.person_id in people_cache:
-                        people_cache[commit.person_id] = commit.person
-                    person = people_cache[commit.person_id]
-                    span.add_content (pulse.html.Link (person))
-                    dl.add_entry (span)
-            else:
-                dl.add_term (figure)
-
-
+        if len(figures) > 10:
+            div = pulse.html.AjaxBox (doc.pulse_url + '?ajax=figures')
+        else:
+            div = get_figures (doc, figures)
+        box.add_content (div)
 
     # Translations
     box = pulse.html.InfoBox ('translations', pulse.utils.gettext ('Translations'))
@@ -326,6 +298,14 @@ def output_doc (doc, **kw):
     return 0
 
 
+def output_ajax_figures (doc, **kw):
+    page = pulse.html.Fragment (http=kw.get('http', True))
+    figures = sorted (doc.data.get('figures', []))
+    page.add_content (get_figures (doc, figures))
+    page.output(fd=kw.get('fd'))
+    return 0
+
+
 def output_ajax_xmlfiles (doc, **kw):
     page = pulse.html.Fragment (http=kw.get('http', True))
     xmlfiles = doc.data.get('xmlfiles', [])
@@ -387,6 +367,44 @@ def get_xmlfiles (doc, xmlfiles):
             person = people_cache[commit.person_id]
             span.add_content (pulse.html.Link (person))
             dl.add_entry (span)
+    return cont
+
+
+def get_figures (doc, figures):
+    cont = pulse.html.ContainerBox()
+    cont.set_id ('figures')
+    cont.set_sortable_tag ('dt')
+    cont.add_sort_link ('title', pulse.utils.gettext ('name'), False)
+    cont.add_sort_link ('mtime', pulse.utils.gettext ('modified'))
+    ofs = db.OutputFile.objects.filter (type='figures', ident=doc.ident, subdir='C')
+    ofs_by_source = {}
+    for of in ofs:
+        ofs_by_source[of.source] = of
+    dl = pulse.html.DefinitionList ()
+    cont.add_content (dl)
+    for figure in figures:
+        of = ofs_by_source.get(figure)
+        if of:
+            span = pulse.html.Span (pulse.html.Link (of.pulse_url, figure))
+            span.add_class ('title')
+            dl.add_term (span, classname='figures')
+            files = [os.path.join (doc.scm_dir, of.source)]
+            commit = db.Revision.get_last_revision (branch=doc.parent, files=files)
+            if commit != None:
+                span = pulse.html.Span(divider=pulse.html.SPACE)
+                # FIXME: i18n, word order, but we want to link person
+                mspan = pulse.html.Span()
+                mspan.add_content (commit.datetime.strftime('%Y-%m-%d %T'))
+                mspan.add_class ('mtime')
+                span.add_content (mspan)
+                span.add_content (' by ')
+                if not commit.person_id in people_cache:
+                    people_cache[commit.person_id] = commit.person
+                person = people_cache[commit.person_id]
+                span.add_content (pulse.html.Link (person))
+                dl.add_entry (span)
+        else:
+            dl.add_term (figure)
     return cont
 
 
