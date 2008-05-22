@@ -52,19 +52,14 @@ def main (path, query, http=True, fd=None):
 def synopsis ():
     """Construct an info box for the front page"""
     box = pulse.html.InfoBox ('sets', pulse.utils.gettext ('Sets'))
+    div = pulse.html.Div (pulse.utils.gettext ('Pulse is watching the following release sets:'))
+    box.add_content (div)
+    bl = pulse.html.BulletList ()
+    box.add_content (bl)
     sets = db.ReleaseSet.objects.filter (parent__isnull=True)
     sets = pulse.utils.attrsorted (list(sets), 'title')
     for rset in sets:
-        lbox = box.add_link_box (rset)
-        lbox.set_show_icon (False)
-        subsets = pulse.utils.attrsorted (rset.subsets.all(), ['title'])
-        if len(subsets) > 0:
-            dl = pulse.html.DefinitionList ()
-            lbox.add_content (dl)
-            for subset in subsets:
-                dl.add_entry (pulse.html.Link (subset))
-        else:
-            add_set_info (rset, lbox)
+        bl.add_item (pulse.html.Link (rset))
     return box
 
 

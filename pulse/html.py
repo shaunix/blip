@@ -412,13 +412,14 @@ class Page (Widget, HttpComponent, ContentComponent):
         p (fd, ('  <li id="siteaction-gnome_community">'
                 '<a href="http://www.gnome.org/community/">Community</a></li>'))
         p (fd, '</ul>')
-        p (fd, '<div id="header"><h1>Pulse</h1></div>')
-        p (fd, '<div id="body">')
+        p (fd, '<div id="header"><a href="%s"><img src="%s" alt="Pulse"></a></div>',
+           (pulse.config.web_root, pulse.config.data_root + 'pulse-logo.png'))
         p (fd, '<h1>')
         if self._icon != None:
             p (fd, '<img class="icon" src="%s" alt="%s"> ', (self._icon, self._title), False)
         p (fd, None, self._title)
         p (fd, '</h1>')
+        p (fd, '<div id="body">')
         if self._screenshot_file != None:
             p (fd, '<div class="screenshot">', None, False)
             url = self._screenshot_file.get_pulse_url ()
@@ -915,6 +916,32 @@ class DefinitionList (Widget):
                 p (fd, '<hr>', None, False)
             p (fd, '</%s>' % tag)
         p (fd, '</dl>')
+
+
+class BulletList (Widget):
+    def __init__ (self, **kw):
+        super (BulletList, self).__init__ (**kw)
+        self._id = kw.get ('id', None)
+        self._items = []
+
+    def add_item (self, item, classname=None):
+        self._items.append ((item, classname))
+
+    def output (self, fd=None):
+        """Output the HTML."""
+        if self._id != None:
+            p (fd, '<ul id="%s">', self._id)
+        else:
+            p (fd, '<ul>')
+        for item, cname in self._items:
+            if cname != None:
+                p (fd, '<li class="%s">', cname, False)
+            else:
+                p (fd, '<li>', None, False)
+            p (fd, None, item, False)
+            p (fd, '</li>')
+        p (fd, '</ul>')
+                
 
 
 ################################################################################
