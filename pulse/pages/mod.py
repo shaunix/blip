@@ -20,6 +20,7 @@
 
 import datetime
 import math
+import urllib
 
 import pulse.config
 import pulse.graphs
@@ -234,7 +235,8 @@ def output_module (module, **kw):
             cont.set_sortable_class ('po_' + domainid)
             cont.add_sort_link ('title', pulse.utils.gettext ('lang'), False)
             cont.add_sort_link ('percent', pulse.utils.gettext ('percent'))
-            div = pulse.html.AjaxBox (module.pulse_url + '?ajax=domain&domain=' + domain.ident)
+            div = pulse.html.AjaxBox (module.pulse_url + '?ajax=domain&domain=' +
+                                      urllib.quote (domain.ident))
             cont.add_content (div)
             box.add_content (cont)
     else:
