@@ -190,17 +190,18 @@ td.col-first { padding: 0; }
   margin: 0;
 }
 
+.desc {
+  font-style: italic;
+  color: #555753;
+  max-width: 40em;
+}
+
 table.lbox { margin: 0.2em 0 0.2em 0; width: 100%;}
 td.lbox-icon { width: 24px; text-align: center; }
 td.lbox-text { padding: 0 0.5em 0 0.5em; }
 div.lbox-heading {
   font-size: 1.2em;
   border-bottom: solid 1px #888a85;
-}
-div.lbox-desc {
-  font-style: italic;
-  color: #555753;
-  max-width: 40em;
 }
 td.lbox-graph { vertical-align: top; text-align: right; }
 
@@ -302,6 +303,14 @@ table.lbox table.facts td.fact-key { padding: 0 1em 0 0; }
 table.lbox table.facts td.fact-val { padding: 0 1em 0 0; }
 
 div.screenshot { float: right; margin: 1em 0 1em 1em; }
+
+div.zoom {
+  position: fixed;
+  display: none;
+  border: solid 1px #d3d7cf;
+  padding: 10px;
+  background-color: #eeeeec;
+}
 
 .admon { font-style: italic; }
 .admon img { vertical-align: -10%; }

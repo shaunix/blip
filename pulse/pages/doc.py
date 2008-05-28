@@ -214,7 +214,7 @@ def output_doc (doc, **kw):
     box.add_content (div)
 
     # Figures
-    figures = sorted (doc.data.get('figures', []))
+    figures = doc.data.get('figures', {})
     if len(figures) > 0:
         box = pulse.html.InfoBox ('figures', pulse.utils.gettext ('Figures'))
         columns.add_to_column (1, box)
@@ -300,7 +300,7 @@ def output_doc (doc, **kw):
 
 def output_ajax_figures (doc, **kw):
     page = pulse.html.Fragment (http=kw.get('http', True))
-    figures = sorted (doc.data.get('figures', []))
+    figures = doc.data.get('figures', {})
     page.add_content (get_figures (doc, figures))
     page.output(fd=kw.get('fd'))
     return 0
@@ -382,10 +382,10 @@ def get_figures (doc, figures):
         ofs_by_source[of.source] = of
     dl = pulse.html.DefinitionList ()
     cont.add_content (dl)
-    for figure in figures:
+    for figure in sorted(figures.keys()):
         of = ofs_by_source.get(figure)
         if of:
-            span = pulse.html.Span (pulse.html.Link (of.pulse_url, figure))
+            span = pulse.html.Span (pulse.html.Link (of.pulse_url, figure, classname='zoom'))
             span.add_class ('title')
             dl.add_term (span, classname='figures')
             files = [os.path.join (doc.scm_dir, of.source)]
@@ -403,6 +403,9 @@ def get_figures (doc, figures):
                 person = people_cache[commit.person_id]
                 span.add_content (pulse.html.Link (person))
                 dl.add_entry (span)
+            if figures[figure].get('comment', '') != '':
+                dl.add_entry (pulse.html.EllipsizedLabel (figures[figure]['comment'], 80),
+                              classname='desc')
         else:
             dl.add_term (figure)
     return cont

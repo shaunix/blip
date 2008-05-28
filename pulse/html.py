@@ -423,7 +423,7 @@ class Page (Widget, HttpComponent, ContentComponent):
         if self._screenshot_file != None:
             p (fd, '<div class="screenshot">', None, False)
             url = self._screenshot_file.get_pulse_url ()
-            p (fd, '<a href="%s">', self._screenshot_file.pulse_url, False)
+            p (fd, '<a href="%s" class="zoom">', self._screenshot_file.pulse_url, False)
             p (fd, '<img src="%s" width="%i" height="%i">',
                (self._screenshot_file.get_pulse_url ('thumbs'),
                 self._screenshot_file.data['thumb_width'],
@@ -728,7 +728,7 @@ class LinkBox (Widget, FactsComponent, ContentComponent):
                    (pulse.config.data_root, badge, badge))
         p (fd, '</div>')
         if self._desc != None:
-            p (fd, '<div class="lbox-desc">')
+            p (fd, '<div class="lbox-desc desc">')
             p (fd, EllipsizedLabel (self._desc, 130))
             p (fd, '</div>')
         FactsComponent.output (self, fd=fd)
@@ -1318,6 +1318,7 @@ class Link (Widget):
 
     Keyword arguments:
     icon -- The name of an icon in Pulse to prefix the link text with.
+    classname -- The value of the HTML class attribute.
     """
 
     def __init__ (self, *args, **kw):
@@ -1332,12 +1333,16 @@ class Link (Widget):
             self._text = args[1]
         else:
             self._href = self._text = args[0]
-        self._icon = kw.get('icon', None)
+        self._icon = kw.get ('icon', None)
+        self._classname = kw.get ('classname', None)
     
     def output (self, fd=None):
         """Output the HTML."""
         if self._href != None:
-            p (fd, '<a href="%s">', self._href, False)
+            if self._classname != None:
+                p (fd, '<a href="%s" class="%s">', (self._href, self._classname), False)
+            else:
+                p (fd, '<a href="%s">', self._href, False)
         if self._icon != None:
             p (fd, '<img src="%s%s-16.png" height="16" width="16"> ',
                (pulse.config.data_root, self._icon),

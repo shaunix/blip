@@ -1,4 +1,33 @@
 /******************************************************************************/
+/** Zoom images **/
+$(document).ready(function () {
+  $('a.zoom').click(function () {
+    $(this).after('<div class="zoom"><img src="' + $(this).attr('href') + '"></div>');
+    var zoom = $(this).next('div.zoom');
+    var img = zoom.children('img');
+    var lpos = (window.innerWidth - zoom.width()) / 2
+    zoom.css('top', ((window.innerHeight - zoom.height()) / 2) + 'px');
+    zoom.css('left', lpos + 'px');
+    zoom.css('z-index', '200');
+    var mask = $('<div class="mask" id="zoommask"></div>');
+    mask.css('display', 'none');
+    mask.css('left', '0px');
+    mask.css('top', '0px');
+    mask.css('width', $(document).width() + 'px');
+    mask.css('height', $(document).height() + 'px');
+    mask.click(function () {
+      mask.fadeOut('fast', function () { mask.remove() });
+      zoom.fadeOut('fast', function () { zoom.remove() });
+    });
+    mask.appendTo('body');
+    zoom.fadeIn();
+    mask.fadeIn();
+    return false;
+  });
+});
+
+
+/******************************************************************************/
 /** AJAX boxes **/
 $(document).ready(function () {
   $('.ajax').each(function (i) {
@@ -95,7 +124,7 @@ function replace (id, url) {
   var el = $('#' + id);
   var par = el.parents('.info-content');
   if (par.length > 0) {
-    par.before ('<div class="infomask" id="infomask' + id + '">')
+    par.before ('<div class="infomask" id="infomask' + id + '"></div>')
     var mask = $('#infomask' + id);
     mask.css ('height', par.height() + 'px');
     mask.css ('width', par.width() + 'px');

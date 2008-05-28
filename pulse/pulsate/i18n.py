@@ -145,8 +145,14 @@ def update_xml2po (po, **kw):
         os.chdir (owd)
 
     po.data['figures'] = {}
-    for figure in po.parent.data.get('figures', []):
-        po.data['figures'][figure] = popo.get_image_status (figure)
+    for figure in po.parent.data.get('figures', {}).keys():
+        po.data['figures'].setdefault(figure, {})
+        po.data['figures'][figure]['status'] = popo.get_image_status (figure)
+        comment = po.parent.data['figures'][figure].get('comment', '')
+        if comment == '':
+            po.data['figures'][figure]['comment'] = ''
+        else:
+            po.data['figures'][figure]['comment'] = popo.get_message_str (comment)
 
     files = [os.path.join (po.scm_dir, po.scm_file)]
     revision = db.Revision.get_last_revision (branch=po.parent.parent, files=files)

@@ -136,11 +136,11 @@ def output_translation (po, branchable, **kw):
             for figure in figures:
                 of = ofs_by_source_C.get(figure)
                 if of:
-                    dl.add_term (pulse.html.Link (of.pulse_url, figure))
+                    dl.add_term (pulse.html.Link (of.pulse_url, figure, classname='zoom'))
                 else:
                     dl.add_term (figure)
 
-                status = po.data.get('figures', {}).get(figure)
+                status = po.data.get('figures', {}).get(figure, {}).get('status')
                 if status == 'translated':
                     entry = pulse.utils.gettext ('translated')
                 elif status == 'fuzzy':
@@ -149,7 +149,7 @@ def output_translation (po, branchable, **kw):
                     entry = pulse.utils.gettext ('untranslated')
                 of = ofs_by_source_lc.get(figure)
                 if of:
-                    dl.add_entry (pulse.html.Link (of.pulse_url, entry))
+                    dl.add_entry (pulse.html.Link (of.pulse_url, entry, classname='zoom'))
                     files = [os.path.join (po.scm_dir, of.source)]
                     commit = db.Revision.get_last_revision (branch=module, files=files)
                     if commit != None:
@@ -167,6 +167,12 @@ def output_translation (po, branchable, **kw):
                         dl.add_entry (span)
                 else:
                     dl.add_entry (entry)
+                comment = po.data.get('figures', {}).get(figure, {}).get('comment', '')
+                if comment == '':
+                    comment = parent.data.get('figures', {}).get(figure, {}).get('comment', '')
+                if comment != '':
+                    dl.add_entry (pulse.html.EllipsizedLabel (comment, 80),
+                                  classname='desc')
 
     page.output(fd=kw.get('fd'))
 

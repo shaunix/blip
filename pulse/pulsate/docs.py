@@ -259,7 +259,7 @@ def process_docbook_docfile (docfile, doc, **kw):
 
     # FIXME
     imgs = xmldoc.xpathEval ('//imagedata')
-    doc.data['figures'] = []
+    doc.data['figures'] = {}
     doc.data['screens'] = {}
     for img in imgs:
         fileref = img.prop ('fileref')
@@ -267,8 +267,11 @@ def process_docbook_docfile (docfile, doc, **kw):
             continue
 
         par = img.parent
+        media = None
         is_screenshot = False
         while par.type == 'element':
+            if par.name in ['mediaobject', 'inlinemediaobject']:
+                media = par
             if par.name == 'screenshot':
                 is_screenshot = True
             if is_screenshot:
@@ -276,11 +279,19 @@ def process_docbook_docfile (docfile, doc, **kw):
                 if parid != None:
                     doc.data['screens'].setdefault (parid, fileref)
             par = par.parent
+
+        comment = ''
+        if media != None:
+            for text in pulse.utils.xmliter (media):
+                if text.type == 'element' and text.name == 'textobject':
+                    for phrase in pulse.utils.xmliter (text):
+                        if phrase.type == 'element' and phrase.name == 'phrase':
+                            comment = phrase.getContent()
+
         if is_screenshot:
             doc.data['screens'].setdefault (None, fileref)
 
-        if not fileref in doc.data['figures']:
-            doc.data['figures'].append (fileref)
+        doc.data['figures'][fileref] = {'comment': comment}
 
     db.Timestamp.set_timestamp (rel_scm, mtime)
 
@@ -290,7 +301,7 @@ def process_docbook_pofile (pofile, doc, **kw):
     if not hasattr (doc, 'figures_by_lang'):
         doc.figures_by_lang = {}
     doc.figures_by_lang[lang] = []
-    for ref in doc.data.get ('figures', []):
+    for ref in doc.data.get ('figures', {}).keys():
         dref = os.path.join (os.path.dirname (pofile), ref)
         if os.path.exists (dref):
             doc.figures_by_lang[lang].append (ref)
@@ -350,7 +361,7 @@ def process_credits (doc, **kw):
 
 
 def process_figures (doc, checkout, **kw):
-    figures = doc.data.get ('figures', [])
+    figures = doc.data.get ('figures', {}).keys()
     figures_by_lang = getattr (doc, 'figures_by_lang', {})
     figures_by_lang['C'] = figures
     ofs = list(db.OutputFile.objects.filter (type='figures', ident=doc.ident))
