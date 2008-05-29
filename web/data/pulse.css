@@ -48,7 +48,6 @@ body {
 #header {
   background: #555753;
   padding: 0.5em 0 0.5em 2.4em;
-  width: 100%;
 }
 #tabs {
   background: url(bar.png) 0 100% repeat-x;
@@ -305,10 +304,10 @@ table.lbox table.facts td.fact-val { padding: 0 1em 0 0; }
 div.screenshot { float: right; margin: 1em 0 1em 1em; }
 
 div.zoom {
-  position: fixed;
+  position: absolute;
   display: none;
-  border: solid 1px #d3d7cf;
   padding: 10px;
+  border: solid 1px #d3d7cf;
   background-color: #eeeeec;
 }
 

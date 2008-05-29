@@ -1,30 +1,41 @@
 /******************************************************************************/
 /** Zoom images **/
-$(document).ready(function () {
-  $('a.zoom').click(function () {
-    $(this).after('<div class="zoom"><img src="' + $(this).attr('href') + '"></div>');
-    var zoom = $(this).next('div.zoom');
-    var img = zoom.children('img');
-    var lpos = (window.innerWidth - zoom.width()) / 2
-    zoom.css('top', ((window.innerHeight - zoom.height()) / 2) + 'px');
-    zoom.css('left', lpos + 'px');
-    zoom.css('z-index', '200');
+function init_zoom (ctxt) {
+  $('a.zoom', ctxt).click(function () {
     var mask = $('<div class="mask" id="zoommask"></div>');
     mask.css('display', 'none');
     mask.css('left', '0px');
     mask.css('top', '0px');
     mask.css('width', $(document).width() + 'px');
     mask.css('height', $(document).height() + 'px');
+    mask.appendTo('body');
+    mask.fadeIn();
     mask.click(function () {
       mask.fadeOut('fast', function () { mask.remove() });
-      zoom.fadeOut('fast', function () { zoom.remove() });
+      $('div.zoom').fadeOut('fast', function () { $('div.zoom').remove() });
     });
-    mask.appendTo('body');
-    zoom.fadeIn();
-    mask.fadeIn();
+    var link = $(this);
+    var img = new Image();
+    img.src = link.attr('href');
+    var open = function () {
+      var zoomdiv = $('<div class="zoom"><img src="' + img.src + '"></div>');
+      zoomdiv.appendTo('body');
+      zoomdiv.css('top', link.offset().top + 'px');
+      zoomdiv.css('left', ((window.innerWidth - zoomdiv.width()) / 2) - 22 + 'px');
+      zoomdiv.css('z-index', '100');
+      zoomdiv.fadeIn('fast', function () {
+        scroll(zoomdiv, 40);
+      });
+    }
+    if (img.complete) {
+      open(link, img);
+    } else {
+      img.onload = function () { open(link, img) };
+    }
     return false;
-  });
-});
+  })
+}
+$(document).ready(function() { init_zoom($(document)) });
 
 
 /******************************************************************************/
@@ -33,6 +44,7 @@ $(document).ready(function () {
   $('.ajax').each(function (i) {
     $(this).load($(this).text(), function (data) {
       $(this).slideDown();
+      init_zoom($(this));
     });
   });
 });
@@ -144,23 +156,32 @@ function replace (id, url) {
 
 
 /******************************************************************************/
+/** Automatic scrolling **/
+function scroll (div, pad) {
+  var bot = div.offset().top + div.height();
+  if (!pad)
+    var pad = 20;
+  if (bot > window.innerHeight) {
+    var newy;
+    if (div.height() > window.innerHeight)
+      newy = div.offset().top;
+    else
+      newy = bot - window.innerHeight + pad;
+    if (newy > window.pageYOffset)
+      for (var i = window.pageYOffset; i <= newy; i += 2)
+        window.scrollTo(0, i);
+  }
+}
+
+
+/******************************************************************************/
 /** Popup links **/
 
 function plink (id) {
   var plink = $('#plink' + id);
   var pcont = $('#pcont' + id);
   pcont.fadeIn('fast');
-  var bot = pcont.offset().top + pcont.height();
-  if (bot > window.innerHeight) {
-    var newy;
-    if (pcont.height() > window.innerHeight)
-      newy = pcont.offset().top;
-    else
-      newy = bot - window.innerHeight + 20;
-    if (newy > window.pageYOffset)
-      for (var i = window.pageYOffset; i <= newy; i += 2)
-        window.scrollTo (0, i);
-  }
+  scroll(pcont);
   var away = function (e) {
     var e = e || window.event;
     var target = e.target || e.srcElement;
