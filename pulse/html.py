@@ -1129,11 +1129,12 @@ class PopupLink (Widget):
     def output (self, fd=None):
         """Output the HTML."""
         PopupLink._count += 1
-        p (fd, '<a class="plink" id="plink%i" href="javascript:plink(\'%i\')">',
-           (PopupLink._count, PopupLink._count), False)
+        id = md5.md5(self._full).hexdigest()[:6] + str(PopupLink._count)
+        p (fd, '<a class="plink" id="plink%s" href="javascript:plink(\'%s\')">',
+           (id, id), False)
         p (fd, None, self._short, False)
         p (fd, '</a>')
-        p (fd, '<div class="pcont" id="pcont%i">', PopupLink._count)
+        p (fd, '<div class="pcont" id="pcont%s">', id)
         if isinstance (self._full, basestring):
             while len(self._full) > 0 and self._full[-1] == '\n': self._full = self._full[:-1]
         p (fd, '<pre class="pcont-content">', None, False)
