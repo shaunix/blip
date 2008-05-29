@@ -151,7 +151,7 @@ def update_xml2po (po, **kw):
         comment = po.parent.data['figures'][figure].get('comment', '')
         if comment == '':
             po.data['figures'][figure]['comment'] = ''
-        else:
+        elif popo.has_message (comment):
             po.data['figures'][figure]['comment'] = popo.get_message_str (comment)
 
     files = [os.path.join (po.scm_dir, po.scm_file)]
