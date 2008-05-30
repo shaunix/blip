@@ -539,7 +539,8 @@ class AjaxBox (Widget):
 
     def output (self, fd=None):
         """Output the HTML."""
-        p (fd, '<div class="ajax">%s</div>', self._url)
+        p (fd, '<div class="ajax"><img src="%sprocess00.png"><a href="%s">%s</a></div>',
+           (pulse.config.data_root, self._url, pulse.utils.gettext ('Loading')) )
 
 
 class InfoBox (Widget, ContentComponent, LinkBoxesComponent):

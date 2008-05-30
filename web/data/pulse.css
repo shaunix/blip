@@ -153,7 +153,12 @@ td.col-first { padding: 0; }
 
 .grid-td { padding: 0 0 0 1em; }
 
-.ajax { display: none; }
+.ajax {
+  display: none;
+  font-weight: bold;
+  color: #555753;
+}
+.ajax img { vertical-align: bottom; }
 
 .sublinks {
   font-size: 0.83em;
