@@ -48,33 +48,36 @@ $(document).ready(function () {
     var msg = div.text();
     var src = $('img', div).attr('src');
     div.empty();
-    div.append('<img src="' + src + '">');
-    div.append(' ' + msg);
-    var process = function (img) {
-      if (img.attr('class') == 'stop') {
-        clearInterval(img.timer);
-        img.parent().remove();
+    var process = function (adiv) {
+      if (adiv.hasClass('stop')) {
+        clearInterval(div.timer);
+        div.remove();
       } else {
-        var src = img.attr('src');
-        var base = src.substring(0, src.length - 6);
-        var num = src.substring(src.length - 6, src.length - 4);
-        if (num.substring(0, 1) == '0')
-          num = num.substring(1);
-        num = parseInt(num) + 1;
-        if (num > 35)
-          num = 0;
-        if (num < 10)
-          base = base + '0';
-        img.attr('src', base + num + '.png');
+        var cur = adiv.current;
+        var next = cur.next('img');
+        if (next.length == 0)
+          next = adiv.children('img:first-child');
+        cur.css('display', 'none');
+        next.css('display', 'inline');
+        adiv.current = next;
       }
     };
-    var img = $('img', div);
-    img.timer = setInterval(function () { process(img); }, 100);
+    var base = src.substring(0, src.length - 6);
+    for (var num = 0; num <= 35; num++) {
+      var url = base;
+      if (num < 10)
+        url = url + '0';
+      $('<img src="' + url + num + '.png">').css('display', 'none').appendTo(div);
+    }
+    div.append(' ' + msg);
+    div.current = div.children('img:first-child');
+    div.current.css('display', 'inline');
+    div.timer = setInterval(function () { process(div); }, 80);
     div.slideDown('fast');
     $.get(href, {}, function (data) {
       var cont = $(data).css('display', 'none');
       cont.insertAfter(div);
-      div.slideUp('fast', function () { img.attr('class', 'stop'); });
+      div.slideUp('fast', function () { div.addClass('stop'); });
       cont.slideDown('fast');
     });
   });
