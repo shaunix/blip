@@ -185,13 +185,31 @@
       <scm_branch>trunk</scm_branch>
       <scm_path>banshee/trunk/banshee</scm_path>
     </module>
+    <module id="blam"/>
+    <module id="conduit"/>
+    <module id="devilspie"/>
+    <module id="eog-plugins"/>
+    <module id="epiphany-extensions"/>
+    <module id="f-spot"/>
+    <module id="gedit-plugins"/>
+    <module id="gimp"/>
+    <module id="gimp-data-extras"/>
+    <module id="gimp-freetype"/>
+    <module id="gimp-gap"/>
+    <module id="gimp-help-2"/>
+    <module id="gimp-perl"/>
+    <module id="gimp-plugin-template"/>
+    <module id="gimp-ruby"/>
+    <module id="gimp-tiny-fu"/>
+    <module id="gnumeric"/>
+    <module id="gthumb"/>
+    <module id="xchat-gnome"/>
   </set>
   <set id="gnome-infrastructure">
     <name>Gnome Infrastructure</name>
-    <module id="damned-lies">
-    </module>
-    <module id="library-web">
-    </module>
+    <module id="bugzilla.gome.org"/>
+    <module id="damned-lies"/>
+    <module id="library-web"/>
     <module id="release-notes">
       <scm_branch>gnome-2-22</scm_branch>
     </module>
@@ -200,6 +218,7 @@
       <scm_server>http://www.gnome.org/~shaunm/git/</scm_server>
       <scm_path>pulse.git</scm_path>
     </module>
+    <module id="svn-web"/>
   </set>
 </group>
 
