@@ -94,6 +94,18 @@ def main (path, query, http=True, fd=None):
         return output_module (branch, **kw)
 
 
+def synopsis ():
+    """Construct an info box for the front page"""
+    box = pulse.html.InfoBox ('modules', pulse.utils.gettext ('Modules'))
+    modules = db.Branch.objects.filter (type='Module').order_by ('-mod_score')
+    box.add_content (pulse.html.Div (pulse.utils.gettext ('Kicking ass and taking names:')))
+    bl = pulse.html.BulletList ()
+    box.add_content (bl)
+    for module in modules[:12]:
+        bl.add_item (pulse.html.Link (module))
+    return box
+
+
 def output_module (module, **kw):
     branchable = module.branchable
     checkout = pulse.scm.Checkout.from_record (module, checkout=False, update=False)
