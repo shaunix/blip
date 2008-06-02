@@ -58,6 +58,9 @@ def update_intltool (po, **kw):
     if potfile == None: return
 
     filepath = os.path.join (checkout.directory, po.scm_dir, po.scm_file)
+    if not os.path.exists (filepath):
+        pulse.utils.warn('Could not locate file %s for %s' % (po.scm_file, po.parent.ident))
+        return
     rel_scm = pulse.utils.relative_path (filepath, pulse.config.scm_dir)
     mtime = os.stat(filepath).st_mtime
 
@@ -112,6 +115,9 @@ def update_xml2po (po, **kw):
     if potfile == None: return
 
     filepath = os.path.join (checkout.directory, po.scm_dir, po.scm_file)
+    if not os.path.exists (filepath):
+        pulse.utils.warn('Could not locate file %s for %s' % (po.scm_file, po.parent.ident))
+        return
     rel_scm = pulse.utils.relative_path (filepath, pulse.config.scm_dir)
     mtime = os.stat(filepath).st_mtime
 
