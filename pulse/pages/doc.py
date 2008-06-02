@@ -44,8 +44,8 @@ def main (path, query, http=True, fd=None):
             kw['title'] = pulse.utils.gettext ('Document Not Found')
             # FIXME: this is not a good place to redirect
             kw['pages'] = [('mod', pulse.utils.gettext ('All Modules'))]
-            page = pulse.html.PageNotFound (
-                pulse.utils.gettext ('Pulse could not find the document %s') % path[3],
+            page = pulse.html.PageNotFound ( 
+               pulse.utils.gettext ('Pulse could not find the document %s') % path[3],
                 **kw)
             page.output(fd=fd)
             return 404
@@ -195,12 +195,8 @@ def output_doc (doc, **kw):
         box.add_content (graph)
     except IndexError:
         pass
-    files = [os.path.join (doc.scm_dir, f) for f in doc.data.get ('xmlfiles', [])]
-    revs = db.Revision.select_revisions (branch=doc.parent, files=files)
-    cnt = revs.count()
-    revs = revs[:10]
-    div = get_commits_div (doc, revs,
-                           pulse.utils.gettext('Showing %i of %i commits:') % (len(revs), cnt))
+
+    div = pulse.html.AjaxBox (doc.pulse_url + '?ajax=commits')
     box.add_content (div)
 
     # Files
@@ -317,14 +313,23 @@ def output_ajax_xmlfiles (doc, **kw):
 def output_ajax_commits (doc, **kw):
     page = pulse.html.Fragment (http=kw.get('http', True))
     query = kw.get('query', {})
-    weeknum = int(query.get('weeknum', 0))
-    thisweek = pulse.utils.weeknum (datetime.datetime.now())
-    ago = thisweek - weeknum
+    weeknum = query.get('weeknum', None)
     files = [os.path.join (doc.scm_dir, f) for f in doc.data.get ('xmlfiles', [])]
-    revs = db.Revision.select_revisions (branch=doc.parent, files=files, weeknum=weeknum)
-    cnt = revs.count()
-    revs = revs[:20]
-    if ago == 0:
+    if weeknum != None:
+        weeknum = int(weeknum)
+        thisweek = pulse.utils.weeknum (datetime.datetime.now())
+        ago = thisweek - weeknum
+        revs = db.Revision.select_revisions (branch=doc.parent, files=files, weeknum=weeknum)
+        cnt = revs.count()
+        revs = revs[:20]
+    else:
+        revs = db.Revision.select_revisions (branch=doc.parent, files=files)
+        cnt = revs.count()
+        revs = revs[:10]
+    if weeknum == None:
+        title = (pulse.utils.gettext('Showing %i of %i commits:')
+                 % (len(revs), cnt))
+    elif ago == 0:
         title = (pulse.utils.gettext('Showing %i of %i commits from this week:')
                  % (len(revs), cnt))
     elif ago == 1:
