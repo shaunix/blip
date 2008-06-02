@@ -179,6 +179,13 @@
       <scm_module>%(id)</scm_module>
     </module>
   </defaults>
+  <set id="gnome-extras">
+    <name>Gnome Extras</name>
+    <module id="banshee">
+      <scm_branch>trunk</scm_branch>
+      <scm_path>banshee/trunk/banshee</scm_path>
+    </module>
+  </set>
   <set id="gnome-infrastructure">
     <name>Gnome Infrastructure</name>
     <module id="damned-lies">
