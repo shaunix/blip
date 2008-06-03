@@ -208,7 +208,7 @@
   </set>
   <set id="gnome-infrastructure">
     <name>Gnome Infrastructure</name>
-    <module id="bugzilla.gome.org"/>
+    <module id="bugzilla.gnome.org"/>
     <module id="damned-lies"/>
     <module id="library-web"/>
     <module id="release-notes">
