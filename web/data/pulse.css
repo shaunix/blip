@@ -164,6 +164,30 @@ td.col-first { padding: 0; }
   font-size: 0.83em;
 }
 
+.trentry {
+  margin-top: 1em;
+  padding: 6px 1em 6px 1em;
+  background-color: #eeeeec;
+  border: solid 1px #babdb6;
+  -moz-border-radius: 6px;
+}
+.trnotrans {
+  background-color: #fff9cf;
+}
+.trsource {
+  padding-bottom: 0.5em;
+  border-bottom: solid 1px #babdb6;
+}
+.trcomment {
+  color: #555753;
+  padding-top: 0.5em;
+  padding-bottom: 0.5em;
+  border-bottom: solid 1px #babdb6;
+}
+.trtrans {
+  padding-top: 0.5em;
+}
+
 .info { margin: 1em 0 2em 0; }
 .info-title { color: #555753; font-weight: bold; padding: 0 0 0.2em 0; }
 .info-title a { float: right; }

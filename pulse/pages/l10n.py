@@ -28,6 +28,7 @@ import pulse.config
 import pulse.graphs
 import pulse.html
 import pulse.models as db
+import pulse.parsers
 import pulse.scm
 import pulse.utils
 
@@ -115,6 +116,21 @@ def output_translation (po, branchable, **kw):
     box = pulse.html.InfoBox ('developers', pulse.utils.gettext ('Developers'))
     columns.add_to_column (0, box)
     # FIXME
+
+    try:
+        of = db.OutputFile.objects.get (type='l10n', ident=po.parent.ident, filename=po.scm_file)
+        box = pulse.html.InfoBox ('messages', pulse.utils.gettext ('Messages'))
+        columns.add_to_column (1, box)
+        pofile = pulse.parsers.Po (of.get_file_path ())
+        form = pulse.html.TranslationForm()
+        box.add_content (form)
+        for msg in pofile.get_messages():
+            entry = form.add_entry (msg)
+            entry.set_comment (pofile.get_message_comment (msg))
+            if pofile.has_message (msg):
+                entry.set_translated (pofile.get_message_str (msg))
+    except IndexError:
+        pass
 
     # Figures
     if parent.type == 'Document':

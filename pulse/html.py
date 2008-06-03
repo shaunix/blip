@@ -882,6 +882,69 @@ class TabbedBox (Widget, ContentComponent):
         p (fd, '</div>')
 
 
+class TranslationForm (Widget):
+    def __init__ (self, **kw):
+        super (TranslationForm, self).__init__ (**kw)
+        self._msgs = []
+
+    class Entry (Widget):
+        def __init__ (self, msg, **kw):
+            super (TranslationForm.Entry, self).__init__ (**kw)
+            self._msg = msg
+            self._comment = None
+            self._trans = None
+
+        def set_comment (self, comment):
+            self._comment = comment
+
+        def set_translated (self, txt):
+            self._trans = txt
+
+        def output (self, fd=None):
+            if self._trans == None:
+                p (fd, '<div class="trentry trnotrans">')
+            else:
+                p (fd, '<div class="trentry">')
+            p (fd, '<div class="trsource">')
+            lines = self._msg.split('\\n')
+            p (fd, None, lines[0])
+            for line in lines[1:]:
+                p (fd, '<br>')
+                p (fd, None, line)
+            p (fd, '</div>')
+            if self._comment != None:
+                lines = self._comment.split('\n')
+                if lines[-1] == '':
+                    lines = lines[:-1]
+                if len(lines) > 0:
+                    p (fd, '<div class="trcomment">')
+                    p (fd, '# %s', lines[0])
+                    for line in lines[1:]:
+                        p (fd, '<br>')
+                        p (fd, '# %s', line)
+                    p (fd, '</div>')
+            if self._trans != None:
+                p (fd, '<div class="trtrans">')
+                lines = self._trans.split('\\n')
+                p (fd, None, lines[0])
+                for line in lines[1:]:
+                    p (fd, '<br>')
+                    p (fd, None, line)
+                p (fd, '</div>')
+            p (fd, '</div>')
+
+    def add_entry (self, msg):
+        entry = TranslationForm.Entry (msg)
+        self._msgs.append (entry)
+        return entry
+
+    def output (self, fd=None):
+        p (fd, '<div class="trform">')
+        for msg in self._msgs:
+            msg.output (fd=fd)
+        p (fd, '</div>')
+
+
 ################################################################################
 ## Lists
 

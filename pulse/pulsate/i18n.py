@@ -23,6 +23,7 @@ import datetime
 import md5
 import os
 import os.path
+import shutil
 
 import pulse.config
 import pulse.models as db
@@ -86,6 +87,23 @@ def update_intltool (po, **kw):
                                     stats[0], stats[1], total)
     finally:
         os.chdir (owd)
+
+    of = db.OutputFile.objects.filter (type='l10n', ident=po.parent.ident, filename=po.scm_file)
+    try:
+        of = of[0]
+    except IndexError:
+        of = db.OutputFile (type='l10n', ident=po.parent.ident, filename=po.scm_file,
+                            datetime=datetime.datetime.now())
+    outfile_abs = of.get_file_path()
+    outfile_rel = pulse.utils.relative_path (outfile_abs, pulse.config.web_l10n_dir)
+    outdir = os.path.dirname (outfile_abs)
+    if not os.path.exists (outdir):
+        os.makedirs (outdir)
+    pulse.utils.log ('Copying PO file %s' % outfile_rel)
+    shutil.copyfile (os.path.join (podir, po.scm_file), os.path.join (outdir, po.scm_file))
+    of.datetime = datetime.datetime.now()
+    of.data['revision'] = checkout.get_revision()
+    of.save()
 
     files = [os.path.join (po.scm_dir, po.scm_file)]
     revision = db.Revision.get_last_revision (branch=po.parent.parent, files=files)

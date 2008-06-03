@@ -160,7 +160,7 @@ class Po:
             self._fd = fd
         else:
             self._fd = None
-        self._msgstrs = {}
+        self._msgstrs = pulse.utils.odict()
         self._images = {}
         self._comments = {}
         self._num_translated = 0
@@ -250,6 +250,10 @@ class Po:
                         self._images[imgname] = 'translated'
         self._inkey = ''
         self._msg = {}
+
+    def get_messages (self):
+        """Get a list of all messages."""
+        return [msg[0] for msg in self._msgstrs.keys()]
 
     def has_message (self, msgid, msgctxt=None):
         """Check if the PO file has a given message."""
