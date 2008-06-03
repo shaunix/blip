@@ -274,7 +274,7 @@ def update_graph (branch, **kw):
     score = pulse.utils.score (stats)
     branch.mod_score = score
 
-    graph = pulse.graphs.BarGraph (stats, 30)
+    graph = pulse.graphs.BarGraph (stats, 80)
     graph.save (of.get_file_path())
 
     of.data['coords'] = zip (graph.get_coords(), stats, range(thisweek-23, thisweek+1))
