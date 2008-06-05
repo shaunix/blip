@@ -145,7 +145,7 @@ def output_set (rset, **kw):
             mod = mods[i]
             lbox = cont.add_link_box (mod)
             lbox.add_graph (pulse.config.graphs_root +
-                            '/'.join(mod.ident.split('/')[1:] + ['commits.png']) )
+                            '/'.join(mod.ident.split('/')[1:] + ['commits-tight.png']) )
             span = pulse.html.Span (mod.branch_module)
             span.add_class ('module')
             lbox.add_fact (pulse.utils.gettext ('module'), pulse.html.Link (mod.pulse_url, span))
@@ -219,7 +219,7 @@ def add_more_tabs (rset, tabbed, path):
                             pulse.utils.gettext ('Developer Documentation (%i)')),
                 'tabext' : 'doc',
                 'exts'   : ('user', 'devel'),
-                'graphs' : 'commits.png' },
+                'graphs' : 'commits-tight.png' },
               { 'types'  : 'Domain',
                 'tabtxt' : pulse.utils.gettext ('Domains (%i)'),
                 'tabext' : 'i18n' },

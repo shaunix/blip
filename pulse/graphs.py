@@ -101,19 +101,29 @@ class BarGraph (Graph):
     the ratio.
     """
 
-    def __init__ (self, stats, top, width=None, height=40):
-        if width == None:
-            width = 6 * len(stats) + 2
-        Graph.__init__ (self, width=width, height=height)
+    def __init__ (self, stats, top, **kw):
         self._stats = stats
+        self._tight = kw.get ('tight', False)
+        if self._tight:
+            width = kw.get ('width', len(stats))
+            line_width = 1
+            def get_left (i):
+                return i + 0.5
+        else:
+            width = kw.get ('width', 3 * len(stats))
+            line_width = 2
+            def get_left (i):
+                return (3 * i) + 1
+        height = kw.get ('height', 40)
+        Graph.__init__ (self, width=width, height=height)
         self.context.set_antialias (cairo.ANTIALIAS_GRAY)
         alum_rgb = [0.729412, 0.741176, 0.713725]
         alum_hsv = colorsys.rgb_to_hsv (*alum_rgb)
         for i in range(len(stats)):
             stat = stats[i] / (top * 1.0) 
             self.context.new_path ()
-            self.context.set_line_width (2)
-            self.context.move_to (6*i + 2.5, self.height)
+            self.context.set_line_width (line_width)
+            self.context.move_to (get_left (i), self.height)
             self.context.rel_line_to (0, -0.5 - (self.height * min(stat, 1)))
             self.context.close_path ()
             if stat > 1:
@@ -133,5 +143,6 @@ class BarGraph (Graph):
         (left, top, right, bottom), where pixel coordinates run left-to-right
         and top-to-bottom.  This is the form expected for image maps in HTML.
         """
-
-        return [(6*i, 0, 6*i + 5, self.height) for i in range(len(self._stats))]
+        # FIXME: this is wrong for tight=True, but we're not using coords
+        # for tight graphs, so it doesn't matter much.
+        return [(3*i, 0, 3*i + 2, self.height) for i in range(len(self._stats))]

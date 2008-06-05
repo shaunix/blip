@@ -239,49 +239,67 @@ def check_history (branch, checkout):
 def update_graph (branch, **kw):
     now = datetime.datetime.now()
     thisweek = pulse.utils.weeknum (datetime.datetime.utcnow())
-    of = db.OutputFile.objects.filter (type='graphs', ident=branch.ident, filename='commits.png')
-    try:
-        of = of[0]
-    except IndexError:
-        of = None
+    numweeks = 104
+    i = 0
+    while True:
+        topweek = thisweek - (i * numweeks)
+        revs = db.Revision.select_revisions (branch=branch,
+                                             weeknum__gt=(topweek - numweeks),
+                                             weeknum__lte=topweek)
+        if revs.count() == 0:
+            break;
 
-    revs = db.Revision.select_revisions (branch=branch,
-                                         weeknum__gt=(thisweek - 24))
+        fname = 'commits-' + str(i) + '.png'
+        of = db.OutputFile.objects.filter (type='graphs', ident=branch.ident, filename=fname)
 
-    if of != None:
-        if kw.get('timestamps', True):
-            lastrev = of.data.get ('lastrev', None)
-            weeknum = of.data.get ('weeknum', None)
-            if weeknum == thisweek:
-                rev = None
-                if lastrev != None:
-                    try:
-                        rev = revs[0].id
-                    except IndexError:
-                        pass
-                if lastrev == rev:
-                    pulse.utils.log ('Skipping commit graph for %s' % branch.ident)
-                    return
-    else:
-        of = db.OutputFile (type='graphs', ident=branch.ident, filename='commits.png', datetime=now)
+        try:
+            of = of[0]
+        except IndexError:
+            of = None
 
-    pulse.utils.log ('Creating commit graph for %s' % branch.ident)
-    stats = [0] * 24
-    revs = list(revs)
-    for rev in revs:
-        idx = rev.weeknum - thisweek + 23
-        stats[idx] += 1
-    score = pulse.utils.score (stats)
-    branch.mod_score = score
+        if i == 0 and of != None:
+            if kw.get('timestamps', True):
+                lastrev = of.data.get ('lastrev', None)
+                weeknum = of.data.get ('weeknum', None)
+                if weeknum == thisweek:
+                    rev = None
+                    if lastrev != None:
+                        try:
+                            rev = revs[0].id
+                        except IndexError:
+                            pass
+                    if lastrev == rev:
+                        pulse.utils.log ('Skipping commit graph for %s' % branch.ident)
+                        return
+        elif of == None:
+            of = db.OutputFile (type='graphs', ident=branch.ident, filename=fname, datetime=now)
 
-    graph = pulse.graphs.BarGraph (stats, 80)
-    graph.save (of.get_file_path())
+        if i == 0:
+            pulse.utils.log ('Creating commit graphs for %s' % branch.ident)
+        stats = [0] * numweeks
+        revs = list(revs)
+        for rev in revs:
+            idx = rev.weeknum - topweek + numweeks - 1
+            stats[idx] += 1
+        if i == 0:
+            score = pulse.utils.score (stats[numweeks - 26:])
+            branch.mod_score = score
 
-    of.data['coords'] = zip (graph.get_coords(), stats, range(thisweek-23, thisweek+1))
-    if len(revs) > 0:
-        of.data['lastrev'] = revs[0].id
-    of.data['weeknum'] = thisweek
-    of.save()
+        graph = pulse.graphs.BarGraph (stats, 80, height=40)
+        graph.save (of.get_file_path())
+
+        if i == 0:
+            graph_t = pulse.graphs.BarGraph (stats, 80, height=40, tight=True)
+            graph_t.save (os.path.join (os.path.dirname (of.get_file_path()), 'commits-tight.png'))
+
+        of.data['coords'] = zip (graph.get_coords(), stats, range(topweek - numweeks + 1, topweek + 1))
+
+        if len(revs) > 0:
+            of.data['lastrev'] = revs[0].id
+        of.data['weeknum'] = topweek
+        of.save()
+
+        i += 1
 
 
 def process_maintainers (branch, checkout, **kw):

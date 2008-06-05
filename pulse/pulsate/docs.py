@@ -120,8 +120,9 @@ def update_graph (doc, **kw):
     files = [os.path.join (doc.scm_dir, f) for f in doc.data.get ('xmlfiles', [])]
     if len(files) == 0: return
 
+    numweeks = 104
     revs = db.Revision.select_revisions (branch=doc.parent, files=files,
-                                         weeknum__gt=(thisweek - 24))
+                                         weeknum__gt=(thisweek - numweeks))
     if of != None:
         if kw.get('timestamps', True):
             lastrev = of.data.get ('lastrev', None)
@@ -140,18 +141,21 @@ def update_graph (doc, **kw):
         of = db.OutputFile (type='graphs', ident=doc.ident, filename='commits.png', datetime=now)
 
     pulse.utils.log ('Creating commit graph for %s' % doc.ident)
-    stats = [0] * 24
+    stats = [0] * numweeks
     revs = list(revs)
     for rev in revs:
-        idx = rev.weeknum - thisweek + 23
+        idx = rev.weeknum - thisweek + numweeks - 1
         stats[idx] += 1
-    score = pulse.utils.score (stats)
+    score = pulse.utils.score (stats[numweeks - 26:])
     doc.mod_score = score
 
-    graph = pulse.graphs.BarGraph (stats, 10)
+    graph = pulse.graphs.BarGraph (stats, 20, height=40)
     graph.save (of.get_file_path())
 
-    of.data['coords'] = zip (graph.get_coords(), stats, range(thisweek-23, thisweek+1))
+    graph_t = pulse.graphs.BarGraph (stats, 20, height=40, tight=True)
+    graph_t.save (os.path.join (os.path.dirname (of.get_file_path()), 'commits-tight.png'))
+
+    of.data['coords'] = zip (graph.get_coords(), stats, range(thisweek - numweeks + 1, thisweek + 1))
     if len(revs) > 0:
         of.data['lastrev'] = revs[0].id
     of.data['weeknum'] = thisweek

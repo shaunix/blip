@@ -74,7 +74,7 @@ def output_top (**kw):
         lbox = pulse.html.LinkBox (person)
         lbox.add_fact (pulse.utils.gettext ('score'), str(person.mod_score))
         lbox.add_graph (pulse.config.graphs_root
-                        + '/'.join(person.ident.split('/')[1:] + ['commits.png']))
+                        + '/'.join(person.ident.split('/')[1:] + ['commits-tight.png']))
         page.add_content (lbox)
     page.output (fd=kw.get('fd'))
 

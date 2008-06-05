@@ -1041,12 +1041,17 @@ class Graph (Widget):
 
     def output (self, fd=None):
         """Output the HTML."""
+        Graph._count += 1
+        p (fd, '<a class="graphprev" id="graphprev-%i" href="javascript:slide(%i, -1)">prev</a> ',
+           (Graph._count, Graph._count))
+        p (fd, '<a class="graphnext" id="graphnext-%i" href="javascript:slide(%i, 1)">next</a> ',
+           (Graph._count, Graph._count))
+        p (fd, '<div class="graph" id="graph-%i">', Graph._count, False)
         if len(self._comments) == 0:
-            p (fd, '<div class="graph"><img src="%s"></div>', self._url)
+            p (fd, '<img src="%s">', self._url, False)
         else:
-            Graph._count += 1
-            p (fd, '<div class="graph" id="graph-%i"><img src="%s" usemap="#graphmap%i" ismap>',
-               (Graph._count, self._url, Graph._count))
+            p (fd, '<img src="%s" usemap="#graphmap%i" ismap>',
+               (self._url, Graph._count), False)
             p (fd, '<map name="graphmap%i">', Graph._count)
             i = 0
             for comment in self._comments:
@@ -1067,7 +1072,8 @@ class Graph (Widget):
                 i += 1
                 p (fd, '<div class="comment" id="comment-%i-%i">%s</div>',
                    (Graph._count, i, comment[1]))
-            p (fd, '</div></div>')
+            p (fd, '</div>')
+        p (fd, '</div>')
 
     @classmethod
     def activity_graph (cls, of, url):

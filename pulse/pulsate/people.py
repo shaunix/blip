@@ -41,8 +41,9 @@ def update_person (person, **kw):
     except IndexError:
         of = None
 
+    numweeks = 104
     revs = db.Revision.select_revisions (person=person,
-                                         weeknum__gt=(thisweek - 24))
+                                         weeknum__gt=(thisweek - numweeks))
 
     if of != None:
         if kw.get('timestamps', True):
@@ -62,19 +63,22 @@ def update_person (person, **kw):
         of = db.OutputFile (type='graphs', ident=person.ident, filename='commits.png', datetime=now)
 
     pulse.utils.log ('Creating commit graph for %s' % person.ident)
-    stats = [0] * 24
+    stats = [0] * numweeks
     revs = list(revs)
     for rev in revs:
-        idx = rev.weeknum - thisweek + 23
+        idx = rev.weeknum - thisweek + numweeks - 1
         stats[idx] += 1
-    score = pulse.utils.score (stats)
+    score = pulse.utils.score (stats[numweeks - 26:])
     person.mod_score = score
     person.save()
 
-    graph = pulse.graphs.BarGraph (stats, 20)
+    graph = pulse.graphs.BarGraph (stats, 80, height=40)
     graph.save (of.get_file_path())
 
-    of.data['coords'] = zip (graph.get_coords(), stats, range(thisweek-23, thisweek+1))
+    graph_t = pulse.graphs.BarGraph (stats, 80, height=40, tight=True)
+    graph_t.save (os.path.join (os.path.dirname (of.get_file_path()), 'commits-tight.png'))
+
+    of.data['coords'] = zip (graph.get_coords(), stats, range(thisweek - numweeks + 1, thisweek + 1))
     if len(revs) > 0:
         of.data['lastrev'] = revs[0].id
     of.data['weeknum'] = thisweek

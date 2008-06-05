@@ -85,6 +85,93 @@ $(document).ready(function () {
 
 
 /******************************************************************************/
+/** Graph slides **/
+function slide (id, dir) {
+  var div = $('#graph-' + id);
+  var curimg = div.children('img');
+  var width = curimg.width();
+  div.css({
+    width: width + 'px',
+    height: curimg.height() + 'px'
+  });
+  var cursrc = curimg.attr('src');
+  var newsrc = slidesrc(cursrc, dir);
+
+/*
+  var prevlink = $('#graphprev-' + id);
+  var nextlink = $('#graphnext-' + id);
+  var prevmask = $('<div class="mask" id="graphprevmask-' + id + '"></div>');
+  var nextmask = $('<div class="mask" id="graphnextmask-' + id + '"></div>');
+  prevmask.insertBefore(prevlink);
+  nextmask.insertBefore(nextlink);
+  prevmask.css({
+    height: prevlink.height() + 'px',
+    width: prevlink.width() + 'px'
+  });
+  nextmask.css({
+    left: nextlink.offset().left + 'px',
+    height: nextlink.height() + 'px',
+    width: nextlink.width() + 'px'
+  });
+  prevmask.fadeIn();
+  nextmask.fadeIn();
+
+  var nextsrc = slidesrc(newsrc, dir);
+*/
+
+  var slidego = function () {
+    curimg.wrap('<div class="graphaway"></div>'); 
+    curdiv = $('div.graphaway', div);
+    curdiv.css({top: curdiv.offset().top + 'px'});
+    newimg = $('<img src="' + newsrc + '">');
+    newimg.css({marginLeft: (dir * width) + 'px'});
+    curleft = curdiv.offset().left;
+    curdiv.css({left: curleft + 'px'});
+    curdiv.iter = 0;
+    var slideiter = function () {
+      curdiv.iter += 3;
+      if (curdiv.iter > width) { curdiv.iter = width; }
+      curdiv.css({width: (width - curdiv.iter) + 'px'});
+      if (dir == -1) {
+        curdiv.css({left: (curleft + curdiv.iter) + 'px'});
+      } else {
+        curimg.css({marginLeft: -curdiv.iter + 'px'});
+      }
+      newimg.css({marginLeft: (dir * (width - curdiv.iter)) + 'px'});
+      if (curdiv.iter == width) {
+        clearInterval(curdiv.timer);
+        curdiv.remove();
+      }
+    };
+    if (dir == -1) {
+      newimg.prependTo(div);
+    } else {
+      newimg.appendTo(div);
+    }
+    curdiv.timer = setInterval(slideiter, 1);
+  };
+
+  var img = new Image();
+  img.src = newsrc;
+  if (img.complete) {
+    slidego();
+  } else {
+    img.onload = slidego;
+  }
+}
+
+function slidesrc(src, dir) {
+  var re = /^(.*-)(\d+)\.png$/
+  var match = re.exec (src);
+  var base = match[1];
+  var curnum = match[2];
+  var newnum = parseInt(curnum) - dir;
+  var newsrc = base + newnum + '.png';
+  return newsrc;
+}
+
+
+/******************************************************************************/
 /** Graph comments **/
 
 function comment (i, j, x) {

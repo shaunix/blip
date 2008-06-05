@@ -175,7 +175,7 @@ def output_module (module, **kw):
     # Activity
     box = pulse.html.InfoBox ('activity', pulse.utils.gettext ('Activity'))
     columns.add_to_column (0, box)
-    of = db.OutputFile.objects.filter (type='graphs', ident=module.ident, filename='commits.png')
+    of = db.OutputFile.objects.filter (type='graphs', ident=module.ident, filename='commits-0.png')
     try:
         of = of[0]
         graph = pulse.html.Graph.activity_graph (of, module.pulse_url)

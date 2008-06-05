@@ -303,7 +303,9 @@ div.mcont a:hover {
   color: white;
 }
 
-div.graph { margin: 0.5em; }
+div.graph { overflow: hidden; }
+div.graphaway { position: absolute; overflow: hidden; }
+
 div.comment {
   display: none;
   position: absolute;
