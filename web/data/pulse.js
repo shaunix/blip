@@ -1,4 +1,38 @@
 /******************************************************************************/
+/** Masks **/
+$.fn.mask = function (speed) {
+  var el = this[0];
+  if (el.mask != undefined) {
+    return this;
+  }
+  el.mask = $('<div class="mask"></div>');
+  el.mask.css({
+    top: this.offset().top + 'px',
+    left: this.offset().left + 'px',
+    height: this.height() + 'px',
+    width: this.width() + 'px',
+    position: 'absolute'
+  });
+  /* FIXME: resize/move with this */
+  el.mask.hide();
+  el.mask.appendTo($('body'));
+  el.mask.fadeIn(speed);
+  return this;
+};
+
+$.fn.unmask = function (speed) {
+  var el = this[0];
+  if (el.mask != undefined) {
+    el.mask.fadeOut(speed, function () {
+      el.mask.remove();
+      el.mask = undefined;
+    });
+  }
+  return this;
+};
+
+
+/******************************************************************************/
 /** Zoom images **/
 function init_zoom (ctxt) {
   $('a.zoom', ctxt).click(function () {
@@ -88,6 +122,9 @@ $(document).ready(function () {
 /** Graph slides **/
 function slide (id, dir) {
   var div = $('#graph-' + id);
+  if (div[0].timer != undefined) {
+    return;
+  }
   var curimg = div.children('img');
   var width = curimg.width();
   div.css({
@@ -95,35 +132,44 @@ function slide (id, dir) {
     height: curimg.height() + 'px'
   });
   var cursrc = curimg.attr('src');
-  var newsrc = slidesrc(cursrc, dir);
+  var newdata = slidecalc(cursrc, dir);
+  var newsrc = newdata.src;
+  var newmapid = 'graphmap' + id + '-' + newdata.num;
+  var newmap = $('#' + newmapid);
+  if (newmap.length == 0) {
+    var filename = newdata.filename;
+    var graphurl = window.location + '?ajax=graphmap&id=' + id + '&num=' + newdata.num + '&filename=' + filename;
+    $.get(graphurl, function (data) {
+      div.append(data);
+    });
+  }
 
-/*
-  var prevlink = $('#graphprev-' + id);
-  var nextlink = $('#graphnext-' + id);
-  var prevmask = $('<div class="mask" id="graphprevmask-' + id + '"></div>');
-  var nextmask = $('<div class="mask" id="graphnextmask-' + id + '"></div>');
-  prevmask.insertBefore(prevlink);
-  nextmask.insertBefore(nextlink);
-  prevmask.css({
-    height: prevlink.height() + 'px',
-    width: prevlink.width() + 'px'
-  });
-  nextmask.css({
-    left: nextlink.offset().left + 'px',
-    height: nextlink.height() + 'px',
-    width: nextlink.width() + 'px'
-  });
-  prevmask.fadeIn();
-  nextmask.fadeIn();
+  if (dir == -1) {
+    var nextlink = $('#graphprev-' + id);
+    var backlink = $('#graphnext-' + id);
+  } else {
+    var nextlink = $('#graphnext-' + id);
+    var backlink = $('#graphprev-' + id);
+  }
+  backlink.unmask();
 
-  var nextsrc = slidesrc(newsrc, dir);
-*/
+  var nextsrc = slidecalc(newsrc, dir).src;
+  if (nextsrc == undefined) {
+    nextlink.mask();
+  } else {
+    var nextimg = new Image();
+    nextimg.src = nextsrc;
+    if (!nextimg.complete) {
+      nextlink.mask();
+      nextimg.onload = function () { nextlink.unmask(); };
+    }
+  }
 
   var slidego = function () {
     curimg.wrap('<div class="graphaway"></div>'); 
     curdiv = $('div.graphaway', div);
     curdiv.css({top: curdiv.offset().top + 'px'});
-    newimg = $('<img src="' + newsrc + '">');
+    newimg = $('<img src="' + newsrc + '" usemap="#' + newmapid + '" ismap>');
     newimg.css({marginLeft: (dir * width) + 'px'});
     curleft = curdiv.offset().left;
     curdiv.css({left: curleft + 'px'});
@@ -139,7 +185,8 @@ function slide (id, dir) {
       }
       newimg.css({marginLeft: (dir * (width - curdiv.iter)) + 'px'});
       if (curdiv.iter == width) {
-        clearInterval(curdiv.timer);
+        clearInterval(div[0].timer);
+        div[0].timer = undefined;
         curdiv.remove();
       }
     };
@@ -148,7 +195,7 @@ function slide (id, dir) {
     } else {
       newimg.appendTo(div);
     }
-    curdiv.timer = setInterval(slideiter, 1);
+    div[0].timer = setInterval(slideiter, 1);
   };
 
   var img = new Image();
@@ -160,30 +207,39 @@ function slide (id, dir) {
   }
 }
 
-function slidesrc(src, dir) {
-  var re = /^(.*-)(\d+)\.png$/
+function slidecalc(src, dir) {
+  var re = /^(.*)\/([^\/]*-)(\d+)\.png$/
   var match = re.exec (src);
-  var base = match[1];
-  var curnum = match[2];
+  var base = match[1]
+  var filename = match[2];
+  var curnum = match[3];
   var newnum = parseInt(curnum) - dir;
-  var newsrc = base + newnum + '.png';
-  return newsrc;
+  if (newnum < 0) {
+    return {filename: undefined, src: undefined, num: undefined};
+  }
+  filename = filename + newnum + '.png';
+  var newsrc = base + '/' + filename;
+  return {
+    filename: filename,
+    src: newsrc,
+    num: newnum
+  };
 }
 
 
 /******************************************************************************/
 /** Graph comments **/
 
-function comment (i, j, x) {
+function comment (count, num, j, x) {
   /* I'm not using JQuery here, because it's fairly trivial to do
    * what I'm doing, and because there was a noticeable lag when
    * I was using JQuery.  Perhaps a better JQuery programmer could
    * make it better, but this works perfectly.
    */
-  var el = document.getElementById ('comment-' + i + '-' + j);
+  var el = document.getElementById ('comment-' + count + '-' + num + '-' + j);
   if (el.style.display != 'block') {
     if (el.style.left == '') {
-      var left = get_offsetLeft (document.getElementById('graph-' + i)) + x - 10;
+      var left = get_offsetLeft (document.getElementById('graph-' + count)) + x - 10;
       el.style.left = left + 'px';
     }
     el.style.display = 'block';

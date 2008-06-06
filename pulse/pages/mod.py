@@ -86,8 +86,10 @@ def main (path, query, http=True, fd=None):
     kw = {'path' : path, 'query' : query, 'http' : http, 'fd' : fd}
     if query.get('ajax', None) == 'commits':
         return output_ajax_commits (branch, **kw)
-    if query.get('ajax', None) == 'domain':
+    elif query.get('ajax', None) == 'domain':
         return output_ajax_domain (branch, **kw)
+    elif query.get('ajax', None) == 'graphmap':
+        return output_ajax_graphmap (branch, **kw)
     elif query.get('ajax', None) == 'revfiles':
         return output_ajax_revfiles (branch, **kw)
     else:
@@ -338,6 +340,26 @@ def output_ajax_domain (module, **kw):
             elif percent >= 50:
                 grid.add_row_class (idx, 'po50')
 
+    page.output(fd=kw.get('fd'))
+    return 0
+
+
+def output_ajax_graphmap (module, **kw):
+    query = kw.get ('query', {})
+    page = pulse.html.Fragment (http=kw.get('http', True))
+    id = query.get('id')
+    num = query.get('num')
+    filename = query.get('filename')
+    
+    of = db.OutputFile.objects.filter (type='graphs', ident=module.ident, filename=filename)
+    try:
+        of = of[0]
+        graph = pulse.html.Graph.activity_graph (of, module.pulse_url,
+                                                 count=int(id), num=int(num), map_only=True)
+        page.add_content (graph)
+    except IndexError:
+        pass
+    
     page.output(fd=kw.get('fd'))
     return 0
 

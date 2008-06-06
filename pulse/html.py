@@ -1027,6 +1027,9 @@ class Graph (Widget):
     def __init__ (self, url, **kw):
         super (Graph, self).__init__ (**kw)
         self._url = url
+        self._count = kw.get('count', None)
+        self._num = kw.get('num', 0)
+        self._map_only = kw.get('map_only', False)
         self._comments = []
 
     def add_comment (self, coords, comment, href=None):
@@ -1041,44 +1044,50 @@ class Graph (Widget):
 
     def output (self, fd=None):
         """Output the HTML."""
-        Graph._count += 1
-        p (fd, '<a class="graphprev" id="graphprev-%i" href="javascript:slide(%i, -1)">prev</a> ',
-           (Graph._count, Graph._count))
-        p (fd, '<a class="graphnext" id="graphnext-%i" href="javascript:slide(%i, 1)">next</a> ',
-           (Graph._count, Graph._count))
-        p (fd, '<div class="graph" id="graph-%i">', Graph._count, False)
+        if self._count == None:
+            Graph._count += 1
+            self._count = Graph._count
+        if not self._map_only:
+            p (fd, '<a class="graphprev" id="graphprev-%i" href="javascript:slide(%i, -1)">prev</a> ',
+               (self._count, self._count))
+            p (fd, '<a class="graphnext" id="graphnext-%i" href="javascript:slide(%i, 1)">next</a> ',
+               (self._count, self._count))
+            p (fd, '<div class="graph" id="graph-%i">', self._count, False)
         if len(self._comments) == 0:
-            p (fd, '<img src="%s">', self._url, False)
+            if not self._map_only:
+                p (fd, '<img src="%s">', self._url, False)
         else:
-            p (fd, '<img src="%s" usemap="#graphmap%i" ismap>',
-               (self._url, Graph._count), False)
-            p (fd, '<map name="graphmap%i">', Graph._count)
+            if not self._map_only:
+                p (fd, '<img src="%s" usemap="#graphmap%i-%i" ismap>',
+                   (self._url, self._count, self._num), False)
+            p (fd, '<div class="comments">')
+            p (fd, '<map name="graphmap%i-%i">', (self._count, self._num))
             i = 0
             for comment in self._comments:
                 i += 1
                 p (fd, '<area shape="rect" coords="%s"',
                    ','.join(map(str, comment[0])), False)
-                p (fd, ' onmouseover="javascript:comment(%i, %i, %i)"',
-                   (Graph._count, i, comment[0][0]), False)
-                p (fd, ' onmouseout="javascript:comment(%i, %i)"',
-                   (Graph._count, i), False)
+                p (fd, ' onmouseover="javascript:comment(%i, %i, %i, %i)"',
+                   (self._count, self._num, i, comment[0][0]), False)
+                p (fd, ' onmouseout="javascript:comment(%i, %i, %i)"',
+                   (self._count, self._num, i), False)
                 if comment[2] != None:
                     p (fd, ' href="%s"', comment[2])
                 p (fd, '>')
             p (fd, '</map>')
             i = 0
-            p (fd, '<div class="comments">')
             for comment in self._comments:
                 i += 1
-                p (fd, '<div class="comment" id="comment-%i-%i">%s</div>',
-                   (Graph._count, i, comment[1]))
+                p (fd, '<div class="comment" id="comment-%i-%i-%i">%s</div>',
+                   (self._count, self._num, i, comment[1]))
             p (fd, '</div>')
-        p (fd, '</div>')
+        if not self._map_only:
+            p (fd, '</div>')
 
     @classmethod
-    def activity_graph (cls, of, url):
+    def activity_graph (cls, of, url, **kw):
         """A convenience constructor to make an activity graph from an OutputFile."""
-        graph = cls (of.pulse_url)
+        graph = cls (of.pulse_url, **kw)
         thisweek = pulse.utils.weeknum (datetime.datetime.now())
         for (coords, tot, weeknum) in of.data.get ('coords', []):
             ago = thisweek - weeknum
