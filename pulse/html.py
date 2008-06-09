@@ -1029,6 +1029,7 @@ class Graph (Widget):
         self._url = url
         self._count = kw.get('count', None)
         self._num = kw.get('num', 0)
+        self._links = kw.get('links', False)
         self._map_only = kw.get('map_only', False)
         self._comments = []
 
@@ -1048,10 +1049,8 @@ class Graph (Widget):
             Graph._count += 1
             self._count = Graph._count
         if not self._map_only:
-            p (fd, '<a class="graphprev" id="graphprev-%i" href="javascript:slide(%i, -1)">prev</a> ',
-               (self._count, self._count))
-            p (fd, '<a class="graphnext" id="graphnext-%i" href="javascript:slide(%i, 1)">next</a> ',
-               (self._count, self._count))
+            if self._links:
+                p (fd, '<table class="graph"><tr><td colspan="2">', None, False)
             p (fd, '<div class="graph" id="graph-%i">', self._count, False)
         if len(self._comments) == 0:
             if not self._map_only:
@@ -1060,7 +1059,7 @@ class Graph (Widget):
             if not self._map_only:
                 p (fd, '<img src="%s" usemap="#graphmap%i-%i" ismap>',
                    (self._url, self._count, self._num), False)
-            p (fd, '<div class="comments">')
+            p (fd, '<div class="comments">', None, False)
             p (fd, '<map name="graphmap%i-%i">', (self._count, self._num))
             i = 0
             for comment in self._comments:
@@ -1080,13 +1079,27 @@ class Graph (Widget):
                 i += 1
                 p (fd, '<div class="comment" id="comment-%i-%i-%i">%s</div>',
                    (self._count, self._num, i, comment[1]))
-            p (fd, '</div>')
+            p (fd, '</div>', None, False)
         if not self._map_only:
-            p (fd, '</div>')
+            p (fd, '</div>', None, False)
+            if self._links:
+                p (fd, '</td></tr><tr>')
+                p (fd, '<td class="graphprev">', None, False)
+                p (fd, '<a class="graphprev" id="graphprev-%i" href="javascript:slide(%i, -1)"',
+                   (self._count, self._count), False)
+                p (fd, '<img src="%sgo-prev.png" height="12" width="12"></a>',
+                   pulse.config.data_root, False)
+                p (fd, '</td><td class="graphnext">', None, False)
+                p (fd, '<a class="graphnext" id="graphnext-%i" href="javascript:slide(%i, 1)">',
+                   (self._count, self._count), False)
+                p (fd, '<img src="%sgo-next.png" height="12" width="12"></a>',
+                   pulse.config.data_root, False)
+                p (fd, '</td></tr></table>')
 
     @classmethod
     def activity_graph (cls, of, url, **kw):
         """A convenience constructor to make an activity graph from an OutputFile."""
+        kw.setdefault ('links', True)
         graph = cls (of.pulse_url, **kw)
         thisweek = pulse.utils.weeknum (datetime.datetime.now())
         for (coords, tot, weeknum) in of.data.get ('coords', []):

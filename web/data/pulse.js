@@ -1,33 +1,38 @@
 /******************************************************************************/
 /** Masks **/
 $.fn.mask = function (speed) {
-  var el = this[0];
-  if (el.mask != undefined) {
-    return this;
-  }
-  el.mask = $('<div class="mask"></div>');
-  el.mask.css({
-    top: this.offset().top + 'px',
-    left: this.offset().left + 'px',
-    height: this.height() + 'px',
-    width: this.width() + 'px',
-    position: 'absolute'
+  this.each(function () {
+    var el = this;
+    var jq = $(el);
+    if (el.pulsemask != undefined) {
+      return;
+    }
+    el.pulsemask = $('<div class="mask"></div>');
+    el.pulsemask.css({
+      top: jq.offset().top + 'px',
+      left: jq.offset().left + 'px',
+      height: jq.height() + 'px',
+      width: jq.width() + 'px',
+      position: 'absolute'
+    });
+    /* FIXME: resize/move with this */
+    el.pulsemask.hide();
+    el.pulsemask.appendTo($('body'));
+    el.pulsemask.fadeIn(speed);
   });
-  /* FIXME: resize/move with this */
-  el.mask.hide();
-  el.mask.appendTo($('body'));
-  el.mask.fadeIn(speed);
   return this;
 };
 
 $.fn.unmask = function (speed) {
-  var el = this[0];
-  if (el.mask != undefined) {
-    el.mask.fadeOut(speed, function () {
-      el.mask.remove();
-      el.mask = undefined;
-    });
-  }
+  this.each(function () {
+    var el = this;
+    if (el.pulsemask != undefined) {
+      el.pulsemask.fadeOut(speed, function () {
+        el.pulsemask.remove();
+        el.pulsemask = undefined;
+      });
+    }
+  });
   return this;
 };
 
@@ -225,6 +230,33 @@ function slidecalc(src, dir) {
     num: newnum
   };
 }
+
+$(document).ready(function() {
+  var nexts = $('a.graphnext');
+/*
+  nexts.css('visibility', 'visible');
+  nexts.mask();
+*/
+  var prevs = $('a.graphprev');
+  prevs.each(function () {
+    var thisq = $(this);
+    thisq.css('visibility', 'visible');
+    thisq.mask();
+    var re = /^.*-(\d+)$/
+    var match = re.exec(thisq.attr('id'));
+    var id = match[1];
+    var div = $('#graph-' + id)
+    var img = div.children('img');
+    var newsrc = slidecalc(img.attr('src'), -1).src;
+    var newimg = new Image();
+    newimg.src = newsrc;
+    if (newimg.complete) {
+      thisq.unmask();
+    } else {
+      newimg.onload = function () { thisq.unmask(); };
+    }
+  });
+});
 
 
 /******************************************************************************/

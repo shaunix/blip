@@ -244,6 +244,7 @@ div.mask {
   position: absolute;
   background-color: white;
   opacity: 0.6;
+  z-index: 10;
 }
 
 div.slinks {
@@ -303,9 +304,22 @@ div.mcont a:hover {
   color: white;
 }
 
-div.graph { overflow: hidden; }
+div.graph {
+  margin: 0 0 12px 0;
+  padding: 0;
+  overflow: hidden;
+}
+table.graph { margin: 0 0 12px 0; }
+table.graph div.graph { margin: 0; }
+table.graph td { line-height: 0; }
+td.graphprev, td.graphnext { padding: 4px 0 0 0; }
+/*
+a.graphprev, a.graphnext { visibility: hidden; }
+*/
 div.graphaway { position: absolute; overflow: hidden; }
+td.graphnext { text-align: right; }
 
+div.comments { line-height: 1.2em; }
 div.comment {
   display: none;
   position: absolute;
@@ -313,7 +327,7 @@ div.comment {
   border: solid 2px #ffffff;
   padding: 0 6px 0 6px;
   opacity: 0.9;
-  z-index: 10;
+  z-index: 20;
 }
 
 table.facts {
