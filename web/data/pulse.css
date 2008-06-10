@@ -313,21 +313,18 @@ table.graph { margin: 0 0 12px 0; }
 table.graph div.graph { margin: 0; }
 table.graph td { line-height: 0; }
 td.graphprev, td.graphnext { padding: 4px 0 0 0; }
-/*
-a.graphprev, a.graphnext { visibility: hidden; }
-*/
 div.graphaway { position: absolute; overflow: hidden; }
 td.graphnext { text-align: right; }
 
-div.comments { line-height: 1.2em; }
+div.comments { line-height: 1; }
 div.comment {
   display: none;
   position: absolute;
   background-color: #fce94f;
   border: solid 2px #ffffff;
-  padding: 0 6px 0 6px;
+  padding: 2px 6px 6px 6px;
   opacity: 0.9;
-  z-index: 20;
+  z-index: 100;
 }
 
 table.facts {

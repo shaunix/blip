@@ -1,6 +1,6 @@
 /******************************************************************************/
 /** Masks **/
-$.fn.mask = function (speed) {
+$.fn.mask = function (speed, options) {
   this.each(function () {
     var el = this;
     var jq = $(el);
@@ -12,10 +12,23 @@ $.fn.mask = function (speed) {
       top: jq.offset().top + 'px',
       left: jq.offset().left + 'px',
       height: jq.height() + 'px',
-      width: jq.width() + 'px',
-      position: 'absolute'
+      width: jq.width() + 'px'
+,backgroundColor: 'red'
     });
-    /* FIXME: resize/move with this */
+    if (options != undefined) {
+      if (options.onclick != undefined) {
+        el.pulsemask.click(options.onclick);
+      }
+    }
+    el.pulsemask.resize_handler = function () {
+      el.pulsemask.css({
+        top: jq.offset().top + 'px',
+        left: jq.offset().left + 'px',
+        height: jq.height() + 'px',
+        width: jq.width() + 'px'
+      });
+    };
+    $(window).bind('resize', el.pulsemask.resize_handler);
     el.pulsemask.hide();
     el.pulsemask.appendTo($('body'));
     el.pulsemask.fadeIn(speed);
@@ -27,6 +40,7 @@ $.fn.unmask = function (speed) {
   this.each(function () {
     var el = this;
     if (el.pulsemask != undefined) {
+      $(window).unbind('resize', el.pulsemask.resize_handler);
       el.pulsemask.fadeOut(speed, function () {
         el.pulsemask.remove();
         el.pulsemask = undefined;
@@ -39,19 +53,14 @@ $.fn.unmask = function (speed) {
 
 /******************************************************************************/
 /** Zoom images **/
+
 function init_zoom (ctxt) {
   $('a.zoom', ctxt).click(function () {
-    var mask = $('<div class="mask" id="zoommask"></div>');
-    mask.css('display', 'none');
-    mask.css('left', '0px');
-    mask.css('top', '0px');
-    mask.css('width', $(document).width() + 'px');
-    mask.css('height', $(document).height() + 'px');
-    mask.appendTo('body');
-    mask.fadeIn();
-    mask.click(function () {
-      mask.fadeOut('fast', function () { mask.remove() });
-      $('div.zoom').fadeOut('fast', function () { $('div.zoom').remove() });
+    $('body').mask('fast', {
+      onclick: function () {
+        $('body').unmask('fast');
+        $('div.zoom').fadeOut('fast', function () { $('div.zoom').remove() });
+      }
     });
     var link = $(this);
     var img = new Image();
@@ -59,9 +68,11 @@ function init_zoom (ctxt) {
     var open = function () {
       var zoomdiv = $('<div class="zoom"><img src="' + img.src + '"></div>');
       zoomdiv.appendTo('body');
-      zoomdiv.css('top', link.offset().top + 'px');
-      zoomdiv.css('left', ((window.innerWidth - zoomdiv.width()) / 2) - 22 + 'px');
-      zoomdiv.css('z-index', '100');
+      zoomdiv.css({
+        top: link.offset().top + 'px',
+        left: (((window.innerWidth - zoomdiv.width()) / 2) - 22) + 'px',
+        zIndex: 20
+      });
       zoomdiv.fadeIn('fast', function () {
         scroll(zoomdiv, 40);
       });
@@ -74,11 +85,13 @@ function init_zoom (ctxt) {
     return false;
   })
 }
+
 $(document).ready(function() { init_zoom($(document)) });
 
 
 /******************************************************************************/
 /** AJAX boxes **/
+
 $(document).ready(function () {
   $('.ajax').each(function (i) {
     var div = $(this);
@@ -125,6 +138,7 @@ $(document).ready(function () {
 
 /******************************************************************************/
 /** Graph slides **/
+
 function slide (id, dir) {
   var div = $('#graph-' + id);
   if (div[0].timer != undefined) {
@@ -233,10 +247,7 @@ function slidecalc(src, dir) {
 
 $(document).ready(function() {
   var nexts = $('a.graphnext');
-/*
-  nexts.css('visibility', 'visible');
   nexts.mask();
-*/
   var prevs = $('a.graphprev');
   prevs.each(function () {
     var thisq = $(this);

@@ -1030,6 +1030,8 @@ class Graph (Widget):
         self._count = kw.get('count', None)
         self._num = kw.get('num', 0)
         self._links = kw.get('links', False)
+        self._width = kw.get('width', None)
+        self._height = kw.get('height', None)
         self._map_only = kw.get('map_only', False)
         self._comments = []
 
@@ -1054,11 +1056,21 @@ class Graph (Widget):
             p (fd, '<div class="graph" id="graph-%i">', self._count, False)
         if len(self._comments) == 0:
             if not self._map_only:
-                p (fd, '<img src="%s">', self._url, False)
+                p (fd, '<img src="%s"', self._url, False)
+                if self._width != None:
+                    p (fd, ' width="i"', self._width, False)
+                if self._height != None:
+                    p (fd, ' height="i"', self._height, False)
+                p (fd, '>', None, False)
         else:
             if not self._map_only:
-                p (fd, '<img src="%s" usemap="#graphmap%i-%i" ismap>',
+                p (fd, '<img src="%s" usemap="#graphmap%i-%i" ismap',
                    (self._url, self._count, self._num), False)
+                if self._width != None:
+                    p (fd, ' width="i"', self._width, False)
+                if self._height != None:
+                    p (fd, ' height="i"', self._height, False)
+                p (fd, '>', None, False)
             p (fd, '<div class="comments">', None, False)
             p (fd, '<map name="graphmap%i-%i">', (self._count, self._num))
             i = 0
@@ -1100,6 +1112,8 @@ class Graph (Widget):
     def activity_graph (cls, of, url, **kw):
         """A convenience constructor to make an activity graph from an OutputFile."""
         kw.setdefault ('links', True)
+        kw.setdefault ('width', of.data.get('width'))
+        kw.setdefault ('height', of.data.get('height'))
         graph = cls (of.pulse_url, **kw)
         thisweek = pulse.utils.weeknum (datetime.datetime.now())
         for (coords, tot, weeknum) in of.data.get ('coords', []):
