@@ -8,11 +8,12 @@ $.fn.mask = function (speed, options) {
       return;
     }
     el.pulsemask = $('<div class="mask"></div>');
+    var offset = jq.offset();
     el.pulsemask.css({
-      top: jq.offset().top + 'px',
-      left: jq.offset().left + 'px',
-      height: jq.height() + 'px',
-      width: jq.width() + 'px'
+      top: offset.top,
+      left: offset.left,
+      height: jq.height(),
+      width: jq.width()
 ,backgroundColor: 'red'
     });
     if (options != undefined) {
@@ -22,10 +23,10 @@ $.fn.mask = function (speed, options) {
     }
     el.pulsemask.resize_handler = function () {
       el.pulsemask.css({
-        top: jq.offset().top + 'px',
-        left: jq.offset().left + 'px',
-        height: jq.height() + 'px',
-        width: jq.width() + 'px'
+        top: offset.top,
+        left: offset.left,
+        height: jq.height(),
+        width: jq.width()
       });
     };
     $(window).bind('resize', el.pulsemask.resize_handler);
@@ -69,8 +70,8 @@ function init_zoom (ctxt) {
       var zoomdiv = $('<div class="zoom"><img src="' + img.src + '"></div>');
       zoomdiv.appendTo('body');
       zoomdiv.css({
-        top: link.offset().top + 'px',
-        left: (((window.innerWidth - zoomdiv.width()) / 2) - 22) + 'px',
+        top: link.offset().top,
+        left: ((window.innerWidth - zoomdiv.width()) / 2) - 22,
         zIndex: 20
       });
       zoomdiv.fadeIn('fast', function () {
@@ -147,8 +148,8 @@ function slide (id, dir) {
   var curimg = div.children('img');
   var width = curimg.width();
   div.css({
-    width: width + 'px',
-    height: curimg.height() + 'px'
+    width: width,
+    height: curimg.height()
   });
   var cursrc = curimg.attr('src');
   var newdata = slidecalc(cursrc, dir);
@@ -187,22 +188,36 @@ function slide (id, dir) {
   var slidego = function () {
     curimg.wrap('<div class="graphaway"></div>'); 
     curdiv = $('div.graphaway', div);
-    curdiv.css({top: curdiv.offset().top + 'px'});
+    curdiv.css({
+      top: curdiv.offset().top
+    });
     newimg = $('<img src="' + newsrc + '" usemap="#' + newmapid + '" ismap>');
-    newimg.css({marginLeft: (dir * width) + 'px'});
+    newimg.css({
+      marginLeft: dir * width
+    });
     curleft = curdiv.offset().left;
-    curdiv.css({left: curleft + 'px'});
+    curdiv.css({
+      left: curleft
+    });
     curdiv.iter = 0;
     var slideiter = function () {
       curdiv.iter += 3;
       if (curdiv.iter > width) { curdiv.iter = width; }
-      curdiv.css({width: (width - curdiv.iter) + 'px'});
+      curdiv.css({
+        width: (width - curdiv.iter)
+      });
       if (dir == -1) {
-        curdiv.css({left: (curleft + curdiv.iter) + 'px'});
+        curdiv.css({
+          left: curleft + curdiv.iter
+        });
       } else {
-        curimg.css({marginLeft: -curdiv.iter + 'px'});
+        curimg.css({
+          marginLeft: -curdiv.iter
+        });
       }
-      newimg.css({marginLeft: (dir * (width - curdiv.iter)) + 'px'});
+      newimg.css({
+        marginLeft: (dir * (width - curdiv.iter))
+      });
       if (curdiv.iter == width) {
         clearInterval(div[0].timer);
         div[0].timer = undefined;
@@ -274,20 +289,18 @@ $(document).ready(function() {
 /** Graph comments **/
 
 function comment (count, num, j, x) {
-  /* I'm not using JQuery here, because it's fairly trivial to do
-   * what I'm doing, and because there was a noticeable lag when
-   * I was using JQuery.  Perhaps a better JQuery programmer could
-   * make it better, but this works perfectly.
-   */
-  var el = document.getElementById ('comment-' + count + '-' + num + '-' + j);
-  if (el.style.display != 'block') {
-    if (el.style.left == '') {
-      var left = get_offsetLeft (document.getElementById('graph-' + count)) + x - 10;
-      el.style.left = left + 'px';
-    }
-    el.style.display = 'block';
+  var el = $('#comment-' + count + '-' + num + '-' + j);
+  if (el.css('display') != 'block') {
+    var graph = $('#graph-' + count);
+    var offset = graph.offset();
+    el.css({
+      left: offset.left + x - 10,
+      top: offset.top + graph.height(),
+      zIndex: 20
+    });
+    el.css('display', 'block');
   } else {
-    el.style.display = 'none';
+    el.css('display', 'none');
   }
 }
 
