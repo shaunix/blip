@@ -18,18 +18,74 @@
 # Suite 330, Boston, MA  0211-1307  USA.
 #
 
-import os
+import datetime
 import os.path
-import sys
 
-__all__ = []
+import pulse.graphs
+import pulse.models as db
+import pulse.utils
 
-for f in os.listdir (os.path.dirname (sys.modules[__name__].__file__)):
-    if f.endswith ('.py'):
-        tool = os.path.basename (f)[:-3]
-    elif f.endswith ('.pyc'):
-        tool = os.path.basename (f)[:-4]
-    else:
-        continue
-    if not tool in __all__:
-        __all__.append (tool)
+def update_graphs (branch, select, max, **kw):
+    now = datetime.datetime.now()
+    thisweek = pulse.utils.weeknum (datetime.datetime.utcnow())
+    numweeks = 104
+    i = 0
+    while True:
+        topweek = thisweek - (i * numweeks)
+        revs = db.Revision.select_revisions (weeknum__gt=(topweek - numweeks),
+                                             weeknum__lte=topweek,
+                                             **select)
+        if revs.count() == 0:
+            break;
+
+        fname = 'commits-' + str(i) + '.png'
+        of = db.OutputFile.objects.filter (type='graphs', ident=branch.ident, filename=fname)
+
+        try:
+            of = of[0]
+        except IndexError:
+            of = None
+
+        if i == 0 and of != None:
+            if kw.get('timestamps', True):
+                lastrev = of.data.get ('lastrev', None)
+                weeknum = of.data.get ('weeknum', None)
+                if weeknum == thisweek:
+                    rev = None
+                    if lastrev != None:
+                        try:
+                            rev = revs[0].id
+                        except IndexError:
+                            pass
+                    if lastrev == rev:
+                        pulse.utils.log ('Skipping commit graph for %s' % branch.ident)
+                        return
+        elif of == None:
+            of = db.OutputFile (type='graphs', ident=branch.ident, filename=fname, datetime=now)
+
+        if i == 0:
+            pulse.utils.log ('Creating commit graphs for %s' % branch.ident)
+        stats = [0] * numweeks
+        revs = list(revs)
+        for rev in revs:
+            idx = rev.weeknum - topweek + numweeks - 1
+            stats[idx] += 1
+        if i == 0:
+            score = pulse.utils.score (stats[numweeks - 26:])
+            branch.mod_score = score
+
+        graph = pulse.graphs.BarGraph (stats, max, height=40)
+        graph.save (of.get_file_path())
+
+        if i == 0:
+            graph_t = pulse.graphs.BarGraph (stats, 80, height=40, tight=True)
+            graph_t.save (os.path.join (os.path.dirname (of.get_file_path()), 'commits-tight.png'))
+
+        of.data['coords'] = zip (graph.get_coords(), stats, range(topweek - numweeks + 1, topweek + 1))
+
+        if len(revs) > 0:
+            of.data['lastrev'] = revs[0].id
+        of.data['weeknum'] = topweek
+        of.save()
+
+        i += 1

@@ -103,8 +103,14 @@ def update_gdu_docbook (doc, **kw):
         doc.mod_datetime = revision.datetime
         doc.mod_person = revision.person
 
-    update_graph (doc, **kw)
-
+    files = [os.path.join (doc.scm_dir, f) for f in doc.data.get ('xmlfiles', [])]
+    if len(files) == 0:
+        doc.mod_score = 0
+    else:
+        pulse.pulsate.update_graphs (doc,
+                                     {'branch' : doc.parent, 'files' : files},
+                                     20,
+                                     **kw)
     doc.save()
 
 
