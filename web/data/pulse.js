@@ -1,51 +1,30 @@
 /******************************************************************************/
-/** Masks **/
-$.fn.mask = function (speed, options) {
+/** Shading **/
+$.fn.shade = function (speed, options) {
   this.each(function () {
     var el = $(this);
-    if (el.data('pulsemask') != undefined) { return; }
-    var pulsemask = $('<div class="mask"></div>');
-    var offset = el.offset();
-    pulsemask.css({
-      top: offset.top,
-      left: offset.left,
-      height: el.height(),
-      width: el.width()
-,backgroundColor: 'red'
+    links = el.find('a').andSelf('a');
+    links.each(function () {
+      var link = $(this);
+      link.data('href', link.attr('href'));
+      link.data('onclick', link.attr('onclick'));
+      link.removeAttr('href');
     });
-    if (options != undefined) {
-      if (options.onclick != undefined) {
-        pulsemask.click(options.onclick);
-      }
-    }
-    pulsemask.resize_handler = function () {
-      pulsemask.css({
-        top: offset.top,
-        left: offset.left,
-        height: el.height(),
-        width: el.width()
-      });
-    };
-    $(window).bind('resize', pulsemask.resize_handler);
-    pulsemask.hide();
-    pulsemask.appendTo($('body'));
-    pulsemask.fadeIn(speed);
-    el.data('pulsemask', pulsemask);
+    el.animate({opacity: 0.4}, 800);
   });
   return this;
 };
 
-$.fn.unmask = function (speed) {
+$.fn.unshade = function (speed) {
   this.each(function () {
     var el = $(this);
-    var pulsemask = el.data('pulsemask');
-    if (pulsemask != undefined) {
-      $(window).unbind('resize', pulsemask.resize_handler);
-      pulsemask.fadeOut(speed, function () {
-        pulsemask.remove();
-        el.removeData('pulsemask');
-      });
-    }
+    links = el.find('a').andSelf('a');
+    links.each(function () {
+      var link = $(this);
+      link.attr('href', link.data('href'));
+      link.attr('onclick', link.data('onclick'));
+    });
+    el.animate({opacity: 1.0}, 800);
   });
   return this;
 };
@@ -56,12 +35,27 @@ $.fn.unmask = function (speed) {
 
 function init_zoom (ctxt) {
   $('a.zoom', ctxt).click(function () {
-    $('body').mask('fast', {
-      onclick: function () {
-        $('body').unmask('fast');
-        $('div.zoom').fadeOut('fast', function () { $('div.zoom').remove() });
-      }
+    var mask = $('<div class="mask"></div>');
+    var body = $('body');
+    var maskresize = function () {
+      var offset = body.offset();
+      mask.css({
+        top: offset.top,
+        left: offset.left,
+        height: body.height(),
+        width: body.width()
+      });
+    };
+    maskresize();
+    $(window).bind('resize', maskresize);
+    mask.click(function () {
+      $(window).unbind('resize', maskresize)
+      mask.fadeOut('fast', function () { mask.remove(); });
+      $('div.zoom').fadeOut('fast', function () { $('div.zoom').remove() });
     });
+    mask.hide();
+    mask.appendTo(body);
+    mask.fadeIn('fast');
     var link = $(this);
     var img = new Image();
     img.src = link.attr('href');
@@ -170,17 +164,17 @@ function slide (id, dir) {
     var nextlink = $('#graphnext-' + id);
     var backlink = $('#graphprev-' + id);
   }
-  backlink.unmask();
+  backlink.unshade();
 
   var nextsrc = slidecalc(newsrc, dir).src;
   if (nextsrc == undefined) {
-    nextlink.mask();
+    nextlink.shade();
   } else {
     var nextimg = new Image();
     nextimg.src = nextsrc;
     if (!nextimg.complete) {
-      nextlink.mask();
-      nextimg.onload = function () { nextlink.unmask(); };
+      nextlink.shade();
+      nextimg.onload = function () { nextlink.unshade(); };
     }
   }
 
@@ -261,12 +255,12 @@ function slidecalc(src, dir) {
 
 $(document).ready(function() {
   var nexts = $('a.graphnext');
-  nexts.mask();
+  nexts.shade();
   var prevs = $('a.graphprev');
   prevs.each(function () {
     var thisq = $(this);
     thisq.css('visibility', 'visible');
-    thisq.mask();
+    thisq.shade();
     var re = /^.*-(\d+)$/
     var match = re.exec(thisq.attr('id'));
     var id = match[1];
@@ -276,9 +270,9 @@ $(document).ready(function() {
     var newimg = new Image();
     newimg.src = newsrc;
     if (newimg.complete) {
-      thisq.unmask();
+      thisq.unshade();
     } else {
-      newimg.onload = function () { thisq.unmask(); };
+      newimg.onload = function () { thisq.unshade(); };
     }
   });
 });
@@ -320,18 +314,10 @@ function expander (id) {
 
     var slinks = $('#slink-' + id).parent();
     if (slinks.length > 0) {
-      var mask = $('#slink-' + id + '-mask');
-      if (open) {
-        mask.fadeOut();
-      } else {
-        if (mask.length == 0) {
-          slinks.prepend ('<div id="slink-' + id + '-mask" class="mask"></div>');
-          mask = $('#slink-' + id + '-mask');
-          mask.css ('height', slinks.height() + 'px');
-          mask.css ('width', slinks.width() + 'px');
-        }
-        mask.fadeIn();
-      }
+      if (open)
+        slinks.unshade();
+      else
+        slinks.shade();
     }
   });
 }
@@ -368,11 +354,7 @@ function replace (id, url) {
   var el = $('#' + id);
   var par = el.parents('.info-content');
   if (par.length > 0) {
-    par.before ('<div class="infomask" id="infomask' + id + '"></div>')
-    var mask = $('#infomask' + id);
-    mask.css ('height', par.height() + 'px');
-    mask.css ('width', par.width() + 'px');
-    mask.fadeIn('fast');
+    par.shade();
   }
   $.get(url, function (data) {
     if (document.createRange) {
@@ -382,7 +364,7 @@ function replace (id, url) {
     } else {
       el[0].outerHTML = data;
     }
-    mask.fadeOut('fast', function () { mask.remove() })
+    par.unshade();
   });
 }
 
@@ -477,12 +459,7 @@ function mlink (id) {
   }
 
   if (mcont.hasClass('mstub')) {
-    mlink.prepend ('<div id="mlink-' + id + '-mask" class="mask"></div>');
-    var mask = $('#mlink-' + id + '-mask');
-    mask.css ('height', mlink.height() + 'px');
-    mask.css ('width', mlink.width() + 'px');
-    mask.css ('background-color', mlink.parent().css('background-color'));
-    mask.fadeIn('fast');
+    mlink.shade();
     $.get(mcont.html(), function (data) {
       if (document.createRange) {
         range = document.createRange();
@@ -493,7 +470,7 @@ function mlink (id) {
       }
       var cont = $('#mcont' + id);
       show(cont);
-      mask.fadeOut('fast');
+      mlink.unshade();
     });
   } else {
     show(mcont);
