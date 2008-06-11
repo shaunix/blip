@@ -2,49 +2,48 @@
 /** Masks **/
 $.fn.mask = function (speed, options) {
   this.each(function () {
-    var el = this;
-    var jq = $(el);
-    if (el.pulsemask != undefined) {
-      return;
-    }
-    el.pulsemask = $('<div class="mask"></div>');
-    var offset = jq.offset();
-    el.pulsemask.css({
+    var el = $(this);
+    if (el.data('pulsemask') != undefined) { return; }
+    var pulsemask = $('<div class="mask"></div>');
+    var offset = el.offset();
+    pulsemask.css({
       top: offset.top,
       left: offset.left,
-      height: jq.height(),
-      width: jq.width()
+      height: el.height(),
+      width: el.width()
 ,backgroundColor: 'red'
     });
     if (options != undefined) {
       if (options.onclick != undefined) {
-        el.pulsemask.click(options.onclick);
+        pulsemask.click(options.onclick);
       }
     }
-    el.pulsemask.resize_handler = function () {
-      el.pulsemask.css({
+    pulsemask.resize_handler = function () {
+      pulsemask.css({
         top: offset.top,
         left: offset.left,
-        height: jq.height(),
-        width: jq.width()
+        height: el.height(),
+        width: el.width()
       });
     };
-    $(window).bind('resize', el.pulsemask.resize_handler);
-    el.pulsemask.hide();
-    el.pulsemask.appendTo($('body'));
-    el.pulsemask.fadeIn(speed);
+    $(window).bind('resize', pulsemask.resize_handler);
+    pulsemask.hide();
+    pulsemask.appendTo($('body'));
+    pulsemask.fadeIn(speed);
+    el.data('pulsemask', pulsemask);
   });
   return this;
 };
 
 $.fn.unmask = function (speed) {
   this.each(function () {
-    var el = this;
-    if (el.pulsemask != undefined) {
-      $(window).unbind('resize', el.pulsemask.resize_handler);
-      el.pulsemask.fadeOut(speed, function () {
-        el.pulsemask.remove();
-        el.pulsemask = undefined;
+    var el = $(this);
+    var pulsemask = el.data('pulsemask');
+    if (pulsemask != undefined) {
+      $(window).unbind('resize', pulsemask.resize_handler);
+      pulsemask.fadeOut(speed, function () {
+        pulsemask.remove();
+        el.removeData('pulsemask');
       });
     }
   });
