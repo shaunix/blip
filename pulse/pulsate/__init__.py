@@ -78,7 +78,7 @@ def update_graphs (obj, select, max, **kw):
         graph.save (of.get_file_path())
 
         if i == 0:
-            graph_t = pulse.graphs.BarGraph (stats, 80, height=40, tight=True)
+            graph_t = pulse.graphs.BarGraph (stats, max, height=40, tight=True)
             graph_t.save (os.path.join (os.path.dirname (of.get_file_path()), 'commits-tight.png'))
 
         of.data['coords'] = zip (graph.get_coords(), stats, range(topweek - numweeks + 1, topweek + 1))
