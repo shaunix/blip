@@ -109,7 +109,7 @@ def update_gdu_docbook (doc, **kw):
     else:
         pulse.pulsate.update_graphs (doc,
                                      {'branch' : doc.parent, 'files' : files},
-                                     20,
+                                     10,
                                      **kw)
     doc.save()
 
