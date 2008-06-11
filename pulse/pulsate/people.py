@@ -23,6 +23,7 @@ import os
 
 import pulse.graphs
 import pulse.models as db
+import pulse.pulsate
 
 synop = 'update information about people'
 usage_extra = '[ident]'
@@ -41,48 +42,9 @@ def update_person (person, **kw):
     except IndexError:
         of = None
 
-    numweeks = 104
-    revs = db.Revision.select_revisions (person=person,
-                                         weeknum__gt=(thisweek - numweeks))
+    pulse.pulsate.update_graphs (person, {'person' : person}, 80, **kw)
 
-    if of != None:
-        if kw.get('timestamps', True):
-            lastrev = of.data.get ('lastrev', None)
-            weeknum = of.data.get ('weeknum', None)
-            if weeknum == thisweek:
-                rev = None
-                if lastrev != None:
-                    try:
-                        rev = revs[0].id
-                    except IndexError:
-                        pass
-                if lastrev == rev:
-                    pulse.utils.log ('Skipping commit graph for %s' % person.ident)
-                    return
-    else:
-        of = db.OutputFile (type='graphs', ident=person.ident, filename='commits.png', datetime=now)
-
-    pulse.utils.log ('Creating commit graph for %s' % person.ident)
-    stats = [0] * numweeks
-    revs = list(revs)
-    for rev in revs:
-        idx = rev.weeknum - thisweek + numweeks - 1
-        stats[idx] += 1
-    score = pulse.utils.score (stats[numweeks - 26:])
-    person.mod_score = score
     person.save()
-
-    graph = pulse.graphs.BarGraph (stats, 80, height=40)
-    graph.save (of.get_file_path())
-
-    graph_t = pulse.graphs.BarGraph (stats, 80, height=40, tight=True)
-    graph_t.save (os.path.join (os.path.dirname (of.get_file_path()), 'commits-tight.png'))
-
-    of.data['coords'] = zip (graph.get_coords(), stats, range(thisweek - numweeks + 1, thisweek + 1))
-    if len(revs) > 0:
-        of.data['lastrev'] = revs[0].id
-    of.data['weeknum'] = thisweek
-    of.save()
 
 
 ################################################################################

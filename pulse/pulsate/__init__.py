@@ -25,7 +25,7 @@ import pulse.graphs
 import pulse.models as db
 import pulse.utils
 
-def update_graphs (branch, select, max, **kw):
+def update_graphs (obj, select, max, **kw):
     now = datetime.datetime.now()
     thisweek = pulse.utils.weeknum (datetime.datetime.utcnow())
     numweeks = 104
@@ -39,7 +39,7 @@ def update_graphs (branch, select, max, **kw):
             break;
 
         fname = 'commits-' + str(i) + '.png'
-        of = db.OutputFile.objects.filter (type='graphs', ident=branch.ident, filename=fname)
+        of = db.OutputFile.objects.filter (type='graphs', ident=obj.ident, filename=fname)
 
         try:
             of = of[0]
@@ -58,13 +58,13 @@ def update_graphs (branch, select, max, **kw):
                         except IndexError:
                             pass
                     if lastrev == rev:
-                        pulse.utils.log ('Skipping commit graph for %s' % branch.ident)
+                        pulse.utils.log ('Skipping commit graph for %s' % obj.ident)
                         return
         elif of == None:
-            of = db.OutputFile (type='graphs', ident=branch.ident, filename=fname, datetime=now)
+            of = db.OutputFile (type='graphs', ident=obj.ident, filename=fname, datetime=now)
 
         if i == 0:
-            pulse.utils.log ('Creating commit graphs for %s' % branch.ident)
+            pulse.utils.log ('Creating commit graphs for %s' % obj.ident)
         stats = [0] * numweeks
         revs = list(revs)
         for rev in revs:
@@ -72,7 +72,7 @@ def update_graphs (branch, select, max, **kw):
             stats[idx] += 1
         if i == 0:
             score = pulse.utils.score (stats[numweeks - 26:])
-            branch.mod_score = score
+            obj.mod_score = score
 
         graph = pulse.graphs.BarGraph (stats, max, height=40)
         graph.save (of.get_file_path())

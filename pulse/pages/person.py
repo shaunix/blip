@@ -49,6 +49,8 @@ def main (path, query, http=True, fd=None):
 
     if query.get('ajax', None) == 'commits':
         return output_ajax_commits (person, **kw)
+    elif query.get('ajax', None) == 'graphmap':
+        return output_ajax_graphmap (person, **kw)
     else:
         return output_person (person, **kw)
 
@@ -98,7 +100,7 @@ def output_person (person, **kw):
     # Activity
     box = pulse.html.InfoBox ('activity', pulse.utils.gettext ('Activity'))
     columns.add_to_column (0, box)
-    of = db.OutputFile.objects.filter (type='graphs', ident=person.ident, filename='commits.png')
+    of = db.OutputFile.objects.filter (type='graphs', ident=person.ident, filename='commits-0.png')
     try:
         of = of[0]
         graph = pulse.html.Graph.activity_graph (of, person.pulse_url)
@@ -160,6 +162,26 @@ def output_ajax_commits (person, **kw):
         title = pulse.utils.gettext('Showing %i of %i commits from %i weeks ago:') % (len(revs), cnt, ago)
     div = get_commits_div (person, revs, title)
     page.add_content (div)
+    page.output(fd=kw.get('fd'))
+    return 0
+
+
+def output_ajax_graphmap (person, **kw):
+    query = kw.get ('query', {})
+    page = pulse.html.Fragment (http=kw.get('http', True))
+    id = query.get('id')
+    num = query.get('num')
+    filename = query.get('filename')
+    
+    of = db.OutputFile.objects.filter (type='graphs', ident=person.ident, filename=filename)
+    try:
+        of = of[0]
+        graph = pulse.html.Graph.activity_graph (of, person.pulse_url,
+                                                 count=int(id), num=int(num), map_only=True)
+        page.add_content (graph)
+    except IndexError:
+        pass
+    
     page.output(fd=kw.get('fd'))
     return 0
 
