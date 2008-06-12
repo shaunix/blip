@@ -10,6 +10,14 @@ $.fn.shade = function (speed, options) {
       link.data('onclick', link.attr('onclick'));
       link.removeAttr('href');
     });
+    imgs = el.find('img');
+    imgs.each(function () {
+      var img = $(this);
+      if (img.attr('usemap') != undefined) {
+        img.data('usemap', img.attr('usemap'));
+        img.removeAttr('usemap');
+      }
+    });
     el.animate({opacity: 0.4}, 800);
   });
   return this;
@@ -23,6 +31,13 @@ $.fn.unshade = function (speed) {
       var link = $(this);
       link.attr('href', link.data('href'));
       link.attr('onclick', link.data('onclick'));
+    });
+    imgs = el.find('img');
+    imgs.each(function () {
+      var img = $(this);
+      if (img.data('usemap') != undefined) {
+        img.attr('usemap', img.data('usemap'));
+      }
     });
     el.animate({opacity: 1.0}, 800);
   });
