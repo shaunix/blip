@@ -181,17 +181,13 @@ function slide (id, dir) {
   }
   backlink.unshade();
 
+  nextlink.shade();
   var nextsrc = slidecalc(newsrc, dir).src;
-  if (nextsrc == undefined) {
-    nextlink.shade();
-  } else {
-    var nextimg = new Image();
-    nextimg.src = nextsrc;
-    if (!nextimg.complete) {
-      nextlink.shade();
-      nextimg.onload = function () { nextlink.unshade(); };
-    }
-  }
+  $.ajax({
+    url: nextsrc,
+    success: function () {
+      nextlink.unshade();
+  }});
 
   var slidego = function () {
     curimg.wrap('<div class="graphaway"></div>'); 
@@ -240,13 +236,10 @@ function slide (id, dir) {
     div[0].timer = setInterval(slideiter, 1);
   };
 
-  var img = new Image();
-  img.src = newsrc;
-  if (img.complete) {
-    slidego();
-  } else {
-    img.onload = slidego;
-  }
+  $.ajax({
+    url: newsrc,
+    success: slidego
+  });
 }
 
 function slidecalc(src, dir) {
@@ -282,13 +275,11 @@ $(document).ready(function() {
     var div = $('#graph-' + id)
     var img = div.children('img');
     var newsrc = slidecalc(img.attr('src'), -1).src;
-    var newimg = new Image();
-    newimg.src = newsrc;
-    if (newimg.complete) {
-      thisq.unshade();
-    } else {
-      newimg.onload = function () { thisq.unshade(); };
-    }
+    $.ajax({
+      url: newsrc,
+      complete: function () {
+        thisq.unshade();
+    }});
   });
 });
 
