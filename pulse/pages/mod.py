@@ -197,23 +197,24 @@ def output_module (module, **kw):
     box.add_content (div)
 
     # Dependencies
-    box = pulse.html.InfoBox ('dependencies', pulse.utils.gettext ('Dependencies'))
-    columns.add_to_column (0, box)
     deps = db.ModuleDependency.get_related (subj=module)
     deps = pulse.utils.attrsorted (list(deps), ['pred', 'scm_module'])
-    d1 = pulse.html.Div()
-    d2 = pulse.html.Div()
-    box.add_content (d1)
-    box.add_content (pulse.html.Rule())
-    box.add_content (d2)
-    for dep in deps:
-        div = pulse.html.Div ()
-        link = pulse.html.Link (dep.pred.pulse_url, dep.pred.scm_module)
-        div.add_content (link)
-        if dep.direct:
-            d1.add_content (div)
-        else:
-            d2.add_content (div)
+    if len(deps) > 0:
+        box = pulse.html.InfoBox ('dependencies', pulse.utils.gettext ('Dependencies'))
+        columns.add_to_column (0, box)
+        d1 = pulse.html.Div()
+        d2 = pulse.html.Div()
+        box.add_content (d1)
+        box.add_content (pulse.html.Rule())
+        box.add_content (d2)
+        for dep in deps:
+            div = pulse.html.Div ()
+            link = pulse.html.Link (dep.pred.pulse_url, dep.pred.scm_module)
+            div.add_content (link)
+            if dep.direct:
+                d1.add_content (div)
+            else:
+                d2.add_content (div)
 
     # Programs and Libraries
     for branchtype, boxid, title in (
