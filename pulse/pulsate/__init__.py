@@ -28,7 +28,7 @@ import pulse.utils
 def update_graphs (obj, select, max, **kw):
     now = datetime.datetime.now()
     thisweek = pulse.utils.weeknum (datetime.datetime.utcnow())
-    numweeks = 104
+    numweeks = kw.get('numweeks', 104)
     i = 0
     while True:
         topweek = thisweek - (i * numweeks)
@@ -36,6 +36,10 @@ def update_graphs (obj, select, max, **kw):
                                              weeknum__lte=topweek,
                                              **select)
         if revs.count() == 0:
+            if i == 1:
+                graph_t = pulse.graphs.BarGraph (([0] * numweeks) + stats0,
+                                                 max, height=40, tight=True)
+                graph_t.save (os.path.join (os.path.dirname (of.get_file_path()), 'commits-tight.png'))
             break;
 
         fname = 'commits-' + str(i) + '.png'
@@ -78,7 +82,9 @@ def update_graphs (obj, select, max, **kw):
         graph.save (of.get_file_path())
 
         if i == 0:
-            graph_t = pulse.graphs.BarGraph (stats, max, height=40, tight=True)
+            stats0 = stats
+        elif i == 1:
+            graph_t = pulse.graphs.BarGraph (stats + stats0, max, height=40, tight=True)
             graph_t.save (os.path.join (os.path.dirname (of.get_file_path()), 'commits-tight.png'))
 
         of.data['coords'] = zip (graph.get_coords(), stats, range(topweek - numweeks + 1, topweek + 1))
