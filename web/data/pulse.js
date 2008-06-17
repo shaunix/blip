@@ -277,7 +277,7 @@ $(document).ready(function() {
     var newsrc = slidecalc(img.attr('src'), -1).src;
     $.ajax({
       url: newsrc,
-      complete: function () {
+      success: function () {
         thisq.unshade();
     }});
   });
