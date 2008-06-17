@@ -103,8 +103,16 @@ def synopsis ():
     box.add_content (pulse.html.Div (pulse.utils.gettext ('Kicking ass and taking names:')))
     bl = pulse.html.BulletList ()
     box.add_content (bl)
-    for module in modules[:12]:
-        bl.add_item (pulse.html.Link (module))
+    modules = modules[:12]
+    scm_mods = {}
+    for module in modules:
+        scm_mods.setdefault (module.scm_module, 0)
+        scm_mods[module.scm_module] += 1
+    for module in modules:
+        if scm_mods[module.scm_module] > 1:
+            bl.add_item (pulse.html.Link (module.get_pulse_url(), module.get_branch_title()))
+        else:
+            bl.add_item (pulse.html.Link (module))
     return box
 
 
