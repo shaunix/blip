@@ -782,11 +782,12 @@ def locate_icon (record, icon, images):
         base = os.path.basename (img)
         if os.path.basename (img) == iconfile:
             candidates.append (img)
-            continue
-        if base.startswith (icon) and base.endswith ('.png'):
+        elif base.startswith (icon) and base.endswith ('.png'):
             mid = base[len(icon):-4]
             if re.match ('[\.-]\d\d$', mid):
                 candidates.append (img)
+        elif base.startswith ('hicolor_apps_') and base.endswith (iconfile):
+            candidates.append (img)
     use = None
     img22 = None
     img24 = None
