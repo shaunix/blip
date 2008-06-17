@@ -193,6 +193,7 @@
     <module id="epiphany-extensions"/>
     <module id="f-spot"/>
     <module id="gedit-plugins"/>
+    <module id="gegl"/>
     <module id="gimp"/>
     <module id="gimp-data-extras"/>
     <module id="gimp-freetype"/>
