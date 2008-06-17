@@ -80,11 +80,11 @@ def update_branch (branch, **kw):
                 continue
             if name == 'POTFILES.in':
                 podirs.append (dirname)
-            elif name.endswith ('.pc.in'):
+            elif re.match('.*\.pc(\.in)+$', name):
                 pkgconfigs.append (filename)
-            elif name.endswith ('.desktop.in') or name.endswith ('.desktop.in.in'):
+            elif re.match('.*\.desktop(\.in)+$', name):
                 keyfiles.append (filename)
-            elif name.endswith ('.server.in.in'):
+            elif re.match('.*\.server(\.in)+$', name):
                 oafservers.append (filename)
             elif name.endswith ('.png'):
                 images.append (filename)
