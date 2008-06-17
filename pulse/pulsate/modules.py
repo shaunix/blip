@@ -173,11 +173,15 @@ def update_branch (branch, **kw):
             default_child = applications[0]
         elif len(applets) == 1 and len(applications) == 0:
             default_child = applets[0]
-        else:
+        elif len(applications) > 0:
             for app in applications:
                 if app.data.get ('exec', None) == branch.scm_module:
                     default_child = app
                     break
+        elif len(applets) > 0:
+            pass
+        elif len(capplets) == 1:
+            default_child = capplets[0]
 
     if default_child != None:
         branch.name = default_child.name
@@ -786,6 +790,8 @@ def locate_icon (record, icon, images):
     use = None
     img22 = None
     img24 = None
+    imgbig = None
+    dimbig = None
     for img in candidates:
         im = Image.open (img)
         w, h = im.size
@@ -794,12 +800,23 @@ def locate_icon (record, icon, images):
             break
         elif w == h == 22:
             img22 = img
+        elif w == h and w > 24:
+            if dimbig == None or w < dimbig:
+                imgbig = img
+                dimbig = w
     use = img24 or img22
     if use != None:
         if not os.path.isdir (icondir):
             os.makedirs (icondir)
         shutil.copyfile (use, os.path.join (icondir, os.path.basename (use)))
         record.update ({'icon_dir' : 'apps', 'icon_name' : os.path.basename (use[:-4])})
+    elif imgbig != None:
+        if not os.path.isdir (icondir):
+            os.makedirs (icondir)
+        im = Image.open (imgbig)
+        im.thumbnail((24, 24), Image.ANTIALIAS)
+        im.save (os.path.join (icondir, os.path.basename (imgbig)), 'PNG')
+        record.update ({'icon_dir' : 'apps', 'icon_name' : os.path.basename (imgbig[:-4])})
     elif record.icon_name == None or record.icon_name != icon:
         record.update ({'icon_dir' : '__icon__:apps', 'icon_name' : icon})
 
