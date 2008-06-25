@@ -290,6 +290,7 @@ $(document).ready(function() {
 function comment (count, num, j, x) {
   var el = $('#comment-' + count + '-' + num + '-' + j);
   if (el.css('display') != 'block') {
+    $('.comment').css('display', 'none');
     var graph = $('#graph-' + count);
     var offset = graph.offset();
     el.css({
