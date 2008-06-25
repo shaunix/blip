@@ -310,6 +310,25 @@ class PulseRecord (object):
             except models.fields.FieldDoesNotExist:
                 self.data[key] = val
 
+    def extend (self, data={}, **kw):
+        for key, val in data.items() + kw.items():
+            try:
+                field = self._meta.get_field (key)
+                if isinstance (field, PickleField):
+                    dd = getattr (self, key, {})
+                    if not isinstance (val, dict):
+                        val = {'C' : val}
+                    for k, v in val.items():
+                        dd.setdefault (k, v)
+                    setattr (self, key, dd)
+                else:
+                    dd = getattr(self, key, None)
+                    if dd == None or dd == '':
+                        setattr (self, key, val)
+            except models.fields.FieldDoesNotExist:
+                if self.data.get (key) != None:
+                    self.data[key] = val
+
     # Sets the relations of a given type of a PulseRecord to those
     # given in rels, where rels is a list of PulseRelation objects
     # that have already been created.  Basically, this asserts that
@@ -582,6 +601,29 @@ class Entity (PulseRecord, models.Model):
     nick = models.CharField (maxlength=80, null=True)
     mod_score = models.IntegerField (null=True)
 
+
+    # Convenience routine to get objects that might already exist
+    @classmethod
+    def get_record (cls, ident, type):
+        return cls.get_entity_alias (ident, type)[0]
+
+
+    @classmethod
+    def get_entity_alias (cls, ident, type):
+        try:
+            rec = cls.objects.filter (ident=ident, type=type)
+            rec = rec[0]
+            return (rec, None)
+        except IndexError:
+            try:
+                rec = Alias.objects.filter (ident=ident)
+                rec = rec[0]
+                return (rec.entity, rec)
+            except IndexError:
+                rec = Entity (ident=ident, type=type)
+                return (rec, None)
+
+
     def get_name_nick (self):
         # FIXME: latinized names
         if self.nick != None:
@@ -593,6 +635,12 @@ class Entity (PulseRecord, models.Model):
     def _is_linkable (self):
         return self.type != 'Ghost'
     linkable = property (_is_linkable)
+
+
+class Alias (PulseRecord, models.Model):
+    __metaclass__ = PulseModelBase
+
+    entity = models.ForeignKey (Entity)
 
 
 ################################################################################
@@ -643,6 +691,7 @@ class Revision (models.Model):
 
     branch = models.ForeignKey (Branch)
     person = models.ForeignKey (Entity)
+    alias = models.ForeignKey (Alias)
     revision = models.CharField (maxlength=80)
     datetime = models.DateTimeField ()
     weeknum = models.IntegerField (null=True)

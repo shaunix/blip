@@ -662,12 +662,15 @@ class LinkBox (Widget, FactsComponent, ContentComponent):
         self._url = self._title = self._icon = self._desc = None
         self._show_icon = True
         self._heading = False
+        self._icon_size = None
         if isinstance (args[0], db.PulseRecord):
             if args[0].linkable:
                 self._url = args[0].pulse_url
             self._title = args[0].title
             self._desc = args[0].localized_desc
             self._icon = args[0].icon_url
+            if isinstance (args[0], db.Entity):
+                self._icon_size = 36
         elif len(args) > 1:
             self._url = args[0]
             self._title = args[1]
@@ -676,6 +679,8 @@ class LinkBox (Widget, FactsComponent, ContentComponent):
         self._badges = []
         self._classes = []
         self._graphs = []
+        if kw.get('icon_size') != None:
+            self._icon_size = kw['icon_size']
 
     def set_url (self, url):
         self._url = url
@@ -709,9 +714,12 @@ class LinkBox (Widget, FactsComponent, ContentComponent):
         cls = ' '.join(['lbox'] + self._classes)
         p (fd, '<table class="%s"><tr>', cls)
         if self._show_icon:
-            p (fd, '<td class="lbox-icon">')
+            if self._icon_size != None:
+                p (fd, '<td class="lbox-icon" style="width: %ipx">', self._icon_size, False)
+            else:
+                p (fd, '<td class="lbox-icon">', None, False)
             if self._icon != None:
-                p (fd, '<img class="icon" src="%s" alt="%s">', (self._icon, self._title))
+                p (fd, '<img class="icon" src="%s" alt="%s">', (self._icon, self._title), False)
             p (fd, '</td>')
         p (fd, '<td class="lbox-text">')
         if self._heading == True:

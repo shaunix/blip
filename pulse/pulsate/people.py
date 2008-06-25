@@ -19,11 +19,14 @@
 #
 
 import datetime
+import Image
 import os
+import urllib
 
 import pulse.graphs
 import pulse.models as db
 import pulse.pulsate
+import pulse.xmldata
 
 synop = 'update information about people'
 usage_extra = '[ident]'
@@ -31,6 +34,93 @@ args = pulse.utils.odict()
 args['no-timestamps'] = (None, 'do not check timestamps before processing files')
 def help_extra (fd=None):
     print >>fd, 'If ident is passed, only people with a matching identifier will be updated.'
+
+
+def update_people (**kw):
+    data = pulse.xmldata.get_data (os.path.join (pulse.config.input_dir, 'xml', 'people.xml'))
+    icondir = os.path.join (pulse.config.web_icons_dir, 'people')
+    for key in data.keys():
+        if not data[key]['__type__'] == 'person':
+            continue
+        if not data[key].has_key ('id'):
+            continue
+        ident = '/person/' + data[key]['id']
+        person = db.Entity.get_record (ident, 'Person')
+        aliases = data[key].get ('alias', [])
+        needs_update = False
+        for alias in aliases:
+            try:
+                aliasrec = db.Alias.objects.filter (ident=alias)
+                aliasrec = aliasrec[0]
+            except IndexError:
+                needs_update = True
+                aliasrec = db.Alias (ident=alias)
+            aliasrec.entity = person
+            aliasrec.save()
+            try:
+                rec = db.Entity.objects.filter (ident=alias, type='Person')
+                rec = rec[0]
+            except IndexError:
+                rec = None
+            if rec != None:
+                pulse.utils.log ('Copying %s to %s' % (alias, ident))
+                pdata = {}
+                for pkey, pval in rec.data.items():
+                    pdata[pkey] = pval
+                pdata['name'] = rec.name
+                pdata['desc'] = rec.desc
+                pdata['icon_dir'] = rec.icon_dir
+                pdata['icon_name'] = rec.icon_name
+                pdata['email'] = rec.email
+                pdata['web'] = rec.web
+                pdata['nick'] = rec.nick
+                pdata['mod_score'] = rec.mod_score
+                
+                rels = db.DocumentEntity.objects.filter (pred=rec)
+                for rel in rels:
+                    needs_update = True
+                    rel.pred = person
+                    rel.save()
+                rels = db.ModuleEntity.objects.filter (pred=rec)
+                for rel in rels:
+                    needs_update = True
+                    rel.pred = person
+                    rel.save()
+                branches = db.Branch.objects.filter (mod_person=rec)
+                for branch in branches:
+                    needs_update = True
+                    branch.mod_person = person
+                    branch.save()
+                revs = db.Revision.objects.filter (person=rec)
+                for rev in revs:
+                    needs_update = True
+                    rev.person = person
+                    rev.alias = alias
+                    rev.save()
+                rec.delete()
+
+        for k in ('name', 'nick', 'email', 'web', 'blog'):
+            if data[key].has_key (k):
+                person.update(**{k : data[key][k]})
+        if data[key].has_key ('icon'):
+            # FIXME: we really shouldn't redownload these every time,
+            # but we want to make sure we get updates versions.  Check
+            # into using timestamps and If-Modified-Since
+            iconhref = data[key]['icon']
+            iconname = urllib.quote ('/'.join (ident.split('/')[2:]), '')
+            iconorig = os.path.join (icondir, iconname + '@@original.png')
+            if not os.path.isdir (icondir):
+                os.makedirs (icondir)
+            urllib.urlretrieve (iconhref, iconorig)
+            im = Image.open (iconorig)
+            im.thumbnail((36, 36), Image.ANTIALIAS)
+            im.save (os.path.join (icondir, iconname + '.png'), 'PNG')
+            person.update ({'icon_dir' : 'people', 'icon_name' : iconname})
+
+        if needs_update:
+            update_person (person, **kw)
+        else:
+            person.save()
 
 
 def update_person (person, **kw):
@@ -56,6 +146,8 @@ def main (argv, options={}):
         prefix = None
     else:
         prefix = argv[0]
+
+    update_people (timestamps=timestamps)
 
     if prefix == None:
         people = db.Entity.objects.filter (type='Person')
