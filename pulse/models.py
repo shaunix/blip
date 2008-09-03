@@ -620,7 +620,7 @@ class Entity (PulseRecord, models.Model):
                 rec = rec[0]
                 return (rec.entity, rec)
             except IndexError:
-                rec = Entity (ident=ident, type=type)
+                rec, cr = cls.objects.get_or_create (ident=ident, type=type)
                 return (rec, None)
 
 
