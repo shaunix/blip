@@ -23,6 +23,7 @@ import Image
 import os
 import urllib
 
+import pulse.feedparser
 import pulse.graphs
 import pulse.models as db
 import pulse.pulsate
@@ -133,6 +134,34 @@ def update_person (person, **kw):
         of = None
 
     pulse.pulsate.update_graphs (person, {'person' : person}, 80, **kw)
+
+    feed = person.data.get ('blog')
+    if feed != None:
+        bident = '/blog' + person.ident
+        forum = db.Forum.get_record (bident, 'Blog')
+        forum.data['feed'] = feed
+        etag = forum.data.get ('etag')
+        modified = forum.data.get ('modified')
+        feed = pulse.feedparser.parse (feed, etag=etag, modified=modified)
+        if feed.status == 200:
+            pulse.utils.log ('Processing blog %s' % bident)
+            for entry in feed['entries']:
+                eident = bident + '/' + entry.id
+                if db.ForumPost.objects.filter (ident=eident, type='BlogPost').count () == 0:
+                    post = db.ForumPost (ident=eident, type='BlogPost')
+                    post.update ({
+                        'forum' : forum,
+                        'author' : person,
+                        'name' : entry.title,
+                        'web' : entry.link,
+                        'datetime' : datetime.datetime (*entry.date_parsed[:6])
+                        })
+                    post.save ()
+            forum.data['etag'] = feed.get('etag')
+            forum.data['modified'] = feed.get('modified')
+            forum.save()
+        else:
+            pulse.utils.log ('Skipping blog %s' % bident)
 
     person.save()
 

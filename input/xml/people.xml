@@ -11,6 +11,8 @@
   <alias>
     <item>/person/gnome.org/shaunm</item>
     <item>/person/shaunm@gnome.org</item>
+    <item>/person/shaunm@localhost.localdomain</item>
+    <item>/person/shaunm@window.gnome.org</item>
   </alias>
 </person>
 

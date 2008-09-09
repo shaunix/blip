@@ -643,6 +643,19 @@ class Alias (PulseRecord, models.Model):
     entity = models.ForeignKey (Entity)
 
 
+class Forum (PulseRecord, models.Model):
+    __metaclass__ = PulseModelBase
+
+
+class ForumPost (PulseRecord, models.Model):
+    __metaclass__ = PulseModelBase
+
+    forum = models.ForeignKey (Forum, related_name='forum_posts')
+    author = models.ForeignKey (Entity, related_name='forum_posts')
+    parent = models.ForeignKey ('ForumPost', related_name='children', null=True)
+    datetime = models.DateTimeField ()
+
+
 ################################################################################
 ## Relations
 

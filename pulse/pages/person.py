@@ -115,6 +115,19 @@ def output_person (person, **kw):
                            pulse.utils.gettext('Showing %i of %i commits:') % (len(revs), cnt))
     box.add_content (div)
 
+    # Blog
+    bident = '/blog' + person.ident
+    blog = db.Forum.objects.filter (ident=bident)
+    try:
+        blog = blog[0]
+        box = pulse.html.InfoBox ('blog', pulse.utils.gettext ('Blog'))
+        columns.add_to_column (0, box)
+        for entry in blog.forum_posts.all()[:10]:
+            lbox = box.add_link_box (entry.web, entry.title)
+            lbox.set_description (entry.datetime.strftime('%Y-%m-%d %T'))
+    except IndexError:
+        pass
+
     # Modules and Documents
     mods = db.Branch.objects.filter (type='Module', module_entity_preds__pred=person)
     mods = pulse.utils.attrsorted (list(mods), 'title')
