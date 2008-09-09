@@ -46,8 +46,9 @@ body {
 }
 
 #header {
-  background: #555753;
-  padding: 0.5em 0 0.5em 2.4em;
+  background: #555753 url(header-bg.png) 0 0 repeat-x;
+  height: 56px;
+  padding: 0 0 0 2.4em;
 }
 #tabs {
   background: url(bar.png) 0 100% repeat-x;
