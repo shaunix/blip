@@ -33,11 +33,16 @@ def main (path, query, http=True, fd=None):
     kw = {'path' : path, 'query' : query, 'http' : http, 'fd' : fd}
     if len(path) == 1:
         return output_top (**kw)
-    person = db.Entity.objects.filter (ident=('/' + '/'.join(path)), type='Person')
+    ident = '/' + '/'.join(path)
+    person = db.Entity.objects.filter (ident=ident, type='Person')
     try:
         person = person[0]
     except IndexError:
-        person = None
+        alias = db.Alias.objects.filter (ident=ident)
+        try:
+            person = alias[0].entity
+        except:
+            person = None
     if person == None:
         kw = {'http': http}
         kw['title'] = pulse.utils.gettext ('Person Not Found')

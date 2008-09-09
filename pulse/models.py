@@ -141,7 +141,10 @@ def __pulse_log_save (instance):
     if not PulseDebugCursor.was_insert:
         return
     if isinstance (instance, PulseRecord):
-        pulse.utils.log ('Created %s %s' % (instance.type, instance.ident))
+        if isinstance (instance, Alias):
+            pulse.utils.log ('Created Alias %s' % instance.ident)
+        else:
+            pulse.utils.log ('Created %s %s' % (instance.type, instance.ident))
     elif isinstance (instance, PulseRelation):
         pulse.utils.log ('Created %s %s : %s' %
                          (instance.__class__.__name__,
