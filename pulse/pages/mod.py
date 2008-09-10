@@ -281,8 +281,10 @@ def output_ajax_domain (module, **kw):
     translations = db.Branch.select_with_statistic ('Messages',
                                                     type='Translation', parent=domain)
     translations = pulse.utils.attrsorted (list(translations), 'title')
+    pagediv = pulse.html.Div ()
     pad = pulse.html.PaddingBox ()
-    page.add_content (pad)
+    pagediv.add_content (pad)
+    page.add_content (pagediv)
 
     if domain.scm_dir == 'po':
         potfile = domain.scm_module + '.pot'
