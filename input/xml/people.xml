@@ -23,6 +23,17 @@
   </alias>
 </person>
 
+<person id="danilo">
+  <name>Данило Шеган</name>
+  <nick>danilo</nick>
+  <icon>http://planet.gnome.org/heads/danilo.png</icon>
+  <web>http://danilo.segan.org/</web>
+  <blog>http://danilo.segan.org/blog/rss.en.xml</blog>
+  <alias>
+    <item>/person/gnome.org/danilo</item>
+  </alias>
+</person>
+
 <person id="hadess">
   <name>Bastien Nocera</name>
   <nick>hadess</nick>
@@ -50,6 +61,17 @@
   <blog>http://blogs.gnome.org/kmaraas/feed/</blog>
   <alias>
     <item>/person/gnome.org/kmaraas</item>
+  </alias>
+</person>
+
+<person id="rburton">
+  <name>Ross Burton</name>
+  <nick>ross</nick>
+  <icon>http://planet.gnome.org/heads/ross.png</icon>
+  <web>http://www.burtonini.com/</web>
+  <blog>http://www.burtonini.com/blog/index.rss2</blog>
+  <alias>
+    <item>/person/gnome.org/rburton</item>
   </alias>
 </person>
 

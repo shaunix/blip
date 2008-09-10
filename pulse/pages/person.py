@@ -129,7 +129,8 @@ def output_person (person, **kw):
         columns.add_to_column (0, box)
         for entry in blog.forum_posts.all()[:10]:
             lbox = box.add_link_box (entry.web, entry.title)
-            lbox.set_description (entry.datetime.strftime('%Y-%m-%d %T'))
+            if entry.datetime != None:
+                lbox.set_description (entry.datetime.strftime('%Y-%m-%d %T'))
     except IndexError:
         pass
 

@@ -656,7 +656,7 @@ class ForumPost (PulseRecord, models.Model):
     forum = models.ForeignKey (Forum, related_name='forum_posts')
     author = models.ForeignKey (Entity, related_name='forum_posts')
     parent = models.ForeignKey ('ForumPost', related_name='children', null=True)
-    datetime = models.DateTimeField ()
+    datetime = models.DateTimeField (null=True)
 
 
 ################################################################################

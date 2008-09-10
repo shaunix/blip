@@ -146,16 +146,19 @@ def update_person (person, **kw):
         if feed.status == 200:
             pulse.utils.log ('Processing blog %s' % bident)
             for entry in feed['entries']:
-                eident = bident + '/' + entry.id
+                postid = entry.get ('id', entry.link)
+                eident = bident + '/' + postid
                 if db.ForumPost.objects.filter (ident=eident, type='BlogPost').count () == 0:
                     post = db.ForumPost (ident=eident, type='BlogPost')
-                    post.update ({
+                    postdata = {
                         'forum' : forum,
                         'author' : person,
                         'name' : entry.title,
-                        'web' : entry.link,
-                        'datetime' : datetime.datetime (*entry.date_parsed[:6])
-                        })
+                        'web' : entry.link
+                        }
+                    if entry.has_key ('date_parsed'):
+                        postdata['datetime'] = datetime.datetime (*entry.date_parsed[:6])
+                    post.update (postdata)
                     post.save ()
             forum.data['etag'] = feed.get('etag')
             forum.data['modified'] = feed.get('modified')
