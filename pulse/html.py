@@ -622,15 +622,19 @@ class ContainerBox (Widget, SortableComponent, ContentComponent, LinkBoxesCompon
         slinks = len(self.get_sort_links())
         if self._title != None or slinks > 0:
             if self._title != None:
-                p (fd, '<div class="exp-title">', None, False)
+                p (fd, '<table class="cont"><tr>')
+                p (fd, '<td class="cont-arrow">', None, False)
+                p (fd, '<a href="javascript:expander(\'%s\')">', self._id, False)
+                p (fd, '<img id="img-%s" class="exp-img" src="%sexpander-open.png"></a>',
+                   (self._id, pulse.config.data_root))
+                p (fd, '</td>')
+                p (fd, '<td class="cont-title">', None, False)
             if self._title != None and slinks > 0:
                 p (fd, '<table><tr><td>')
             if self._title != None:
-                p (fd, '<a href="javascript:expander(\'%s\')">', self._id, False)
-                p (fd, '<img id="img-%s" class="exp-img" src="%sexpander-open.png"> %s</a>',
-                   (self._id, pulse.config.data_root, self._title))
+                p (fd, '<a href="javascript:expander(\'%s\')">%s</a>', (self._id, self._title), False)
             if self._title != None and slinks > 0:
-                p (fd, '</td><td>')
+                p (fd, '</td><td class="cont-slinks">')
             if slinks > 0:
                 if self.get_sortable_class() == None:
                     self.set_sortable_class (self._id)
@@ -638,12 +642,12 @@ class ContainerBox (Widget, SortableComponent, ContentComponent, LinkBoxesCompon
             if self._title != None and slinks > 0:
                 p (fd, '</td></tr></table>')
             if self._title != None:
-                p (fd, '</div>')
-                p (fd, '<div class="exp-content">')
+                p (fd, '</td></tr>')
+                p (fd, '<tr><td></td><td class="cont-content">')
         ContentComponent.output (self, fd=fd)
         LinkBoxesComponent.output (self, fd=fd)
         if self._title != None:
-            p (fd, '</div>')
+            p (fd, '</td></tr></table>')
         p (fd, '</div>')
 
 

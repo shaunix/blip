@@ -309,9 +309,9 @@ function comment (count, num, j, x) {
 /** Expanders **/
 
 function expander (id) {
-  var div = $('#' + id + ' .exp-content');
-  div.slideToggle('fast', function () {
-    var open = div.is(':visible');
+  var td = $('#' + id + ' .cont-content');
+  td.slideToggle('fast', function () {
+    var open = td.is(':visible');
 
     var img = $('#img-' + id);
     if (open)

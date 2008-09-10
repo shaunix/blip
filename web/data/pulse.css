@@ -234,12 +234,19 @@ div.lbox-heading {
 }
 td.lbox-graph { vertical-align: top; text-align: right; }
 
-div.exp-title { color: #555753; font-weight: bold; }
-div.exp-title a { color: #555753; }
-div.exp-title img { vertical-align: -10%; }
-div.exp-content { padding-left: 1em; }
-div.exp-hidden { display: none; }
-div.exp-title table { width: 100%; }
+
+table.cont { width: 100%; }
+td.cont-arrow {
+  margin: 0; padding: 0;
+  vertical-align: top;
+  width: 16px;
+}
+td.cont-arrow img { vertical-align: -10%; }
+td.cont-title { color: #555753; font-weight: bold; }
+td.cont-title a { color: #555753; }
+td.cont-title table { width: 100%; }
+td.cont-slinks { text-align: right; }
+td.cont-content { padding: 0.2em 0 0 0; }
 
 div.mask {
   position: absolute;
