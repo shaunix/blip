@@ -246,7 +246,7 @@ td.cont-title { color: #555753; font-weight: bold; }
 td.cont-title a { color: #555753; }
 td.cont-title table { width: 100%; }
 td.cont-slinks { text-align: right; }
-td.cont-content { padding: 0.2em 0 0 0; }
+div.cont-content { padding: 0.5em 0 0 0; }
 
 div.mask {
   position: absolute;
@@ -258,14 +258,21 @@ div.mask {
 div.slinks {
   text-align: right;
   color: #555753;
-  padding-right: 2em;
   font-weight: normal;
 }
 span.slinks {
   background-color: #eeeeec;
+  border: solid 1px #d3d7cf;
   padding: 0 0.5em 0 0.5em;
 }
-div.slinks a.slink { color: #204a87; }
+div.slinks a { color: #204a87; }
+div.slinkmenu {
+  position: absolute;
+  background-color: #eeeeec;
+  border: solid 1px #729fcf;
+  padding: 0 0.5em 0.2em 0.5em;
+  display: none;
+}
 
 a.plink:hover { text-decoration: none; }
 div.pcont {

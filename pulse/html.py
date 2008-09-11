@@ -240,10 +240,16 @@ class SortableComponent (Component):
         """Output the HTML."""
         slinktag = self._slinktag or 'table'
         slinkclass = self._slinkclass or 'lbox'
-        p (fd, '<div class="slinks"><span class="slinks" id="slink-%s">', slinkclass)
-        for i in range(len(self._slinks)):
-            if i != 0: p (fd, u' • ')
-            slink = self._slinks[i]
+        p (fd, '<div class="slinks" id="slink-%s"><span class="slinks">', slinkclass, False)
+        p (fd, None, pulse.utils.gettext ('sort by: '), False)
+        for slink in self._slinks:
+            if not slink[2]:
+                p (fd, '<a href="javascript:slinkmenu(\'%s\')" class="slinkcur">%s</a>',
+                   (slinkclass, slink[1]), False)
+            break
+        p (fd, '<div class="slinkmenu" id="slinkmenu-%s">', slinkclass)
+        for slink in self._slinks:
+            p (fd, '<div class="slinkitem">', None, False)
             if slink[2]:
                 p (fd, ('<a class="slink" id="slink-%s-%s-%s"'
                         ' href="javascript:sort(\'%s\', \'%s\', \'%s\')">%s</a>'),
@@ -254,7 +260,8 @@ class SortableComponent (Component):
                 p (fd, '<span class="slink" id="slink-%s-%s-%s">%s</span>',
                    (slinktag, slinkclass, slink[0], slink[1]),
                    False)
-        p (fd, '</span></div>')
+            p (fd, '</div>')
+        p (fd, '</div></span></div>')
 
 
 class LinkBoxesComponent (Component):
@@ -643,9 +650,11 @@ class ContainerBox (Widget, SortableComponent, ContentComponent, LinkBoxesCompon
                 p (fd, '</td></tr></table>')
             if self._title != None:
                 p (fd, '</td></tr>')
-                p (fd, '<tr><td></td><td class="cont-content">')
+                p (fd, '<tr><td></td><td class="cont-content">', None, False)
+            p (fd, '<div class="cont-content">')
         ContentComponent.output (self, fd=fd)
         LinkBoxesComponent.output (self, fd=fd)
+        p (fd, '</div>')
         if self._title != None:
             p (fd, '</td></tr></table>')
         p (fd, '</div>')

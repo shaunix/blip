@@ -309,9 +309,9 @@ function comment (count, num, j, x) {
 /** Expanders **/
 
 function expander (id) {
-  var td = $('#' + id + ' .cont-content');
-  td.slideToggle('fast', function () {
-    var open = td.is(':visible');
+  var div = $('#' + id + ' div.cont-content');
+  div.slideToggle('fast', function () {
+    var open = div.is(':visible');
 
     var img = $('#img-' + id);
     if (open)
@@ -319,7 +319,7 @@ function expander (id) {
     else
       img.attr('src', img.attr('src').replace('open', 'closed'))
 
-    var slinks = $('#slink-' + id).parent();
+    var slinks = $('#slink-' + id);
     if (slinks.length > 0) {
       if (open)
         slinks.unshade();
@@ -589,6 +589,7 @@ function sort (tag, cls, key) {
   }
 
   var slinks = $('#slink-' + cls);
+  var curtxt = '';
   slinks.find('.slink').each(function () {
     var slink = $(this);
     if (slink.is('#slink-' + tag + '-' + cls + '-' + key)) {
@@ -596,7 +597,7 @@ function sort (tag, cls, key) {
         var span = document.createElement('span');
         span.id = slink[0].id;
         span.className = slink[0].className;
-        span.innerHTML = slink.html();
+        curtxt = span.innerHTML = slink.html();
         slink[0].parentNode.replaceChild(span, slink[0]);
       }
     }
@@ -612,6 +613,39 @@ function sort (tag, cls, key) {
       }
     }
   });
+  slinks.find ('a.slinkcur').html (curtxt);
+  var menu = $('#slinkmenu-' + cls);
+  $('body').unbind('click', menu.data('awayfunc'));
+  slinks.find ('span.slinks').css ('border-color', '#d3d7cf');
+  menu.hide();
+}
+function slinkmenu (cls) {
+  var div = $('#slink-' + cls);
+  var menu = $('#slinkmenu-' + cls);
+  menu.css ({
+    top: div.offset().top + div.height(),
+    right: $(document).width() - (div.offset().left + div.width()) - 1
+  });
+  var away = function (e) {
+    var e = e || window.event;
+    var target = e.target || e.srcElement;
+    do {
+      if (target == div[0])
+        break;
+      if (target == menu[0])
+        break;
+    } while (target = target.parentNode);
+    if (target != menu[0]) {
+      div.find ('span.slinks').css ('border-color', '#d3d7cf');
+      menu.hide();
+      $('body').unbind('click', away);
+      return (target != div[0]);
+    }
+  }
+  menu.data('awayfunc', away);
+  $('body').click (away);
+  div.find ('span.slinks').css ('border-color', '#729fcf');
+  menu.show();
 }
 
 
