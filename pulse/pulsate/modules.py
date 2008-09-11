@@ -403,7 +403,11 @@ def process_configure (branch, checkout, **kw):
         tarversion = initargs[1]
     tarversion = subvar (tarversion)
 
-    data = {'tarname' : tarname, 'tarversion' : tarversion }
+    data = {
+        'PACKAGE_NAME' : vars.get ('PACKAGE_NAME', '').strip(),
+        'tarname' : tarname,
+        'tarversion' : tarversion
+        }
 
     branch.update (data)
     branch.save()
@@ -472,6 +476,8 @@ def process_podir (branch, checkout, podir, **kw):
 def process_gdu_docdir (branch, checkout, docdir, makefile, **kw):
     bserver, bmodule, bbranch = branch.ident.split('/')[2:]
     doc_module = makefile['DOC_MODULE']
+    if doc_module == '@PACKAGE_NAME@':
+        doc_module = branch.data.get ('PACKAGE_NAME', '@PACKAGE_NAME@')
     ident = '/'.join(['/doc', bserver, bmodule, doc_module, bbranch])
     document = db.Branch.get_record (ident, 'Document')
     document.parent = branch
@@ -569,7 +575,7 @@ def process_pkgconfig (branch, checkout, filename, **kw):
     lib = db.Branch.get_record (ident, 'Library')
 
     if libname == '@PACKAGE_NAME@':
-        libname = branch.name['C']
+        libname = branch.data.get ('PACKAGE_NAME', '@PACKAGE_NAME@')
 
     lib.update (name=libname, desc=libdesc)
 
@@ -668,15 +674,18 @@ def process_keyfile (branch, checkout, filename, **kw):
     if keyfile.has_key ('Desktop Entry', 'X-GNOME-DocPath'):
         docid = keyfile.get_value ('Desktop Entry', 'X-GNOME-DocPath')
         docid = docid.split('/')[0]
-        if docid != '':
-            docident = '/'.join(['/doc', bserver, bmodule, docid, bbranch])
-            doc = db.Branch.objects.filter (ident=docident, type='Document')
-            try:
-                doc = doc[0]
-                rel = db.Documentation.set_related (app, doc)
-                app.set_relations (db.Documentation, [rel])
-            except IndexError:
-                pass
+    else:
+        docid = basename
+
+    if docid != '':
+        docident = '/'.join(['/doc', bserver, bmodule, docid, bbranch])
+        doc = db.Branch.objects.filter (ident=docident, type='Document')
+        try:
+            doc = doc[0]
+            rel = db.Documentation.set_related (app, doc)
+            app.set_relations (db.Documentation, [rel])
+        except IndexError:
+            pass
 
     db.Timestamp.set_timestamp (rel_scm, mtime)
 
