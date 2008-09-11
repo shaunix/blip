@@ -569,6 +569,8 @@ def process_pkgconfig (branch, checkout, filename, **kw):
             libname = line[5:].strip()
         elif line.startswith ('Description:'):
             libdesc = line[12:].strip()
+    if libname == '':
+        return None
 
     bserver, bmodule, bbranch = branch.ident.split('/')[2:]
     ident = '/'.join(['/lib', bserver, bmodule, basename, bbranch])
@@ -662,12 +664,15 @@ def process_keyfile (branch, checkout, filename, **kw):
     if desc != None:
         app.update (desc=desc)
     if keyfile.has_key ('Desktop Entry', 'Icon'):
-        locate_icon (app,
-                     keyfile.get_value ('Desktop Entry', 'Icon'),
-                     kw.get ('images', []))
+        iconname = keyfile.get_value ('Desktop Entry', 'Icon')
+        if iconname == '@PACKAGE_NAME@':
+            iconname = branch.data.get ('PACKAGE_NAME', '@PACKAGE_NAME@')
+        locate_icon (app, iconname, kw.get ('images', []))
 
     if keyfile.has_key ('Desktop Entry', 'Exec'):
         data['exec'] = keyfile.get_value ('Desktop Entry', 'Exec')
+        if data['exec'] == '@PACKAGE_NAME@':
+            data['exec'] = branch.data.get ('PACKAGE_NAME', '@PACKAGE_NAME@')
 
     app.update (data)
 
