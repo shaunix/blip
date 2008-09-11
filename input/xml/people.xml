@@ -75,6 +75,16 @@
   </alias>
 </person>
 
+<person id="richb">
+  <name>Rich Burridge</name>
+  <nick>richb</nick>
+  <icon>http://planet.gnome.org/heads/richb.png</icon>
+  <blog>http://blogs.sun.com/richb/feed/entries/rss</blog>
+  <alias>
+    <item>/person/gnome.org/richb</item>
+  </alias>
+</person>
+
 <person id="shaunm">
   <name>Shaun McCance</name>
   <nick>shaunm</nick>
