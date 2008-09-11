@@ -127,10 +127,13 @@ def output_person (person, **kw):
         blog = blog[0]
         box = pulse.html.InfoBox ('blog', pulse.utils.gettext ('Blog'))
         columns.add_to_column (0, box)
+        dl = pulse.html.DefinitionList ()
+        box.add_content (dl)
         for entry in blog.forum_posts.all()[:10]:
-            lbox = box.add_link_box (entry.web, entry.title)
+            link = pulse.html.Link (entry.web, entry.title)
+            dl.add_term (link)
             if entry.datetime != None:
-                lbox.set_description (entry.datetime.strftime('%Y-%m-%d %T'))
+                dl.add_entry (entry.datetime.strftime('%Y-%m-%d %T'))
     except IndexError:
         pass
 
@@ -208,7 +211,7 @@ def output_ajax_graphmap (person, **kw):
 def get_commits_div (person, revs, title):
     div = pulse.html.Div (id='commits')
     div.add_content (title)
-    dl = pulse.html.DefinitionList()
+    dl = pulse.html.DefinitionList ()
     div.add_content (dl)
     branches = {}
     curweek = None
