@@ -273,6 +273,7 @@ div.slinkmenu {
   padding: 0 0.5em 0.2em 0.5em;
   display: none;
 }
+span.slink { color: #888a85; }
 
 a.plink:hover { text-decoration: none; }
 div.pcont {

@@ -135,7 +135,7 @@ def output_set (rset, **kw):
         mods = pulse.utils.attrsorted (mods, 'title')
         modcnt = len(mods)
         cont = pulse.html.ContainerBox ()
-        cont.add_sort_link ('title', pulse.utils.gettext ('title'), False)
+        cont.add_sort_link ('title', pulse.utils.gettext ('title'), 1)
         cont.add_sort_link ('module', pulse.utils.gettext ('module'))
         cont.add_sort_link ('mtime', pulse.utils.gettext ('modified'))
         cont.add_sort_link ('score', pulse.utils.gettext ('score'))
@@ -367,7 +367,7 @@ def add_more_tabs (rset, tabbed, path):
                             slink_messages = True
                         except IndexError:
                             pass
-                cont.add_sort_link ('title', pulse.utils.gettext ('title'), False)
+                cont.add_sort_link ('title', pulse.utils.gettext ('title'), 1)
                 cont.add_sort_link ('module', pulse.utils.gettext ('module'))
                 if slink_error:
                     cont.add_sort_link ('errormsg', pulse.utils.gettext ('error'))

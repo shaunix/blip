@@ -256,7 +256,7 @@ def output_doc (doc, **kw):
     else:
         cont.set_sortable_tag ('tr')
         cont.set_sortable_class ('po')
-        cont.add_sort_link ('title', pulse.utils.gettext ('lang'), False)
+        cont.add_sort_link ('title', pulse.utils.gettext ('lang'), 1)
         cont.add_sort_link ('percent', pulse.utils.gettext ('percent'))
         cont.add_sort_link ('img', pulse.utils.gettext ('images'))
         grid = pulse.html.GridBox ()
@@ -373,7 +373,7 @@ def get_xmlfiles (doc, xmlfiles):
     cont.add_content (dl)
     if len(xmlfiles) > 1:
         cont.set_sortable_tag ('dt')
-        cont.add_sort_link ('title', pulse.utils.gettext ('name'), False)
+        cont.add_sort_link ('title', pulse.utils.gettext ('name'), 1)
         cont.add_sort_link ('mtime', pulse.utils.gettext ('modified'))
     for xmlfile in xmlfiles:
         span = pulse.html.Span (xmlfile)
@@ -401,7 +401,7 @@ def get_figures (doc, figures):
     cont = pulse.html.ContainerBox()
     cont.set_id ('figures')
     cont.set_sortable_tag ('dt')
-    cont.add_sort_link ('title', pulse.utils.gettext ('name'), False)
+    cont.add_sort_link ('title', pulse.utils.gettext ('name'), 1)
     cont.add_sort_link ('mtime', pulse.utils.gettext ('modified'))
     ofs = db.OutputFile.objects.filter (type='figures', ident=doc.ident, subdir='C')
     ofs_by_source = {}

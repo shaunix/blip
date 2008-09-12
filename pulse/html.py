@@ -230,8 +230,8 @@ class SortableComponent (Component):
     def get_sortable_class (self):
         return self._slinkclass
 
-    def add_sort_link (self, key, txt, on=True):
-        self._slinks.append ((key, txt, on))
+    def add_sort_link (self, key, txt, cur=False):
+        self._slinks.append ((key, txt, cur))
 
     def get_sort_links (self):
         return self._slinks
@@ -240,26 +240,38 @@ class SortableComponent (Component):
         """Output the HTML."""
         slinktag = self._slinktag or 'table'
         slinkclass = self._slinkclass or 'lbox'
-        p (fd, '<div class="slinks" id="slink-%s"><span class="slinks">', slinkclass, False)
+        p (fd, '<div class="slinks" id="slink__%s"><span class="slinks">', slinkclass, False)
         p (fd, None, pulse.utils.gettext ('sort by: '), False)
         for slink in self._slinks:
-            if not slink[2]:
-                p (fd, '<a href="javascript:slinkmenu(\'%s\')" class="slinkcur">%s</a>',
+            if slink[2] == 1:
+                p (fd, '<a href="javascript:slinkmenu(\'%s\')" class="slinkcur">%s ▴</a>',
                    (slinkclass, slink[1]), False)
-            break
-        p (fd, '<div class="slinkmenu" id="slinkmenu-%s">', slinkclass)
+                break
+            elif slink[2] == -1:
+                p (fd, '<a href="javascript:slinkmenu(\'%s\')" class="slinkcur">%s ▾</a>',
+                   (slinkclass, slink[1]), False)
+                break
+        p (fd, '<div class="slinkmenu" id="slinkmenu__%s">', slinkclass)
         for slink in self._slinks:
             p (fd, '<div class="slinkitem">', None, False)
-            if slink[2]:
-                p (fd, ('<a class="slink" id="slink-%s-%s-%s"'
-                        ' href="javascript:sort(\'%s\', \'%s\', \'%s\')">%s</a>'),
-                   (slinktag, slinkclass, slink[0],
-                    slinktag, slinkclass, slink[0], slink[1]),
-                   False)
+            p (fd, '<span class="slinklabel" id="slink__%s__%s__%s">%s</span>:',
+               (slinktag, slinkclass, slink[0], slink[1]))
+            if slink[2] == 1:
+                p (fd, '<span class="slink" id="slink__%s__%s__%s__1">▴</span>',
+                   (slinktag, slinkclass, slink[0]))
             else:
-                p (fd, '<span class="slink" id="slink-%s-%s-%s">%s</span>',
-                   (slinktag, slinkclass, slink[0], slink[1]),
-                   False)
+                p (fd, ('<a class="slink" id="slink__%s__%s__%s__1"'
+                        ' href="javascript:sort(\'%s\', \'%s\', \'%s\', 1)">▴</a>'),
+                   (slinktag, slinkclass, slink[0],
+                    slinktag, slinkclass, slink[0]))
+            if slink[2] == -1:
+                p (fd, '<span class="slink" id="slink__%s__%s__%s__-1">▾</span>',
+                   (slinktag, slinkclass, slink[0]))
+            else:
+               p (fd, ('<a class="slink" id="slink__%s__%s__%s__-1"'
+                        ' href="javascript:sort(\'%s\', \'%s\', \'%s\', -1)">▾</a>'),
+                   (slinktag, slinkclass, slink[0],
+                    slinktag, slinkclass, slink[0]))
             p (fd, '</div>')
         p (fd, '</div></span></div>')
 

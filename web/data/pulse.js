@@ -495,47 +495,47 @@ function keyedThing (key, title, thing, extras) {
   this.extras = extras;
 }
 intre = /^-?\d+%?$/;
-function lowerCmp (s1, s2) {
+function lowerCmp (s1, s2, asc) {
   t1 = s1.toLowerCase();
   t2 = s2.toLowerCase();
   if (t1 < t2)
-    return -1;
+    return -asc;
   else if (t2 < t1)
-    return 1;
+    return asc;
   else
     return 0;
 }
-function titleCmp (thing1, thing2) {
+function titleCmp (thing1, thing2, asc) {
   k1 = thing1.title;
   k2 = thing2.title;
   if (k1 == k2)
     return 0;
   else if (k1 == null)
-    return 1;
+    return asc;
   else if (k2 == null)
-    return -1;
+    return -asc;
   else
-    return lowerCmp(k1, k2);
+    return lowerCmp(k1, k2, asc);
 }
-function keyCmp (thing1, thing2) {
+function keyCmp (thing1, thing2, asc) {
   k1 = thing1.key;
   k2 = thing2.key;
   if (k1 == k2)
-    return titleCmp (thing1, thing2)
+    return titleCmp (thing1, thing2, 1)
   else if (k1 == null)
-    return 1;
+    return -asc;
   else if (k2 == null)
-    return -1;
+    return asc;
   else if (intre.exec(k1) && intre.exec(k2)) {
     n1 = parseInt(k1);
     n2 = parseInt(k2);
-    return n2 - n1;
+    return asc * (n1 - n2);
   }
   else
-    return lowerCmp(k1, k2);
+    return lowerCmp(k1, k2, asc);
   return 0;
 }
-function sort (tag, cls, key) {
+function sort (tag, cls, key, asc) {
   var things = [];
 
   var els = $(tag + '.' + cls);
@@ -581,47 +581,50 @@ function sort (tag, cls, key) {
     things[i].thing.parentNode.replaceChild(dummy, things[i].thing);
   }
 
-  things.sort(keyCmp);
+  things.sort( function (a, b) { return keyCmp (a, b, asc); } );
   for (var i = 0; i < things.length; i++) {
     dummies[i].parentNode.replaceChild(things[i].thing, dummies[i]);
     for (var j = 0; j < things[i].extras.length; j++)
       things[i].thing.parentNode.insertBefore(things[i].extras[j], things[i].thing.nextSibling);
   }
 
-  var slinks = $('#slink-' + cls);
-  var curtxt = '';
+  var slinks = $('#slink__' + cls);
   slinks.find('.slink').each(function () {
     var slink = $(this);
-    if (slink.is('#slink-' + tag + '-' + cls + '-' + key)) {
+    if (slink.is('#slink__' + tag + '__' + cls + '__' + key + '__' + asc)) {
       if (slink.is('a')) {
-        var span = document.createElement('span');
-        span.id = slink[0].id;
-        span.className = slink[0].className;
-        curtxt = span.innerHTML = slink.html();
-        slink[0].parentNode.replaceChild(span, slink[0]);
+        var span = $('<span></span>').attr ({
+          id: slink.attr ('id'),
+          class: slink.attr ('class')
+        });
+        span.html (slink.html());
+        slink.replaceWith (span);
       }
     }
     else {
       if (slink.is('span')) {
-        var a = document.createElement('a');
-        a.id = slink[0].id
-        a.className = slink[0].className;
-        a.innerHTML = slink.html();
-        dat = slink[0].id.split('-');
-        a.href = 'javascript:sort(\'' + dat[1] + '\', \'' + dat[2]+ '\', \'' + dat[3] + '\')'
-        slink[0].parentNode.replaceChild(a, slink[0]);
+        dat = slink.attr('id').split('__');
+        var a = $('<a></a>').attr ({
+          id: slink.attr ('id'),
+          class: slink.attr ('class'),
+          href: 'javascript:sort(\'' + dat[1] + '\', \'' + dat[2]+ '\', \'' + dat[3] + '\', ' + dat[4] + ')'
+        });
+        a.html (slink.html());
+        slink.replaceWith (a);
       }
     }
   });
+  curtxt = $('#slink__' + tag + '__' + cls + '__' + key).html();
+  curtxt += (asc == 1) ? ' ▴' : ' ▾';
   slinks.find ('a.slinkcur').html (curtxt);
-  var menu = $('#slinkmenu-' + cls);
+  var menu = $('#slinkmenu__' + cls);
   $('body').unbind('click', menu.data('awayfunc'));
   slinks.find ('span.slinks').css ('border-color', '#d3d7cf');
   menu.hide();
 }
 function slinkmenu (cls) {
-  var div = $('#slink-' + cls);
-  var menu = $('#slinkmenu-' + cls);
+  var div = $('#slink__' + cls);
+  var menu = $('#slinkmenu__' + cls);
   menu.css ({
     top: div.offset().top + div.height(),
     right: $(document).width() - (div.offset().left + div.width()) - 1

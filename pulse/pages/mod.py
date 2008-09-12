@@ -256,7 +256,7 @@ def output_module (module, **kw):
                             % (domain.title, translations.count()))
             cont.set_sortable_tag ('tr')
             cont.set_sortable_class ('po_' + domainid)
-            cont.add_sort_link ('title', pulse.utils.gettext ('lang'), False)
+            cont.add_sort_link ('title', pulse.utils.gettext ('lang'), 1)
             cont.add_sort_link ('percent', pulse.utils.gettext ('percent'))
             div = pulse.html.AjaxBox (module.pulse_url + '?ajax=domain&domain=' +
                                       urllib.quote (domain.ident))
