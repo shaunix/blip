@@ -89,7 +89,10 @@ def update_gdu_docbook (doc, **kw):
     makedir = os.path.join (checkout.directory, os.path.dirname (doc.scm_dir))
     makefile = pulse.parsers.Automake (os.path.join (makedir, 'Makefile.am'))
     xmlfiles = []
-    fnames = ([makefile['DOC_MODULE']+'.xml']  +
+    doc_module = makefile['DOC_MODULE']
+    if doc_module == '@PACKAGE_NAME@':
+        doc_module = doc.parent.data.get ('PACKAGE_NAME', '@PACKAGE_NAME@')
+    fnames = ([doc_module + '.xml']  +
               makefile.get('DOC_INCLUDES', '').split() +
               makefile.get('DOC_ENTITIES', '').split() )
     for fname in (fnames):
