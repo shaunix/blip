@@ -30,68 +30,77 @@ def update_graphs (obj, select, max, **kw):
     thisweek = pulse.utils.weeknum (datetime.datetime.utcnow())
     numweeks = kw.get('numweeks', 104)
     i = 0
-    while True:
+    finalrev = db.Revision.select_revisions (**select).order_by ('datetime')
+    outpath = None
+    try:
+        finalrev = finalrev[0].id
+        stillrev = True
+    except IndexError:
+        finalrev = None
+        stillrev = False
+    while stillrev or i < 2:
         topweek = thisweek - (i * numweeks)
         revs = db.Revision.select_revisions (weeknum__gt=(topweek - numweeks),
                                              weeknum__lte=topweek,
                                              **select)
-        if revs.count() == 0:
-            if i == 1:
-                graph_t = pulse.graphs.BarGraph (([0] * numweeks) + stats0,
-                                                 max, height=40, tight=True)
-                graph_t.save (os.path.join (os.path.dirname (of.get_file_path()), 'commits-tight.png'))
-            break;
 
-        fname = 'commits-' + str(i) + '.png'
-        of = db.OutputFile.objects.filter (type='graphs', ident=obj.ident, filename=fname)
-
-        try:
-            of = of[0]
-        except IndexError:
+        if stillrev:
+            fname = 'commits-' + str(i) + '.png'
+            of = db.OutputFile.objects.filter (type='graphs', ident=obj.ident, filename=fname)
+            try:
+                of = of[0]
+            except IndexError:
+                of = None
+            if i == 0 and of != None:
+                if kw.get('timestamps', True):
+                    lastrev = of.data.get ('lastrev', None)
+                    weeknum = of.data.get ('weeknum', None)
+                    if weeknum == thisweek:
+                        rev = None
+                        if lastrev != None:
+                            try:
+                                rev = revs[0].id
+                            except IndexError:
+                                pass
+                        if lastrev == rev:
+                            pulse.utils.log ('Skipping commit graph for %s' % obj.ident)
+                            return
+            elif of == None:
+                of = db.OutputFile (type='graphs', ident=obj.ident, filename=fname, datetime=now)
+            outpath = of.get_file_path()
+        else:
             of = None
-
-        if i == 0 and of != None:
-            if kw.get('timestamps', True):
-                lastrev = of.data.get ('lastrev', None)
-                weeknum = of.data.get ('weeknum', None)
-                if weeknum == thisweek:
-                    rev = None
-                    if lastrev != None:
-                        try:
-                            rev = revs[0].id
-                        except IndexError:
-                            pass
-                    if lastrev == rev:
-                        pulse.utils.log ('Skipping commit graph for %s' % obj.ident)
-                        return
-        elif of == None:
-            of = db.OutputFile (type='graphs', ident=obj.ident, filename=fname, datetime=now)
 
         if i == 0:
             pulse.utils.log ('Creating commit graphs for %s' % obj.ident)
+
         stats = [0] * numweeks
         revs = list(revs)
         for rev in revs:
+            if rev.id == finalrev:
+                stillrev = False
             idx = rev.weeknum - topweek + numweeks - 1
             stats[idx] += 1
+
         if i == 0:
             score = pulse.utils.score (stats[numweeks - 26:])
             obj.mod_score = score
 
-        graph = pulse.graphs.BarGraph (stats, max, height=40)
-        graph.save (of.get_file_path())
+        if of != None:
+            graph = pulse.graphs.BarGraph (stats, max, height=40)
+            graph.save (of.get_file_path())
 
         if i == 0:
             stats0 = stats
         elif i == 1:
             graph_t = pulse.graphs.BarGraph (stats + stats0, max, height=40, tight=True)
-            graph_t.save (os.path.join (os.path.dirname (of.get_file_path()), 'commits-tight.png'))
+            graph_t.save (os.path.join (os.path.dirname (outpath), 'commits-tight.png'))
 
-        of.data['coords'] = zip (graph.get_coords(), stats, range(topweek - numweeks + 1, topweek + 1))
-
-        if len(revs) > 0:
-            of.data['lastrev'] = revs[0].id
-        of.data['weeknum'] = topweek
-        of.save()
+        if of != None:
+            of.data['coords'] = zip (graph.get_coords(), stats, range(topweek - numweeks + 1, topweek + 1))
+            if len(revs) > 0:
+                of.data['lastrev'] = revs[0].id
+            of.data['weeknum'] = topweek
+            of.save()
 
         i += 1
