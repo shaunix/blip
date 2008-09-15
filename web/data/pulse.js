@@ -572,20 +572,20 @@ function sort (tag, cls, key, asc) {
 
   var dummies = [];
   for (var i = 0; i < things.length; i++) {
-    var dummy = document.createElement(tag);
+    var dummy = $('<' + tag + '></' + tag + '>');
     dummies.push(dummy);
     for (var j = 0; j < things[i].extras.length; j++) {
       var ex = things[i].extras[j];
       ex.parentNode.removeChild(ex);
     }
-    things[i].thing.parentNode.replaceChild(dummy, things[i].thing);
+    $(things[i].thing).replaceWith(dummy);
   }
 
   things.sort( function (a, b) { return keyCmp (a, b, asc); } );
   for (var i = 0; i < things.length; i++) {
-    dummies[i].parentNode.replaceChild(things[i].thing, dummies[i]);
-    for (var j = 0; j < things[i].extras.length; j++)
-      things[i].thing.parentNode.insertBefore(things[i].extras[j], things[i].thing.nextSibling);
+    dummies[i].replaceWith ($(things[i].thing));
+    for (var j = things[i].extras.length; j >= 0; j--)
+      $(things[i].thing).after (things[i].extras[j]);
   }
 
   var slinks = $('#slink__' + cls);
