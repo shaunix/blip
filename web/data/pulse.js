@@ -541,51 +541,45 @@ function sort (tag, cls, key, asc) {
   var els = $(tag + '.' + cls);
   els.each (function (el) {
     var el = $(this);
-    var extras = [];
+    var these = el;
     if (el.is('dt')) {
       dd = el;
       while ((dd = dd.next()).is('dd'))
-        extras.push(dd[0]);
+        these = these.add(dd);
     }
 
-    var el_key = null;
-    var el_title = null;
-    var these = Array.concat (el[0], extras);
-    for (var j = 0; j < these.length; j++) {
-      var par = $(these[j]);
-      var spans = par.find('span');
-      spans.each(function () {
-        var span = $(this);
-        if (span.hasClass(key))
-          el_key = span.html()
-        else if (span.hasClass('title'))
-          el_title = span.html()
-      });
+    var el_key = these.find ('span.' + key);
+    var el_title = these.find ('span.title');
+
+    if (el_key.length > 0) {
+      el_key = el_key.html();
+      el.removeClass ('nokey');
+    } else {
+      el_key = null;
+      el.addClass ('nokey');
     }
-    if (el_key == null)
-      el.addClass('nokey');
+
+    if (el_title.length > 0)
+      el_title = el_title.html();
     else
-      el.removeClass('nokey');
-    var keyed = new keyedThing (el_key, el_title, el[0], extras);
+      el_title = null;
+
+    var keyed = new keyedThing (el_key, el_title, el, these.slice(1));
     things.push(keyed);
   });
 
   var dummies = [];
   for (var i = 0; i < things.length; i++) {
     var dummy = $('<' + tag + '></' + tag + '>');
-    dummies.push(dummy);
-    for (var j = 0; j < things[i].extras.length; j++) {
-      var ex = things[i].extras[j];
-      ex.parentNode.removeChild(ex);
-    }
-    $(things[i].thing).replaceWith(dummy);
+    dummies.push (dummy);
+    things[i].extras.remove ();
+    things[i].thing.replaceWith (dummy);
   }
 
   things.sort( function (a, b) { return keyCmp (a, b, asc); } );
   for (var i = 0; i < things.length; i++) {
-    dummies[i].replaceWith ($(things[i].thing));
-    for (var j = things[i].extras.length; j >= 0; j--)
-      $(things[i].thing).after (things[i].extras[j]);
+    dummies[i].replaceWith (things[i].thing);
+    things[i].thing.after (things[i].extras);
   }
 
   var slinks = $('#slink__' + cls);
