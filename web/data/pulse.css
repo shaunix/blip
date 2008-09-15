@@ -323,10 +323,12 @@ div.mcont a:hover {
 div.graph {
   margin: 0 0 12px 0;
   padding: 0;
-  overflow: hidden;
 }
 table.graph { margin: 0 0 12px 0; }
-table.graph div.graph { margin: 0; }
+table.graph div.graph {
+  margin: 0;
+  overflow: hidden;
+}
 table.graph td { line-height: 0; }
 td.graphprev, td.graphnext { padding: 4px 0 0 0; }
 div.graphaway { position: absolute; overflow: hidden; }

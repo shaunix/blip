@@ -731,8 +731,8 @@ class LinkBox (Widget, FactsComponent, ContentComponent):
     def add_badge (self, badge):
         self._badges.append (badge)
 
-    def add_graph (self, url):
-        self._graphs.append (url)
+    def add_graph (self, url, width=None, height=None):
+        self._graphs.append ((url, width, height))
 
     def output (self, fd=None):
         """Output the HTML."""
@@ -771,7 +771,7 @@ class LinkBox (Widget, FactsComponent, ContentComponent):
         if len(self._graphs) > 0:
             p (fd, '<td class="lbox-graph">')
             for graph in self._graphs:
-                pulse.html.Graph(graph).output(fd=fd)
+                pulse.html.Graph (graph[0], width=graph[1], height=graph[2]).output(fd=fd)
             p (fd, '</td>')
         p (fd, '</tr></table>')
         
@@ -1091,9 +1091,9 @@ class Graph (Widget):
             if not self._map_only:
                 p (fd, '<img src="%s"', self._url, False)
                 if self._width != None:
-                    p (fd, ' width="i"', self._width, False)
+                    p (fd, ' width="%i"', self._width, False)
                 if self._height != None:
-                    p (fd, ' height="i"', self._height, False)
+                    p (fd, ' height="%i"', self._height, False)
                 p (fd, '>', None, False)
         else:
             if not self._map_only:

@@ -145,7 +145,8 @@ def output_set (rset, **kw):
             mod = mods[i]
             lbox = cont.add_link_box (mod)
             lbox.add_graph (pulse.config.graphs_root +
-                            '/'.join(mod.ident.split('/')[1:] + ['commits-tight.png']) )
+                            '/'.join(mod.ident.split('/')[1:] + ['commits-tight.png']),
+                            width=208, height=40)
             span = pulse.html.Span (mod.branch_module)
             span.add_class ('module')
             lbox.add_fact (pulse.utils.gettext ('module'), pulse.html.Link (mod.pulse_url, span))
@@ -219,7 +220,7 @@ def add_more_tabs (rset, tabbed, path):
                             pulse.utils.gettext ('Developer Documentation (%i)')),
                 'tabext' : 'doc',
                 'exts'   : ('user', 'devel'),
-                'graphs' : 'commits-tight.png' },
+                'graphs' : (('commits-tight.png', 208, 40),) },
               { 'types'  : 'Domain',
                 'tabtxt' : pulse.utils.gettext ('Domains (%i)'),
                 'tabext' : 'i18n' },
@@ -306,12 +307,10 @@ def add_more_tabs (rset, tabbed, path):
                     obj = objs[i]
                     lbox = cont.add_link_box (obj)
                     if graphs:
-                        if isinstance (graphs, tuple):
-                            for graph in graphs:
-                                lbox.add_graph (pulse.config.graphs_root +
-                                                obj.ident[1:] + '/' + graph)
-                        else:
-                            lbox.add_graph (pulse.config.graphs_root + obj.ident[1:] + '/' + graphs)
+                        for graph in graphs:
+                            lbox.add_graph (pulse.config.graphs_root +
+                                            obj.ident[1:] + '/' + graph[0],
+                                            width=graph[1], height=graph[2])
                     if obj.error != None:
                         slink_error = True
                         span = pulse.html.Span (obj.error)
