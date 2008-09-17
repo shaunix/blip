@@ -34,6 +34,26 @@
   </alias>
 </person>
 
+<person id="davyd">
+  <name>Davyd Madeley</name>
+  <nick>davyd</nick>
+  <icon>http://planet.gnome.org/heads/riff.png</icon>
+  <blog>http://davyd.livejournal.com/data/rss</blog>
+  <alias>
+    <item>/person/gnome.org/davyd</item>
+  </alias>
+</person>
+
+<person id="dscorgie">
+  <name>Don Scorgie</name>
+  <nick>DonS</nick>
+  <icon>http://planet.gnome.org/heads/dons.png</icon>
+  <blog>http://donscorgie.livejournal.com/data/rss</blog>
+  <alias>
+    <item>/person/gnome.org/dscorgie</item>
+  </alias>
+</person>
+
 <person id="hadess">
   <name>Bastien Nocera</name>
   <nick>hadess</nick>
