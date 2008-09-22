@@ -985,6 +985,7 @@ class DefinitionList (Widget):
     def __init__ (self, **kw):
         super (DefinitionList, self).__init__ (**kw)
         self._id = kw.get('id', None)
+        self._classname = kw.get('classname', None)
         self._all = []
 
     def add_term (self, term, classname=None):
@@ -998,11 +999,15 @@ class DefinitionList (Widget):
         
     def output (self, fd=None):
         """Output the HTML."""
+        p (fd, '<dl', None, False)
         if self._id != None:
-            p (fd, '<dl id="%s">', self._id)
-        else:
-            p (fd, '<dl>')
+            p (fd, ' id="%s"', self._id, False)
+        if self._classname != None:
+            p (fd, ' class="%s"', self._classname, False)
+        p (fd, '>')
+        dtfirst = ddfirst = False
         for tag, content, cname in self._all:
+            # FIXME: dtfirst and ddfirst
             if cname != None:
                 p (fd, '<%s class="%%s">' % tag, cname, False)
             else:
@@ -1013,6 +1018,12 @@ class DefinitionList (Widget):
                 p (fd, '<hr>', None, False)
             p (fd, '</%s>' % tag)
         p (fd, '</dl>')
+
+
+class FactList (DefinitionList):
+    def __init__ (self, **kw):
+        kw.setdefault ('classname', 'facts')
+        super (FactList, self).__init__ (**kw)
 
 
 class BulletList (Widget):

@@ -345,6 +345,15 @@ div.comment {
   z-index: 100;
 }
 
+dl.facts dt {
+  color: #555753;
+  font-size: 0.83em;
+  padding: 0; margin: 0;
+}
+dl.facts dd {
+  padding: 0;
+  margin: 0 0 0 1.44em;
+}
 table.facts {
   border-top: solid 1px #d3d7cf;
   border-bottom: solid 1px #d3d7cf;

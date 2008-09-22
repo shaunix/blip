@@ -1,4 +1,4 @@
-# Copyright (c) 2006  Shaun McCance  <shaunm@gnome.org>
+# Copyright (c) 2006-2008  Shaun McCance  <shaunm@gnome.org>
 #
 # This file is part of Pulse, a program for displaying various statistics
 # of questionable relevance about software and the people who make it.
@@ -231,6 +231,10 @@ def process_docbook_docfile (docfile, doc, **kw):
                         title = infonode.getContent()
                 elif infonode.name == 'abstract' and infonode.prop('role') == 'description':
                     abstract = infonode.getContent()
+                elif infonode.name == 'releaseinfo':
+                    if infonode.prop ('revision') == doc.parent.data.get ('series'):
+                        doc.data['status'] = infonode.prop ('role')
+                        # now look for links
                 elif infonode.name == 'authorgroup':
                     infonodes.extend (list (pulse.utils.xmliter (infonode)))
                 elif infonode.name in ('author', 'editor', 'othercredit'):

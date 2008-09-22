@@ -211,6 +211,14 @@ def output_doc (doc, **kw):
         div = get_xmlfiles (doc, xmlfiles)
     box.add_content (div)
 
+    # Release Info
+    box = pulse.html.InfoBox ('release', pulse.utils.gettext ('Release Info'))
+    columns.add_to_column (1, box)
+    facts = pulse.html.FactList ()
+    facts.add_term ('Status:')
+    facts.add_entry (doc.data.get ('status', 'none'))
+    box.add_content (facts)
+
     # Figures
     figures = doc.data.get('figures', {})
     if len(figures) > 0:

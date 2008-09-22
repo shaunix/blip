@@ -403,10 +403,21 @@ def process_configure (branch, checkout, **kw):
         tarversion = initargs[1]
     tarversion = subvar (tarversion)
 
+    series = tarversion.split('.')[:2]
+    try:
+        minor = int (series[1])
+        if minor % 2 == 1:
+            minor += 1
+        series[1] = str (minor)
+    except:
+        pass
+    series = '.'.join (series)
+
     data = {
         'PACKAGE_NAME' : vars.get ('PACKAGE_NAME', '').strip(),
         'tarname' : tarname,
-        'tarversion' : tarversion
+        'tarversion' : tarversion,
+        'series' : series
         }
 
     branch.update (data)
