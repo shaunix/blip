@@ -21,9 +21,11 @@
 """Various utility functions"""
 
 from datetime import datetime
+import HTMLParser
 import math
 import os.path
 import sys
+import urllib
 
 
 # Just a dummy until we hook up gettext
@@ -158,6 +160,38 @@ def xmliter (node):
     while child:
         yield child
         child = child.next
+
+
+class TitleParser (HTMLParser.HTMLParser):
+    def __init__ (self):
+        self.intitle = False
+        self.title = ''
+        self.done = False
+        HTMLParser.HTMLParser.__init__ (self)
+
+    def handle_starttag (self, tag, attrs):
+        if tag == 'title':
+            self.intitle = True
+
+    def handle_data (self, data):
+        if self.intitle:
+            self.title += data
+
+    def handle_endtag (self, tag):
+        if tag == 'title':
+            self.intitle = False
+            self.done = True
+
+
+def get_html_title (url):
+    parser = TitleParser ()
+    fd = urllib.urlopen (url)
+    for line in fd:
+        parser.feed (line)
+        if parser.done:
+            fd.close()
+            return parser.title
+    return None
 
 
 class odict (dict):

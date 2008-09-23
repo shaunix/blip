@@ -217,6 +217,20 @@ def output_doc (doc, **kw):
     facts = pulse.html.FactList ()
     facts.add_term ('Status:')
     facts.add_entry (doc.data.get ('status', 'none'))
+    for link in doc.data.get ('releaselinks', []):
+        if link[0] == 'bug':
+            facts.add_term (pulse.utils.gettext ('Bug:'))
+        elif link[0] == 'planning':
+            facts.add_term (pulse.utils.gettext ('Planning:'))
+        elif link[0] == 'peerreview':
+            facts.add_term (pulse.utils.gettext ('Peer Review:'))
+        elif link[0] == 'techreview':
+            facts.add_term (pulse.utils.gettext ('Technical Review:'))
+        elif link[0] == 'review':
+            facts.add_term (pulse.utils.gettext ('Review:'))
+        else:
+            facts.add_term (pulse.utils.gettext ('Link:'))
+        facts.add_entry (pulse.html.Link (link[1], link[2]))
     box.add_content (facts)
 
     # Figures

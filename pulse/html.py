@@ -1005,9 +1005,7 @@ class DefinitionList (Widget):
         if self._classname != None:
             p (fd, ' class="%s"', self._classname, False)
         p (fd, '>')
-        dtfirst = ddfirst = False
         for tag, content, cname in self._all:
-            # FIXME: dtfirst and ddfirst
             if cname != None:
                 p (fd, '<%s class="%%s">' % tag, cname, False)
             else:
@@ -1400,6 +1398,32 @@ class Span (Widget, ContentComponent):
                 p (fd, None, self._divider, False)
             p (fd, None, content[i], False)
         p (fd, '</span>')
+
+
+class StatusSpan (Widget, ContentComponent):
+    _statuses = {
+        'none' : 0,
+        'stub' : 1,
+        'incomplete' : 2,
+        'draft' : 3,
+        'review' : 4,
+        'candidate' : 5,
+        'final' : 6
+        }
+
+    def __init__ (self, str, **kw):
+        super (StatusSpan, self).__init__ (**kw)
+        self._status = StatusSpan._statuses.get (str)
+        if self._status == None:
+            self._status = 0
+            self.add_content ('none')
+        else:
+            self.add_content (str)
+
+    def output (self, fd=None):
+        """Output the HTML."""
+        p (fd, '<span class="status">%i</span>', self._status, False)
+        ContentComponent.output (self, fd=fd)
 
 
 class Div (Widget, ContentComponent):

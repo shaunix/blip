@@ -301,6 +301,7 @@ def add_more_tabs (rset, tabbed, path):
                 slink_error = False
                 slink_mtime = False
                 slink_score = False
+                slink_status = False
                 slink_documentation = False
                 slink_messages = False
                 for i in range(len(objs)):
@@ -341,6 +342,10 @@ def add_more_tabs (rset, tabbed, path):
                         span.add_class ('score')
                         lbox.add_fact (pulse.utils.gettext ('score'), span)
                         slink_score = True
+                    if thing['tabext'] == 'doc':
+                        lbox.add_fact (pulse.utils.gettext ('status'),
+                                       pulse.html.StatusSpan (obj.data.get('status')))
+                        slink_status = True
                     docs = db.Documentation.get_related (subj=obj)
                     for doc in docs:
                         # FIXME: multiple docs look bad and sort poorly
@@ -374,6 +379,8 @@ def add_more_tabs (rset, tabbed, path):
                     cont.add_sort_link ('mtime', pulse.utils.gettext ('modified'))
                 if slink_score:
                     cont.add_sort_link ('score', pulse.utils.gettext ('score'))
+                if slink_status:
+                    cont.add_sort_link ('status', pulse.utils.gettext ('status'))
                 if slink_documentation:
                     cont.add_sort_link ('docs', pulse.utils.gettext ('docs'))
                 if slink_messages:

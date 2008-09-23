@@ -233,10 +233,21 @@ def output_module (module, **kw):
     docs = module.select_children ('Document')
     docs = pulse.utils.attrsorted (list(docs), 'title')
     if len(docs) > 0:
+        cont = pulse.html.ContainerBox ()
+        cont.set_id ('docs')
+        cont.add_sort_link ('title', pulse.utils.gettext ('title'), 1)
+        cont.add_sort_link ('status', pulse.utils.gettext ('status'), 0)
+        cont.add_sort_link ('translations', pulse.utils.gettext ('translations'), 0)
+        box.add_content (cont)
         for doc in docs:
-            lbox = box.add_link_box (doc)
+            lbox = cont.add_link_box (doc)
+            lbox.add_fact (pulse.utils.gettext ('status'),
+                           pulse.html.StatusSpan (doc.data.get('status')))
             res = doc.select_children ('Translation')
-            lbox.add_fact (None, pulse.utils.gettext ('%i translations') % res.count())
+            span = pulse.html.Span (str(res.count()))
+            span.add_class ('translations')
+            lbox.add_fact (pulse.utils.gettext ('translations'), span)
+                           
     else:
         box.add_content (pulse.html.AdmonBox (pulse.html.AdmonBox.warning,
                                               pulse.utils.gettext ('No documents') ))
@@ -471,7 +482,7 @@ def get_info_box (module, branchtype, boxid, title):
             doc = db.Documentation.get_related (subj=obj)
             try:
                 doc = doc[0]
-                lbox.add_fact (pulse.utils.gettext ('Documentaion'), doc.pred)
+                lbox.add_fact (pulse.utils.gettext ('documentaion'), doc.pred)
             except IndexError:
                 pass
         return box

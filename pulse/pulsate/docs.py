@@ -214,6 +214,8 @@ def process_docbook_docfile (docfile, doc, **kw):
         return
     doc.error = None
     seen = 0
+    releaselinks = []
+    doc.data['status'] = 'none'
     for node in pulse.utils.xmliter (root):
         if node.type != 'element':
             continue
@@ -234,7 +236,9 @@ def process_docbook_docfile (docfile, doc, **kw):
                 elif infonode.name == 'releaseinfo':
                     if infonode.prop ('revision') == doc.parent.data.get ('series'):
                         doc.data['status'] = infonode.prop ('role')
-                        # now look for links
+                        for ch in pulse.utils.xmliter (infonode):
+                            if ch.type == 'element' and ch.name == 'ulink':
+                                releaselinks.append ((ch.prop ('type'), ch.prop ('url'), None))
                 elif infonode.name == 'authorgroup':
                     infonodes.extend (list (pulse.utils.xmliter (infonode)))
                 elif infonode.name in ('author', 'editor', 'othercredit'):
@@ -271,6 +275,16 @@ def process_docbook_docfile (docfile, doc, **kw):
         doc.update (name=normalize(title))
     if abstract != None:
         doc.update (desc=normalize(abstract))
+
+    oldlinks = {}
+    for link in doc.data.get ('releaselinks', []):
+        oldlinks[link[1]] = link[2]
+    for i in range (len (releaselinks)):
+        title = oldlinks.get (releaselinks[i][1], None)
+        if title == None:
+            title = pulse.utils.get_html_title (releaselinks[i][1])
+        releaselinks[i] = (releaselinks[i][0], releaselinks[i][1], title)
+    doc.data['releaselinks'] = releaselinks
 
     doc.credits = credits
 

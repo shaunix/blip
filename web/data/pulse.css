@@ -225,6 +225,8 @@ td.col-first { padding: 0; }
   max-width: 40em;
 }
 
+.status { display: none; }
+
 table.lbox { margin: 0.2em 0 0.2em 0; width: 100%;}
 td.lbox-icon { width: 24px; text-align: center; }
 td.lbox-text { padding: 0 0.5em 0 0.5em; }
@@ -352,7 +354,7 @@ dl.facts dt {
 }
 dl.facts dd {
   padding: 0;
-  margin: 0 0 0 1.44em;
+  margin: -0.2em 0 0.5em 0;
 }
 table.facts {
   border-top: solid 1px #d3d7cf;
