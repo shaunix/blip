@@ -109,21 +109,11 @@ def output_translation (po, branchable, **kw):
             span.add_content (pulse.html.Link (po.mod_person))
         page.add_fact (pulse.utils.gettext ('Last Modified'), span)
 
-    columns = pulse.html.ColumnBox (2)
-    page.add_content (columns)
-
-    # Developers
-    box = pulse.html.InfoBox ('developers', pulse.utils.gettext ('Developers'))
-    columns.add_to_column (0, box)
-    # FIXME
-
     try:
         of = db.OutputFile.objects.get (type='l10n', ident=po.parent.ident, filename=po.scm_file)
-        box = pulse.html.InfoBox ('messages', pulse.utils.gettext ('Messages'))
-        columns.add_to_column (1, box)
         pofile = pulse.parsers.Po (of.get_file_path ())
         form = pulse.html.TranslationForm()
-        box.add_content (form)
+        page.add_content (form)
         for msg in pofile.get_messages():
             entry = form.add_entry (msg)
             entry.set_comment (pofile.get_message_comment (msg))

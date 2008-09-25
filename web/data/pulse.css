@@ -166,11 +166,11 @@ td.col-first { padding: 0; }
 }
 
 .trentry {
-  margin-top: 1em;
+  margin: 1em 0 1em 0;
   padding: 6px 1em 6px 1em;
   background-color: #eeeeec;
   border: solid 1px #babdb6;
-  -moz-border-radius: 6px;
+  -moz-border-radius: 2px;
 }
 .trnotrans {
   background-color: #fff9cf;

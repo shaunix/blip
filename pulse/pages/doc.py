@@ -163,6 +163,28 @@ def output_doc (doc, **kw):
     columns = pulse.html.ColumnBox (2)
     page.add_content (columns)
 
+    # Release Info
+    box = pulse.html.InfoBox ('release', pulse.utils.gettext ('Release Info'))
+    columns.add_to_column (0, box)
+    facts = pulse.html.FactList ()
+    facts.add_term ('Status:')
+    facts.add_entry (doc.data.get ('status', 'none'))
+    for link in doc.data.get ('releaselinks', []):
+        if link[0] == 'bug':
+            facts.add_term (pulse.utils.gettext ('Bug:'))
+        elif link[0] == 'planning':
+            facts.add_term (pulse.utils.gettext ('Planning:'))
+        elif link[0] == 'peerreview':
+            facts.add_term (pulse.utils.gettext ('Peer Review:'))
+        elif link[0] == 'techreview':
+            facts.add_term (pulse.utils.gettext ('Technical Review:'))
+        elif link[0] == 'review':
+            facts.add_term (pulse.utils.gettext ('Review:'))
+        else:
+            facts.add_term (pulse.utils.gettext ('Link:'))
+        facts.add_entry (pulse.html.Link (link[1], link[2]))
+    box.add_content (facts)
+
     # Developers
     box = pulse.html.InfoBox ('developers', pulse.utils.gettext ('Developers'))
     columns.add_to_column (0, box)
@@ -203,35 +225,13 @@ def output_doc (doc, **kw):
 
     # Files
     box = pulse.html.InfoBox ('files', pulse.utils.gettext ('Files'))
-    columns.add_to_column (0, box)
+    columns.add_to_column (1, box)
     xmlfiles = doc.data.get('xmlfiles', [])
     if len(xmlfiles) > 10:
         div = pulse.html.AjaxBox (doc.pulse_url + '?ajax=xmlfiles')
     else:
         div = get_xmlfiles (doc, xmlfiles)
     box.add_content (div)
-
-    # Release Info
-    box = pulse.html.InfoBox ('release', pulse.utils.gettext ('Release Info'))
-    columns.add_to_column (1, box)
-    facts = pulse.html.FactList ()
-    facts.add_term ('Status:')
-    facts.add_entry (doc.data.get ('status', 'none'))
-    for link in doc.data.get ('releaselinks', []):
-        if link[0] == 'bug':
-            facts.add_term (pulse.utils.gettext ('Bug:'))
-        elif link[0] == 'planning':
-            facts.add_term (pulse.utils.gettext ('Planning:'))
-        elif link[0] == 'peerreview':
-            facts.add_term (pulse.utils.gettext ('Peer Review:'))
-        elif link[0] == 'techreview':
-            facts.add_term (pulse.utils.gettext ('Technical Review:'))
-        elif link[0] == 'review':
-            facts.add_term (pulse.utils.gettext ('Review:'))
-        else:
-            facts.add_term (pulse.utils.gettext ('Link:'))
-        facts.add_entry (pulse.html.Link (link[1], link[2]))
-    box.add_content (facts)
 
     # Figures
     figures = doc.data.get('figures', {})
