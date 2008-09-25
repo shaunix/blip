@@ -92,7 +92,7 @@ def update_graphs (obj, select, max, **kw):
 
         if i == 0:
             stats0 = stats
-        elif i == 1:
+        elif i == 1 and outpath != None:
             graph_t = pulse.graphs.BarGraph (stats + stats0, max, height=40, tight=True)
             graph_t.save (os.path.join (os.path.dirname (outpath), 'commits-tight.png'))
 
