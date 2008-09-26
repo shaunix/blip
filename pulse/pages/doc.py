@@ -178,6 +178,8 @@ def output_doc (doc, **kw):
             facts.add_term (pulse.utils.gettext ('Peer Review:'))
         elif link[0] == 'techreview':
             facts.add_term (pulse.utils.gettext ('Technical Review:'))
+        elif link[0] == 'finalreview':
+            facts.add_term (pulse.utils.gettext ('Final Review:'))
         elif link[0] == 'review':
             facts.add_term (pulse.utils.gettext ('Review:'))
         else:
