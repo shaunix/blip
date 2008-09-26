@@ -176,7 +176,7 @@ def update_xml2po (po, **kw):
         if comment == '':
             po.data['figures'][figure]['comment'] = ''
         elif popo.has_message (comment):
-            po.data['figures'][figure]['comment'] = popo.get_message_str (comment)
+            po.data['figures'][figure]['comment'] = popo.get_translations (comment)[0]
 
     files = [os.path.join (po.scm_dir, po.scm_file)]
     revision = db.Revision.get_last_revision (branch=po.parent.parent, files=files)

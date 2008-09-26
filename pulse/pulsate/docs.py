@@ -351,9 +351,9 @@ def process_docbook_pofile (pofile, doc, **kw):
 
     po = pulse.parsers.Po (pofile)
     if doc.name.has_key('C') and po.has_message (doc.name['C']):
-        doc.update (name={lang : po.get_message_str (doc.name['C'])})
+        doc.update (name={lang : po.get_translations (doc.name['C'])[0]})
     if doc.desc.has_key('C') and po.has_message (doc.desc['C']):
-        doc.update (desc={lang : po.get_message_str (doc.desc['C'])})
+        doc.update (desc={lang : po.get_translations (doc.desc['C'])[0]})
 
     db.Timestamp.set_timestamp (rel_scm, mtime)
 

@@ -189,12 +189,19 @@ class Po:
                 self.finish ()
             self._inkey = 'msgid'
             line = line[6:]
+        elif line.startswith ('msgid_plural'):
+            self._inkey = 'msgid_plural'
+            line = line[13:]
         elif line.startswith ('msgctxt "'):
             self._inkey = 'msgctxt'
             line = line[8:]
         elif line.startswith ('msgstr "'):
             self._inkey = 'msgstr'
             line = line[7:]
+        elif line.startswith ('msgstr['):
+            br = line.find (']')
+            self._inkey = line[:br + 1]
+            line = line[br + 2:]
         elif line.startswith ('#'):
             if self._inkey.startswith ('msg'):
                 self.finish ()
@@ -205,6 +212,7 @@ class Po:
         if self._inkey.startswith ('msg'):
             if line.startswith ('"') and line.endswith ('"'):
                 self._msg.setdefault (self._inkey, '')
+                # FIXME: unescape \"
                 self._msg[self._inkey] += line[1:-1]
         elif self._inkey == 'comment':
             self._msg.setdefault (self._inkey, '')
@@ -216,11 +224,23 @@ class Po:
                 self._msg[self._inkey] += '\n'
 
     def finish (self):
-        """Finish parsing manually-fed data."""
+        """Finish parsing manually fed data."""
         if self._msg.has_key ('msgid'):
-            key = (self._msg['msgid'], self._msg.get('msgctxt'))
+            key = (self._msg['msgid'], self._msg.get ('msgid_plural'), self._msg.get('msgctxt'))
             self._comments[key] = self._msg.get('comment')
-            self._msgstrs[key] = self._msg.get('msgstr')
+            if self._msg.has_key ('msgstr'):
+                self._msgstrs[key] = [self._msg['msgstr']]
+            else:
+                self._msgstrs[key] = []
+                i = 0
+                while True:
+                    msgi = 'msgstr[' + str(i) + ']'
+                    if self._msg.has_key (msgi):
+                        self._msgstrs[key].append (self._msg[msgi])
+                        i += 1
+                    else:
+                        break
+            # Get stats for xml2po's @@image messages
             img = self._msg['msgid'].startswith ('@@image: ')
             imgname = None
             if img:
@@ -230,6 +250,7 @@ class Po:
                     imgname = imgname.group(1)
                 else:
                     imgname = None
+            # Safe to use msgstr, because these are never pluralized
             if self._msg.get('msgstr', '') == '':
                 self._num_untranslated += 1
                 if img:
@@ -253,19 +274,25 @@ class Po:
 
     def get_messages (self):
         """Get a list of all messages."""
-        return [msg[0] for msg in self._msgstrs.keys()]
+        return self._msgstrs.keys()
 
-    def has_message (self, msgid, msgctxt=None):
+    def has_message (self, msgkey):
         """Check if the PO file has a given message."""
-        return self._msgstrs.has_key ((msgid, msgctxt))
+        if isinstance (msgkey, basestring):
+            msgkey = (msgkey, None, None)
+        return self._msgstrs.has_key (msgkey)
 
-    def get_message_str (self, msgid, msgctxt=None):
+    def get_translations (self, msgkey):
         """Get the translated message string for a given message."""
-        return self._msgstrs[(msgid, msgctxt)]
+        if isinstance (msgkey, basestring):
+            msgkey = (msgkey, None, None)
+        return self._msgstrs[msgkey]
         
-    def get_message_comment (self, msgid, msgctxt=None):
+    def get_comment (self, msgkey):
         """Get the translator comment for a given message."""
-        return self._comments[(msgid, msgctxt)]
+        if isinstance (msgkey, basestring):
+            msgkey = (msgkey, None, None)
+        return self._comments[msgkey]
 
     def get_num_messages (self):
         """Get the total number of messages in this PO file."""

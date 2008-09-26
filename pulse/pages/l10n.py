@@ -114,11 +114,11 @@ def output_translation (po, branchable, **kw):
         pofile = pulse.parsers.Po (of.get_file_path ())
         form = pulse.html.TranslationForm()
         page.add_content (form)
-        for msg in pofile.get_messages():
-            entry = form.add_entry (msg)
-            entry.set_comment (pofile.get_message_comment (msg))
-            if pofile.has_message (msg):
-                entry.set_translated (pofile.get_message_str (msg))
+        for msgkey in pofile.get_messages():
+            entry = form.add_entry (msgkey)
+            entry.set_comment (pofile.get_comment (msgkey))
+            if pofile.has_message (msgkey):
+                entry.set_translated (pofile.get_translations (msgkey))
     except IndexError:
         pass
 

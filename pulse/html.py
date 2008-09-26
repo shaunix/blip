@@ -921,17 +921,22 @@ class TranslationForm (Widget):
         self._msgs = []
 
     class Entry (Widget):
-        def __init__ (self, msg, **kw):
+        def __init__ (self, msgkey, **kw):
             super (TranslationForm.Entry, self).__init__ (**kw)
-            self._msg = msg
+            self._msg = msgkey[0]
+            self._plural = msgkey[1]
+            self._context = msgkey[2]
             self._comment = None
             self._trans = None
+
+        def set_plural (self, plural):
+            self._plural = plural
 
         def set_comment (self, comment):
             self._comment = comment
 
-        def set_translated (self, txt):
-            self._trans = txt
+        def set_translated (self, trans):
+            self._trans = trans
 
         def output (self, fd=None):
             if self._trans == None:
@@ -945,6 +950,14 @@ class TranslationForm (Widget):
                 p (fd, '<br>')
                 p (fd, None, line)
             p (fd, '</div>')
+            if self._plural != None:
+                p (fd, '<div class="trsource">')
+                lines = self._plural.split('\\n')
+                p (fd, None, lines[0])
+                for line in lines[1:]:
+                    p (fd, '<br>')
+                    p (fd, None, line)
+                p (fd, '</div>')
             if self._comment != None:
                 lines = self._comment.split('\n')
                 if lines[-1] == '':
@@ -957,13 +970,14 @@ class TranslationForm (Widget):
                         p (fd, '# %s', line)
                     p (fd, '</div>')
             if self._trans != None:
-                p (fd, '<div class="trtrans">')
-                lines = self._trans.split('\\n')
-                p (fd, None, lines[0])
-                for line in lines[1:]:
-                    p (fd, '<br>')
-                    p (fd, None, line)
-                p (fd, '</div>')
+                for trans in self._trans:
+                    p (fd, '<div class="trtrans">')
+                    lines = trans.split('\\n')
+                    p (fd, None, lines[0])
+                    for line in lines[1:]:
+                        p (fd, '<br>')
+                        p (fd, None, line)
+                    p (fd, '</div>')
             p (fd, '</div>')
 
     def add_entry (self, msg):
