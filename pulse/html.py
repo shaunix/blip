@@ -1419,10 +1419,11 @@ class StatusSpan (Widget, ContentComponent):
         'none' : 0,
         'stub' : 1,
         'incomplete' : 2,
-        'draft' : 3,
-        'review' : 4,
-        'candidate' : 5,
-        'final' : 6
+        'update': 3,
+        'draft' : 4,
+        'review' : 5,
+        'candidate' : 6,
+        'final' : 7
         }
 
     def __init__ (self, str, **kw):
