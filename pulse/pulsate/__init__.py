@@ -21,6 +21,7 @@
 import datetime
 import os.path
 
+import pulse.feedparser
 import pulse.graphs
 import pulse.models as db
 import pulse.utils
@@ -104,3 +105,35 @@ def update_graphs (obj, select, max, **kw):
             of.save()
 
         i += 1
+
+
+def update_links (obj, sources, **kw):
+    links = []
+    for source in sources:
+        obj.data.setdefault ('linksources', {})
+        obj.data['linksources'].setdefault (source, {})
+        etag = obj.data['linksources'][source].get ('etag')
+        modified = obj.data['linksources'][source].get ('modified')
+        feed = pulse.feedparser.parse (source, etag=etag, modified=modified)
+        if feed.status == 200:
+            pulse.utils.log ('Processing links at %s' % source)
+            for entry in feed['entries']:
+                if not entry.has_key ('link'):
+                    continue
+                if entry.has_key ('updated_parsed'):
+                    updated = datetime.datetime (*entry.updated_parsed[:6])
+                else:
+                    updated = None
+                links.append ((entry.link,
+                               entry.get ('title', entry.link),
+                               entry.get ('description'),
+                               updated,
+                               source))
+        else:
+            # Not at all optimal, but not causing significant slowdowns
+            # with any data we're actually seeing
+            for link in obj.data.get ('links', []):
+                if link[4] == source:
+                    links.append (link)
+    obj.data['links'] = sorted (links, cmp=lambda x, y: cmp (x[3], y[3]))
+    obj.save ()

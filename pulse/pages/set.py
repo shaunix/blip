@@ -102,30 +102,40 @@ def output_set (rset, **kw):
     for superset in get_supersets (rset):
         page.add_sublink (superset.pulse_url, superset.title)
 
+    if len(path) < 3:
+        columns = pulse.html.ColumnBox (2)
+        tabbed.add_tab (True, pulse.utils.gettext ('Info'))
+        tabbed.add_content (columns)
+
+        links = rset.data.get ('links', [])
+        if len(links) == 0 and rset.parent != None:
+            links = rset.parent.data.get ('links', [])
+        if len(links) > 0:
+            box = pulse.html.InfoBox ('links', pulse.utils.gettext ('Links'))
+            columns.add_to_column (0, box)
+            for link in links:
+                lbox = box.add_link_box (link[0], link[1])
+                lbox.set_show_icon (False)
+                lbox.set_description (link[2])
+    else:
+        tabbed.add_tab (rset.pulse_url, pulse.utils.gettext ('Info'))
+
     subsets = pulse.utils.attrsorted (rset.subsets.all(), ['title'])
     if len(subsets) > 0:
-        if len(path) < 3 or path[2] == 'set':
+        if len(path) > 2 and path[2] == 'set':
             cont = pulse.html.ContainerBox ()
             cont.set_columns (2)
             tabbed.add_tab (True, pulse.utils.gettext ('Subsets (%i)') % len(subsets))
             tabbed.add_content (cont)
             for subset in subsets:
                 lbox = cont.add_link_box (subset)
-                lbox.set_url (None)
                 lbox.set_show_icon (False)
                 add_set_info (subset, lbox)
         else:
             tabbed.add_tab (rset.pulse_url + '/set',
                             pulse.utils.gettext ('Subsets (%i)') % len(subsets))
 
-    count = False
-    if len(path) == 2:
-        if len(subsets) > 0:
-            count = True
-    elif path[2] != 'mod':
-        count = True
-
-    if count:
+    if len(path) <= 2 or path[2] != 'mod':
         modcnt = db.SetModule.count_related (subj=rset)
         if modcnt > 0 or len(subsets) == 0:
             tabbed.add_tab (rset.pulse_url + '/mod',

@@ -168,6 +168,9 @@ def update_set (data, update=True, parent=None):
     if data.has_key ('name'):
         record.update (name=data['name'])
 
+    if data.has_key ('links'):
+        pulse.pulsate.update_links (record, data['links'])
+
     # Sets may contain either other sets or modules, not both
     if data.has_key ('set'):
         rels = []
