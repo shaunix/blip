@@ -129,6 +129,8 @@ def update_links (obj, sources, **kw):
                                entry.get ('description'),
                                updated,
                                source))
+            obj.data['linksources'][source]['etag'] = feed.get('etag')
+            obj.data['linksources'][source]['modified'] = feed.get('modified')
         else:
             # Not at all optimal, but not causing significant slowdowns
             # with any data we're actually seeing
