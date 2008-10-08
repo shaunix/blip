@@ -220,7 +220,7 @@ function cal_display (cal, month, year) {
       td.removeClass ('caldayoff');
       if (lowerCmp (events.eq(j).text(), thisfull, 1) == 0) {
         events.eq(j).parent().show();
-        events.eq(j).parent().next('dd').eq(0).show();
+        events.eq(j).parent().next('dd:first').show();
         td.addClass ('calevent');
       }
     } else {
