@@ -62,7 +62,7 @@ def main (path, query, http=True, fd=None):
 
 def synopsis ():
     """Construct an info box for the front page"""
-    box = pulse.html.InfoBox ('people', pulse.utils.gettext ('People'))
+    box = pulse.html.InfoBox (pulse.utils.gettext ('People'))
     people = db.Entity.objects.filter (type='Person').order_by ('-mod_score')
     box.add_content (pulse.html.Div (pulse.utils.gettext ('These people deserve a beer:')))
     bl = pulse.html.BulletList ()
@@ -103,7 +103,7 @@ def output_person (person, **kw):
     page.add_content (columns)
 
     # Activity
-    box = pulse.html.InfoBox ('activity', pulse.utils.gettext ('Activity'))
+    box = pulse.html.InfoBox (pulse.utils.gettext ('Activity'))
     columns.add_to_column (0, box)
     of = db.OutputFile.objects.filter (type='graphs', ident=person.ident, filename='commits-0.png')
     try:
@@ -125,7 +125,7 @@ def output_person (person, **kw):
     blog = db.Forum.objects.filter (ident=bident)
     try:
         blog = blog[0]
-        box = pulse.html.InfoBox ('blog', pulse.utils.gettext ('Blog'))
+        box = pulse.html.InfoBox (pulse.utils.gettext ('Blog'))
         columns.add_to_column (0, box)
         dl = pulse.html.DefinitionList ()
         box.add_content (dl)
@@ -141,7 +141,7 @@ def output_person (person, **kw):
     mods = db.Branch.objects.filter (type='Module', module_entity_preds__pred=person)
     mods = pulse.utils.attrsorted (list(mods), 'title')
     if len(mods) > 0:
-        modbox = pulse.html.InfoBox ('modules', pulse.utils.gettext ('Modules'))
+        modbox = pulse.html.InfoBox (pulse.utils.gettext ('Modules'))
         columns.add_to_column (1, modbox)
         brs = []
         for mod in mods:
@@ -153,7 +153,7 @@ def output_person (person, **kw):
     docs = db.Branch.objects.filter (type='Document', document_entity_preds__pred=person)
     docs = pulse.utils.attrsorted (list(docs), 'title')
     if len(docs) > 0:
-        docbox = pulse.html.InfoBox ('documents', pulse.utils.gettext ('Documents'))
+        docbox = pulse.html.InfoBox (pulse.utils.gettext ('Documents'))
         columns.add_to_column (1, docbox)
         brs = []
         for doc in docs:

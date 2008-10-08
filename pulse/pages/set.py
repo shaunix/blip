@@ -51,7 +51,7 @@ def main (path, query, http=True, fd=None):
 
 def synopsis ():
     """Construct an info box for the front page"""
-    box = pulse.html.InfoBox ('sets', pulse.utils.gettext ('Sets'))
+    box = pulse.html.InfoBox (pulse.utils.gettext ('Sets'))
     div = pulse.html.Div (pulse.utils.gettext ('Pulse is watching the following release sets:'))
     box.add_content (div)
     bl = pulse.html.BulletList ()
@@ -110,7 +110,7 @@ def output_set (rset, **kw):
         links = rset.data.get ('links', [])
         if len(links) == 0 and rset.parent != None:
             links = rset.parent.data.get ('links', [])
-        box = pulse.html.InfoBox ('links', pulse.utils.gettext ('Links'))
+        box = pulse.html.InfoBox (pulse.utils.gettext ('Links'))
         columns.add_to_column (0, box)
         for link in links:
             lbox = box.add_link_box (link[0], link[1])
@@ -120,7 +120,7 @@ def output_set (rset, **kw):
         schedule = rset.data.get ('schedule', [])
         if len(schedule) == 0 and rset.parent != None:
             schedule = rset.parent.data.get ('schedule', [])
-        box = pulse.html.InfoBox ('schedule', pulse.utils.gettext ('Schedule'))
+        box = pulse.html.InfoBox (pulse.utils.gettext ('Schedule'))
         cal = pulse.html.Calendar ()
         box.add_content (cal)
         columns.add_to_column (1, box)

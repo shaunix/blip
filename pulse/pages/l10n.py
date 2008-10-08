@@ -135,7 +135,7 @@ def output_translation (po, branchable, **kw):
                     ofs_by_source_C[of.source] = of
                 else:
                     ofs_by_source_lc[of.source] = of
-            box = pulse.html.InfoBox ('figures', pulse.utils.gettext ('Figures'))
+            box = pulse.html.InfoBox (pulse.utils.gettext ('Figures'))
             columns.add_to_column (1, box)
             dl = pulse.html.DefinitionList ()
             box.add_content (dl)

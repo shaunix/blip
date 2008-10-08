@@ -98,7 +98,7 @@ def main (path, query, http=True, fd=None):
 
 def synopsis ():
     """Construct an info box for the front page"""
-    box = pulse.html.InfoBox ('modules', pulse.utils.gettext ('Modules'))
+    box = pulse.html.InfoBox (pulse.utils.gettext ('Modules'))
     modules = db.Branch.objects.filter (type='Module').order_by ('-mod_score')
     box.add_content (pulse.html.Div (pulse.utils.gettext ('Kicking ass and taking names:')))
     bl = pulse.html.BulletList ()
@@ -183,7 +183,7 @@ def output_module (module, **kw):
     columns.add_to_column (0, box)
 
     # Activity
-    box = pulse.html.InfoBox ('activity', pulse.utils.gettext ('Activity'))
+    box = pulse.html.InfoBox (pulse.utils.gettext ('Activity'))
     columns.add_to_column (0, box)
     of = db.OutputFile.objects.filter (type='graphs', ident=module.ident, filename='commits-0.png')
     try:
@@ -200,7 +200,7 @@ def output_module (module, **kw):
     deps = db.ModuleDependency.get_related (subj=module)
     deps = pulse.utils.attrsorted (list(deps), ['pred', 'scm_module'])
     if len(deps) > 0:
-        box = pulse.html.InfoBox ('dependencies', pulse.utils.gettext ('Dependencies'))
+        box = pulse.html.InfoBox (pulse.utils.gettext ('Dependencies'))
         columns.add_to_column (0, box)
         d1 = pulse.html.Div()
         d2 = pulse.html.Div()
@@ -217,18 +217,18 @@ def output_module (module, **kw):
                 d2.add_content (div)
 
     # Programs and Libraries
-    for branchtype, boxid, title in (
-        ('Application', 'applications', pulse.utils.gettext ('Applications')),
-        ('Capplet', 'capplets', pulse.utils.gettext ('Capplets')),
-        ('Applet', 'applets', pulse.utils.gettext ('Applets')),
-        ('Library', 'libraries', pulse.utils.gettext ('Libraries')) ):
+    for branchtype, title in (
+        ('Application', pulse.utils.gettext ('Applications')),
+        ('Capplet', pulse.utils.gettext ('Capplets')),
+        ('Applet', pulse.utils.gettext ('Applets')),
+        ('Library', pulse.utils.gettext ('Libraries')) ):
 
-        box = get_info_box (module, branchtype, boxid, title)
+        box = get_info_box (module, branchtype, title)
         if box != None:
             columns.add_to_column (1, box)
 
     # Documents
-    box = pulse.html.InfoBox ('documents', pulse.utils.gettext ('Documents'))
+    box = pulse.html.InfoBox (pulse.utils.gettext ('Documents'))
     columns.add_to_column (1, box)
     docs = module.select_children ('Document')
     docs = pulse.utils.attrsorted (list(docs), 'title')
@@ -253,7 +253,7 @@ def output_module (module, **kw):
                                               pulse.utils.gettext ('No documents') ))
 
     # Translations
-    box = pulse.html.InfoBox ('translations', pulse.utils.gettext ('Translations'))
+    box = pulse.html.InfoBox (pulse.utils.gettext ('Translations'))
     columns.add_to_column (1, box)
     domains = module.select_children ('Domain')
     domains = pulse.utils.attrsorted (list(domains), 'title')
@@ -454,7 +454,7 @@ def output_ajax_revfiles (module, **kw):
 
 
 def get_developers_box (module):
-    box = pulse.html.InfoBox ('developers', pulse.utils.gettext ('Developers'))
+    box = pulse.html.InfoBox (pulse.utils.gettext ('Developers'))
     rels = db.ModuleEntity.get_related (subj=module)
     if len(rels) > 0:
         people = {}
@@ -472,11 +472,11 @@ def get_developers_box (module):
     return box
 
 
-def get_info_box (module, branchtype, boxid, title):
+def get_info_box (module, branchtype, title):
     objs = module.select_children (branchtype)
     objs = pulse.utils.attrsorted (list(objs), 'title')
     if len(objs) > 0:
-        box = pulse.html.InfoBox (boxid, title)
+        box = pulse.html.InfoBox (title)
         for obj in objs:
             lbox = box.add_link_box (obj)
             doc = db.Documentation.get_related (subj=obj)

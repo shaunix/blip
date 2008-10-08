@@ -569,18 +569,16 @@ class InfoBox (Widget, ContentComponent, LinkBoxesComponent):
     An info box is a framed and titled box that contains various related bits
     of information.  Most pages are constructed primarily of info boxes.
     """
-    def __init__ (self, id_, title, **kw):
+    def __init__ (self, title, **kw):
         super (InfoBox, self).__init__ (**kw)
-        self._id = id_
         self._title = title
 
     def output (self, fd=None):
         """Output the HTML."""
-        p (fd, '<div class="info" id="%s">', self._id)
+        p (fd, '<div class="info">')
         p (fd, '<div class="info-title">', None, False)
-        p (fd, '<a href="javascript:info(\'%s\')">', self._id, False)
-        p (fd, '<img id="infoimg-%s" class="info-img" src="%sexpander-open.png"></a>',
-           (self._id, pulse.config.data_root), False)
+        p (fd, '<span><img class="info-img" src="%sexpander-open.png"></span>',
+           (pulse.config.data_root), False)
         p (fd, '%s</div>', self._title)
         p (fd, '<div class="info-content"><div>')
         ContentComponent.output (self, fd=fd)

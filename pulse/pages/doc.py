@@ -164,7 +164,7 @@ def output_doc (doc, **kw):
     page.add_content (columns)
 
     # Release Info
-    box = pulse.html.InfoBox ('release', pulse.utils.gettext ('Release Info'))
+    box = pulse.html.InfoBox (pulse.utils.gettext ('Release Info'))
     columns.add_to_column (0, box)
     facts = pulse.html.FactList ()
     facts.add_term ('Status:')
@@ -188,7 +188,7 @@ def output_doc (doc, **kw):
     box.add_content (facts)
 
     # Developers
-    box = pulse.html.InfoBox ('developers', pulse.utils.gettext ('Developers'))
+    box = pulse.html.InfoBox (pulse.utils.gettext ('Developers'))
     columns.add_to_column (0, box)
     rels = db.DocumentEntity.get_related (subj=doc)
     if len(rels) > 0:
@@ -212,7 +212,7 @@ def output_doc (doc, **kw):
                                               pulse.utils.gettext ('No developers') ))
 
     # Activity
-    box = pulse.html.InfoBox ('activity', pulse.utils.gettext ('Activity'))
+    box = pulse.html.InfoBox (pulse.utils.gettext ('Activity'))
     columns.add_to_column (0, box)
     of = db.OutputFile.objects.filter (type='graphs', ident=doc.ident, filename='commits-0.png')
     try:
@@ -226,7 +226,7 @@ def output_doc (doc, **kw):
     box.add_content (div)
 
     # Files
-    box = pulse.html.InfoBox ('files', pulse.utils.gettext ('Files'))
+    box = pulse.html.InfoBox (pulse.utils.gettext ('Files'))
     columns.add_to_column (1, box)
     xmlfiles = doc.data.get('xmlfiles', [])
     if len(xmlfiles) > 10:
@@ -238,7 +238,7 @@ def output_doc (doc, **kw):
     # Figures
     figures = doc.data.get('figures', {})
     if len(figures) > 0:
-        box = pulse.html.InfoBox ('figures', pulse.utils.gettext ('Figures'))
+        box = pulse.html.InfoBox (pulse.utils.gettext ('Figures'))
         columns.add_to_column (1, box)
         if len(figures) > 10:
             div = pulse.html.AjaxBox (doc.pulse_url + '?ajax=figures')
@@ -247,7 +247,7 @@ def output_doc (doc, **kw):
         box.add_content (div)
 
     # Translations
-    box = pulse.html.InfoBox ('translations', pulse.utils.gettext ('Translations'))
+    box = pulse.html.InfoBox (pulse.utils.gettext ('Translations'))
     columns.add_to_column (1, box)
     cont = pulse.html.ContainerBox ()
     cont.set_id ('po')

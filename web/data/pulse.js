@@ -122,13 +122,13 @@ function init_zoom (ctxt) {
   })
 }
 
-$(document).ready(function() { init_zoom($(document)) });
+$(document).ready (function() { init_zoom($(document)) });
 
 
 /******************************************************************************/
 /** AJAX boxes **/
 
-$(document).ready(function () {
+$(document).ready (function () {
   $('.ajax').each(function (i) {
     var div = $(this);
     var link = $('a', div);
@@ -458,16 +458,20 @@ function expander (id) {
 /******************************************************************************/
 /** Info Boxes **/
 
-function info (id) {
-  var div = $('#' + id).children('.info-content').children('div');
-  div.slideToggle('fast', function () {
-    var img = $('#infoimg-' + id);
-    if (div.is(':visible'))
-      img.attr('src', img.attr('src').replace('up', 'open'))
-    else
-      img.attr('src', img.attr('src').replace('open', 'up'))
+$(document).ready (function () {
+  $('div.info').each (function () {
+    var div = $(this);
+    $(this).children ('div.info-title').click (function () {
+      var cont = div.children ('div.info-content').children ('div');
+      var img = $(this).find ('img');
+      if (cont.is(':visible'))
+        img.attr('src', img.attr('src').replace('open', 'up'))
+      else
+        img.attr('src', img.attr('src').replace('up', 'open'))
+      cont.slideToggle('fast');
+    });
   });
-}
+});
 
 
 /******************************************************************************/
