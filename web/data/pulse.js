@@ -478,10 +478,15 @@ $(document).ready (function () {
 /** Ellipsized text **/
 
 $(document).ready (function () {
-  $('a.elliplnk').click (function () {
-    var txt = $(this).next ('span.elliptxt').eq(0)
-    $(this).remove ();
-    txt.fadeIn ('fase');
+  $('span.elliptxt').each (function () {
+    var span = $(this);
+    var lnk = $('<a class="elliplnk">(more)</a>');
+    lnk.click (function () {
+      lnk.remove ();
+      span.fadeIn ('fast');
+    });
+    span.hide ();
+    span.before (lnk);
   });
 });
 

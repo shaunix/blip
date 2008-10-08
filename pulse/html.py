@@ -1249,10 +1249,7 @@ class EllipsizedLabel (Widget):
                 p (fd, None, self._label)
             else:
                 p (fd, None, self._label[:i])
-                p (fd, ('<a class="elliplnk">%s</a>'),
-                   (pulse.utils.gettext ('(more)')))
-                p (fd, '<span class="elliptxt">%s</span>',
-                   (self._label[i+1:]))
+                p (fd, '<span class="elliptxt">%s</span>', (self._label[i+1:]))
         else:
             p (fd, None, self._label)
 
