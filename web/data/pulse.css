@@ -242,6 +242,7 @@ div.lbox-heading {
 }
 td.lbox-graph { vertical-align: top; text-align: right; }
 
+span.expander { cursor: pointer; }
 
 table.cont { width: 100%; }
 td.cont-arrow {

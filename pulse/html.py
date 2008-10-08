@@ -630,26 +630,19 @@ class ContainerBox (Widget, SortableComponent, ContentComponent, LinkBoxesCompon
 
     def output (self, fd=None):
         """Output the HTML."""
-        if self._title != None or self._id != None:
-            if self._id == None:
-                self._id = md5.md5(self._title).hexdigest()
-            p (fd, '<div class="cont" id="%s">', self._id)
-        else:
-            p (fd, '<div class="cont">')
         slinks = len(self.get_sort_links())
         if self._title != None or slinks > 0:
             if self._title != None:
                 p (fd, '<table class="cont"><tr>')
                 p (fd, '<td class="cont-arrow">', None, False)
-                p (fd, '<a href="javascript:expander(\'%s\')">', self._id, False)
-                p (fd, '<img id="img-%s" class="exp-img" src="%sexpander-open.png"></a>',
-                   (self._id, pulse.config.data_root))
+                p (fd,'<span class="expander"><img class="exp-img" src="%sexpander-open.png"></a>',
+                   (pulse.config.data_root))
                 p (fd, '</td>')
                 p (fd, '<td class="cont-title">', None, False)
             if self._title != None and slinks > 0:
                 p (fd, '<table><tr><td>')
             if self._title != None:
-                p (fd, '<a href="javascript:expander(\'%s\')">%s</a>', (self._id, self._title), False)
+                p (fd, '<span class="expander">%s</span>', (self._title), False)
             if self._title != None and slinks > 0:
                 p (fd, '</td><td class="cont-slinks">')
             if slinks > 0:
@@ -667,7 +660,6 @@ class ContainerBox (Widget, SortableComponent, ContentComponent, LinkBoxesCompon
         p (fd, '</div>')
         if self._title != None:
             p (fd, '</td></tr></table>')
-        p (fd, '</div>')
 
 
 class Calendar (Widget):

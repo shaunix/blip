@@ -433,26 +433,30 @@ function comment (count, num, j, x) {
 /******************************************************************************/
 /** Expanders **/
 
-function expander (id) {
-  var div = $('#' + id + ' div.cont-content');
-  div.slideToggle('fast', function () {
-    var open = div.is(':visible');
+$(document).ready (function () {
+  $('span.expander').click (function () { 
+    var lnk = $(this);
+    var par = $(this).parents ('table.cont:first');
+    var img = par.find ('img.exp-img:first');
+    var cont = par.find ('div.cont-content:first');
+    var open = cont.is (':visible');
 
-    var img = $('#img-' + id);
     if (open)
-      img.attr('src', img.attr('src').replace('closed', 'open'))
-    else
       img.attr('src', img.attr('src').replace('open', 'closed'))
+    else
+      img.attr('src', img.attr('src').replace('closed', 'open'))
 
-    var slinks = $('#slink-' + id);
+    var slinks = par.find ('div.slinks:first');
     if (slinks.length > 0) {
       if (open)
-        slinks.unshade();
-      else
         slinks.shade();
+      else
+        slinks.unshade();
     }
+
+    cont.toggle ();
   });
-}
+});
 
 
 /******************************************************************************/
