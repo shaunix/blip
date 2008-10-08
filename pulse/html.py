@@ -1248,13 +1248,11 @@ class EllipsizedLabel (Widget):
             if i == len(self._label):
                 p (fd, None, self._label)
             else:
-                hexid = md5.md5(self._label).hexdigest()[:6]
                 p (fd, None, self._label[:i])
-                p (fd, ('<span class="elliplnk" id="elliplnk-%s">('
-                        '<a href="javascript:ellip(\'%s\')">%s</a>)</span>'),
-                   (hexid, hexid, pulse.utils.gettext ('more')))
-                p (fd, '<span class="elliptxt" id="elliptxt-%s">%s</span>',
-                   (hexid, self._label[i+1:]))
+                p (fd, ('<a class="elliplnk">%s</a>'),
+                   (pulse.utils.gettext ('(more)')))
+                p (fd, '<span class="elliptxt">%s</span>',
+                   (self._label[i+1:]))
         else:
             p (fd, None, self._label)
 

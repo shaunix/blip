@@ -477,10 +477,13 @@ $(document).ready (function () {
 /******************************************************************************/
 /** Ellipsized text **/
 
-function ellip (id) {
-  $('#elliplnk-' + id).remove();
-  $('#elliptxt-' + id).fadeIn('fast');
-}
+$(document).ready (function () {
+  $('a.elliplnk').click (function () {
+    var txt = $(this).next ('span.elliptxt').eq(0)
+    $(this).remove ();
+    txt.fadeIn ('fase');
+  });
+});
 
 
 /******************************************************************************/

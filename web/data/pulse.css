@@ -467,9 +467,8 @@ div.zoom {
   padding: 1em;
 }
 .vbox-el { margin-top: 1em; }
-span.elliplnk {
-  font-style: normal;
-}
+
+a.elliplnk { font-style: normal; cursor: pointer; }
 span.elliptxt { display: none; }
 
 .pad { margin-top: 1em; }
