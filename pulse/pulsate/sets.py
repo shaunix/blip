@@ -171,6 +171,9 @@ def update_set (data, update=True, parent=None):
     if data.has_key ('links'):
         pulse.pulsate.update_links (record, data['links'])
 
+    if data.has_key ('schedule'):
+        pulse.pulsate.update_schedule (record, data['schedule'])
+
     # Sets may contain either other sets or modules, not both
     if data.has_key ('set'):
         rels = []

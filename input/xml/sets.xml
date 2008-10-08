@@ -29,6 +29,8 @@
     <item>http://feeds.delicious.com/v2/rss/tag/gnome226</item>
   </links>
 
+  <schedule>http://www.gnome.org/start/unstable/schedule.ics</schedule>
+
   <set id="gnome-2-26-platform">
     <name>Gnome 2.26 Platform</name>
     <jhbuild_metamodule>

@@ -672,6 +672,43 @@ class ContainerBox (Widget, SortableComponent, ContentComponent, LinkBoxesCompon
         p (fd, '</div>')
 
 
+class Calendar (Widget):
+    def __init__ (self, **kw):
+        super (Calendar, self).__init__ (**kw)
+        self._events = []
+
+    def add_event (self, start, end, summary, desc):
+        self._events.append ((start, end, summary, desc))
+
+    def output (self, fd=None):
+        p (fd, '<div class="cal">')
+        p (fd, '<table class="cal">')
+        p (fd, '<tr class="calnav">')
+        p (fd, '<td class="calprev">&#9666;</td>')
+        p (fd, '<td class="calnav" colspan="5">', None, False)
+        p (fd, '<span class="calmonth"></span> <span class="calyear"></span></td>')
+        p (fd, '<td class="calnext">&#9656;</td>')
+        p (fd, '</tr>')
+        p (fd, '<tr class="calhead">', None, False)
+        for day in ('Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'):
+            p (fd, '<td>%s</td>', day, False)
+        p (fd, '</tr>')
+        for i in range (6):
+            p (fd, '<tr class="calweek">', None, False)
+            for j in range (7):
+                p (fd, '<td class="calday"></td>', None, False)
+            p (fd, '</tr>')
+        p (fd, '</table>')
+        p (fd, '<dl class="calevents">')
+        for event in self._events:
+            p (fd, '<dt class="calevent">', None, False)
+            p (fd, '<span class="caldtstart">%s</span> ', event[0].strftime('%Y-%m-%d'), False)
+            p (fd, '<span class="calsummary">%s</span>', event[2], False)
+            p (fd, '</dt>')
+            p (fd, '<dd class="calevent">%s</dd>', event[3])
+        p (fd, '</dl>')
+        p (fd, '</div>')
+
 class LinkBox (Widget, FactsComponent, ContentComponent):
     """
     A block-level link to an object with optional extra information.

@@ -1,4 +1,31 @@
 /******************************************************************************/
+/** Debug **/
+function debug (txt) {
+  dbg = $('div#debug');
+  if (dbg.length == 0) {
+    $('body').append ('<div id="debug"></div>')
+    dbg = $('div#debug');
+    dbg.css ({
+      position: 'absolute',
+      top: 40,
+      right: 40,
+      padding: '2px 1em 2px 1em',
+      backgroundColor: '#eeeeec',
+      border: 'solid 2px #ef2929',
+      opacity: 0.1,
+    });
+    dbg.hover (
+      function () { $(this).css({opacity: 1.0}) },
+      function () { $(this).css({opacity: 0.1}) }
+    );
+  }
+  var div = $('<div></div>');
+  div.text (txt);
+  dbg.append (div);
+}
+
+
+/******************************************************************************/
 /** Shading **/
 $.fn.shade = function (speed, options) {
   this.each(function () {
@@ -141,6 +168,104 @@ $(document).ready(function () {
       div.slideUp('fast', function () { div.addClass('stop'); });
       cont.slideDown('fast');
     });
+  });
+});
+
+
+/******************************************************************************/
+/** Calendars **/
+
+function cal_display (cal, month, year) {
+  var today = new Date ();
+  if (month == undefined)
+    month = today.getUTCMonth ();
+  if (year == undefined)
+    year = today.getUTCFullYear ();
+  cal.find ('span.calyear').text (year);
+  var calmonth = cal.find ('span.calmonth');
+  calmonth.data ('monthnum', month);
+  calmonth.text (
+    ['January', 'February', 'March', 'April', 'May', 'June', 'July',
+     'August', 'September', 'October', 'November', 'December']
+    [month]);
+  var tds = cal.find ('td.calday');
+  var events = cal.find ('span.caldtstart');
+  events.parent().hide();
+  events.parent().next('dd').hide();
+  var firstday = new Date (year, month, 1)
+  var weekday = firstday.getDay() || 7;
+  var j = 0;
+  for (var i = 1; i <= 42; i++) {
+    thisday = new Date(year, month, i - weekday + 1);
+    var td = tds.eq (i - 1);
+    td.html ('<div>' + thisday.getDate () + '</div>');
+    if (thisday.getFullYear() == today.getFullYear() &&
+        thisday.getMonth() == today.getMonth() &&
+        thisday.getDate() == today.getDate())
+      td.addClass ('caltoday');
+    else
+      td.removeClass ('caltoday');
+    var thisfull = thisday.getFullYear() + '-';
+    if (thisday.getMonth() + 1 < 10)
+      thisfull += '0';
+    thisfull += (thisday.getMonth() + 1) + '-';
+    if (thisday.getDate() < 10)
+      thisfull += '0';
+    thisfull += thisday.getDate();
+    while ((j < events.length) && lowerCmp (events.eq(j).text(), thisfull, 1) < 0)
+      j++;
+    td.removeClass ('calevent');
+    td.unbind ('click');
+    if (thisday.getMonth() == firstday.getMonth()) {
+      td.removeClass ('caldayoff');
+      if (lowerCmp (events.eq(j).text(), thisfull, 1) == 0) {
+        events.eq(j).parent().show();
+        events.eq(j).parent().next('dd').eq(0).show();
+        td.addClass ('calevent');
+      }
+    } else {
+      td.addClass ('caldayoff');
+      if (thisday.getYear() > firstday.getYear())
+        td.click (function () { cal_next(cal) });
+      else if (thisday.getYear() < firstday.getYear())
+        td.click (function () { cal_prev(cal) });
+      else if (thisday.getMonth() > firstday.getMonth())
+        td.click (function () { cal_next(cal) });
+      else
+        td.click (function () { cal_prev(cal) });
+    }
+  }
+}
+
+function cal_prev (cal) {
+  var month = cal.find ('span.calmonth').data ('monthnum');
+  var year = parseInt (cal.find ('span.calyear').text ());
+  month--;
+  if (month < 0) {
+    month = 12 + month;
+    year--;
+  }
+  cal_display (cal, month, year);
+}
+
+function cal_next (cal) {
+  var month = cal.find ('span.calmonth').data ('monthnum');
+  var year = parseInt (cal.find ('span.calyear').text ());
+  month++;
+  if (month > 11) {
+    month = month - 12;
+    year++;
+  }
+  cal_display (cal, month, year);
+}
+
+$(document).ready(function() {
+  var cals = $('div.cal');
+  cals.each (function () {
+    var cal = $(this);
+    cal_display (cal);
+    cal.find ('td.calprev').click (function () { cal_prev (cal); });
+    cal.find ('td.calnext').click (function () { cal_next (cal); });
   });
 });
 

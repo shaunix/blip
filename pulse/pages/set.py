@@ -110,13 +110,22 @@ def output_set (rset, **kw):
         links = rset.data.get ('links', [])
         if len(links) == 0 and rset.parent != None:
             links = rset.parent.data.get ('links', [])
-        if len(links) > 0:
-            box = pulse.html.InfoBox ('links', pulse.utils.gettext ('Links'))
-            columns.add_to_column (0, box)
-            for link in links:
-                lbox = box.add_link_box (link[0], link[1])
-                lbox.set_show_icon (False)
-                lbox.set_description (link[2])
+        box = pulse.html.InfoBox ('links', pulse.utils.gettext ('Links'))
+        columns.add_to_column (0, box)
+        for link in links:
+            lbox = box.add_link_box (link[0], link[1])
+            lbox.set_show_icon (False)
+            lbox.set_description (link[2])
+
+        schedule = rset.data.get ('schedule', [])
+        if len(schedule) == 0 and rset.parent != None:
+            schedule = rset.parent.data.get ('schedule', [])
+        box = pulse.html.InfoBox ('schedule', pulse.utils.gettext ('Schedule'))
+        cal = pulse.html.Calendar ()
+        box.add_content (cal)
+        columns.add_to_column (1, box)
+        for event in schedule:
+            cal.add_event (*event)
     else:
         tabbed.add_tab (rset.pulse_url, pulse.utils.gettext ('Info'))
 

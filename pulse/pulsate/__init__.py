@@ -20,6 +20,9 @@
 
 import datetime
 import os.path
+import urllib
+
+import vobject
 
 import pulse.feedparser
 import pulse.graphs
@@ -139,3 +142,17 @@ def update_links (obj, sources, **kw):
                     links.append (link)
     obj.data['links'] = sorted (links, cmp=lambda x, y: cmp (x[3], y[3]))
     obj.save ()
+
+
+def update_schedule (obj, url, **kw):
+    pulse.utils.log ('Processing schedule at %s' % url)
+    cal = vobject.readOne (urllib.urlopen (url))
+    schedule = []
+    for event in cal.getChildren ():
+        if event.name != 'VEVENT':
+            continue
+        schedule.append ((event.dtstart.value, event.dtend.value,
+                          event.summary.value, event.description.value))
+    obj.data['schedule'] = sorted (schedule, cmp=lambda x, y: cmp (x[0], y[0]))
+    obj.save ()
+

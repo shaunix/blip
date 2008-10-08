@@ -257,6 +257,54 @@ div.mask {
   z-index: 10;
 }
 
+table.cal {
+  margin-left: 1.44em;
+  border-bottom: solid 1px #eeeeec;
+}
+table.cal td {
+  padding: 0;
+  width: 1.44em;
+  text-align: right;
+}
+table.cal tr.calnav td { padding: 0 0.5em 0 0.2em; }
+table.cal td.calprev { text-align: left; cursor: pointer; }
+table.cal td.calnext { text-align: right; cursor: pointer; }
+table.cal td.calnav { text-align: center; }
+table.cal tr {
+  border-left: solid 1px #eeeeec;
+  border-right: solid 1px #eeeeec;
+}
+table.cal tr.calnav {
+  border-left: none;
+  border-right: none;
+}
+tr.calhead {
+  border-top: solid 1px #eeeeec;
+  background-color: #729fcf;
+  color: white;
+}
+tr.calhead td {
+  padding: 0 0.5em 0 0.2em;
+}
+td.calday div {
+  border: solid 1px white;
+  padding: 0 0.5em 0 0.2em;
+}
+td.caldayoff {
+  color: #babdb6;
+  cursor: pointer;
+}
+td.caltoday div {
+  border: solid 1px #729fcf;
+}
+td.calevent {
+  background-color: #fce94f;
+}
+dd.calevent {
+  margin-left: 1.44em;
+  display: none;
+}
+
 div.slinks {
   text-align: right;
   color: #555753;
