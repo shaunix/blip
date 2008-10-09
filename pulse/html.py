@@ -632,17 +632,15 @@ class ContainerBox (Widget, SortableComponent, ContentComponent, LinkBoxesCompon
         """Output the HTML."""
         slinks = len(self.get_sort_links())
         if self._title != None or slinks > 0:
+            p (fd, '<div>')
             if self._title != None:
                 p (fd, '<table class="cont"><tr>')
-                p (fd, '<td class="cont-arrow">', None, False)
-                p (fd,'<span class="expander"><img class="exp-img" src="%sexpander-open.png"></a>',
-                   (pulse.config.data_root))
-                p (fd, '</td>')
+                p (fd, '<td class="contexp">&#9662;</td>')
                 p (fd, '<td class="cont-title">', None, False)
             if self._title != None and slinks > 0:
                 p (fd, '<table><tr><td>')
             if self._title != None:
-                p (fd, '<span class="expander">%s</span>', (self._title), False)
+                p (fd, '<span class="contexp">%s</span>', (self._title), False)
             if self._title != None and slinks > 0:
                 p (fd, '</td><td class="cont-slinks">')
             if slinks > 0:
@@ -660,6 +658,7 @@ class ContainerBox (Widget, SortableComponent, ContentComponent, LinkBoxesCompon
         p (fd, '</div>')
         if self._title != None:
             p (fd, '</td></tr></table>')
+        p (fd, '</div>')
 
 
 class Calendar (Widget):

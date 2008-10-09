@@ -45,7 +45,7 @@ $.fn.shade = function (speed, options) {
         img.removeAttr('usemap');
       }
     });
-    el.animate({opacity: 0.4}, 800);
+    el.animate({opacity: 0.4}, 400);
   });
   return this;
 };
@@ -66,7 +66,7 @@ $.fn.unshade = function (speed) {
         img.attr('usemap', img.data('usemap'));
       }
     });
-    el.animate({opacity: 1.0}, 800);
+    el.animate({opacity: 1.0}, 400);
   });
   return this;
 };
@@ -434,17 +434,16 @@ function comment (count, num, j, x) {
 /** Expanders **/
 
 $(document).ready (function () {
-  $('span.expander').click (function () { 
+  $('.contexp').click (function () { 
     var lnk = $(this);
     var par = $(this).parents ('table.cont:first');
-    var img = par.find ('img.exp-img:first');
     var cont = par.find ('div.cont-content:first');
     var open = cont.is (':visible');
 
     if (open)
-      img.attr('src', img.attr('src').replace('open', 'closed'))
+      par.find ('td.contexp:first').html ('&#9656;');
     else
-      img.attr('src', img.attr('src').replace('closed', 'open'))
+      par.find ('td.contexp:first').html ('&#9662;');
 
     var slinks = par.find ('div.slinks:first');
     if (slinks.length > 0) {
