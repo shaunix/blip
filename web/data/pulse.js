@@ -464,13 +464,16 @@ $(document).ready (function () {
 $(document).ready (function () {
   $('div.info').each (function () {
     var div = $(this);
-    $(this).children ('div.info-title').click (function () {
-      var cont = div.children ('div.info-content').children ('div');
+    $(this).children ('div.infotitle').click (function () {
+      var cont = div.children ('div.infocont');
       var img = $(this).find ('img');
-      if (cont.is(':visible'))
+      if (cont.is(':visible')) {
+        $(this).css ({ backgroundColor: '#eeeeec' });
         img.attr('src', img.attr('src').replace('open', 'up'))
-      else
+      } else {
+        $(this).css ({ backgroundColor: '#ffffff' });
         img.attr('src', img.attr('src').replace('up', 'open'))
+      }
       cont.slideToggle('fast');
     });
   });
@@ -499,7 +502,7 @@ $(document).ready (function () {
 
 function replace (id, url) {
   var el = $('#' + id);
-  var par = el.parents('.info-content');
+  var par = el.parents('.infocont');
   if (par.length > 0) {
     par.shade();
   }

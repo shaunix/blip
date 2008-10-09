@@ -584,14 +584,14 @@ class InfoBox (Widget, ContentComponent, LinkBoxesComponent):
     def output (self, fd=None):
         """Output the HTML."""
         p (fd, '<div class="info">')
-        p (fd, '<div class="info-title">', None, False)
-        p (fd, '<span><img class="info-img" src="%sexpander-open.png"></span>',
+        p (fd, '<div class="infotitle">', None, False)
+        p (fd, '<span><img class="infoimg" src="%sexpander-open.png"></span>',
            (pulse.config.data_root), False)
         p (fd, '%s</div>', self._title)
-        p (fd, '<div class="info-content"><div>')
+        p (fd, '<div class="infocont">')
         ContentComponent.output (self, fd=fd)
         LinkBoxesComponent.output (self, fd=fd)
-        p (fd, '</div></div></div>')
+        p (fd, '</div></div>')
 
 
 class ContainerBox (Widget, SortableComponent, ContentComponent, LinkBoxesComponent):
