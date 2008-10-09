@@ -68,13 +68,13 @@ def output_top (**kw):
     page = pulse.html.Page (http=kw.get('http', True))
     page.set_title (pulse.utils.gettext ('Sets'))
     cont = pulse.html.ContainerBox ()
+    cont.set_show_icons (False)
     page.add_content (cont)
 
     sets = db.ReleaseSet.objects.filter (parent__isnull=True)
     sets = pulse.utils.attrsorted (list(sets), 'title')
     for rset in sets:
         lbox = cont.add_link_box (rset)
-        lbox.set_show_icon (False)
         subsets = pulse.utils.attrsorted (rset.subsets.all(), ['title'])
         if len(subsets) > 0:
             dl = pulse.html.DefinitionList ()
@@ -111,10 +111,10 @@ def output_set (rset, **kw):
         if len(links) == 0 and rset.parent != None:
             links = rset.parent.data.get ('links', [])
         box = pulse.html.InfoBox (pulse.utils.gettext ('Links'))
+        box.set_show_icons (False)
         columns.add_to_column (0, box)
         for link in links:
             lbox = box.add_link_box (link[0], link[1])
-            lbox.set_show_icon (False)
             lbox.set_description (link[2])
 
         schedule = rset.data.get ('schedule', [])
@@ -133,12 +133,12 @@ def output_set (rset, **kw):
     if len(subsets) > 0:
         if len(path) > 2 and path[2] == 'set':
             cont = pulse.html.ContainerBox ()
+            cont.set_show_icons (False)
             cont.set_columns (2)
             tabbed.add_tab (True, pulse.utils.gettext ('Subsets (%i)') % len(subsets))
             tabbed.add_content (cont)
             for subset in subsets:
                 lbox = cont.add_link_box (subset)
-                lbox.set_show_icon (False)
                 add_set_info (subset, lbox)
         else:
             tabbed.add_tab (rset.pulse_url + '/set',

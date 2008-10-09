@@ -290,12 +290,16 @@ class LinkBoxesComponent (Component):
         super (LinkBoxesComponent, self).__init__ (**kw)
         self._boxes = []
         self._columns = kw.get('columns', 1)
+        self._show_icons = None
 
     def add_link_box (self, *args, **kw):
         """Add a link box."""
         lbox = LinkBox (*args, **kw)
         self._boxes.append (lbox)
         return lbox
+
+    def set_show_icons (self, show):
+        self._show_icons = show
 
     def set_columns (self, columns):
         """Set the number of columns."""
@@ -313,6 +317,8 @@ class LinkBoxesComponent (Component):
                         p (fd, '</td><td class="col" style="width: ' + width + '%">')
                 else:
                     p (fd, '<div class="pad">')
+                if self._show_icons != None:
+                    box.set_show_icon (self._show_icons)
                 p (fd, box)
                 if pos > 0:
                     p (fd, '</div>')
@@ -322,6 +328,8 @@ class LinkBoxesComponent (Component):
                 box = self._boxes[i]
                 if i != 0:
                     p (fd, '<div class="pad">')
+                if self._show_icons != None:
+                    box.set_show_icon (self._show_icons)
                 p (fd, box)
                 if i != 0:
                     p (fd, '</div>')

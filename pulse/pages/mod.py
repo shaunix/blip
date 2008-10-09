@@ -457,15 +457,19 @@ def get_developers_box (module):
     box = pulse.html.InfoBox (pulse.utils.gettext ('Developers'))
     rels = db.ModuleEntity.get_related (subj=module)
     if len(rels) > 0:
+        icons = False
         people = {}
         for rel in rels:
             people[rel.pred] = rel
             people_cache[rel.pred.id] = rel.pred
         for person in pulse.utils.attrsorted (people.keys(), 'title'):
             lbox = box.add_link_box (person)
+            if person.icon_url != None:
+                icons = True
             rel = people[person]
             if rel.maintainer:
                 lbox.add_badge ('maintainer')
+        box.set_show_icons (icons)
     else:
         box.add_content (pulse.html.AdmonBox (pulse.html.AdmonBox.warning,
                                               pulse.utils.gettext ('No developers') ))
