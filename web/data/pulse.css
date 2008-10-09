@@ -234,17 +234,17 @@ td.col-first { padding: 0; }
 .status { display: none; }
 
 table.lbox { margin: 0.2em 0 0.2em 0; width: 100%;}
-td.lbox-icon { width: 24px; text-align: center; }
-td.lbox-text { padding: 0 0.5em 0 0.5em; }
-div.lbox-heading {
+td.lboxicon { width: 24px; text-align: center; }
+td.lboxtext { padding: 0 0.5em 0 0.5em; }
+td.lboxtextonly { padding: 0 0.5em 0 0; }
+div.lboxhead {
   font-size: 1.2em;
   border-bottom: solid 1px #888a85;
 }
-td.lbox-graph { vertical-align: top; text-align: right; }
-
-.contexp { cursor: pointer; }
+td.lboxgraph { vertical-align: top; text-align: right; }
 
 table.cont { width: 100%; }
+.contexp { cursor: pointer; }
 td.contexp {
   margin: 0; padding: 0;
   vertical-align: top;

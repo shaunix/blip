@@ -774,17 +774,19 @@ class LinkBox (Widget, FactsComponent, ContentComponent):
         p (fd, '<table class="%s"><tr>', cls)
         if self._show_icon:
             if self._icon_size != None:
-                p (fd, '<td class="lbox-icon" style="width: %ipx">', self._icon_size, False)
+                p (fd, '<td class="lboxicon" style="width: %ipx">', self._icon_size, False)
             else:
-                p (fd, '<td class="lbox-icon">', None, False)
+                p (fd, '<td class="lboxicon">', None, False)
             if self._icon != None:
                 p (fd, '<img class="icon" src="%s" alt="%s">', (self._icon, self._title), False)
             p (fd, '</td>')
-        p (fd, '<td class="lbox-text">')
-        if self._heading == True:
-            p (fd, '<div class="lbox-heading">')
+            p (fd, '<td class="lboxtext">')
         else:
-            p (fd, '<div class="lbox-title">')
+            p (fd, '<td class="lboxtext lboxtextonly">')
+        if self._heading == True:
+            p (fd, '<div class="lboxhead">')
+        else:
+            p (fd, '<div class="lboxtitle">')
         if self._url != None:
             p (fd, '<a href="%s"><span class="title">%s</span></a>', (self._url, self._title))
         else:
@@ -796,14 +798,14 @@ class LinkBox (Widget, FactsComponent, ContentComponent):
                    (pulse.config.data_root, badge, badge))
         p (fd, '</div>')
         if self._desc != None:
-            p (fd, '<div class="lbox-desc desc">')
+            p (fd, '<div class="lboxdesc desc">')
             p (fd, EllipsizedLabel (self._desc, 130))
             p (fd, '</div>')
         FactsComponent.output (self, fd=fd)
         ContentComponent.output (self, fd=fd)
         p (fd, '</td>')
         if len(self._graphs) > 0:
-            p (fd, '<td class="lbox-graph">')
+            p (fd, '<td class="lboxgraph">')
             for graph in self._graphs:
                 pulse.html.Graph (graph[0], width=graph[1], height=graph[2]).output(fd=fd)
             p (fd, '</td>')
