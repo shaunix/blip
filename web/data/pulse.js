@@ -470,11 +470,29 @@ $(document).ready (function () {
       if (cont.is(':visible')) {
         $(this).css ({ backgroundColor: '#eeeeec' });
         img.attr('src', img.attr('src').replace('open', 'up'))
+        var height = cont.height();
+        cont.data ('height', height);
       } else {
         $(this).css ({ backgroundColor: '#ffffff' });
         img.attr('src', img.attr('src').replace('up', 'open'))
+        var height = cont.data ('height');
+        cont.removeData ('height');
       }
-      cont.slideToggle('fast');
+      var diff = (height + $(this).offset().top + $(this).height()) - (window.pageYOffset + window.innerHeight)
+      if (cont.is(':visible')) {
+        if (diff > 0)
+          cont.css ({overflow: 'hidden', height: height - diff});
+        cont.slideUp (200);
+      } else {
+        cont.slideDown (200, function () {
+          if (diff > 0)
+            cont.css ({overflow: 'visible', height: height});
+          else
+            cont.animate ({height: height}, 200, function () {
+              cont.css ({overflow: 'visible'});
+            });
+        });
+      }
     });
   });
 });

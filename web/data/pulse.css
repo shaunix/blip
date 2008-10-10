@@ -200,9 +200,7 @@ td.col-first { padding: 0; }
 }
 .infotitle span { float: right; }
 .infotitle span img { vertical-align: bottom; }
-.infocont {
-  padding: 0.5em;
-}
+.infocont { padding: 0.5em; }
 
 .desc {
   font-style: italic;
