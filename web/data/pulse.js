@@ -26,7 +26,41 @@ function debug (txt) {
 
 
 /******************************************************************************/
+/** On-screen slide toggling **/
+
+$.fn.onScreenSlideToggle = function (speed) {
+  var div = $(this);
+  var visible = div.is(':visible');
+  if (visible) {
+    var height = div.height();
+    div.data ('height', height);
+  } else {
+    var height = div.data ('height');
+    div.removeData ('height');
+    div.css ({display: 'block'});
+  }
+  var diff = (height + div.offset().top) - (window.pageYOffset + window.innerHeight);
+  if (visible) {
+    if (diff > 0)
+      div.css ({overflow: 'hidden', height: height - diff});
+    div.slideUp (200);
+  } else {
+    div.css ({display: 'none'});
+    div.slideDown (200, function () {
+      if (diff > 0)
+        div.css ({overflow: 'visible', height: height});
+      else
+        div.animate ({height: height}, 200, function () {
+          div.css ({overflow: 'visible'});
+        });
+    });
+  }
+};
+
+
+/******************************************************************************/
 /** Shading **/
+
 $.fn.shade = function (speed, options) {
   this.each(function () {
     var el = $(this);
@@ -453,46 +487,29 @@ $(document).ready (function () {
         slinks.unshade();
     }
 
-    cont.toggle ();
+    cont.onScreenSlideToggle ();
   });
 });
 
 
 /******************************************************************************/
-/** Info Boxes **/
+/** Info boxes **/
 
 $(document).ready (function () {
   $('div.info').each (function () {
     var div = $(this);
-    $(this).children ('div.infotitle').click (function () {
+    div.children ('div.infotitle').click (function () {
       var cont = div.children ('div.infocont');
       var img = $(this).find ('img');
-      if (cont.is(':visible')) {
+      var visible = cont.is(':visible');
+      if (visible) {
         $(this).css ({ backgroundColor: '#eeeeec' });
         img.attr('src', img.attr('src').replace('open', 'up'))
-        var height = cont.height();
-        cont.data ('height', height);
       } else {
         $(this).css ({ backgroundColor: '#ffffff' });
         img.attr('src', img.attr('src').replace('up', 'open'))
-        var height = cont.data ('height');
-        cont.removeData ('height');
       }
-      var diff = (height + $(this).offset().top + $(this).height()) - (window.pageYOffset + window.innerHeight)
-      if (cont.is(':visible')) {
-        if (diff > 0)
-          cont.css ({overflow: 'hidden', height: height - diff});
-        cont.slideUp (200);
-      } else {
-        cont.slideDown (200, function () {
-          if (diff > 0)
-            cont.css ({overflow: 'visible', height: height});
-          else
-            cont.animate ({height: height}, 200, function () {
-              cont.css ({overflow: 'visible'});
-            });
-        });
-      }
+      cont.onScreenSlideToggle ();
     });
   });
 });
