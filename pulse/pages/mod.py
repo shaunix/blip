@@ -480,8 +480,11 @@ def get_info_box (module, branchtype, title):
     objs = module.select_children (branchtype)
     objs = pulse.utils.attrsorted (list(objs), 'title')
     if len(objs) > 0:
+        icons = False
         box = pulse.html.InfoBox (title)
         for obj in objs:
+            if obj.icon_url != None:
+                icons = True
             lbox = box.add_link_box (obj)
             doc = db.Documentation.get_related (subj=obj)
             try:
@@ -489,6 +492,7 @@ def get_info_box (module, branchtype, title):
                 lbox.add_fact (pulse.utils.gettext ('documentaion'), doc.pred)
             except IndexError:
                 pass
+        box.set_show_icons (icons)
         return box
     return None
 
