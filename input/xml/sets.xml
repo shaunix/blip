@@ -262,6 +262,7 @@
     <module id="gimp-plugin-template"/>
     <module id="gimp-ruby"/>
     <module id="gimp-tiny-fu"/>
+    <module id="gjs"/>
     <module id="gnumeric"/>
     <module id="gthumb"/>
     <module id="xchat-gnome"/>
