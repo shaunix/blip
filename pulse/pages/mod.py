@@ -247,7 +247,6 @@ def output_module (module, **kw):
             span = pulse.html.Span (str(res.count()))
             span.add_class ('translations')
             lbox.add_fact (pulse.utils.gettext ('translations'), span)
-                           
     else:
         box.add_content (pulse.html.AdmonBox (pulse.html.AdmonBox.warning,
                                               pulse.utils.gettext ('No documents') ))
@@ -457,19 +456,15 @@ def get_developers_box (module):
     box = pulse.html.InfoBox (pulse.utils.gettext ('Developers'))
     rels = db.ModuleEntity.get_related (subj=module)
     if len(rels) > 0:
-        icons = False
         people = {}
         for rel in rels:
             people[rel.pred] = rel
             people_cache[rel.pred.id] = rel.pred
         for person in pulse.utils.attrsorted (people.keys(), 'title'):
             lbox = box.add_link_box (person)
-            if person.icon_url != None:
-                icons = True
             rel = people[person]
             if rel.maintainer:
                 lbox.add_badge ('maintainer')
-        box.set_show_icons (icons)
     else:
         box.add_content (pulse.html.AdmonBox (pulse.html.AdmonBox.warning,
                                               pulse.utils.gettext ('No developers') ))
@@ -480,11 +475,8 @@ def get_info_box (module, branchtype, title):
     objs = module.select_children (branchtype)
     objs = pulse.utils.attrsorted (list(objs), 'title')
     if len(objs) > 0:
-        icons = False
         box = pulse.html.InfoBox (title)
         for obj in objs:
-            if obj.icon_url != None:
-                icons = True
             lbox = box.add_link_box (obj)
             doc = db.Documentation.get_related (subj=obj)
             try:
@@ -492,7 +484,6 @@ def get_info_box (module, branchtype, title):
                 lbox.add_fact (pulse.utils.gettext ('documentaion'), doc.pred)
             except IndexError:
                 pass
-        box.set_show_icons (icons)
         return box
     return None
 

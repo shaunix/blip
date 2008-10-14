@@ -307,6 +307,12 @@ class LinkBoxesComponent (Component):
 
     def output (self, fd=None):
         """Output the HTML."""
+        if self._show_icons == None:
+            self._show_icons = False
+            for box in self._boxes:
+                if box.has_icon():
+                    self._show_icons = True
+                    break
         if self._columns > 1:
             p (fd, '<table class="cols"><tr>')
             p (fd, '<td class="col col-first">')
@@ -317,8 +323,7 @@ class LinkBoxesComponent (Component):
                         p (fd, '</td><td class="col" style="width: ' + width + '%">')
                 else:
                     p (fd, '<div class="pad">')
-                if self._show_icons != None:
-                    box.set_show_icon (self._show_icons)
+                box.set_show_icon (self._show_icons)
                 p (fd, box)
                 if pos > 0:
                     p (fd, '</div>')
@@ -328,8 +333,7 @@ class LinkBoxesComponent (Component):
                 box = self._boxes[i]
                 if i != 0:
                     p (fd, '<div class="pad">')
-                if self._show_icons != None:
-                    box.set_show_icon (self._show_icons)
+                box.set_show_icon (self._show_icons)
                 p (fd, box)
                 if i != 0:
                     p (fd, '</div>')
@@ -749,6 +753,12 @@ class LinkBox (Widget, FactsComponent, ContentComponent):
 
     def set_icon (self, icon):
         self._icon = icon
+
+    def get_icon (self):
+        return self._icon
+
+    def has_icon (self):
+        return self._icon != None
 
     def set_show_icon (self, show):
         self._show_icon = show

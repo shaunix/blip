@@ -192,15 +192,12 @@ def output_doc (doc, **kw):
     columns.add_to_column (0, box)
     rels = db.DocumentEntity.get_related (subj=doc)
     if len(rels) > 0:
-        icons = False
         people = {}
         for rel in rels:
             people[rel.pred] = rel
             people_cache[rel.pred.id] = rel.pred
         for person in pulse.utils.attrsorted (people.keys(), 'title'):
             lbox = box.add_link_box (person)
-            if person.icon_url != None:
-                icons = True
             rel = people[person]
             if rel.maintainer:
                 lbox.add_badge ('maintainer')
@@ -210,7 +207,6 @@ def output_doc (doc, **kw):
                 lbox.add_badge ('editor')
             if rel.publisher:
                 lbox.add_badge ('publisher')
-        box.set_show_icons (icons)
     else:
         box.add_content (pulse.html.AdmonBox (pulse.html.AdmonBox.warning,
                                               pulse.utils.gettext ('No developers') ))
