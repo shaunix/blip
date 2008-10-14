@@ -346,7 +346,7 @@ def output_ajax_domain (module, **kw):
             stat2 = translation.Messages_stat2
             total = translation.Messages_total
             untranslated = total - stat1 - stat2
-            percent = math.floor (100 * (float(stat1) / total))
+            percent = total and math.floor (100 * (float(stat1) / total)) or 0
             span = pulse.html.Span ('%i%%' % percent)
             span.add_class ('percent')
             row.append (span)
