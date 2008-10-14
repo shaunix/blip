@@ -592,6 +592,24 @@ def process_pkgconfig (branch, checkout, filename, **kw):
 
     lib.update (name=libname, desc=libdesc)
 
+    docident = '/'.join(['/ref', bserver, bmodule, basename, bbranch])
+    doc = db.Branch.objects.filter (ident=docident, type='Document')
+    try:
+        doc = doc[0]
+    except IndexError:
+        doc = None
+        match = re.match ('(.+)-\\d+(\\d\\d+)?', basename)
+        if match:
+            docident = '/'.join(['/ref', bserver, bmodule, match.group(1), bbranch])
+            doc = db.Branch.objects.filter (ident=docident, type='Document')
+            try:
+                doc = doc[0]
+            except IndexError:
+                doc = None
+    if doc != None:
+        rel = db.Documentation.set_related (lib, doc)
+        lib.set_relations (db.Documentation, [rel])
+
     data = {}
     for key in ('scm_type', 'scm_server', 'scm_module', 'scm_branch', 'scm_path'):
         data[key] = getattr(branch, key)
