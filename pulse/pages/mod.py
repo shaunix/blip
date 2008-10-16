@@ -481,7 +481,7 @@ def get_info_box (module, branchtype, title):
             doc = db.Documentation.get_related (subj=obj)
             try:
                 doc = doc[0]
-                lbox.add_fact (pulse.utils.gettext ('documentaion'), doc.pred)
+                lbox.add_fact (pulse.utils.gettext ('docs'), doc.pred)
             except IndexError:
                 pass
         return box
