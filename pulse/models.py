@@ -707,7 +707,7 @@ class Revision (models.Model):
 
     branch = models.ForeignKey (Branch)
     person = models.ForeignKey (Entity)
-    alias = models.ForeignKey (Alias)
+    alias = models.ForeignKey (Alias, null=True)
     revision = models.CharField (maxlength=80)
     datetime = models.DateTimeField ()
     weeknum = models.IntegerField (null=True)
