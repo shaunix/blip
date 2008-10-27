@@ -17,7 +17,7 @@ Here's some basic instructions for running Pulse on your machine:
    started, run 'pulsate init'.  You can see the various things you can
    do with 'pulsate --help'.  A good order to run things in to get started:
      pulsate init
-     pulsate jhbuild
+     pulsate sets
      pulsate modules
      pulsate people
      pulsate icons
