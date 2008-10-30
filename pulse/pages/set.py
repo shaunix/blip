@@ -106,7 +106,7 @@ def output_set (rset, **kw):
     if len(schedule) == 0 and rset.parent != None:
         schedule = rset.parent.data.get ('schedule', [])
     if len(schedule) > 0:
-        box = pulse.html.InfoBox (pulse.utils.gettext ('Schedule'))
+        box = pulse.html.SidebarBox (pulse.utils.gettext ('Schedule'))
         cal = pulse.html.Calendar ()
         box.add_content (cal)
         page.add_sidebar_content (box)
@@ -117,7 +117,7 @@ def output_set (rset, **kw):
     if len(links) == 0 and rset.parent != None:
         links = rset.parent.data.get ('links', [])
     if len(links) > 0:
-        box = pulse.html.InfoBox (pulse.utils.gettext ('Links'))
+        box = pulse.html.SidebarBox (pulse.utils.gettext ('Links'))
         box.set_show_icons (False)
         page.add_sidebar_content (box)
         for link in links:

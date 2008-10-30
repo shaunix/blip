@@ -585,6 +585,19 @@ class AjaxBox (Widget):
            (pulse.config.data_root, self._url, pulse.utils.gettext ('Loading')) )
 
 
+class SidebarBox (Widget, ContentComponent):
+    def __init__ (self, title, **kw):
+        super (SidebarBox, self).__init__ (**kw)
+        self._title = title
+
+    def output (self, fd=None):
+        """Output the HTML."""
+        p (fd, '<div class="sidetitle">%s</div>', self._title, False)
+        p (fd, '<div class="sidecont">')
+        ContentComponent.output (self, fd=fd)
+        p (fd, '</div>')
+
+
 class InfoBox (Widget, ContentComponent, LinkBoxesComponent):
     """
     A box containing information.
