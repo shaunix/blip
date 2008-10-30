@@ -387,6 +387,7 @@ class Page (Widget, HttpComponent, ContentComponent):
         self._title = kw.get ('title')
         self._icon = kw.get ('icon')
         self._screenshot_file = None
+        self._sidebar = None
 
     def set_title (self, title):
         """Set the title of the page."""
@@ -412,6 +413,11 @@ class Page (Widget, HttpComponent, ContentComponent):
             self._screenshot_file = of
         except:
             pass
+
+    def add_sidebar_content (self, content):
+        if self._sidebar == None:
+            self._sidebar = ContentComponent ()
+        self._sidebar.add_content (content)
 
     def output (self, fd=None):
         """Output the HTML."""
@@ -450,7 +456,12 @@ class Page (Widget, HttpComponent, ContentComponent):
             p (fd, '<img class="icon" src="%s" alt="%s"> ', (self._icon, self._title), False)
         p (fd, None, self._title)
         p (fd, '</h1>')
-        p (fd, '<div id="body">')
+        if self._sidebar != None:
+            p (fd, '<div id="sidebar">')
+            self._sidebar.output (fd=fd)
+            p (fd, '</div><div id="bodyside">')
+        else:
+            p (fd, '<div id="body">')
         if self._screenshot_file != None:
             p (fd, '<div class="screenshot">', None, False)
             url = self._screenshot_file.get_pulse_url ()
@@ -460,7 +471,7 @@ class Page (Widget, HttpComponent, ContentComponent):
                 self._screenshot_file.data['thumb_width'],
                 self._screenshot_file.data['thumb_height']))
             p (fd, '</a></div>')
-        
+
         self.output_page_content (fd=fd)
         p (fd, '</div></body></html>')
         

@@ -101,6 +101,16 @@ body {
   margin: 0;
   padding: 0 2.4em 0 2.4em;
 }
+#bodyside {
+  margin: 0 300px 0 0;
+  padding: 0 2.4em 0 2.4em;
+}
+#sidebar {
+  background-color: #eeeeec;
+  position: absolute;
+  right: 0px;
+  width: 300px;
+}
 
 .notfound, .servererror {
   max-width: 40em;
@@ -191,6 +201,7 @@ td.col-first { padding: 0; }
 
 .info { margin: 1em 0 2em 0; }
 .infotitle {
+  background-color: #ffffff;
   color: #555753;
   font-weight: bold;
   border-top: solid 1px #888a85;
@@ -246,6 +257,7 @@ table.cal {
 }
 table.cal td {
   padding: 0;
+  font-size: 0.83em;
   width: 1.44em;
   text-align: right;
 }
@@ -269,6 +281,7 @@ tr.calhead {
 tr.calhead td {
   padding: 0 0.5em 0 0.2em;
 }
+td.calday { background-color: #ffffff; }
 td.calday div {
   border: solid 1px white;
   padding: 0 0.5em 0 0.2em;

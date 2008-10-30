@@ -102,32 +102,27 @@ def output_set (rset, **kw):
     for superset in get_supersets (rset):
         page.add_sublink (superset.pulse_url, superset.title)
 
-    if len(path) < 3:
-        columns = pulse.html.ColumnBox (2)
-        tabbed.add_tab (True, pulse.utils.gettext ('Info'))
-        tabbed.add_content (columns)
-
-        links = rset.data.get ('links', [])
-        if len(links) == 0 and rset.parent != None:
-            links = rset.parent.data.get ('links', [])
-        box = pulse.html.InfoBox (pulse.utils.gettext ('Links'))
-        box.set_show_icons (False)
-        columns.add_to_column (0, box)
-        for link in links:
-            lbox = box.add_link_box (link[0], link[1])
-            lbox.set_description (link[2])
-
-        schedule = rset.data.get ('schedule', [])
-        if len(schedule) == 0 and rset.parent != None:
-            schedule = rset.parent.data.get ('schedule', [])
+    schedule = rset.data.get ('schedule', [])
+    if len(schedule) == 0 and rset.parent != None:
+        schedule = rset.parent.data.get ('schedule', [])
+    if len(schedule) > 0:
         box = pulse.html.InfoBox (pulse.utils.gettext ('Schedule'))
         cal = pulse.html.Calendar ()
         box.add_content (cal)
-        columns.add_to_column (1, box)
+        page.add_sidebar_content (box)
         for event in schedule:
             cal.add_event (*event)
-    else:
-        tabbed.add_tab (rset.pulse_url, pulse.utils.gettext ('Info'))
+
+    links = rset.data.get ('links', [])
+    if len(links) == 0 and rset.parent != None:
+        links = rset.parent.data.get ('links', [])
+    if len(links) > 0:
+        box = pulse.html.InfoBox (pulse.utils.gettext ('Links'))
+        box.set_show_icons (False)
+        page.add_sidebar_content (box)
+        for link in links:
+            lbox = box.add_link_box (link[0], link[1])
+            lbox.set_description (link[2])
 
     subsets = pulse.utils.attrsorted (rset.subsets.all(), ['title'])
     if len(subsets) > 0:
@@ -144,7 +139,7 @@ def output_set (rset, **kw):
             tabbed.add_tab (rset.pulse_url + '/set',
                             pulse.utils.gettext ('Subsets (%i)') % len(subsets))
 
-    if len(path) <= 2 or path[2] != 'mod':
+    if len(path) > 2 and path[2] != 'mod':
         modcnt = db.SetModule.count_related (subj=rset)
         if modcnt > 0 or len(subsets) == 0:
             tabbed.add_tab (rset.pulse_url + '/mod',
