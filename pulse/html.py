@@ -585,7 +585,7 @@ class AjaxBox (Widget):
            (pulse.config.data_root, self._url, pulse.utils.gettext ('Loading')) )
 
 
-class SidebarBox (Widget, ContentComponent):
+class SidebarBox (Widget, ContentComponent, LinkBoxesComponent):
     def __init__ (self, title, **kw):
         super (SidebarBox, self).__init__ (**kw)
         self._title = title
@@ -595,6 +595,7 @@ class SidebarBox (Widget, ContentComponent):
         p (fd, '<div class="sidetitle">%s</div>', self._title, False)
         p (fd, '<div class="sidecont">')
         ContentComponent.output (self, fd=fd)
+        LinkBoxesComponent.output (self, fd=fd)
         p (fd, '</div>')
 
 
