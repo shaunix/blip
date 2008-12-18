@@ -220,6 +220,8 @@ def check_history (branch, checkout):
             pident = '/ghost/' + hist['author'][1]
             ptype = 'Ghost'
         pers = db.Entity.get_record (pident, ptype)
+        if ptype == 'Person':
+            db.Queue.push ('people', pident)
         if hist['author'][1] != None:
             if pers.name == None or pers.name == {}:
                 pers.update (name=hist['author'][1])

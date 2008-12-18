@@ -854,3 +854,28 @@ class OutputFile (models.Model):
             lst.insert (0, self.type)
             rootdir = pulse.config.web_files_dir
         return os.path.join(rootdir, *lst)
+
+
+class Queue (models.Model):
+    __metaclass__ = PulseModelBase
+
+    module = models.CharField (maxlength=80)
+    ident = models.CharField (maxlength=200)
+
+    @classmethod
+    def push (cls, module, ident):
+        rec, cr = cls.objects.get_or_create (module=module, ident=ident)
+        return rec
+
+    @classmethod
+    def pop (cls):
+        try:
+            rec = cls.objects.all()[0]
+            module = rec.module
+            ident = rec.ident
+            rec.delete()
+            return {'module': module, 'ident': ident}
+        except:
+            return None
+
+
