@@ -751,8 +751,10 @@ def process_oafserver (branch, checkout, filename, **kw):
     try:
         os.chdir (checkout.directory)
         dom = xml.dom.minidom.parse (os.popen ('LC_ALL=C intltool-merge -x -q -u po "' + rel_ch + '" -'))
-    finally:
+    except:
         os.chdir (owd)
+        return []
+    os.chdir (owd)
     for server in dom.getElementsByTagName ('oaf_server'):
         is_applet = False
         applet_name = {}
