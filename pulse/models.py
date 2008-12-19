@@ -878,4 +878,10 @@ class Queue (models.Model):
         except:
             return None
 
-
+    @classmethod
+    def remove (cls, module, ident):
+        try:
+            rec = cls.objects.filter (module=module, ident=ident)
+            rec.delete()
+        except:
+            pass
