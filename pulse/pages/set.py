@@ -124,9 +124,17 @@ def output_set (rset, **kw):
             lbox = box.add_link_box (link[0], link[1])
             lbox.set_description (link[2])
 
+    modcnt = db.SetModule.count_related (subj=rset)
     subsets = pulse.utils.attrsorted (rset.subsets.all(), ['title'])
+    if len(path) > 2:
+        tab = path[2]
+    elif modcnt > 0 or len(subsets) == 0:
+        tab = 'mod'
+    else:
+        tab = 'set'
+
     if len(subsets) > 0:
-        if len(path) > 2 and path[2] == 'set':
+        if tab == 'set':
             cont = pulse.html.ContainerBox ()
             cont.set_show_icons (False)
             cont.set_columns (2)
@@ -139,8 +147,7 @@ def output_set (rset, **kw):
             tabbed.add_tab (rset.pulse_url + '/set',
                             pulse.utils.gettext ('Subsets (%i)') % len(subsets))
 
-    if len(path) > 2 and path[2] != 'mod':
-        modcnt = db.SetModule.count_related (subj=rset)
+    if tab != 'mod':
         if modcnt > 0 or len(subsets) == 0:
             tabbed.add_tab (rset.pulse_url + '/mod',
                             pulse.utils.gettext ('Modules (%i)') % modcnt)
@@ -182,7 +189,7 @@ def output_set (rset, **kw):
                 lbox.add_fact (pulse.utils.gettext ('score'), span)
 
     if modcnt > 0:
-        add_more_tabs (rset, tabbed, path)
+        add_more_tabs (rset, tabbed, tab)
 
     page.output(fd=kw.get('fd'))
 
@@ -225,7 +232,7 @@ def add_set_info (rset, lbox):
             dl.add_entry (pulse.html.Link (rset.pulse_url + '/' + ext, txt % cnt))
 
 
-def add_more_tabs (rset, tabbed, path):
+def add_more_tabs (rset, tabbed, tab):
     """Add various tabs to a release set page"""
     things = ({ 'types'  : 'Document',
                 'subs'   : ('*', 'gtk-doc'),
@@ -252,7 +259,7 @@ def add_more_tabs (rset, tabbed, path):
     for thing in things:
         types = thing['types']
         graphs = thing.get ('graphs', False)
-        if len(path) > 2 and path[2] == thing['tabext']:
+        if tab == thing['tabext']:
             if isinstance (types, tuple):
                 pad = pulse.html.PaddingBox()
                 tabbed.add_content (pad)
