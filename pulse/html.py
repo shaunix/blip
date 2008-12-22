@@ -770,6 +770,7 @@ class Calendar (Widget):
         p (fd, '</dl>')
         p (fd, '</div>')
 
+
 class LinkBox (Widget, FactsComponent, ContentComponent):
     """
     A block-level link to an object with optional extra information.

@@ -223,8 +223,42 @@ $.fn.pulse_init = function () {
     return false;
   });
 
-  /** Graph Slides **/
+  /** Expanders **/
+  this.find ('.contexp').click (function () { 
+    var lnk = $(this);
+    var par = $(this).parents ('table.cont:first');
+    var cont = par.find ('div.cont-content:first');
+    var open = cont.is (':visible');
 
+    if (open)
+      par.find ('td.contexp:first').html ('&#9656;');
+    else
+      par.find ('td.contexp:first').html ('&#9662;');
+
+    var slinks = par.find ('div.slinks:first');
+    if (slinks.length > 0) {
+      if (open)
+        slinks.shade();
+      else
+        slinks.unshade();
+    }
+
+    cont.onScreenSlideToggle ();
+  });
+
+  /** Ellipsized Labels **/
+  this.find ('span.elliptxt').each (function () {
+    var span = $(this);
+    var lnk = $('<a class="elliplnk">(more)</a>');
+    lnk.click (function () {
+      lnk.remove ();
+      span.fadeIn ('fast');
+    });
+    span.hide ();
+    span.before (lnk);
+  });
+
+  /** Graph Slides **/
   var nexts = this.find ('a.graphnext');
   nexts.shade();
   var prevs = this.find ('a.graphprev');
@@ -569,51 +603,6 @@ function comment (count, num, j, x) {
     el.css('display', 'none');
   }
 }
-
-
-/******************************************************************************/
-/** Expanders **/
-
-$(document).ready (function () {
-  $('.contexp').click (function () { 
-    var lnk = $(this);
-    var par = $(this).parents ('table.cont:first');
-    var cont = par.find ('div.cont-content:first');
-    var open = cont.is (':visible');
-
-    if (open)
-      par.find ('td.contexp:first').html ('&#9656;');
-    else
-      par.find ('td.contexp:first').html ('&#9662;');
-
-    var slinks = par.find ('div.slinks:first');
-    if (slinks.length > 0) {
-      if (open)
-        slinks.shade();
-      else
-        slinks.unshade();
-    }
-
-    cont.onScreenSlideToggle ();
-  });
-});
-
-
-/******************************************************************************/
-/** Ellipsized text **/
-
-$(document).ready (function () {
-  $('span.elliptxt').each (function () {
-    var span = $(this);
-    var lnk = $('<a class="elliplnk">(more)</a>');
-    lnk.click (function () {
-      lnk.remove ();
-      span.fadeIn ('fast');
-    });
-    span.hide ();
-    span.before (lnk);
-  });
-});
 
 
 /******************************************************************************/

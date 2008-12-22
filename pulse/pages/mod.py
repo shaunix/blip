@@ -85,8 +85,6 @@ def main (path, query, http=True, fd=None):
 
     kw = {'path' : path, 'query' : query, 'http' : http, 'fd' : fd}
     if query.get('ajax', None) == 'tab':
-        import time
-        time.sleep (4)
         return output_ajax_tab (branch, **kw)
     elif query.get('ajax', None) == 'commits':
         return output_ajax_commits (branch, **kw)
