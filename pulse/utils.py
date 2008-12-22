@@ -123,8 +123,19 @@ def attrsorted (lst, *attrs):
 
     def lcmp (val1, val2):
         """Compare two objects, case-insensitive if strings"""
-        return cmp (isinstance(val1, basestring) and val1.lower() or val1,
-                    isinstance(val2, basestring) and val2.lower() or val2)
+        if isinstance (val1, unicode):
+            v1 = val1.lower()
+        elif isinstance (val1, basestring):
+            v1 = val1.decode('utf-8').lower()
+        else:
+            v1 = val1
+        if isinstance (val2, unicode):
+            v2 = val2.lower()
+        elif isinstance (val1, basestring):
+            v2 = val2.decode('utf-8').lower()
+        else:
+            v2 = val2
+        return cmp (v1, v2)
 
     def attrcmp (val1, val2, attrs):
         """Compare two objects based on some attributes"""
