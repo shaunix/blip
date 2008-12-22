@@ -495,8 +495,7 @@ class Page (Widget, HttpComponent, ContentComponent):
 
         if len(self._tabs) > 0:
             p (fd, '<div id="pagetabbed">')
-            p (fd, '<div id="reload">', None, False)
-            p (fd, '<a href="javascript:reload()"><img src="%sreload.png"></a></div>',
+            p (fd, '<div id="reload"><a href="javascript:reload()"><img src="%sreload.png"></a></div>',
                pulse.config.data_root)
             p (fd, '<div id="throbber"></div>')
             p (fd, '<div class="pagetabs">')
@@ -1439,8 +1438,8 @@ class PopupLink (Widget):
                         break
             if line == '':
                 line = maybe
-            if len(line) > 40:
-                i = 30
+            if len(line) > 80:
+                i = 60
                 while i < len(line):
                     if line[i] == ' ':
                         break

@@ -222,6 +222,28 @@ $.fn.pulse_init = function () {
     }
     return false;
   });
+
+  /** Graph Slides **/
+
+  var nexts = this.find ('a.graphnext');
+  nexts.shade();
+  var prevs = this.find ('a.graphprev');
+  prevs.each(function () {
+    var thisq = $(this);
+    thisq.css('visibility', 'visible');
+    thisq.shade();
+    var re = /^.*-(\d+)$/
+    var match = re.exec(thisq.attr('id'));
+    var id = match[1];
+    var div = $('#graph-' + id)
+    var img = div.children('img');
+    var newsrc = slidecalc(img.attr('src'), -1).src;
+    $.ajax({
+      url: newsrc,
+      success: function () {
+        thisq.unshade();
+    }});
+  });
 }
 
 $(document).ready (function () { $('html').pulse_init(); });
@@ -247,7 +269,7 @@ function tab (tabid) {
   } else {
     var thr = throbber ();
     $('#reload').hide ();
-    $('#throbber').append (thr);  
+    $('#throbber').append (thr).show ();
     var href = pulse_url + '?ajax=tab&tab=' + tabid;
     $.get(href, {}, function (data) {
       cont = $('<div></div>');
@@ -256,6 +278,7 @@ function tab (tabid) {
       cont.css ('display', 'none');
       $.tabbed.children ('.pagecontent').append (cont);
       thr.hide (0, function () { thr.addClass ('stop') });
+      $('#throbber').hide ();
       $('#reload').show ();
       $.tabactive = $('#' + contid);
       $.tabactive.pulse_init ();
@@ -525,28 +548,6 @@ function slidecalc(src, dir) {
     num: newnum
   };
 }
-
-$(document).ready(function() {
-  var nexts = $('a.graphnext');
-  nexts.shade();
-  var prevs = $('a.graphprev');
-  prevs.each(function () {
-    var thisq = $(this);
-    thisq.css('visibility', 'visible');
-    thisq.shade();
-    var re = /^.*-(\d+)$/
-    var match = re.exec(thisq.attr('id'));
-    var id = match[1];
-    var div = $('#graph-' + id)
-    var img = div.children('img');
-    var newsrc = slidecalc(img.attr('src'), -1).src;
-    $.ajax({
-      url: newsrc,
-      success: function () {
-        thisq.unshade();
-    }});
-  });
-});
 
 
 /******************************************************************************/

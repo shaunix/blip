@@ -180,8 +180,8 @@ def output_module (module, **kw):
     page.add_fact (pulse.utils.gettext ('Score'), str(module.mod_score))
 
     # Developers
-    #box = get_developers_box (module)
-    #page.add_sidebar_content (box)
+    box = get_developers_box (module)
+    page.add_sidebar_content (box)
 
     page.add_tab ('activity', pulse.utils.gettext ('Activity'))
     page.add_tab ('components', pulse.utils.gettext ('Components'))

@@ -455,7 +455,13 @@ div.zoom {
 .pagetabs {
   border-bottom: solid 1px #d3d7cf;
 }
-#reload, #throbber { float: right; }
+#reload, #throbber {
+  float: right;
+  margin: 0; padding: 0;
+  line-height: 0;
+  height: 22px;
+}
+#reload { padding: 2px 2px 0 0; }
 .pagetab {
   border-left: solid 1px #d3d7cf;
   border-right: solid 1px #d3d7cf;
