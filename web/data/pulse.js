@@ -107,10 +107,78 @@ $.fn.unshade = function (speed) {
 
 
 /******************************************************************************/
-/** Zoom images **/
 
-function init_zoom (ctxt) {
-  $('a.zoom', ctxt).click(function () {
+$.fn.pulse_init = function () {
+  /** AJAX Boxes **/
+  this.find ('.ajax').each(function (i) {
+    var div = $(this);
+    var link = $('a', div);
+    var href = link.attr('href');
+    var msg = div.text();
+    var src = $('img', div).attr('src');
+    div.empty();
+    var process = function (adiv) {
+      if (adiv.hasClass('stop')) {
+        clearInterval(div.timer);
+        div.remove();
+      } else {
+        var cur = adiv.current;
+        var next = cur.next('img');
+        if (next.length == 0)
+          next = adiv.children('img:first-child');
+        cur.css('display', 'none');
+        next.css('display', 'inline');
+        adiv.current = next;
+      }
+    };
+    var base = src.substring(0, src.length - 6);
+    for (var num = 0; num <= 35; num++) {
+      var url = base;
+      if (num < 10)
+        url = url + '0';
+      $('<img src="' + url + num + '.png">').css('display', 'none').appendTo(div);
+    }
+    div.append(' ' + msg);
+    div.current = div.children('img:first-child');
+    div.current.css('display', 'inline');
+    div.timer = setInterval(function () { process(div); }, 80);
+    div.slideDown('fast');
+    $.get(href, {}, function (data) {
+      var cont = $(data).css('display', 'none');
+      cont.insertAfter(div);
+      div.slideUp('fast', function () { div.addClass('stop'); });
+      cont.slideDown('fast');
+    });
+  });
+
+  /** Info Boxes **/
+  this.find ('div.info').each (function () {
+    var div = $(this);
+    div.children ('div.infotitle').click (function () {
+      var cont = div.children ('div.infocont');
+      var img = $(this).find ('img');
+      var visible = cont.is(':visible');
+      if (visible) {
+        $(this).css ({ backgroundColor: '#eeeeec' });
+        img.attr('src', img.attr('src').replace('open', 'up'))
+      } else {
+        $(this).css ({ backgroundColor: '#ffffff' });
+        img.attr('src', img.attr('src').replace('up', 'open'))
+      }
+      cont.onScreenSlideToggle ();
+    });
+  });
+
+  /** Calendars **/
+  this.find ('div.cal').each (function () {
+    var cal = $(this);
+    cal_display (cal);
+    cal.find ('td.calprev').click (function () { cal_prev (cal); });
+    cal.find ('td.calnext').click (function () { cal_next (cal); });
+  });
+
+  /** Zoom Images **/
+  this.find ('a.zoom').click(function () {
     var mask = $('<div class="mask"></div>');
     var body = $('body');
     var maskresize = function () {
@@ -153,57 +221,105 @@ function init_zoom (ctxt) {
       img.onload = function () { open(link, img) };
     }
     return false;
-  })
+  });
 }
 
-$(document).ready (function() { init_zoom($(document)) });
+$(document).ready (function () { $('html').pulse_init(); });
 
 
 /******************************************************************************/
-/** AJAX boxes **/
+/** Tabs **/
+
+function tab (tabid) {
+  location.hash = tabid;
+  $.tabs.removeClass ('pagetabactive');
+  var tab = $('#pagetab-' + tabid);
+  tab.addClass ('pagetabactive');
+
+  if ($.tabactive != null)
+    $.tabactive.hide();
+  var contid = 'pagecontent-' + tabid;
+
+  var cont = $('#' + contid);
+  if (cont.length > 0) {
+    $.tabactive = cont;
+    $.tabactive.show();
+  } else {
+    var thr = throbber ();
+    $('#reload').hide ();
+    $('#throbber').append (thr);  
+    var href = pulse_url + '?ajax=tab&tab=' + tabid;
+    $.get(href, {}, function (data) {
+      cont = $('<div></div>');
+      cont.attr ('id', contid);
+      cont.append ($(data));
+      cont.css ('display', 'none');
+      $.tabbed.children ('.pagecontent').append (cont);
+      thr.hide (0, function () { thr.addClass ('stop') });
+      $('#reload').show ();
+      $.tabactive = $('#' + contid);
+      $.tabactive.pulse_init ();
+      $.tabactive.show();
+    });
+  }
+}
+
+function reload () {
+  $.tabactive.remove();
+  tab (location.hash.substring(1));
+}
 
 $(document).ready (function () {
-  $('.ajax').each(function (i) {
-    var div = $(this);
-    var link = $('a', div);
-    var href = link.attr('href');
-    var msg = div.text();
-    var src = $('img', div).attr('src');
-    div.empty();
-    var process = function (adiv) {
-      if (adiv.hasClass('stop')) {
-        clearInterval(div.timer);
-        div.remove();
-      } else {
-        var cur = adiv.current;
-        var next = cur.next('img');
-        if (next.length == 0)
-          next = adiv.children('img:first-child');
-        cur.css('display', 'none');
-        next.css('display', 'inline');
-        adiv.current = next;
-      }
-    };
-    var base = src.substring(0, src.length - 6);
-    for (var num = 0; num <= 35; num++) {
-      var url = base;
-      if (num < 10)
-        url = url + '0';
-      $('<img src="' + url + num + '.png">').css('display', 'none').appendTo(div);
-    }
-    div.append(' ' + msg);
-    div.current = div.children('img:first-child');
-    div.current.css('display', 'inline');
-    div.timer = setInterval(function () { process(div); }, 80);
-    div.slideDown('fast');
-    $.get(href, {}, function (data) {
-      var cont = $(data).css('display', 'none');
-      cont.insertAfter(div);
-      div.slideUp('fast', function () { div.addClass('stop'); });
-      cont.slideDown('fast');
-    });
-  });
+  var tabbed = $('#pagetabbed');
+  if (tabbed.length == 0)
+    return;
+  var tabs = tabbed.children('.pagetabs').children('.pagetab');
+
+  $.tabbed = tabbed;
+  $.tabs = tabs;
+  $.tabactive = null;
+
+  tabid = location.hash;
+  if (tabid == '' || tabid == '#') {
+    tabid = tabs.attr('id');
+    tabid = tabid.substring(8);
+  } else {
+    tabid = tabid.substring(1);
+  }
+  tab (tabid);
 });
+
+
+/******************************************************************************/
+/** Trobber **/
+
+function throbber () {
+  var div = $('<div class="throbber"></div>');
+  var process = function () {
+    if (div.hasClass('stop')) {
+      clearInterval(div.timer);
+      div.remove();
+    } else {
+      var cur = div.current;
+      var next = cur.next('img');
+      if (next.length == 0)
+        next = div.children('img:first-child');
+      cur.css('display', 'none');
+      next.css('display', 'inline');
+      div.current = next;
+    }
+  };
+  for (var num = 0; num <= 35; num++) {
+    var url = pulse_data + 'process'
+    if (num < 10)
+      url = url + '0';
+    $('<img src="' + url + num + '.png">').css('display', 'none').appendTo(div);
+  }
+  div.current = div.children('img:first-child');
+  div.current.css('display', 'inline');
+  div.timer = setInterval(process, 80);
+  return div;
+}
 
 
 /******************************************************************************/
@@ -292,16 +408,6 @@ function cal_next (cal) {
   }
   cal_display (cal, month, year);
 }
-
-$(document).ready(function() {
-  var cals = $('div.cal');
-  cals.each (function () {
-    var cal = $(this);
-    cal_display (cal);
-    cal.find ('td.calprev').click (function () { cal_prev (cal); });
-    cal.find ('td.calnext').click (function () { cal_next (cal); });
-  });
-});
 
 
 /******************************************************************************/
@@ -488,29 +594,6 @@ $(document).ready (function () {
     }
 
     cont.onScreenSlideToggle ();
-  });
-});
-
-
-/******************************************************************************/
-/** Info boxes **/
-
-$(document).ready (function () {
-  $('div.info').each (function () {
-    var div = $(this);
-    div.children ('div.infotitle').click (function () {
-      var cont = div.children ('div.infocont');
-      var img = $(this).find ('img');
-      var visible = cont.is(':visible');
-      if (visible) {
-        $(this).css ({ backgroundColor: '#eeeeec' });
-        img.attr('src', img.attr('src').replace('open', 'up'))
-      } else {
-        $(this).css ({ backgroundColor: '#ffffff' });
-        img.attr('src', img.attr('src').replace('up', 'open'))
-      }
-      cont.onScreenSlideToggle ();
-    });
   });
 });
 

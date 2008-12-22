@@ -388,6 +388,8 @@ class Page (Widget, HttpComponent, ContentComponent):
         self._icon = kw.get ('icon')
         self._screenshot_file = None
         self._sidebar = None
+        self._url = kw.get ('url')
+        self._tabs = []
 
     def set_title (self, title):
         """Set the title of the page."""
@@ -396,6 +398,9 @@ class Page (Widget, HttpComponent, ContentComponent):
     def set_icon (self, icon):
         """Set the URL of an icon for the page."""
         self._icon = icon
+
+    def add_tab (self, id, title):
+        self._tabs.append ((id, title))
 
     def add_screenshot (self, screenshot):
         """
@@ -425,12 +430,17 @@ class Page (Widget, HttpComponent, ContentComponent):
         p (fd, ('<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN"'
                 ' "http://www.w3.org/TR/html4/strict.dtd">'))
         p (fd, '<html><head>')
-        p (fd, '  <title>%s</title>', self._title)
-        p (fd, '  <meta http-equiv="Content-type" content="text/html; charset=utf-8">')
-        p (fd, '  <link rel="stylesheet" href="%spulse.css">', pulse.config.data_root)
-        p (fd, '  <script language="javascript" type="text/javascript" src="%sjquery.js"></script>',
+        p (fd, '<title>%s</title>', self._title)
+        p (fd, '<meta http-equiv="Content-type" content="text/html; charset=utf-8">')
+        p (fd, '<link rel="stylesheet" href="%spulse.css">', pulse.config.data_root)
+        p (fd, '<script language="javascript" type="text/javascript">')
+        p (fd, 'pulse_data="%s"', pulse.config.data_root)
+        if self._url != None:
+            p (fd, 'pulse_url="%s";', self._url)
+        p (fd, '</script>')
+        p (fd, '<script language="javascript" type="text/javascript" src="%sjquery.js"></script>',
            pulse.config.data_root)
-        p (fd, '  <script language="javascript" type="text/javascript" src="%spulse.js"></script>',
+        p (fd, '<script language="javascript" type="text/javascript" src="%spulse.js"></script>',
            pulse.config.data_root)
         p (fd, '</head><body>')
         p (fd, '<ul id="general">')
@@ -458,11 +468,20 @@ class Page (Widget, HttpComponent, ContentComponent):
         p (fd, '</h1>')
         if self._sidebar != None:
             p (fd, '<div id="sidebar">')
+            if self._screenshot_file != None:
+                p (fd, '<div class="screenshot">', None, False)
+                url = self._screenshot_file.get_pulse_url ()
+                p (fd, '<a href="%s" class="zoom">', self._screenshot_file.pulse_url, False)
+                p (fd, '<img src="%s" width="%i" height="%i">',
+                   (self._screenshot_file.get_pulse_url ('thumbs'),
+                    self._screenshot_file.data['thumb_width'],
+                    self._screenshot_file.data['thumb_height']))
+                p (fd, '</a></div>')
             self._sidebar.output (fd=fd)
             p (fd, '</div><div id="bodyside">')
         else:
             p (fd, '<div id="body">')
-        if self._screenshot_file != None:
+        if self._screenshot_file != None and self._sidebar == None:
             p (fd, '<div class="screenshot">', None, False)
             url = self._screenshot_file.get_pulse_url ()
             p (fd, '<a href="%s" class="zoom">', self._screenshot_file.pulse_url, False)
@@ -473,6 +492,22 @@ class Page (Widget, HttpComponent, ContentComponent):
             p (fd, '</a></div>')
 
         self.output_page_content (fd=fd)
+
+        if len(self._tabs) > 0:
+            p (fd, '<div id="pagetabbed">')
+            p (fd, '<div id="reload">', None, False)
+            p (fd, '<a href="javascript:reload()"><img src="%sreload.png"></a></div>',
+               pulse.config.data_root)
+            p (fd, '<div id="throbber"></div>')
+            p (fd, '<div class="pagetabs">')
+            for id, title in self._tabs:
+                title = esc (title).replace(' ', '&nbsp;')
+                p (fd, '<span class="pagetab" id="pagetab-%s">', id, False)
+                p (fd, '<a href="javascript:tab(\'%s\')">' + title + '</a></span>', id)
+            p (fd, '</div>')
+            p (fd, '<div class="pagecontent">')
+            p (fd, '</div>')
+
         p (fd, '</div></body></html>')
         
     def output_page_content (self, fd=None):
@@ -509,6 +544,7 @@ class RecordPage (Page, SublinksComponent, FactsComponent):
     def __init__ (self, record, **kw):
         kw.setdefault ('title', record.title)
         kw.setdefault ('icon', record.icon_url)
+        kw.setdefault ('url', record.pulse_url)
         super (RecordPage, self).__init__ (**kw)
 
     def output_page_content (self, fd=None):

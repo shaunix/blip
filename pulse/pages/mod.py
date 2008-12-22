@@ -84,7 +84,11 @@ def main (path, query, http=True, fd=None):
         pass
 
     kw = {'path' : path, 'query' : query, 'http' : http, 'fd' : fd}
-    if query.get('ajax', None) == 'commits':
+    if query.get('ajax', None) == 'tab':
+        import time
+        time.sleep (4)
+        return output_ajax_tab (branch, **kw)
+    elif query.get('ajax', None) == 'commits':
         return output_ajax_commits (branch, **kw)
     elif query.get('ajax', None) == 'domain':
         return output_ajax_domain (branch, **kw)
@@ -175,33 +179,19 @@ def output_module (module, **kw):
     page.add_fact_sep ()
     page.add_fact (pulse.utils.gettext ('Score'), str(module.mod_score))
 
-    columns = pulse.html.ColumnBox (2)
-    page.add_content (columns)
-
     # Developers
-    box = get_developers_box (module)
-    columns.add_to_column (0, box)
+    #box = get_developers_box (module)
+    #page.add_sidebar_content (box)
 
-    # Activity
-    box = pulse.html.InfoBox (pulse.utils.gettext ('Activity'))
-    columns.add_to_column (0, box)
-    of = db.OutputFile.objects.filter (type='graphs', ident=module.ident, filename='commits-0.png')
-    try:
-        of = of[0]
-        graph = pulse.html.Graph.activity_graph (of, module.pulse_url)
-        box.add_content (graph)
-    except IndexError:
-        pass
-
-    div = pulse.html.AjaxBox (module.pulse_url + '?ajax=commits')
-    box.add_content (div)
+    page.add_tab ('activity', pulse.utils.gettext ('Activity'))
+    page.add_tab ('components', pulse.utils.gettext ('Components'))
 
     # Dependencies
     deps = db.ModuleDependency.get_related (subj=module)
     deps = pulse.utils.attrsorted (list(deps), ['pred', 'scm_module'])
     if len(deps) > 0:
-        box = pulse.html.InfoBox (pulse.utils.gettext ('Dependencies'))
-        columns.add_to_column (0, box)
+        box = pulse.html.SidebarBox (pulse.utils.gettext ('Dependencies'))
+        page.add_sidebar_content (box)
         d1 = pulse.html.Div()
         d2 = pulse.html.Div()
         box.add_content (d1)
@@ -216,68 +206,21 @@ def output_module (module, **kw):
             else:
                 d2.add_content (div)
 
-    # Programs and Libraries
-    for branchtype, title in (
-        ('Application', pulse.utils.gettext ('Applications')),
-        ('Capplet', pulse.utils.gettext ('Capplets')),
-        ('Applet', pulse.utils.gettext ('Applets')),
-        ('Library', pulse.utils.gettext ('Libraries')) ):
-
-        box = get_info_box (module, branchtype, title)
-        if box != None:
-            columns.add_to_column (1, box)
-
-    # Documents
-    box = pulse.html.InfoBox (pulse.utils.gettext ('Documents'))
-    columns.add_to_column (1, box)
-    docs = module.select_children ('Document')
-    docs = pulse.utils.attrsorted (list(docs), 'title')
-    if len(docs) > 0:
-        cont = pulse.html.ContainerBox ()
-        cont.set_id ('docs')
-        cont.add_sort_link ('title', pulse.utils.gettext ('title'), 1)
-        cont.add_sort_link ('status', pulse.utils.gettext ('status'), 0)
-        cont.add_sort_link ('translations', pulse.utils.gettext ('translations'), 0)
-        box.add_content (cont)
-        for doc in docs:
-            lbox = cont.add_link_box (doc)
-            lbox.add_fact (pulse.utils.gettext ('status'),
-                           pulse.html.StatusSpan (doc.data.get('status')))
-            res = doc.select_children ('Translation')
-            span = pulse.html.Span (str(res.count()))
-            span.add_class ('translations')
-            lbox.add_fact (pulse.utils.gettext ('translations'), span)
-    else:
-        box.add_content (pulse.html.AdmonBox (pulse.html.AdmonBox.warning,
-                                              pulse.utils.gettext ('No documents') ))
-
-    # Translations
-    box = pulse.html.InfoBox (pulse.utils.gettext ('Translations'))
-    columns.add_to_column (1, box)
-    domains = module.select_children ('Domain')
-    domains = pulse.utils.attrsorted (list(domains), 'title')
-    if len(domains) > 0:
-        for domain in domains:
-            domainid = domain.ident.split('/')[-2].replace('-', '_')
-            translations = db.Branch.objects.filter (type='Translation', parent=domain)
-            cont = pulse.html.ContainerBox ()
-            cont.set_id ('po_' + domainid)
-            cont.set_title (pulse.utils.gettext ('%s (%s)')
-                            % (domain.title, translations.count()))
-            cont.set_sortable_tag ('tr')
-            cont.set_sortable_class ('po_' + domainid)
-            cont.add_sort_link ('title', pulse.utils.gettext ('lang'), 1)
-            cont.add_sort_link ('percent', pulse.utils.gettext ('percent'))
-            div = pulse.html.AjaxBox (module.pulse_url + '?ajax=domain&domain=' +
-                                      urllib.quote (domain.ident))
-            cont.add_content (div)
-            box.add_content (cont)
-    else:
-        box.add_content (pulse.html.AdmonBox (pulse.html.AdmonBox.warning,
-                                              pulse.utils.gettext ('No domains') ))
 
     page.output(fd=kw.get('fd'))
 
+    return 0
+
+
+def output_ajax_tab (module, **kw):
+    query = kw.get ('query', {})
+    page = pulse.html.Fragment (http=kw.get('http', True))
+    tab = query.get('tab', None)
+    if tab == 'activity':
+        page.add_content (get_activity_box (module, **kw))
+    elif tab == 'components':
+        page.add_content (get_components_box (module, **kw))
+    page.output(fd=kw.get('fd'))
     return 0
 
 
@@ -452,8 +395,93 @@ def output_ajax_revfiles (module, **kw):
     return 0
 
 
+def get_activity_box (module, **kw):
+    box = pulse.html.Div ()
+    of = db.OutputFile.objects.filter (type='graphs', ident=module.ident, filename='commits-0.png')
+    try:
+        of = of[0]
+        graph = pulse.html.Graph.activity_graph (of, module.pulse_url)
+        box.add_content (graph)
+    except IndexError:
+        pass
+
+    revs = db.Revision.select_revisions (branch=module)
+    cnt = revs.count()
+    revs = revs[:10]
+    title = (pulse.utils.gettext('Showing %i of %i commits:') % (len(revs), cnt))
+    div = get_commits_div (module, revs, title)
+    box.add_content (div)
+
+    return box
+
+
+def get_components_box (module, **kw):
+    columns = pulse.html.ColumnBox (2)
+
+    # Programs and Libraries
+    for branchtype, title in (
+        ('Application', pulse.utils.gettext ('Applications')),
+        ('Capplet', pulse.utils.gettext ('Capplets')),
+        ('Applet', pulse.utils.gettext ('Applets')),
+        ('Library', pulse.utils.gettext ('Libraries')) ):
+
+        box = get_info_box (module, branchtype, title)
+        if box != None:
+            columns.add_to_column (1, box)
+
+    # Documents
+    box = pulse.html.InfoBox (pulse.utils.gettext ('Documents'))
+    columns.add_to_column (0, box)
+    docs = module.select_children ('Document')
+    docs = pulse.utils.attrsorted (list(docs), 'title')
+    if len(docs) > 0:
+        cont = pulse.html.ContainerBox ()
+        cont.set_id ('docs')
+        cont.add_sort_link ('title', pulse.utils.gettext ('title'), 1)
+        cont.add_sort_link ('status', pulse.utils.gettext ('status'), 0)
+        cont.add_sort_link ('translations', pulse.utils.gettext ('translations'), 0)
+        box.add_content (cont)
+        for doc in docs:
+            lbox = cont.add_link_box (doc)
+            lbox.add_fact (pulse.utils.gettext ('status'),
+                           pulse.html.StatusSpan (doc.data.get('status')))
+            res = doc.select_children ('Translation')
+            span = pulse.html.Span (str(res.count()))
+            span.add_class ('translations')
+            lbox.add_fact (pulse.utils.gettext ('translations'), span)
+    else:
+        box.add_content (pulse.html.AdmonBox (pulse.html.AdmonBox.warning,
+                                              pulse.utils.gettext ('No documents') ))
+
+    # Translations
+    box = pulse.html.InfoBox (pulse.utils.gettext ('Translations'))
+    columns.add_to_column (0, box)
+    domains = module.select_children ('Domain')
+    domains = pulse.utils.attrsorted (list(domains), 'title')
+    if len(domains) > 0:
+        for domain in domains:
+            domainid = domain.ident.split('/')[-2].replace('-', '_')
+            translations = db.Branch.objects.filter (type='Translation', parent=domain)
+            cont = pulse.html.ContainerBox ()
+            cont.set_id ('po_' + domainid)
+            cont.set_title (pulse.utils.gettext ('%s (%s)')
+                            % (domain.title, translations.count()))
+            cont.set_sortable_tag ('tr')
+            cont.set_sortable_class ('po_' + domainid)
+            cont.add_sort_link ('title', pulse.utils.gettext ('lang'), 1)
+            cont.add_sort_link ('percent', pulse.utils.gettext ('percent'))
+            div = pulse.html.AjaxBox (module.pulse_url + '?ajax=domain&domain=' +
+                                      urllib.quote (domain.ident))
+            cont.add_content (div)
+            box.add_content (cont)
+    else:
+        box.add_content (pulse.html.AdmonBox (pulse.html.AdmonBox.warning,
+                                              pulse.utils.gettext ('No domains') ))
+
+    return columns
+
 def get_developers_box (module):
-    box = pulse.html.InfoBox (pulse.utils.gettext ('Developers'))
+    box = pulse.html.SidebarBox (pulse.utils.gettext ('Developers'))
     rels = db.ModuleEntity.get_related (subj=module)
     if len(rels) > 0:
         people = {}

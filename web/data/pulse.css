@@ -110,6 +110,9 @@ body {
   position: absolute;
   right: 0px;
   width: 300px;
+  margin-top: -1px;
+  border-left: solid 1px #dcd7cf;
+  border-bottom: solid 1px #dcd7cf;
 }
 
 .notfound, .servererror {
@@ -200,13 +203,12 @@ td.col-first { padding: 0; }
 }
 
 .sidecont {
-  margin: 0 0 1em 0;
+  margin: 0 0 2em 0;
   padding: 0 0 0 0.5em;
 }
 .sidetitle {
   color: #555753;
   font-weight: bold;
-  border-top: solid 1px #888a85;
   margin: 0;
   padding: 0 0 0 0.5em;
 }
@@ -429,6 +431,11 @@ table.lbox table.facts td.fact-key { padding: 0 1em 0 0; }
 table.lbox table.facts td.fact-val { padding: 0 1em 0 0; }
 
 div.screenshot { float: right; margin: 1em 0 1em 1em; }
+#sidebar div.screenshot {
+  float: none;
+  text-align: center;
+  margin: 0 1em 2em 1em;
+}
 
 div.zoom {
   position: absolute;
@@ -441,32 +448,29 @@ div.zoom {
 .admon { font-style: italic; }
 .admon img { vertical-align: -10%; }
 
-.tabbed {
+#pagetabbed {
   margin: 1em 0 1em 0;
   padding: 0;
 }
-.tabbed-tabs {
+.pagetabs {
   border-bottom: solid 1px #d3d7cf;
 }
-.tabbed-tab-active {
-  border-left:  solid 1px #d3d7cf;
-  border-right:  solid 1px #d3d7cf;
-  border-top:  solid 1px #d3d7cf;
-  border-bottom:  solid 1px white;
-  padding: 0 1em 0 1em;
-}
-.tabbed-tab-link {
-  border-left:  solid 1px #d3d7cf;
-  border-right:  solid 1px #d3d7cf;
-  border-top:  solid 1px #d3d7cf;
+#reload, #throbber { float: right; }
+.pagetab {
+  border-left: solid 1px #d3d7cf;
+  border-right: solid 1px #d3d7cf;
+  border-top: solid 1px #d3d7cf;
+  -moz-border-radius-topleft: 4px;
+  -moz-border-radius-topright: 4px;
   padding: 0 1em 0 1em;
   background-color: #eeeeec;
 }
-.tabbed-content {
-  border-left: solid 1px #d3d7cf;
-  border-right: solid 1px #d3d7cf;
-  border-bottom: solid 1px #d3d7cf;
-  padding: 1em;
+.pagetabactive {
+  border-bottom: solid 1px white;
+  background-color: white;
+}
+.pagecontent {
+  padding-top: 1em;
 }
 .vbox-el { margin-top: 1em; }
 
