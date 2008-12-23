@@ -147,6 +147,7 @@ $.fn.pulse_init = function () {
       var cont = $(data).css('display', 'none');
       cont.insertAfter(div);
       div.slideUp('fast', function () { div.addClass('stop'); });
+      cont.pulse_init ();
       cont.slideDown('fast');
     });
   });
