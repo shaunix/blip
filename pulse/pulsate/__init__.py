@@ -156,4 +156,4 @@ def update_schedule (obj, url, **kw):
     obj.data['schedule'] = sorted (schedule, cmp=lambda x, y: cmp (x[0], y[0]))
     obj.save ()
 
-__all__ = ['docs','i18n','icons','init','modules','people','sets']
+__all__ = ['docs','i18n','icons','init','modules','people','queue','sets']

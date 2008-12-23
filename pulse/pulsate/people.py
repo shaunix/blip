@@ -166,6 +166,7 @@ def update_person (person, **kw):
         else:
             pulse.utils.log ('Skipping blog %s' % bident)
 
+    db.Queue.remove ('people', person.ident)
     person.save()
 
 
