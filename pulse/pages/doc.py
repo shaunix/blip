@@ -82,7 +82,9 @@ def main (path, query, http=True, fd=None):
         pass
 
     kw = {'path' : path, 'query' : query, 'http' : http, 'fd' : fd}
-    if query.get('ajax', None) == 'commits':
+    if query.get('ajax', None) == 'tab':
+        return output_ajax_tab (doc, **kw)
+    elif query.get('ajax', None) == 'commits':
         return output_ajax_commits (doc, **kw)
     elif query.get('ajax', None) == 'figures':
         return output_ajax_figures (doc, **kw)
@@ -164,8 +166,8 @@ def output_doc (doc, **kw):
     page.add_content (columns)
 
     # Release Info
-    box = pulse.html.InfoBox (pulse.utils.gettext ('Release Info'))
-    columns.add_to_column (0, box)
+    box = pulse.html.SidebarBox (pulse.utils.gettext ('Release Info'))
+    page.add_sidebar_content (box)
     facts = pulse.html.FactList ()
     facts.add_term ('Status:')
     facts.add_entry (doc.data.get ('status', 'none'))
@@ -188,8 +190,8 @@ def output_doc (doc, **kw):
     box.add_content (facts)
 
     # Developers
-    box = pulse.html.InfoBox (pulse.utils.gettext ('Developers'))
-    columns.add_to_column (0, box)
+    box = pulse.html.SidebarBox (pulse.utils.gettext ('Developers'))
+    page.add_sidebar_content (box)
     rels = db.DocumentEntity.get_related (subj=doc)
     if len(rels) > 0:
         people = {}
@@ -211,9 +213,97 @@ def output_doc (doc, **kw):
         box.add_content (pulse.html.AdmonBox (pulse.html.AdmonBox.warning,
                                               pulse.utils.gettext ('No developers') ))
 
-    # Activity
-    box = pulse.html.InfoBox (pulse.utils.gettext ('Activity'))
-    columns.add_to_column (0, box)
+    page.add_tab ('activity', pulse.utils.gettext ('Activity'))
+    page.add_tab ('components', pulse.utils.gettext ('Components'))
+
+    page.output(fd=kw.get('fd'))
+    return 0
+
+
+def output_ajax_figures (doc, **kw):
+    page = pulse.html.Fragment (http=kw.get('http', True))
+    figures = doc.data.get('figures', {})
+    page.add_content (get_figures (doc, figures))
+    page.output(fd=kw.get('fd'))
+    return 0
+
+
+def output_ajax_graphmap (doc, **kw):
+    query = kw.get ('query', {})
+    page = pulse.html.Fragment (http=kw.get('http', True))
+    id = query.get('id')
+    num = query.get('num')
+    filename = query.get('filename')
+    
+    of = db.OutputFile.objects.filter (type='graphs', ident=doc.ident, filename=filename)
+    try:
+        of = of[0]
+        graph = pulse.html.Graph.activity_graph (of, doc.pulse_url,
+                                                 count=int(id), num=int(num), map_only=True)
+        page.add_content (graph)
+    except IndexError:
+        pass
+    
+    page.output(fd=kw.get('fd'))
+    return 0
+
+
+def output_ajax_xmlfiles (doc, **kw):
+    page = pulse.html.Fragment (http=kw.get('http', True))
+    xmlfiles = doc.data.get('xmlfiles', [])
+    page.add_content (get_xmlfiles (doc, xmlfiles))
+    page.output(fd=kw.get('fd'))
+    return 0
+
+
+def output_ajax_tab (doc, **kw):
+    query = kw.get ('query', {})
+    page = pulse.html.Fragment (http=kw.get('http', True))
+    tab = query.get('tab', None)
+    if tab == 'activity':
+        page.add_content (get_activity_box (doc, **kw))
+    elif tab == 'components':
+        page.add_content (get_components_box (doc, **kw))
+    page.output(fd=kw.get('fd'))
+    return 0
+
+
+def output_ajax_commits (doc, **kw):
+    page = pulse.html.Fragment (http=kw.get('http', True))
+    query = kw.get('query', {})
+    weeknum = query.get('weeknum', None)
+    files = [os.path.join (doc.scm_dir, f) for f in doc.data.get ('xmlfiles', [])]
+    if weeknum != None:
+        weeknum = int(weeknum)
+        thisweek = pulse.utils.weeknum (datetime.datetime.now())
+        ago = thisweek - weeknum
+        revs = db.Revision.select_revisions (branch=doc.parent, files=files, weeknum=weeknum)
+        cnt = revs.count()
+        revs = revs[:20]
+    else:
+        revs = db.Revision.select_revisions (branch=doc.parent, files=files)
+        cnt = revs.count()
+        revs = revs[:10]
+    if weeknum == None:
+        title = (pulse.utils.gettext('Showing %i of %i commits:')
+                 % (len(revs), cnt))
+    elif ago == 0:
+        title = (pulse.utils.gettext('Showing %i of %i commits from this week:')
+                 % (len(revs), cnt))
+    elif ago == 1:
+        title = (pulse.utils.gettext('Showing %i of %i commits from last week:')
+                 % (len(revs), cnt))
+    else:
+        title = (pulse.utils.gettext('Showing %i of %i commits from %i weeks ago:')
+                 % (len(revs), cnt, ago))
+    div = get_commits_div (doc, revs, title)
+    page.add_content (div)
+    page.output(fd=kw.get('fd'))
+    return 0
+
+
+def get_activity_box (doc, **kw):
+    box = pulse.html.Div ()
     of = db.OutputFile.objects.filter (type='graphs', ident=doc.ident, filename='commits-0.png')
     try:
         of = of[0]
@@ -222,8 +312,19 @@ def output_doc (doc, **kw):
     except IndexError:
         pass
 
-    div = pulse.html.AjaxBox (doc.pulse_url + '?ajax=commits')
+    files = [os.path.join (doc.scm_dir, f) for f in doc.data.get ('xmlfiles', [])]
+    revs = db.Revision.select_revisions (branch=doc.parent, files=files)
+    cnt = revs.count()
+    revs = revs[:10]
+    title = (pulse.utils.gettext('Showing %i of %i commits:') % (len(revs), cnt))
+    div = get_commits_div (doc, revs, title)
     box.add_content (div)
+
+    return box
+
+
+def get_components_box (doc, **kw):
+    columns = pulse.html.ColumnBox (2)
 
     # Files
     box = pulse.html.InfoBox (pulse.utils.gettext ('Files'))
@@ -248,7 +349,7 @@ def output_doc (doc, **kw):
 
     # Translations
     box = pulse.html.InfoBox (pulse.utils.gettext ('Translations'))
-    columns.add_to_column (1, box)
+    columns.add_to_column (0, box)
     cont = pulse.html.ContainerBox ()
     cont.set_id ('po')
     box.add_content (cont)
@@ -315,79 +416,7 @@ def output_doc (doc, **kw):
             elif percent >= 50:
                 grid.add_row_class (idx, 'po50')
 
-    page.output(fd=kw.get('fd'))
-
-    return 0
-
-
-def output_ajax_figures (doc, **kw):
-    page = pulse.html.Fragment (http=kw.get('http', True))
-    figures = doc.data.get('figures', {})
-    page.add_content (get_figures (doc, figures))
-    page.output(fd=kw.get('fd'))
-    return 0
-
-
-def output_ajax_graphmap (doc, **kw):
-    query = kw.get ('query', {})
-    page = pulse.html.Fragment (http=kw.get('http', True))
-    id = query.get('id')
-    num = query.get('num')
-    filename = query.get('filename')
-    
-    of = db.OutputFile.objects.filter (type='graphs', ident=doc.ident, filename=filename)
-    try:
-        of = of[0]
-        graph = pulse.html.Graph.activity_graph (of, doc.pulse_url,
-                                                 count=int(id), num=int(num), map_only=True)
-        page.add_content (graph)
-    except IndexError:
-        pass
-    
-    page.output(fd=kw.get('fd'))
-    return 0
-
-
-def output_ajax_xmlfiles (doc, **kw):
-    page = pulse.html.Fragment (http=kw.get('http', True))
-    xmlfiles = doc.data.get('xmlfiles', [])
-    page.add_content (get_xmlfiles (doc, xmlfiles))
-    page.output(fd=kw.get('fd'))
-    return 0
-
-
-def output_ajax_commits (doc, **kw):
-    page = pulse.html.Fragment (http=kw.get('http', True))
-    query = kw.get('query', {})
-    weeknum = query.get('weeknum', None)
-    files = [os.path.join (doc.scm_dir, f) for f in doc.data.get ('xmlfiles', [])]
-    if weeknum != None:
-        weeknum = int(weeknum)
-        thisweek = pulse.utils.weeknum (datetime.datetime.now())
-        ago = thisweek - weeknum
-        revs = db.Revision.select_revisions (branch=doc.parent, files=files, weeknum=weeknum)
-        cnt = revs.count()
-        revs = revs[:20]
-    else:
-        revs = db.Revision.select_revisions (branch=doc.parent, files=files)
-        cnt = revs.count()
-        revs = revs[:10]
-    if weeknum == None:
-        title = (pulse.utils.gettext('Showing %i of %i commits:')
-                 % (len(revs), cnt))
-    elif ago == 0:
-        title = (pulse.utils.gettext('Showing %i of %i commits from this week:')
-                 % (len(revs), cnt))
-    elif ago == 1:
-        title = (pulse.utils.gettext('Showing %i of %i commits from last week:')
-                 % (len(revs), cnt))
-    else:
-        title = (pulse.utils.gettext('Showing %i of %i commits from %i weeks ago:')
-                 % (len(revs), cnt, ago))
-    div = get_commits_div (doc, revs, title)
-    page.add_content (div)
-    page.output(fd=kw.get('fd'))
-    return 0
+    return columns
 
 
 def get_xmlfiles (doc, xmlfiles):

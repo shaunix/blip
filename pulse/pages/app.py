@@ -139,7 +139,7 @@ def output_app (app, **kw):
 
     # Developers
     box = pulse.pages.mod.get_developers_box (app.parent)
-    columns.add_to_column (0, box)
+    page.add_sidebar_content (box)
 
     # Documentation
     rels = db.Documentation.get_related (subj=app)
