@@ -489,7 +489,7 @@ function slide (id, dir) {
   var newmap = $('#' + newmapid);
   if (newmap.length == 0) {
     var filename = newdata.filename;
-    var graphurl = window.location + '?ajax=graphmap&id=' + id + '&num=' + newdata.num + '&filename=' + filename;
+    var graphurl = pulse_url + '?ajax=graphmap&id=' + id + '&num=' + newdata.num + '&filename=' + filename;
     $.get(graphurl, function (data) {
       div.append(data);
     });
@@ -528,7 +528,7 @@ function slide (id, dir) {
     });
     curdiv.iter = 0;
     var slideiter = function () {
-      curdiv.iter += 3;
+      curdiv.iter += 6;
       if (curdiv.iter > width) { curdiv.iter = width; }
       curdiv.css({
         width: (width - curdiv.iter)
@@ -613,7 +613,7 @@ function replace (id, url) {
   var el = $('#' + id);
   var par = el.parents('.infocont');
   if (par.length > 0) {
-    par.shade();
+   par.shade();
   }
   $.get(url, function (data) {
     if (document.createRange) {
