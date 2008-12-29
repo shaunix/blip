@@ -127,7 +127,7 @@ class PulseDebugCursor (object):
                 if select:
                     PulseDebugCursor.debug_select_count += 1
                     PulseDebugCursor.debug_select_time += diff
-                print '  ' + ('%.3f' % diff) + ' -- ' + text.replace('"', '')
+                print '  ' + ('%.3f' % diff) + ' -- ' + text
 
     def execute_many (self, sql, param_list):
         return self.cursor.executemany (sql, param_list)
@@ -582,27 +582,26 @@ class Branch (PulseRecord, models.Model):
         if isinstance (stattype, basestring):
             stattype = [stattype]
         for stype in stattype:
-            tname = stype + '_Statistic'
             # I'm splicing stype directly in, because it turns out that when we use
             # params, Django merges stuff together in whatever order it sees fit and
             # gets the order of the parameters wrong when there are multiple types.
             # The statistic types are completely under our control, and we only ever
             # use alphanumeric, so there's no real risk of an injection.
-            sel = sel.extra (tables = ['Statistic AS ' + tname],
-                             select = {stype + '_maxdaynum' :
-                                       'SELECT daynum FROM Statistic' +
-                                       ' WHERE Statistic.branch_id = Branch.id' +
-                                       ' AND Statistic.type = "' + stype + '"' +
-                                       ' ORDER BY daynum DESC LIMIT 1',
-                                       stype + '_daynum' : tname + '.daynum',
-                                       stype + '_stat1' : tname + '.stat1',
-                                       stype + '_stat2' : tname + '.stat2',
-                                       stype + '_total' : tname + '.total'
+            sel = sel.extra (tables = ['Statistic'],
+                             select = {stype + '_daynum' : 'Statistic.daynum',
+                                       stype + '_stat1' : 'Statistic.stat1',
+                                       stype + '_stat2' : 'Statistic.stat2',
+                                       stype + '_total' : 'Statistic.total'
                                        },
-                             where = [tname + '.type = "' + stype + '"',
-                                      tname + '.branch_id = Branch.id',
-                                      tname + '.daynum = ' + stype + '_maxdaynum'])
-        return sel
+                             where = ['Statistic.type = "' + stype + '"',
+                                      'Statistic.branch_id = Branch.id',
+                                      ('Statistic.daynum = (' +
+                                       'SELECT daynum FROM Statistic AS MaxStatistic' +
+                                       ' WHERE MaxStatistic.branch_id = Branch.id' +
+                                       ' AND MaxStatistic.type = "' + stype + '"' +
+                                       ' ORDER BY daynum DESC LIMIT 1)')
+                                      ])
+            return sel
 
 
 class Entity (PulseRecord, models.Model):
