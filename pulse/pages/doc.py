@@ -128,7 +128,7 @@ def output_doc (doc, **kw):
     rels = db.SetModule.get_related (pred=doc.parent)
     if len(rels) > 0:
         sets = pulse.utils.attrsorted ([rel.subj for rel in rels], 'title')
-        span = pulse.html.Span (*[pulse.html.Link(rset.pulse_url + '/doc', rset.title)
+        span = pulse.html.Span (*[pulse.html.Link(rset.pulse_url + '#doc', rset.title)
                                   for rset in sets])
         span.set_divider (pulse.html.BULLET)
         page.add_fact (pulse.utils.gettext ('Release Sets'), span)
