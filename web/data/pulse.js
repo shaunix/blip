@@ -289,60 +289,60 @@ $(document).ready (function () { $('html').pulse_init(); });
 
 function tab (tabid) {
   location.hash = tabid;
-  $.tabs.removeClass ('pagetabactive');
-  var tab = $('#pagetab-' + tabid);
-  tab.addClass ('pagetabactive');
+  $.tabs.removeClass ('tabactive');
+  var tab = $('#tab-' + tabid);
+  tab.addClass ('tabactive');
 
-  if ($.tabactive != null)
-    $.tabactive.hide();
-  var contid = 'pagecontent-' + tabid;
+  if ($.pane != null)
+    $.pane.hide();
+  var contid = 'pane-' + tabid;
 
   var cont = $('#' + contid);
   if (cont.length > 0) {
-    $.tabactive = cont;
-    $.tabactive.show();
+    $.pane = cont;
+    $.pane.show();
   } else {
     var thr = throbber ();
     $('#reload').hide ();
     $('#throbber').append (thr).show ();
     var href = pulse_url + '?ajax=tab&tab=' + tabid;
     $.get(href, {}, function (data) {
-      cont = $('<div class="pagecontenti"></div>');
+      cont = $('<div class="pane"></div>');
       cont.attr ('id', contid);
       cont.append ($(data));
       cont.css ('display', 'none');
-      $.tabbed.children ('.pagecontent').append (cont);
+      $.tabbed.children ('#panes').append (cont);
       thr.hide (0, function () { thr.addClass ('stop') });
       $('#throbber').hide ();
       $('#reload').show ();
-      $.tabactive = $('#' + contid);
-      $.tabactive.pulse_init ();
-      $.tabactive.show();
+      $.pane = $('#' + contid);
+      $.pane.pulse_init ();
+      $.pane.show();
     });
   }
 }
 
 function reload () {
   if (location.hash.substring(1) != 'info') {
-    $.tabactive.remove();
+    $.pane.remove();
     tab (location.hash.substring(1));
   }
 }
 
 $(document).ready (function () {
-  var tabbed = $('#pagetabbed');
+  var tabbed = $('#tabbed');
   if (tabbed.length == 0)
     return;
-  var tabs = tabbed.children('.pagetabs').children('.pagetab');
+  var tabs = tabbed.children('#tabs').children('.tab');
 
   $.tabbed = tabbed;
   $.tabs = tabs;
-  $.tabactive = null;
+  $.pane = null;
 
   tabid = location.hash;
   if (tabid == '' || tabid == '#') {
     tabid = tabs.attr('id');
-    tabid = tabid.substring(8);
+    tabid = tabid.substring(4);
   } else {
     tabid = tabid.substring(1);
   }

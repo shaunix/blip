@@ -480,25 +480,28 @@ class Page (Widget, HttpComponent, ContentComponent, SublinksComponent, FactsCom
             p (fd, '</a></div>')
 
         if len(self._tabs) == 0:
+            p (fd, '<div id="notabs">')
             FactsComponent.output (self, fd=fd)
         self.output_page_content (fd=fd)
+        if len(self._tabs) == 0:
+            p (fd, '</div>')
 
         if len(self._tabs) > 0:
-            p (fd, '<div id="pagetabbed">')
+            p (fd, '<div id="tabbed">')
             p (fd, '<div id="reload"><a href="javascript:reload()"><img src="%sreload.png"></a></div>',
                pulse.config.data_root)
             p (fd, '<div id="throbber"></div>')
-            p (fd, '<div class="pagetabs">')
+            p (fd, '<div id="tabs">')
             if self.has_facts ():
                 self._tabs = [('info', 'Info')] + self._tabs
             for id, title in self._tabs:
                 title = esc (title).replace(' ', '&nbsp;')
-                p (fd, '<span class="pagetab" id="pagetab-%s">', id, False)
+                p (fd, '<span class="tab" id="tab-%s">', id, False)
                 p (fd, '<a href="javascript:tab(\'%s\')">' + title + '</a></span>', id)
             p (fd, '</div>')
-            p (fd, '<div class="pagecontent">')
+            p (fd, '<div id="panes">')
             if self.has_facts ():
-                p (fd, '<div class="pagecontenti" id="pagecontent-info">')
+                p (fd, '<div class="pane" id="pane-info">')
                 FactsComponent.output (self, fd=fd)
                 p (fd, '</div>')
             p (fd, '</div>')

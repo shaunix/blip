@@ -85,6 +85,7 @@ td.col-first { padding: 0; }
 
 .sublinks {
   padding: 0 2.89em 0 2.89em;
+  margin-bottom: 1em;
   font-size: 0.83em;
 }
 
@@ -357,10 +358,15 @@ div.zoom {
 .admon { font-style: italic; }
 .admon img { vertical-align: -10%; }
 
-#pagetabbed {
-  margin: 2em 0 0 0;
+/** Tabs **/
+#notabs {
+  background-color: white;
+  border-top: solid 1px #d3d7cf;
+  margin-top: 1em;
+  padding: 1em 2.4em 0 2.4em;
 }
-.pagetabs {
+#tabbed { margin: 1em 0 0 0; }
+#tabs {
   padding: 0 2.4em 0 2.4em;
   border-bottom: solid 1px #d3d7cf;
 }
@@ -371,7 +377,7 @@ div.zoom {
   height: 22px;
 }
 #reload { padding: 2px 2px 0 0; }
-.pagetab {
+.tab {
   border-left: solid 1px #d3d7cf;
   border-right: solid 1px #d3d7cf;
   border-top: solid 1px #d3d7cf;
@@ -380,17 +386,17 @@ div.zoom {
   padding: 0 1em 0 1em;
   background-color: #eeeeec;
 }
-.pagetabactive {
+.tabactive {
   border-bottom: solid 1px white;
   background-color: white;
 }
-.pagecontent {
+#panes {
   background-color: white;
   padding: 1em 2.4em 0 2.4em;
 }
-.pagecontenti {
-  display: none;
-}
+.pane { display: none; }
+
+
 .vbox-el { margin-top: 1em; }
 
 a.elliplnk { font-style: normal; cursor: pointer; }
