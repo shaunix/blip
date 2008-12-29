@@ -168,6 +168,9 @@ class FactsComponent (Component):
     def add_fact_sep (self):
         self._facts.append (None)
 
+    def has_facts (self):
+        return len(self._facts) > 0
+
     def output (self, fd=None):
         """Output the HTML."""
         if len (self._facts) == 0:
@@ -369,7 +372,7 @@ class HttpComponent (Component):
 ################################################################################
 ## Pages
 
-class Page (Widget, HttpComponent, ContentComponent):
+class Page (Widget, HttpComponent, ContentComponent, SublinksComponent, FactsComponent):
     """
     Complete web page.
 
@@ -443,22 +446,6 @@ class Page (Widget, HttpComponent, ContentComponent):
         p (fd, '<script language="javascript" type="text/javascript" src="%spulse.js"></script>',
            pulse.config.data_root)
         p (fd, '</head><body>')
-        p (fd, '<ul id="general">')
-        p (fd, ('  <li id="siteaction-gnome_home" class="home">'
-                '<a href="http://www.gnome.org/">Home</a></li>'))
-        p (fd, ('  <li id="siteaction-gnome_news">'
-                '<a href="http://news.gnome.org">News</a></li>'))
-        p (fd, ('  <li id="siteaction-gnome_projects">'
-                '<a href="http://www.gnome.org/projects/">Projects</a></li>'))
-        p (fd, ('  <li id="siteaction-gnome_art">'
-                '<a href="http://art.gnome.org">Art</a></li>'))
-        p (fd, ('  <li id="siteaction-gnome_support">'
-                '<a href="http://www.gnome.org/support/">Support</a></li>'))
-        p (fd, ('  <li id="siteaction-gnome_development">'
-                '<a href="http://developer.gnome.org">Development</a></li>'))
-        p (fd, ('  <li id="siteaction-gnome_community">'
-                '<a href="http://www.gnome.org/community/">Community</a></li>'))
-        p (fd, '</ul>')
         p (fd, '<div id="header"><a href="%s"><img src="%s" alt="Pulse"></a></div>',
            (pulse.config.web_root, pulse.config.data_root + 'pulse-logo.png'))
         p (fd, '<h1>')
@@ -481,6 +468,7 @@ class Page (Widget, HttpComponent, ContentComponent):
             p (fd, '</div><div id="bodyside">')
         else:
             p (fd, '<div id="body">')
+        SublinksComponent.output (self, fd=fd)
         if self._screenshot_file != None and self._sidebar == None:
             p (fd, '<div class="screenshot">', None, False)
             url = self._screenshot_file.get_pulse_url ()
@@ -491,6 +479,8 @@ class Page (Widget, HttpComponent, ContentComponent):
                 self._screenshot_file.data['thumb_height']))
             p (fd, '</a></div>')
 
+        if len(self._tabs) == 0:
+            FactsComponent.output (self, fd=fd)
         self.output_page_content (fd=fd)
 
         if len(self._tabs) > 0:
@@ -499,12 +489,18 @@ class Page (Widget, HttpComponent, ContentComponent):
                pulse.config.data_root)
             p (fd, '<div id="throbber"></div>')
             p (fd, '<div class="pagetabs">')
+            if self.has_facts ():
+                self._tabs = [('info', 'Info')] + self._tabs
             for id, title in self._tabs:
                 title = esc (title).replace(' ', '&nbsp;')
                 p (fd, '<span class="pagetab" id="pagetab-%s">', id, False)
                 p (fd, '<a href="javascript:tab(\'%s\')">' + title + '</a></span>', id)
             p (fd, '</div>')
             p (fd, '<div class="pagecontent">')
+            if self.has_facts ():
+                p (fd, '<div class="pagecontenti" id="pagecontent-info">')
+                FactsComponent.output (self, fd=fd)
+                p (fd, '</div>')
             p (fd, '</div>')
 
         p (fd, '</div></body></html>')
@@ -532,7 +528,7 @@ class Fragment (Widget, HttpComponent, ContentComponent):
         ContentComponent.output (self, fd=fd)
 
 
-class RecordPage (Page, SublinksComponent, FactsComponent):
+class RecordPage (Page):
     """
     Convenience wrapper for Page for Records.
 
@@ -545,12 +541,6 @@ class RecordPage (Page, SublinksComponent, FactsComponent):
         kw.setdefault ('icon', record.icon_url)
         kw.setdefault ('url', record.pulse_url)
         super (RecordPage, self).__init__ (**kw)
-
-    def output_page_content (self, fd=None):
-        """Output the contents of the page."""
-        SublinksComponent.output (self, fd=fd)
-        FactsComponent.output (self, fd=fd)
-        Page.output_page_content (self, fd=fd)
 
 
 class PageNotFound (Page):

@@ -307,7 +307,7 @@ function tab (tabid) {
     $('#throbber').append (thr).show ();
     var href = pulse_url + '?ajax=tab&tab=' + tabid;
     $.get(href, {}, function (data) {
-      cont = $('<div></div>');
+      cont = $('<div class="pagecontenti"></div>');
       cont.attr ('id', contid);
       cont.append ($(data));
       cont.css ('display', 'none');
@@ -323,8 +323,10 @@ function tab (tabid) {
 }
 
 function reload () {
-  $.tabactive.remove();
-  tab (location.hash.substring(1));
+  if (location.hash.substring(1) != 'info') {
+    $.tabactive.remove();
+    tab (location.hash.substring(1));
+  }
 }
 
 $(document).ready (function () {
