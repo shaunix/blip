@@ -31,8 +31,6 @@ import pulse.scm
 import pulse.parsers
 import pulse.utils
 
-from sqlobject.sqlbuilder import *
-
 synop = 'update information about translations'
 usage_extra = '[ident]'
 args = pulse.utils.odict()
