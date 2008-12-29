@@ -14,10 +14,12 @@ body {
 
 #body {
   margin: 0; padding: 0;
+  border-top: solid 1px #f7f7f5;
   background-color: #f7f7f5;
 }
 #bodyside {
   margin: 0 300px 0 0; padding: 0;
+  border-top: solid 1px #f7f7f5;
   background-color: #f7f7f5;
 }
 #sidebar {
@@ -41,7 +43,6 @@ h1 {
   background-color: #f7f7f5;
   margin: 0;
   padding: 0.2em 300px 0.2em 1.67em;
-  border-top: solid 1px #d3d7cf;
 }
 h1 img { vertical-align: middle; }
 
