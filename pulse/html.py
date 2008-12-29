@@ -1633,7 +1633,9 @@ def esc (obj):
     an interpolation.  Strings are simply escaped, tuples have their elements
     escaped, and dictionaries are wrapped with escdict.
     """
-    if isinstance (obj, basestring):
+    if isinstance (obj, unicode):
+        return cgi.escape (obj, True).encode('utf-8')
+    elif isinstance (obj, basestring):
         return cgi.escape (obj, True)
     elif isinstance (obj, tuple):
         return tuple (map (esc, obj))

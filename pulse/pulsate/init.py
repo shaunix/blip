@@ -34,4 +34,7 @@ def main (argv, options={}):
         os.makedirs (pulse.config.scratch_dir)
     if not os.path.exists (pulse.config.web_files_dir):
         os.makedirs (pulse.config.web_files_dir)
-    django.core.management.syncdb (0, False)
+    try:
+        django.core.management.syncdb (0, False)
+    except:
+        django.core.management.call_command ('syncdb')
