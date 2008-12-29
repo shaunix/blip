@@ -134,9 +134,6 @@ def output_app (app, **kw):
             span.add_content (pulse.html.Link (app.mod_person))
         page.add_fact (pulse.utils.gettext ('Last Modified'), span)
 
-    columns = pulse.html.ColumnBox (2)
-    page.add_content (columns)
-
     # Developers
     box = pulse.pages.mod.get_developers_box (app.parent)
     page.add_sidebar_content (box)
@@ -144,7 +141,7 @@ def output_app (app, **kw):
     # Documentation
     rels = db.Documentation.get_related (subj=app)
     box = pulse.html.InfoBox (pulse.utils.gettext ('Documentation'))
-    columns.add_to_column (1, box)
+    page.add_content (box)
     if len(rels) > 0:
         docs = pulse.utils.attrsorted ([rel.pred for rel in rels], 'title')
         for doc in docs:
