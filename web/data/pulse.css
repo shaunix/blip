@@ -65,8 +65,8 @@ pre {
 }
 .hr {
   border: none;
-  background-color: #eeeeec;
-  height: 2px;
+  background-color: #d3d7cf;
+  height: 1px;
   margin: 6px 24px 6px 0;
 }
 .hr hr { display: none; }
