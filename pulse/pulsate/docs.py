@@ -439,8 +439,11 @@ def process_images_lang (doc, checkout, lang, figs, ofs, **kw):
             doc.data['screenshot'][lang] = of.id
     for of in ofs_by_source.values():
         pulse.utils.log ('Deleting figure %s/%s' % (of.subdir, of.filename))
-        os.remove (of.get_file_path())
-        os.remove (of.get_file_path('thumbs'))
+        try:
+            os.remove (of.get_file_path())
+            os.remove (of.get_file_path('thumbs'))
+        except:
+            pass
         of.delete()
 
 
