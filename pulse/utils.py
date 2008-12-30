@@ -20,7 +20,7 @@
 
 """Various utility functions"""
 
-from datetime import datetime
+from datetime import datetime, timedelta
 import HTMLParser
 import math
 import os.path
@@ -49,6 +49,13 @@ def weeknum (dt):
     Return the number of weeks since the epoch for a given date
     """
     return ((dt - epoch_week).days // 7) + 1
+
+
+def weeknumday (num):
+    """
+    Return the the first day of the givin week number
+    """
+    return (epoch_week + timedelta(days=7*(num-1)))
 
 
 def score (stats):

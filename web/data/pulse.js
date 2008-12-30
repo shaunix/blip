@@ -481,6 +481,7 @@ function slide (id, dir) {
   var curimg = div.children('img');
   var width = curimg.width();
   div.css({
+    overflow: 'hidden',
     width: width,
     height: curimg.height()
   });
@@ -508,11 +509,13 @@ function slide (id, dir) {
 
   nextlink.shade();
   var nextsrc = slidecalc(newsrc, dir).src;
-  $.ajax({
-    url: nextsrc,
-    success: function () {
-      nextlink.unshade();
-  }});
+  if (nextsrc != undefined) {
+    $.ajax({
+      url: nextsrc,
+      success: function () {
+        nextlink.unshade();
+    }});
+  }
 
   var slidego = function () {
     curimg.wrap('<div class="graphaway"></div>'); 
@@ -551,6 +554,7 @@ function slide (id, dir) {
         clearInterval(div[0].timer);
         div[0].timer = undefined;
         curdiv.remove();
+        div.css ({overflow: 'normal'});
       }
     };
     if (dir == -1) {

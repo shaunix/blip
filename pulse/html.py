@@ -1191,7 +1191,7 @@ class Graph (Widget):
         self._map_only = kw.get('map_only', False)
         self._comments = []
 
-    def add_comment (self, coords, comment, href=None):
+    def add_comment (self, coords, label, comment, href=None):
         """
         Add a comment to the graph.
 
@@ -1199,7 +1199,7 @@ class Graph (Widget):
         area defined by coords.  If the href argument is not None, that
         area will be a link to href.
         """
-        self._comments.append ((coords, comment, href))
+        self._comments.append ((coords, label, comment, href))
 
     def output (self, fd=None):
         """Output the HTML."""
@@ -1239,14 +1239,16 @@ class Graph (Widget):
                 p (fd, ' onmouseout="javascript:comment(%i, %i, %i)"',
                    (self._count, self._num, i), False)
                 if comment[2] != None:
-                    p (fd, ' href="%s"', comment[2])
+                    p (fd, ' href="%s"', comment[3])
                 p (fd, '>')
             p (fd, '</map>')
             i = 0
             for comment in self._comments:
                 i += 1
-                p (fd, '<div class="comment" id="comment-%i-%i-%i">%s</div>',
-                   (self._count, self._num, i, comment[1]))
+                p (fd, '<div class="comment" id="comment-%i-%i-%i">',
+                   (self._count, self._num, i))
+                p (fd, '<div class="label">%s</div>', comment[1])
+                p (fd, '<div>%s</div></div>', comment[2])
             p (fd, '</div>', None, False)
         if not self._map_only:
             p (fd, '</div>', None, False)
@@ -1275,14 +1277,16 @@ class Graph (Widget):
         for (coords, tot, weeknum) in of.data.get ('coords', []):
             ago = thisweek - weeknum
             if ago == 0:
-                cmt = pulse.utils.gettext ('this week: %i commits') % tot
+                label = pulse.utils.gettext ('this week:')
             elif ago == 1:
-                cmt = pulse.utils.gettext ('last week: %i commits') % tot
+                label = pulse.utils.gettext ('last week:')
             else:
-                cmt = pulse.utils.gettext ('%i weeks ago: %i commits') % (ago, tot)
+                label = (pulse.utils.gettext ('week of %s:') %
+                         pulse.utils.weeknumday(weeknum).strftime('%Y-%m-%d'))
+            cmt = pulse.utils.gettext ('%i commits') % tot
             jslink = 'javascript:replace(\'commits\', '
             jslink += '\'%s?ajax=commits&weeknum=%i\')' % (url, weeknum)
-            graph.add_comment (coords, cmt, jslink)
+            graph.add_comment (coords, label, cmt, jslink)
         return graph
 
 

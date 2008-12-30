@@ -297,10 +297,7 @@ div.graph {
   padding: 0;
 }
 table.graph { margin: 0 0 12px 0; }
-table.graph div.graph {
-  margin: 0;
-  overflow: hidden;
-}
+table.graph div.graph { margin: 0; }
 table.graph td { line-height: 0; }
 td.graphprev, td.graphnext { padding: 4px 0 0 0; }
 div.graphaway { position: absolute; overflow: hidden; }
@@ -313,8 +310,14 @@ div.comment {
   background-color: #fce94f;
   border: solid 2px #ffffff;
   padding: 2px 6px 6px 6px;
+/*
   opacity: 0.9;
+*/
   z-index: 100;
+}
+div.comment div.label {
+  font-size: 0.83em;
+  color: #555753;
 }
 
 dl.facts dt {
