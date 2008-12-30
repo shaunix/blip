@@ -29,24 +29,25 @@ import pulse.models as db
 import pulse.pulsate
 import pulse.xmldata
 
-synop = 'update information about people'
+synop = 'update information about people and teams'
 usage_extra = '[ident]'
 args = pulse.utils.odict()
+args['shallow'] = (None, 'only update information from the XML input file')
 args['no-timestamps'] = (None, 'do not check timestamps before processing files')
 def help_extra (fd=None):
-    print >>fd, 'If ident is passed, only people with a matching identifier will be updated.'
+    print >>fd, 'If ident is passed, only people and teams with a matching identifier will be updated.'
 
 
 def update_people (**kw):
     data = pulse.xmldata.get_data (os.path.join (pulse.config.input_dir, 'xml', 'people.xml'))
-    icondir = os.path.join (pulse.config.web_icons_dir, 'people')
     for key in data.keys():
-        if not data[key]['__type__'] == 'person':
+        if not data[key]['__type__'] in ('person', 'team'):
             continue
         if not data[key].has_key ('id'):
             continue
-        ident = '/person/' + data[key]['id']
-        person = db.Entity.get_record (ident, 'Person')
+        type = {'person':'Person', 'team':'Team'}[data[key]['__type__']]
+        ident = '/' + data[key]['__type__'] + '/' + data[key]['id']
+        person = db.Entity.get_record (ident, type)
         aliases = data[key].get ('alias', [])
         needs_update = False
         for alias in aliases:
@@ -59,7 +60,7 @@ def update_people (**kw):
             aliasrec.entity = person
             aliasrec.save()
             try:
-                rec = db.Entity.objects.filter (ident=alias, type='Person')
+                rec = db.Entity.objects.filter (ident=alias, type=type)
                 rec = rec[0]
             except IndexError:
                 rec = None
@@ -109,14 +110,17 @@ def update_people (**kw):
             # into using timestamps and If-Modified-Since
             iconhref = data[key]['icon']
             iconname = urllib.quote ('/'.join (ident.split('/')[2:]), '')
-            iconorig = os.path.join (icondir, iconname + '@@original.png')
-            if not os.path.isdir (icondir):
-                os.makedirs (icondir)
+
+            icondir = {'person':'people', 'team':'teams'}[data[key]['__type__']]
+            iconpath = os.path.join (pulse.config.web_icons_dir, icondir)
+            iconorig = os.path.join (iconpath, iconname + '@@original.png')
+            if not os.path.isdir (iconpath):
+                os.makedirs (iconpath)
             urllib.urlretrieve (iconhref, iconorig)
             im = Image.open (iconorig)
             im.thumbnail((36, 36), Image.ANTIALIAS)
-            im.save (os.path.join (icondir, iconname + '.png'), 'PNG')
-            person.update ({'icon_dir' : 'people', 'icon_name' : iconname})
+            im.save (os.path.join (iconpath, iconname + '.png'), 'PNG')
+            person.update ({'icon_dir' : icondir, 'icon_name' : iconname})
 
         if needs_update:
             update_person (person, **kw)
@@ -174,17 +178,19 @@ def update_person (person, **kw):
 ## main
 
 def main (argv, options={}):
+    shallow = options.get ('--shallow', False)
     timestamps = not options.get ('--no-timestamps', False)
     if len(argv) == 0:
         prefix = None
     else:
         prefix = argv[0]
 
-    update_people (timestamps=timestamps)
+    update_people (timestamps=timestamps, shallow=shallow)
 
-    if prefix == None:
-        people = db.Entity.objects.filter (type='Person')
-    else:
-        people = db.Entity.objects.filter (type='Person', ident__startswith=prefix)
-    for person in people:
-        update_person (person, timestamps=timestamps)
+    if not shallow:
+        if prefix == None:
+            people = db.Entity.objects.filter (type__in=('Person', 'Team'))
+        else:
+            people = db.Entity.objects.filter (type__in=('Person', 'Team'), ident__startswith=prefix)
+        for person in people:
+            update_person (person, timestamps=timestamps, shallow=shallow)

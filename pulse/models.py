@@ -620,6 +620,7 @@ class Branch (PulseRecord, models.Model):
 class Entity (PulseRecord, models.Model):
     __metaclass__ = PulseModelBase
 
+    parent = models.ForeignKey ('Entity', related_name='children', null=True)
     nick = models.CharField (null=True, **maxlength80)
     mod_score = models.IntegerField (null=True)
 

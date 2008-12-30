@@ -1,6 +1,40 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <group>
 
+<!-- Teams -->
+<team id="a11y">
+  <name>Accessibility Team</name>
+</team>
+
+<team id="develdocs">
+  <name>Developer Documentation Team</name>
+  <coordinators>
+    <item>/person/gnome.org/shaunm</item>
+  </coordinators>
+</team>
+
+<team id="i18n">
+  <name>Translation Team</name>
+  <coordinators>
+    <item>/person/gnome.org/danilo</item>
+    <item>/person/gnome.org/menthos</item>
+  </coordinators>
+</team>
+
+<team id="usability">
+  <name>Usability Team</name>
+  <coordinators>
+  </coordinators>
+</team>
+
+<team id="userdocs">
+  <name>User Documentation Team</name>
+  <coordinators>
+    <item>/person/gnome.org/shaunm</item>
+  </coordinators>
+</team>
+
+<!-- People -->
 <person id="abock">
   <name>Aaron Bockover</name>
   <nick>abock</nick>
