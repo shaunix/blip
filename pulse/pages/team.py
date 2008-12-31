@@ -52,13 +52,16 @@ def main (path, query, http=True, fd=None):
         page.output(fd=fd)
         return 404
 
-    return output_team (team, **kw)
+    if query.get('ajax', None) == 'tab':
+        return output_ajax_tab (team, **kw)
+    else:
+        return output_team (team, **kw)
 
 
 def synopsis ():
     """Construct an info box for the front page"""
     box = pulse.html.InfoBox (pulse.utils.gettext ('Teams'))
-    teams = db.Entity.objects.filter (type='Team')
+    teams = db.Entity.objects.filter (type='Team', parent__isnull=True)
     teams = pulse.utils.attrsorted (list(teams), 'title')
     box.add_content (pulse.html.Div (pulse.utils.gettext ('Root for the home team:')))
     bl = pulse.html.BulletList ()
@@ -71,7 +74,7 @@ def synopsis ():
 def output_top (**kw):
     page = pulse.html.Page (http=kw.get('http', True))
     page.set_title (pulse.utils.gettext ('Teams'))
-    teams = db.Entity.objects.filter (type='Team')
+    teams = db.Entity.objects.filter (type='Team', parent__isnull=True)
     teams = pulse.utils.attrsorted (list(teams), 'title')
     for team in teams:
         lbox = pulse.html.LinkBox (team)
@@ -82,8 +85,25 @@ def output_top (**kw):
 def output_team (team, **kw):
     page = pulse.html.RecordPage (team, http=kw.get('http', True))
 
+    page.set_sublinks_divider (pulse.html.TRIANGLE)
+    page.add_sublink (pulse.config.web_root + 'team', pulse.utils.gettext ('Teams'))
+    for parent in get_parents (team):
+        page.add_sublink (parent.pulse_url, parent.title)
+
     columns = pulse.html.ColumnBox (2)
     page.add_content (columns)
+
+    # Members
+    box = get_members_box (team)
+    page.add_sidebar_content (box)
+
+    page.add_tab ('info', pulse.utils.gettext ('Info'))
+    box = get_info_tab (team, **kw)
+    page.add_to_tab ('info', box)
+
+    subteams = team.children
+    if subteams.count() > 0:
+        page.add_tab ('subteams', pulse.utils.gettext ('Subteams'))
 
     # Modules and Documents
     mods = db.Branch.objects.filter (type='Module', module_entity_preds__pred=team)
@@ -112,3 +132,66 @@ def output_team (team, **kw):
 
     page.output(fd=kw.get('fd'))
     return 0
+
+
+def output_ajax_tab (team, **kw):
+    query = kw.get ('query', {})
+    page = pulse.html.Fragment (http=kw.get('http', True))
+    tab = query.get('tab', None)
+    if tab == 'info':
+        page.add_content (get_info_tab (team, **kw))
+    elif tab == 'subteams':
+        page.add_content (get_subteams_tab (team, **kw))
+    page.output(fd=kw.get('fd'))
+    return 0
+
+
+def get_info_tab (team, **kw):
+    facts = pulse.html.FactsTable()
+    sep = False
+    try:
+        facts.add_fact (pulse.utils.gettext ('Description'),
+                       module.localized_desc)
+        sep = True
+    except:
+        pass
+
+    if team.web != None:
+        facts.add_fact (pulse.utils.gettext ('Website'), pulse.html.Link (team.web))
+
+    return facts
+
+
+def get_subteams_tab (team, **kw):
+    bl = pulse.html.BulletList ()
+    for subteam in pulse.utils.attrsorted (list(team.children.all()), 'title'):
+        bl.add_item (pulse.html.Link (subteam))
+    return bl
+
+
+def get_members_box (team):
+    box = pulse.html.SidebarBox (pulse.utils.gettext ('Members'))
+    rels = db.TeamMember.get_related (subj=team)
+    if len(rels) > 0:
+        people = {}
+        for rel in rels:
+            people[rel.pred] = rel
+        for person in pulse.utils.attrsorted (people.keys(), 'title'):
+            lbox = box.add_link_box (person)
+            rel = people[person]
+            if rel.coordinator:
+                lbox.add_badge ('coordinator')
+    else:
+        box.add_content (pulse.html.AdmonBox (pulse.html.AdmonBox.warning,
+                                              pulse.utils.gettext ('No members') ))
+    return box
+
+
+def get_parents (team):
+    """Get a list of the parents of a team"""
+    parent = team.parent
+    if parent == None:
+        return []
+    else:
+        parents = get_parents (parent)
+        return parents + [parent]

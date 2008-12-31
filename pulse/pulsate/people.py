@@ -38,7 +38,7 @@ def help_extra (fd=None):
     print >>fd, 'If ident is passed, only people and teams with a matching identifier will be updated.'
 
 
-def update_people (**kw):
+def update_entities (**kw):
     data = pulse.xmldata.get_data (os.path.join (pulse.config.input_dir, 'xml', 'people.xml'))
     for key in data.keys():
         if not data[key]['__type__'] in ('person', 'team'):
@@ -47,63 +47,31 @@ def update_people (**kw):
             continue
         type = {'person':'Person', 'team':'Team'}[data[key]['__type__']]
         ident = '/' + data[key]['__type__'] + '/' + data[key]['id']
-        person = db.Entity.get_record (ident, type)
+        entity = db.Entity.get_record (ident, type)
         aliases = data[key].get ('alias', [])
         needs_update = False
+
         for alias in aliases:
-            try:
-                aliasrec = db.Alias.objects.filter (ident=alias)
-                aliasrec = aliasrec[0]
-            except IndexError:
-                needs_update = True
-                aliasrec = db.Alias (ident=alias)
-            aliasrec.entity = person
-            aliasrec.save()
-            try:
-                rec = db.Entity.objects.filter (ident=alias, type=type)
-                rec = rec[0]
-            except IndexError:
-                rec = None
-            if rec != None:
-                pulse.utils.log ('Copying %s to %s' % (alias, ident))
-                pdata = {}
-                for pkey, pval in rec.data.items():
-                    pdata[pkey] = pval
-                pdata['name'] = rec.name
-                pdata['desc'] = rec.desc
-                pdata['icon_dir'] = rec.icon_dir
-                pdata['icon_name'] = rec.icon_name
-                pdata['email'] = rec.email
-                pdata['web'] = rec.web
-                pdata['nick'] = rec.nick
-                pdata['mod_score'] = rec.mod_score
-                
-                rels = db.DocumentEntity.objects.filter (pred=rec)
-                for rel in rels:
-                    needs_update = True
-                    rel.pred = person
-                    rel.save()
-                rels = db.ModuleEntity.objects.filter (pred=rec)
-                for rel in rels:
-                    needs_update = True
-                    rel.pred = person
-                    rel.save()
-                branches = db.Branch.objects.filter (mod_person=rec)
-                for branch in branches:
-                    needs_update = True
-                    branch.mod_person = person
-                    branch.save()
-                revs = db.Revision.objects.filter (person=rec)
-                for rev in revs:
-                    needs_update = True
-                    rev.person = person
-                    rev.alias = alias
-                    rev.save()
-                rec.delete()
+            needs_update = update_alias (entity, alias, **kw) or needs_update
+
+        parent = data[key].get ('parent', None)
+        if parent != None:
+            entity.parent = db.Entity.get_record (parent, 'Team')
+
+        coords = data[key].get ('coordinators', [])
+        if isinstance (coords, list) and len(coords) > 0:
+            rels = []
+            for coord in coords:
+                rec = db.Entity.get_record (coord, 'Person')
+                rel = db.TeamMember.set_related (entity, rec, coordinator=True)
+                rels.append (rel)
+            entity.set_relations (db.TeamMember, rels)
+        else:
+            entity.set_relations (db.TeamMember, [])
 
         for k in ('name', 'nick', 'email', 'web', 'blog'):
             if data[key].has_key (k):
-                person.update(**{k : data[key][k]})
+                entity.update(**{k : data[key][k]})
         if data[key].has_key ('icon'):
             # FIXME: we really shouldn't redownload these every time,
             # but we want to make sure we get updates versions.  Check
@@ -120,28 +88,95 @@ def update_people (**kw):
             im = Image.open (iconorig)
             im.thumbnail((36, 36), Image.ANTIALIAS)
             im.save (os.path.join (iconpath, iconname + '.png'), 'PNG')
-            person.update ({'icon_dir' : icondir, 'icon_name' : iconname})
+            entity.update ({'icon_dir' : icondir, 'icon_name' : iconname})
 
         if needs_update:
-            update_person (person, **kw)
+            update_entity (entity, **kw)
         else:
-            person.save()
+            entity.save()
 
 
-def update_person (person, **kw):
+def update_alias (entity, alias, **kw):
+    needs_update = False
+    try:
+        aliasrec = db.Alias.objects.filter (ident=alias)
+        aliasrec = aliasrec[0]
+    except IndexError:
+        needs_update = True
+        aliasrec = db.Alias (ident=alias)
+    aliasrec.entity = entity
+    aliasrec.save()
+    try:
+        rec = db.Entity.objects.filter (ident=alias, type=entity.type)
+        rec = rec[0]
+    except IndexError:
+        rec = None
+    if rec == None:
+        return needs_update
+
+    pulse.utils.log ('Copying %s to %s' % (alias, entity.ident))
+    pdata = {}
+    for pkey, pval in rec.data.items():
+        pdata[pkey] = pval
+    pdata['name'] = rec.name
+    pdata['desc'] = rec.desc
+    pdata['icon_dir'] = rec.icon_dir
+    pdata['icon_name'] = rec.icon_name
+    pdata['email'] = rec.email
+    pdata['web'] = rec.web
+    pdata['nick'] = rec.nick
+    pdata['mod_score'] = rec.mod_score
+
+    rels = db.DocumentEntity.objects.filter (pred=rec)
+    for rel in rels:
+        needs_update = True
+        rel.pred = entity
+        rel.save()
+    rels = db.ModuleEntity.objects.filter (pred=rec)
+    for rel in rels:
+        needs_update = True
+        rel.pred = entity
+        rel.save()
+    rels = db.TeamMember.objects.filter (subj=rec)
+    for rel in rels:
+        needs_update = True
+        rel.subj = entity
+        rel.save()
+    rels = db.TeamMember.objects.filter (pred=rec)
+    for rel in rels:
+        needs_update = True
+        rel.pred = entity
+        rel.save()
+    branches = db.Branch.objects.filter (mod_person=rec)
+    for branch in branches:
+        needs_update = True
+        branch.mod_person = entity
+        branch.save()
+    revs = db.Revision.objects.filter (person=rec)
+    for rev in revs:
+        needs_update = True
+        rev.person = entity
+        rev.alias = alias
+        rev.save()
+    rec.delete()
+
+    return needs_update
+
+
+def update_entity (entity, **kw):
     now = datetime.datetime.now()
     thisweek = pulse.utils.weeknum (datetime.datetime.utcnow())
-    of = db.OutputFile.objects.filter (type='graphs', ident=person.ident, filename='commits.png')
+    of = db.OutputFile.objects.filter (type='graphs', ident=entity.ident, filename='commits.png')
     try:
         of = of[0]
     except IndexError:
         of = None
 
-    pulse.pulsate.update_graphs (person, {'person' : person}, 80, **kw)
+    pulse.pulsate.update_graphs (entity, {'person' : entity}, 80, **kw)
 
-    feed = person.data.get ('blog')
+    feed = entity.data.get ('blog')
     if feed != None:
-        bident = '/blog' + person.ident
+        bident = '/blog' + entity.ident
         forum = db.Forum.get_record (bident, 'Blog')
         forum.data['feed'] = feed
         etag = forum.data.get ('etag')
@@ -156,7 +191,7 @@ def update_person (person, **kw):
                     post = db.ForumPost (ident=eident, type='BlogPost')
                     postdata = {
                         'forum' : forum,
-                        'author' : person,
+                        'author' : entity,
                         'name' : entry.title,
                         'web' : entry.link
                         }
@@ -170,8 +205,8 @@ def update_person (person, **kw):
         else:
             pulse.utils.log ('Skipping blog %s' % bident)
 
-    db.Queue.remove ('people', person.ident)
-    person.save()
+    db.Queue.remove ('people', entity.ident)
+    entity.save()
 
 
 ################################################################################
@@ -185,12 +220,12 @@ def main (argv, options={}):
     else:
         prefix = argv[0]
 
-    update_people (timestamps=timestamps, shallow=shallow)
+    update_entities (timestamps=timestamps, shallow=shallow)
 
     if not shallow:
         if prefix == None:
-            people = db.Entity.objects.filter (type__in=('Person', 'Team'))
+            entities = db.Entity.objects.filter (type__in=('Person', 'Team'))
         else:
-            people = db.Entity.objects.filter (type__in=('Person', 'Team'), ident__startswith=prefix)
-        for person in people:
-            update_person (person, timestamps=timestamps, shallow=shallow)
+            entities = db.Entity.objects.filter (type__in=('Person', 'Team'), ident__startswith=prefix)
+        for entity in entities:
+            update_entity (entity, timestamps=timestamps, shallow=shallow)

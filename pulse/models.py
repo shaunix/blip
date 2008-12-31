@@ -713,6 +713,12 @@ class SetModule (PulseRelation, models.Model):
     subj = models.ForeignKey (ReleaseSet, related_name='set_module_preds')
     pred = models.ForeignKey (Branch, related_name='set_module_subjs')
 
+class TeamMember (PulseRelation, models.Model):
+    __metaclass__ = PulseModelBase
+    subj = models.ForeignKey (Entity, related_name='team_member_preds')
+    pred = models.ForeignKey (Entity, related_name='team_member_subjs')
+    coordinator = models.BooleanField (default=False)
+
 
 ################################################################################
 ## Other Tables
