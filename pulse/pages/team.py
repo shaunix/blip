@@ -101,34 +101,17 @@ def output_team (team, **kw):
     box = get_info_tab (team, **kw)
     page.add_to_tab ('info', box)
 
-    subteams = team.children
-    if subteams.count() > 0:
-        page.add_tab ('subteams', pulse.utils.gettext ('Subteams'))
+    cnt = team.children.count()
+    if cnt > 0:
+        page.add_tab ('subteams', pulse.utils.gettext ('Subteams (%i)') % cnt)
 
-    # Modules and Documents
-    mods = db.Branch.objects.filter (type='Module', module_entity_preds__pred=team)
-    mods = pulse.utils.attrsorted (list(mods), 'title')
-    if len(mods) > 0:
-        modbox = pulse.html.InfoBox (pulse.utils.gettext ('Modules'))
-        columns.add_to_column (1, modbox)
-        brs = []
-        for mod in mods:
-            if mod.branchable_id in brs:
-                continue
-            brs.append (mod.branchable_id)
-            modbox.add_link_box (mod)
+    cnt = db.Branch.objects.filter (type='Module', document_entity_preds__pred=team).count()
+    if cnt > 0:
+        page.add_tab ('doc', pulse.utils.gettext ('Modules (%i)') % cnt)
 
-    docs = db.Branch.objects.filter (type='Document', document_entity_preds__pred=team)
-    docs = pulse.utils.attrsorted (list(docs), 'title')
-    if len(docs) > 0:
-        docbox = pulse.html.InfoBox (pulse.utils.gettext ('Documents'))
-        columns.add_to_column (1, docbox)
-        brs = []
-        for doc in docs:
-            if doc.branchable_id in brs:
-                continue
-            brs.append (doc.branchable_id)
-            docbox.add_link_box (doc)
+    cnt = db.Branch.objects.filter (type='Document', document_entity_preds__pred=team).count()
+    if cnt > 0:
+        page.add_tab ('doc', pulse.utils.gettext ('Documents (%i)') % cnt)
 
     page.output(fd=kw.get('fd'))
     return 0
@@ -142,6 +125,10 @@ def output_ajax_tab (team, **kw):
         page.add_content (get_info_tab (team, **kw))
     elif tab == 'subteams':
         page.add_content (get_subteams_tab (team, **kw))
+    elif tab == 'mod':
+        page.add_content (get_mod_tab (team, **kw))
+    elif tab == 'doc':
+        page.add_content (get_doc_tab (team, **kw))
     page.output(fd=kw.get('fd'))
     return 0
 
@@ -167,6 +154,50 @@ def get_subteams_tab (team, **kw):
     for subteam in pulse.utils.attrsorted (list(team.children.all()), 'title'):
         bl.add_item (pulse.html.Link (subteam))
     return bl
+
+
+def get_mod_tab (team, **kw):
+    box = pulse.html.ContainerBox ()
+    rels = db.ModuleEntity.get_related (pred=team)
+    brs = []
+    mods = pulse.utils.odict()
+    for rel in pulse.utils.attrsorted (list(rels), ('subj', 'title'), ('-', 'subj', 'scm_branch')):
+        mod = rel.subj
+        if mod.branchable_id in brs:
+            continue
+        brs.append (mod.branchable_id)
+        mods[mod] = rel
+    for mod in mods.keys():
+        lbox = box.add_link_box (mod)
+        rel = mods[mod]
+        if rel.maintainer:
+            lbox.add_badge ('maintainer')
+    return box
+
+
+def get_doc_tab (team, **kw):
+    box = pulse.html.ContainerBox ()
+    rels = db.DocumentEntity.get_related (pred=team)
+    brs = []
+    docs = pulse.utils.odict()
+    for rel in pulse.utils.attrsorted (list(rels), ('subj', 'title'), ('-', 'subj', 'scm_branch')):
+        doc = rel.subj
+        if doc.branchable_id in brs:
+            continue
+        brs.append (doc.branchable_id)
+        docs[doc] = rel
+    for doc in docs.keys():
+        lbox = box.add_link_box (doc)
+        rel = docs[doc]
+        if rel.maintainer:
+            lbox.add_badge ('maintainer')
+        if rel.author:
+            lbox.add_badge ('author')
+        if rel.editor:
+            lbox.add_badge ('editor')
+        if rel.publisher:
+            lbox.add_badge ('publisher')
+    return box
 
 
 def get_members_box (team):

@@ -107,7 +107,7 @@ def update_alias (entity, alias, **kw):
     aliasrec.entity = entity
     aliasrec.save()
     try:
-        rec = db.Entity.objects.filter (ident=alias, type=entity.type)
+        rec = db.Entity.objects.filter (ident=alias)
         rec = rec[0]
     except IndexError:
         rec = None

@@ -29,6 +29,9 @@
 
 <team id="userdocs">
   <name>User Documentation Team</name>
+  <alias>
+    <item>/ghost/GNOME%20Documentation%20Project</item>
+  </alias>
   <coordinators>
     <item>/person/gnome.org/shaunm</item>
   </coordinators>
