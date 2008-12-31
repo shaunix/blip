@@ -766,7 +766,9 @@ class Calendar (Widget):
             p (fd, '<span class="caldtstart">%s</span> ', event[0].strftime('%Y-%m-%d'), False)
             p (fd, '<span class="calsummary">%s</span>', event[2], False)
             p (fd, '</dt>')
-            p (fd, '<dd class="calevent">%s</dd>', event[3])
+            p (fd, '<dd class="calevent">', None, False)
+            p (fd, EllipsizedLabel (event[3], 130), None, False)
+            p (fd, '</dd>')
         p (fd, '</dl>')
         p (fd, '</div>')
 

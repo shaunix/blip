@@ -176,6 +176,23 @@ $.fn.pulse_init = function () {
     cal_display (cal);
     cal.find ('td.calprev').click (function () { cal_prev (cal); });
     cal.find ('td.calnext').click (function () { cal_next (cal); });
+    cal.find ('dt.calevent').each (function () {
+      var dt = $(this);
+      dt.next('dd').andSelf('dt').hover (
+        function () {
+          var daynum = parseInt (dt.children('span.caldtstart').text().substr(8));
+          cal.find ('td.calday').each (function () {
+            var day = $(this);
+            if (day.hasClass ('caldayoff'))
+              return;
+            if (parseInt(day.text()) == daynum)
+              day.addClass ('calhover');
+          });
+        },
+        function () {
+          cal.find ('td.calday').removeClass ('calhover');
+        }
+    )});
   });
 
   /** Zoom Images **/

@@ -219,12 +219,16 @@ td.caldayoff {
 td.caltoday div {
   border: solid 1px #729fcf;
 }
+td.calhover div {
+  border: solid 1px #ef2929;
+}
 td.calevent {
   background-color: #fce94f;
 }
 dd.calevent {
   margin-left: 1.44em;
   display: none;
+  color: #555753;
 }
 
 div.slinks {
