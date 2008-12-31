@@ -323,10 +323,8 @@ function tab (tabid) {
 }
 
 function reload () {
-  if (location.hash.substring(1) != 'info') {
-    $.pane.remove();
-    tab (location.hash.substring(1));
-  }
+  $.pane.remove();
+  tab (location.hash.substring(1));
 }
 
 $(document).ready (function () {

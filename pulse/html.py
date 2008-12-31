@@ -377,7 +377,7 @@ class Page (Widget, HttpComponent, ContentComponent, SublinksComponent, FactsCom
     Complete web page.
 
     The output method creates all the standard HTML for the top and bottom
-    of the page, and call output_page_content in between.  Subclasses should
+    of the page, and calls output_page_content in between.  Subclasses should
     override output_page_content.
 
     Keyword arguments:
@@ -393,6 +393,7 @@ class Page (Widget, HttpComponent, ContentComponent, SublinksComponent, FactsCom
         self._sidebar = None
         self._url = kw.get ('url')
         self._tabs = []
+        self._panes = {}
 
     def set_title (self, title):
         """Set the title of the page."""
@@ -402,8 +403,15 @@ class Page (Widget, HttpComponent, ContentComponent, SublinksComponent, FactsCom
         """Set the URL of an icon for the page."""
         self._icon = icon
 
-    def add_tab (self, id, title):
-        self._tabs.append ((id, title))
+    def add_tab (self, tabid, title):
+        self._tabs.append ((tabid, title))
+
+    def add_to_tab (self, id, content):
+        pane = self._panes.get(id, None)
+        if pane == None:
+            pane = ContentComponent()
+            self._panes[id] = pane
+        pane.add_content (content)
 
     def add_screenshot (self, screenshot):
         """
@@ -481,7 +489,8 @@ class Page (Widget, HttpComponent, ContentComponent, SublinksComponent, FactsCom
 
         if len(self._tabs) == 0:
             p (fd, '<div id="notabs">')
-            FactsComponent.output (self, fd=fd)
+        # FIXME: what do we do with these when there are tabs?
+        FactsComponent.output (self, fd=fd)
         self.output_page_content (fd=fd)
         if len(self._tabs) == 0:
             p (fd, '</div>')
@@ -492,17 +501,15 @@ class Page (Widget, HttpComponent, ContentComponent, SublinksComponent, FactsCom
                pulse.config.data_root)
             p (fd, '<div id="throbber"></div>')
             p (fd, '<div id="tabs">')
-            if self.has_facts ():
-                self._tabs = [('info', 'Info')] + self._tabs
-            for id, title in self._tabs:
+            for tabid, title in self._tabs:
                 title = esc (title).replace(' ', '&nbsp;')
-                p (fd, '<span class="tab" id="tab-%s">', id, False)
-                p (fd, '<a href="javascript:tab(\'%s\')">' + title + '</a></span>', id)
+                p (fd, '<span class="tab" id="tab-%s">', tabid, False)
+                p (fd, '<a href="javascript:tab(\'%s\')">' + title + '</a></span>', tabid)
             p (fd, '</div>')
             p (fd, '<div id="panes">')
-            if self.has_facts ():
-                p (fd, '<div class="pane" id="pane-info">')
-                FactsComponent.output (self, fd=fd)
+            for pane in self._panes:
+                p (fd, '<div class="pane" id="pane-%s">', pane)
+                self._panes[pane].output (fd=fd)
                 p (fd, '</div>')
             p (fd, '</div>')
 
@@ -1540,6 +1547,10 @@ class StatusSpan (Widget, ContentComponent):
         ContentComponent.output (self, fd=fd)
 
 
+class FactsTable (FactsComponent):
+    pass
+
+
 class Div (Widget, ContentComponent):
     """
     A simple block.
@@ -1554,15 +1565,18 @@ class Div (Widget, ContentComponent):
     def __init__ (self, *args, **kw):
         super (Div, self).__init__ (**kw)
         self._id = kw.get('id', None)
+        self._classname = kw.get ('classname', None)
         for arg in args:
             self.add_content (arg)
 
     def output (self, fd=None):
         """Output the HTML."""
+        p (fd, '<div', None, False)
         if self._id != None:
-            p (fd, '<div id="%s">', self._id)
-        else:
-            p (fd, '<div>')
+            p (fd, ' id="%s"', self._id)
+        if self._classname != None:
+            p (fd, ' class="%s"', self._classname)
+        p (fd, '>', None, False)
         ContentComponent.output (self, fd=fd)
         p (fd, '</div>')
 

@@ -120,7 +120,6 @@ def synopsis ():
 
 def output_module (module, **kw):
     branchable = module.branchable
-    checkout = pulse.scm.Checkout.from_record (module, checkout=False, update=False)
 
     page = pulse.html.RecordPage (module, http=kw.get('http', True))
 
@@ -135,47 +134,9 @@ def output_module (module, **kw):
     if module.data.has_key ('screenshot'):
         page.add_screenshot (module.data['screenshot'])
 
-    sep = False
-    try:
-        page.add_fact (pulse.utils.gettext ('Description'),
-                       module.localized_desc)
-        sep = True
-    except:
-        pass
-
-    rels = db.SetModule.get_related (pred=module)
-    if len(rels) > 0:
-        sets = pulse.utils.attrsorted ([rel.subj for rel in rels], 'title')
-        span = pulse.html.Span (*[pulse.html.Link(rset) for rset in sets])
-        span.set_divider (pulse.html.BULLET)
-        page.add_fact (pulse.utils.gettext ('Release Sets'), span)
-        sep = True
-
-    if sep:
-        page.add_fact_sep ()
-
-    page.add_fact (pulse.utils.gettext ('Location'), checkout.location)
-
-    if module.mod_datetime != None:
-        span = pulse.html.Span(divider=pulse.html.SPACE)
-        # FIXME: i18n, word order, but we want to link person
-        span.add_content (module.mod_datetime.strftime('%Y-%m-%d %T'))
-        if module.mod_person != None:
-            span.add_content (' by ')
-            people_cache[module.mod_person.id] = module.mod_person
-            span.add_content (pulse.html.Link (module.mod_person))
-        page.add_fact (pulse.utils.gettext ('Last Modified'), span)
-
-    if module.data.has_key ('tarname'):
-        page.add_fact_sep ()
-        page.add_fact (pulse.utils.gettext ('Tarball Name'), module.data['tarname'])
-    if module.data.has_key ('tarversion'):
-        if not module.data.has_key ('tarname'):
-            page.add_fact_sep ()
-        page.add_fact (pulse.utils.gettext ('Version'), module.data['tarversion'])
-
-    page.add_fact_sep ()
-    page.add_fact (pulse.utils.gettext ('Score'), str(module.mod_score))
+    page.add_tab ('info', 'Info')
+    box = get_info_tab (module, **kw)
+    page.add_to_tab ('info', box)
 
     # Developers
     box = get_developers_box (module)
@@ -214,10 +175,12 @@ def output_ajax_tab (module, **kw):
     query = kw.get ('query', {})
     page = pulse.html.Fragment (http=kw.get('http', True))
     tab = query.get('tab', None)
-    if tab == 'activity':
-        page.add_content (get_activity_box (module, **kw))
+    if tab == 'info':
+        page.add_content (get_info_tab (module, **kw))
+    elif tab == 'activity':
+        page.add_content (get_activity_tab (module, **kw))
     elif tab == 'components':
-        page.add_content (get_components_box (module, **kw))
+        page.add_content (get_components_tab (module, **kw))
     page.output(fd=kw.get('fd'))
     return 0
 
@@ -393,7 +356,55 @@ def output_ajax_revfiles (module, **kw):
     return 0
 
 
-def get_activity_box (module, **kw):
+def get_info_tab (module, **kw):
+    facts = pulse.html.FactsTable()
+    sep = False
+    try:
+        facts.add_fact (pulse.utils.gettext ('Description'),
+                       module.localized_desc)
+        sep = True
+    except:
+        pass
+
+    rels = db.SetModule.get_related (pred=module)
+    if len(rels) > 0:
+        sets = pulse.utils.attrsorted ([rel.subj for rel in rels], 'title')
+        span = pulse.html.Span (*[pulse.html.Link(rset) for rset in sets])
+        span.set_divider (pulse.html.BULLET)
+        facts.add_fact (pulse.utils.gettext ('Release Sets'), span)
+        sep = True
+
+    if sep:
+        facts.add_fact_sep ()
+
+    checkout = pulse.scm.Checkout.from_record (module, checkout=False, update=False)
+    facts.add_fact (pulse.utils.gettext ('Location'), checkout.location)
+
+    if module.mod_datetime != None:
+        span = pulse.html.Span(divider=pulse.html.SPACE)
+        # FIXME: i18n, word order, but we want to link person
+        span.add_content (module.mod_datetime.strftime('%Y-%m-%d %T'))
+        if module.mod_person != None:
+            span.add_content (' by ')
+            people_cache[module.mod_person.id] = module.mod_person
+            span.add_content (pulse.html.Link (module.mod_person))
+        facts.add_fact (pulse.utils.gettext ('Last Modified'), span)
+
+    if module.data.has_key ('tarname'):
+        facts.add_fact_sep ()
+        facts.add_fact (pulse.utils.gettext ('Tarball Name'), module.data['tarname'])
+    if module.data.has_key ('tarversion'):
+        if not module.data.has_key ('tarname'):
+            facts.add_fact_sep ()
+        facts.add_fact (pulse.utils.gettext ('Version'), module.data['tarversion'])
+
+    facts.add_fact_sep ()
+    facts.add_fact (pulse.utils.gettext ('Score'), str(module.mod_score))
+
+    return facts
+
+
+def get_activity_tab (module, **kw):
     box = pulse.html.Div ()
     of = db.OutputFile.objects.filter (type='graphs', ident=module.ident, filename='commits-0.png')
     try:
@@ -413,7 +424,7 @@ def get_activity_box (module, **kw):
     return box
 
 
-def get_components_box (module, **kw):
+def get_components_tab (module, **kw):
     columns = pulse.html.ColumnBox (2)
 
     # Programs and Libraries
@@ -423,7 +434,7 @@ def get_components_box (module, **kw):
         ('Applet', pulse.utils.gettext ('Applets')),
         ('Library', pulse.utils.gettext ('Libraries')) ):
 
-        box = get_info_box (module, branchtype, title)
+        box = get_component_info_box (module, branchtype, title)
         if box != None:
             columns.add_to_column (1, box)
 
@@ -497,7 +508,7 @@ def get_developers_box (module):
     return box
 
 
-def get_info_box (module, branchtype, title):
+def get_component_info_box (module, branchtype, title):
     objs = module.select_children (branchtype)
     objs = pulse.utils.attrsorted (list(objs), 'title')
     if len(objs) > 0:

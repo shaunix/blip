@@ -99,7 +99,6 @@ def main (path, query, http=True, fd=None):
 def output_doc (doc, **kw):
     """Output information about a document"""
     page = pulse.html.RecordPage (doc, http=kw.get('http', True))
-    checkout = pulse.scm.Checkout.from_record (doc, checkout=False, update=False)
 
     branches = pulse.utils.attrsorted (list(doc.branchable.branches.all()), 'scm_branch')
     if len(branches) > 1:
@@ -117,53 +116,9 @@ def output_doc (doc, **kw):
                        pulse.html.AdmonBox (pulse.html.AdmonBox.error, doc.error))
         page.add_fact_sep ()
 
-    sep = False
-    try:
-        desc = doc.localized_desc
-        page.add_fact (pulse.utils.gettext ('Description'), desc)
-        sep = True
-    except:
-        pass
-
-    rels = db.SetModule.get_related (pred=doc.parent)
-    if len(rels) > 0:
-        sets = pulse.utils.attrsorted ([rel.subj for rel in rels], 'title')
-        span = pulse.html.Span (*[pulse.html.Link(rset.pulse_url + '#doc', rset.title)
-                                  for rset in sets])
-        span.set_divider (pulse.html.BULLET)
-        page.add_fact (pulse.utils.gettext ('Release Sets'), span)
-        sep = True
-
-    page.add_fact (pulse.utils.gettext ('Module'), pulse.html.Link (doc.parent))
-
-    rels = db.Documentation.get_related (pred=doc)
-    if len(rels) > 0:
-        objs = pulse.utils.attrsorted ([rel.subj for rel in rels], 'title')
-        span = pulse.html.Span (*[pulse.html.Link(obj) for obj in objs])
-        span.set_divider (pulse.html.BULLET)
-        page.add_fact (pulse.utils.gettext ('Describes'), span)
-        sep = True
-
-    if sep:
-        page.add_fact_sep ()
-    
-    page.add_fact (pulse.utils.gettext ('Location'),
-                   checkout.get_location (doc.scm_dir, doc.scm_file))
-
-    if doc.mod_datetime != None:
-        span = pulse.html.Span(divider=pulse.html.SPACE)
-        # FIXME: i18n, word order, but we want to link person
-        span.add_content (doc.mod_datetime.strftime('%Y-%m-%d %T'))
-        if doc.mod_person != None:
-            span.add_content (' by ')
-            span.add_content (pulse.html.Link (doc.mod_person))
-        page.add_fact (pulse.utils.gettext ('Last Modified'), span)
-
-    page.add_fact_sep ()
-    page.add_fact (pulse.utils.gettext ('Score'), str(doc.mod_score))
-
-    columns = pulse.html.ColumnBox (2)
-    page.add_content (columns)
+    page.add_tab ('info', 'Info')
+    box = get_info_tab (doc, **kw)
+    page.add_to_tab ('info', box)
 
     # Release Info
     box = pulse.html.SidebarBox (pulse.utils.gettext ('Release Info'))
@@ -260,10 +215,12 @@ def output_ajax_tab (doc, **kw):
     query = kw.get ('query', {})
     page = pulse.html.Fragment (http=kw.get('http', True))
     tab = query.get('tab', None)
-    if tab == 'activity':
-        page.add_content (get_activity_box (doc, **kw))
+    if tab == 'info':
+        page.add_content (get_info_tab (doc, **kw))
+    elif tab == 'activity':
+        page.add_content (get_activity_tab (doc, **kw))
     elif tab == 'components':
-        page.add_content (get_components_box (doc, **kw))
+        page.add_content (get_components_tab (doc, **kw))
     page.output(fd=kw.get('fd'))
     return 0
 
@@ -302,7 +259,58 @@ def output_ajax_commits (doc, **kw):
     return 0
 
 
-def get_activity_box (doc, **kw):
+def get_info_tab (doc, **kw):
+    facts = pulse.html.FactsTable()
+    sep = False
+    try:
+        desc = doc.localized_desc
+        facts.add_fact (pulse.utils.gettext ('Description'), desc)
+        sep = True
+    except:
+        pass
+
+    rels = db.SetModule.get_related (pred=doc.parent)
+    if len(rels) > 0:
+        sets = pulse.utils.attrsorted ([rel.subj for rel in rels], 'title')
+        span = pulse.html.Span (*[pulse.html.Link(rset.pulse_url + '#doc', rset.title)
+                                  for rset in sets])
+        span.set_divider (pulse.html.BULLET)
+        facts.add_fact (pulse.utils.gettext ('Release Sets'), span)
+        sep = True
+
+    facts.add_fact (pulse.utils.gettext ('Module'), pulse.html.Link (doc.parent))
+
+    rels = db.Documentation.get_related (pred=doc)
+    if len(rels) > 0:
+        objs = pulse.utils.attrsorted ([rel.subj for rel in rels], 'title')
+        span = pulse.html.Span (*[pulse.html.Link(obj) for obj in objs])
+        span.set_divider (pulse.html.BULLET)
+        facts.add_fact (pulse.utils.gettext ('Describes'), span)
+        sep = True
+
+    if sep:
+        facts.add_fact_sep ()
+    
+    checkout = pulse.scm.Checkout.from_record (doc, checkout=False, update=False)
+    facts.add_fact (pulse.utils.gettext ('Location'),
+                   checkout.get_location (doc.scm_dir, doc.scm_file))
+
+    if doc.mod_datetime != None:
+        span = pulse.html.Span(divider=pulse.html.SPACE)
+        # FIXME: i18n, word order, but we want to link person
+        span.add_content (doc.mod_datetime.strftime('%Y-%m-%d %T'))
+        if doc.mod_person != None:
+            span.add_content (' by ')
+            span.add_content (pulse.html.Link (doc.mod_person))
+        facts.add_fact (pulse.utils.gettext ('Last Modified'), span)
+
+    facts.add_fact_sep ()
+    facts.add_fact (pulse.utils.gettext ('Score'), str(doc.mod_score))
+
+    return facts
+
+
+def get_activity_tab (doc, **kw):
     box = pulse.html.Div ()
     of = db.OutputFile.objects.filter (type='graphs', ident=doc.ident, filename='commits-0.png')
     try:
@@ -323,7 +331,7 @@ def get_activity_box (doc, **kw):
     return box
 
 
-def get_components_box (doc, **kw):
+def get_components_tab (doc, **kw):
     columns = pulse.html.ColumnBox (2)
 
     # Files
