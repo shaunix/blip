@@ -263,7 +263,7 @@ class Checkout (object):
         try:
             os.chdir (self.directory)
             cmd = 'git show --name-only --pretty="format:%H%n%ad" .'
-            fd = codecs.getreader('utf-8')(os.popen (cmd), 'ignore')
+            fd = codecs.getreader('utf-8')(os.popen (cmd), errors='replace')
             line = fd.readline()
             revnumber = line.strip()
             line = fd.readline()
@@ -278,7 +278,7 @@ class Checkout (object):
         try:
             os.chdir (self.directory)
             cmd = 'svn info .'
-            fd = codecs.getreader('utf-8')(os.popen (cmd), 'ignore')
+            fd = codecs.getreader('utf-8')(os.popen (cmd), errors='replace')
             revnumber = revdate = None
             for line in fd:
                 if line.startswith ('Last Changed Rev: '):
@@ -331,7 +331,7 @@ class Checkout (object):
             if since != None:
                 cmd += ' -s ' + since + '-'
             cmd += ' 2>/dev/null'
-            fd = codecs.getreader('utf-8')(os.popen (cmd), 'ignore')
+            fd = codecs.getreader('utf-8')(os.popen (cmd), errors='replace')
             line = fd.readline()
             while line:
                 if not line.startswith ('PatchSet '):
@@ -393,7 +393,7 @@ class Checkout (object):
             else:
                 cmd += '"%s"' % self.scm_branch
             allrevs = []
-            fd = codecs.getreader('utf-8')(os.popen (cmd), 'ignore')
+            fd = codecs.getreader('utf-8')(os.popen (cmd), errors='replace')
             for line in fd:
                 hashes = line.split()
                 revnumber = hashes[0]
@@ -405,7 +405,7 @@ class Checkout (object):
                 revdate = None
                 comment = ''
                 revfiles = []
-                fd = codecs.getreader('utf-8')(os.popen (cmd), 'ignore')
+                fd = codecs.getreader('utf-8')(os.popen (cmd), errors='replace')
                 line = fd.readline()
                 while line:
                     if line.startswith ('Author: '):
@@ -461,7 +461,7 @@ class Checkout (object):
             else:
                 # Since the beginning of time, to give us oldest first
                 cmd += ' -r\'{1970-01-01}\':HEAD'
-            fd = codecs.getreader('utf-8')(os.popen (cmd), 'ignore')
+            fd = codecs.getreader('utf-8')(os.popen (cmd), errors='replace')
             line = fd.readline()
             while line:
                 line = fd.readline()

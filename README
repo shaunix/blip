@@ -57,4 +57,12 @@ Here's some basic instructions for running Pulse on your machine:
    the appropriate Python module.  The PATH_INFO strings are more-or-less
    the 'ident' fields of the objects in the database.
 
+*) If you want to use Pulse with MySQL, you'll need to set up a database
+   for Pulse to use.  Once the tables have been created by pulsate init,
+   it is imperative that you run the following SQL command:
+     ALTER TABLE Revision SET CHARACTER SET utf8;
+   It's probably not a bad idea to do this on all tables, but Revision
+   is the only one that's caused a problem so far.  We should investigate
+   how to automate this through a better MySQL setup process.
+
 *) Ask Shaun to write a paragraph here about the database design.
