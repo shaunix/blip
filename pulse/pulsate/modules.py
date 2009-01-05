@@ -752,8 +752,11 @@ def process_oafserver (branch, checkout, filename, **kw):
                      pulse.utils.relative_path (filename, pulse.config.scm_dir))
     try:
         os.chdir (checkout.directory)
-        dom = xml.dom.minidom.parse (os.popen ('LC_ALL=C intltool-merge -x -q -u po "' + rel_ch + '" -'))
+        dom = xml.dom.minidom.parse (
+            os.popen ('LC_ALL=C intltool-merge -x -q -u po "' + rel_ch + '" - 2>/dev/null'))
     except:
+        pulse.utils.warn ('Could not process file %s' %
+                          pulse.utils.relative_path (filename, pulse.config.scm_dir))
         os.chdir (owd)
         return []
     os.chdir (owd)

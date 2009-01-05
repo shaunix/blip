@@ -107,10 +107,96 @@ $.fn.unshade = function (speed) {
 
 
 /******************************************************************************/
-/** Zoom images **/
 
-function init_zoom (ctxt) {
-  $('a.zoom', ctxt).click(function () {
+$.fn.pulse_init = function () {
+  /** AJAX Boxes **/
+  this.find ('.ajax').each(function (i) {
+    var div = $(this);
+    var link = $('a', div);
+    var href = link.attr('href');
+    var msg = div.text();
+    var src = $('img', div).attr('src');
+    div.empty();
+    var process = function (adiv) {
+      if (adiv.hasClass('stop')) {
+        clearInterval(div.timer);
+        div.remove();
+      } else {
+        var cur = adiv.current;
+        var next = cur.next('img');
+        if (next.length == 0)
+          next = adiv.children('img:first-child');
+        cur.css('display', 'none');
+        next.css('display', 'inline');
+        adiv.current = next;
+      }
+    };
+    var base = src.substring(0, src.length - 6);
+    for (var num = 0; num <= 35; num++) {
+      var url = base;
+      if (num < 10)
+        url = url + '0';
+      $('<img src="' + url + num + '.png">').css('display', 'none').appendTo(div);
+    }
+    div.append(' ' + msg);
+    div.current = div.children('img:first-child');
+    div.current.css('display', 'inline');
+    div.timer = setInterval(function () { process(div); }, 80);
+    div.slideDown('fast');
+    $.get(href, {}, function (data) {
+      var cont = $(data).css('display', 'none');
+      cont.insertAfter(div);
+      div.slideUp('fast', function () { div.addClass('stop'); });
+      cont.pulse_init ();
+      cont.slideDown('fast');
+    });
+  });
+
+  /** Info Boxes **/
+  this.find ('div.info').each (function () {
+    var div = $(this);
+    div.children ('div.infotitle').click (function () {
+      var cont = div.children ('div.infocont');
+      var img = $(this).find ('img');
+      var visible = cont.is(':visible');
+      if (visible) {
+        $(this).css ({ backgroundColor: '#eeeeec' });
+        img.attr('src', img.attr('src').replace('open', 'up'))
+      } else {
+        $(this).css ({ backgroundColor: '#ffffff' });
+        img.attr('src', img.attr('src').replace('up', 'open'))
+      }
+      cont.onScreenSlideToggle ();
+    });
+  });
+
+  /** Calendars **/
+  this.find ('div.cal').each (function () {
+    var cal = $(this);
+    cal_display (cal);
+    cal.find ('td.calprev').click (function () { cal_prev (cal); });
+    cal.find ('td.calnext').click (function () { cal_next (cal); });
+    cal.find ('dt.calevent').each (function () {
+      var dt = $(this);
+      dt.next('dd').andSelf('dt').hover (
+        function () {
+          var daynum = parseInt (dt.children('span.caldtstart').text().substr(8));
+          cal.find ('td.calday').each (function () {
+            var day = $(this);
+            if (day.hasClass ('caldayoff'))
+              return;
+            if (parseInt(day.text()) == daynum)
+              day.addClass ('calhover');
+          });
+        },
+        function () {
+          cal.find ('td.calday').removeClass ('calhover');
+        }
+    )});
+  });
+
+  /** Zoom Images **/
+  this.find ('a.zoom').click(function () {
     var mask = $('<div class="mask"></div>');
     var body = $('body');
     var maskresize = function () {
@@ -153,57 +239,162 @@ function init_zoom (ctxt) {
       img.onload = function () { open(link, img) };
     }
     return false;
-  })
+  });
+
+  /** Expanders **/
+  this.find ('.contexp').click (function () { 
+    var lnk = $(this);
+    var par = $(this).parents ('table.cont:first');
+    var cont = par.find ('div.cont-content:first');
+    var open = cont.is (':visible');
+
+    if (open)
+      par.find ('td.contexp:first').html ('&#9656;');
+    else
+      par.find ('td.contexp:first').html ('&#9662;');
+
+    var slinks = par.find ('div.slinks:first');
+    if (slinks.length > 0) {
+      if (open)
+        slinks.shade();
+      else
+        slinks.unshade();
+    }
+
+    cont.onScreenSlideToggle ();
+  });
+
+  /** Ellipsized Labels **/
+  this.find ('span.elliptxt').each (function () {
+    var span = $(this);
+    var lnk = $('<a class="elliplnk">(more)</a>');
+    lnk.click (function () {
+      lnk.remove ();
+      span.fadeIn ('fast');
+    });
+    span.hide ();
+    span.before (lnk);
+  });
+
+  /** Graph Slides **/
+  var nexts = this.find ('a.graphnext');
+  nexts.shade();
+  var prevs = this.find ('a.graphprev');
+  prevs.each(function () {
+    var thisq = $(this);
+    thisq.css('visibility', 'visible');
+    thisq.shade();
+    var re = /^.*-(\d+)$/
+    var match = re.exec(thisq.attr('id'));
+    var id = match[1];
+    var div = $('#graph-' + id)
+    var img = div.children('img');
+    var newsrc = slidecalc(img.attr('src'), -1).src;
+    $.ajax({
+      url: newsrc,
+      success: function () {
+        thisq.unshade();
+    }});
+  });
 }
 
-$(document).ready (function() { init_zoom($(document)) });
+$(document).ready (function () { $('html').pulse_init(); });
 
 
 /******************************************************************************/
-/** AJAX boxes **/
+/** Tabs **/
+
+function tab (tabid) {
+  location.hash = tabid;
+  $.tabs.removeClass ('tabactive');
+  var tab = $('#tab-' + tabid);
+  tab.addClass ('tabactive');
+
+  if ($.pane != null)
+    $.pane.hide();
+  var contid = 'pane-' + tabid;
+
+  var cont = $('#' + contid);
+  if (cont.length > 0) {
+    $.pane = cont;
+    $.pane.show();
+  } else {
+    var thr = throbber ();
+    $('#reload').hide ();
+    $('#throbber').append (thr).show ();
+    var href = pulse_url + '?ajax=tab&tab=' + tabid;
+    $.get(href, {}, function (data) {
+      cont = $('<div class="pane"></div>');
+      cont.attr ('id', contid);
+      cont.append ($(data));
+      cont.css ('display', 'none');
+      $.tabbed.children ('#panes').append (cont);
+      thr.hide (0, function () { thr.addClass ('stop') });
+      $('#throbber').hide ();
+      $('#reload').show ();
+      $.pane = $('#' + contid);
+      $.pane.pulse_init ();
+      $.pane.show();
+    });
+  }
+}
+
+function reload () {
+  $.pane.remove();
+  tab (location.hash.substring(1));
+}
 
 $(document).ready (function () {
-  $('.ajax').each(function (i) {
-    var div = $(this);
-    var link = $('a', div);
-    var href = link.attr('href');
-    var msg = div.text();
-    var src = $('img', div).attr('src');
-    div.empty();
-    var process = function (adiv) {
-      if (adiv.hasClass('stop')) {
-        clearInterval(div.timer);
-        div.remove();
-      } else {
-        var cur = adiv.current;
-        var next = cur.next('img');
-        if (next.length == 0)
-          next = adiv.children('img:first-child');
-        cur.css('display', 'none');
-        next.css('display', 'inline');
-        adiv.current = next;
-      }
-    };
-    var base = src.substring(0, src.length - 6);
-    for (var num = 0; num <= 35; num++) {
-      var url = base;
-      if (num < 10)
-        url = url + '0';
-      $('<img src="' + url + num + '.png">').css('display', 'none').appendTo(div);
-    }
-    div.append(' ' + msg);
-    div.current = div.children('img:first-child');
-    div.current.css('display', 'inline');
-    div.timer = setInterval(function () { process(div); }, 80);
-    div.slideDown('fast');
-    $.get(href, {}, function (data) {
-      var cont = $(data).css('display', 'none');
-      cont.insertAfter(div);
-      div.slideUp('fast', function () { div.addClass('stop'); });
-      cont.slideDown('fast');
-    });
-  });
+  var tabbed = $('#tabbed');
+  if (tabbed.length == 0)
+    return;
+  var tabs = tabbed.children('#tabs').children('.tab');
+
+  $.tabbed = tabbed;
+  $.tabs = tabs;
+  $.pane = null;
+
+  tabid = location.hash;
+  if (tabid == '' || tabid == '#') {
+    tabid = tabs.attr('id');
+    tabid = tabid.substring(4);
+  } else {
+    tabid = tabid.substring(1);
+  }
+  tab (tabid);
 });
+
+
+/******************************************************************************/
+/** Trobber **/
+
+function throbber () {
+  var div = $('<div class="throbber"></div>');
+  var process = function () {
+    if (div.hasClass('stop')) {
+      clearInterval(div.timer);
+      div.remove();
+    } else {
+      var cur = div.current;
+      var next = cur.next('img');
+      if (next.length == 0)
+        next = div.children('img:first-child');
+      cur.css('display', 'none');
+      next.css('display', 'inline');
+      div.current = next;
+    }
+  };
+  for (var num = 0; num <= 35; num++) {
+    var url = pulse_data + 'process'
+    if (num < 10)
+      url = url + '0';
+    $('<img src="' + url + num + '.png">').css('display', 'none').appendTo(div);
+  }
+  div.current = div.children('img:first-child');
+  div.current.css('display', 'inline');
+  div.timer = setInterval(process, 80);
+  return div;
+}
 
 
 /******************************************************************************/
@@ -293,16 +484,6 @@ function cal_next (cal) {
   cal_display (cal, month, year);
 }
 
-$(document).ready(function() {
-  var cals = $('div.cal');
-  cals.each (function () {
-    var cal = $(this);
-    cal_display (cal);
-    cal.find ('td.calprev').click (function () { cal_prev (cal); });
-    cal.find ('td.calnext').click (function () { cal_next (cal); });
-  });
-});
-
 
 /******************************************************************************/
 /** Graph slides **/
@@ -315,6 +496,7 @@ function slide (id, dir) {
   var curimg = div.children('img');
   var width = curimg.width();
   div.css({
+    overflow: 'hidden',
     width: width,
     height: curimg.height()
   });
@@ -325,7 +507,7 @@ function slide (id, dir) {
   var newmap = $('#' + newmapid);
   if (newmap.length == 0) {
     var filename = newdata.filename;
-    var graphurl = window.location + '?ajax=graphmap&id=' + id + '&num=' + newdata.num + '&filename=' + filename;
+    var graphurl = pulse_url + '?ajax=graphmap&id=' + id + '&num=' + newdata.num + '&filename=' + filename;
     $.get(graphurl, function (data) {
       div.append(data);
     });
@@ -342,11 +524,13 @@ function slide (id, dir) {
 
   nextlink.shade();
   var nextsrc = slidecalc(newsrc, dir).src;
-  $.ajax({
-    url: nextsrc,
-    success: function () {
-      nextlink.unshade();
-  }});
+  if (nextsrc != undefined) {
+    $.ajax({
+      url: nextsrc,
+      success: function () {
+        nextlink.unshade();
+    }});
+  }
 
   var slidego = function () {
     curimg.wrap('<div class="graphaway"></div>'); 
@@ -364,7 +548,7 @@ function slide (id, dir) {
     });
     curdiv.iter = 0;
     var slideiter = function () {
-      curdiv.iter += 3;
+      curdiv.iter += 6;
       if (curdiv.iter > width) { curdiv.iter = width; }
       curdiv.css({
         width: (width - curdiv.iter)
@@ -385,6 +569,7 @@ function slide (id, dir) {
         clearInterval(div[0].timer);
         div[0].timer = undefined;
         curdiv.remove();
+        div.css ({overflow: 'normal'});
       }
     };
     if (dir == -1) {
@@ -420,28 +605,6 @@ function slidecalc(src, dir) {
   };
 }
 
-$(document).ready(function() {
-  var nexts = $('a.graphnext');
-  nexts.shade();
-  var prevs = $('a.graphprev');
-  prevs.each(function () {
-    var thisq = $(this);
-    thisq.css('visibility', 'visible');
-    thisq.shade();
-    var re = /^.*-(\d+)$/
-    var match = re.exec(thisq.attr('id'));
-    var id = match[1];
-    var div = $('#graph-' + id)
-    var img = div.children('img');
-    var newsrc = slidecalc(img.attr('src'), -1).src;
-    $.ajax({
-      url: newsrc,
-      success: function () {
-        thisq.unshade();
-    }});
-  });
-});
-
 
 /******************************************************************************/
 /** Graph comments **/
@@ -465,81 +628,13 @@ function comment (count, num, j, x) {
 
 
 /******************************************************************************/
-/** Expanders **/
-
-$(document).ready (function () {
-  $('.contexp').click (function () { 
-    var lnk = $(this);
-    var par = $(this).parents ('table.cont:first');
-    var cont = par.find ('div.cont-content:first');
-    var open = cont.is (':visible');
-
-    if (open)
-      par.find ('td.contexp:first').html ('&#9656;');
-    else
-      par.find ('td.contexp:first').html ('&#9662;');
-
-    var slinks = par.find ('div.slinks:first');
-    if (slinks.length > 0) {
-      if (open)
-        slinks.shade();
-      else
-        slinks.unshade();
-    }
-
-    cont.onScreenSlideToggle ();
-  });
-});
-
-
-/******************************************************************************/
-/** Info boxes **/
-
-$(document).ready (function () {
-  $('div.info').each (function () {
-    var div = $(this);
-    div.children ('div.infotitle').click (function () {
-      var cont = div.children ('div.infocont');
-      var img = $(this).find ('img');
-      var visible = cont.is(':visible');
-      if (visible) {
-        $(this).css ({ backgroundColor: '#eeeeec' });
-        img.attr('src', img.attr('src').replace('open', 'up'))
-      } else {
-        $(this).css ({ backgroundColor: '#ffffff' });
-        img.attr('src', img.attr('src').replace('up', 'open'))
-      }
-      cont.onScreenSlideToggle ();
-    });
-  });
-});
-
-
-/******************************************************************************/
-/** Ellipsized text **/
-
-$(document).ready (function () {
-  $('span.elliptxt').each (function () {
-    var span = $(this);
-    var lnk = $('<a class="elliplnk">(more)</a>');
-    lnk.click (function () {
-      lnk.remove ();
-      span.fadeIn ('fast');
-    });
-    span.hide ();
-    span.before (lnk);
-  });
-});
-
-
-/******************************************************************************/
 /** Replace Content **/
 
 function replace (id, url) {
   var el = $('#' + id);
   var par = el.parents('.infocont');
   if (par.length > 0) {
-    par.shade();
+   par.shade();
   }
   $.get(url, function (data) {
     if (document.createRange) {

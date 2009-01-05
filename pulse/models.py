@@ -26,6 +26,7 @@ import sys
 import time
 
 os.environ['DJANGO_SETTINGS_MODULE'] = 'pulse.config'
+import django
 import django.db
 import django.db.backends.util
 from django.db import models
@@ -36,6 +37,18 @@ from django.dispatch import dispatcher
 import pulse.config
 import pulse.scm
 import pulse.utils
+
+
+# Django changed this keyword argument in 1.0, and I want to keep
+# compatibility with 0.96 for now.
+if django.VERSION[0] >= 1:
+    maxlength200 = {'max_length' : 200}
+    maxlength80 = {'max_length' : 80}
+    maxlength20 = {'max_length' : 20}
+else:
+    maxlength200 = {'maxlength' : 200}
+    maxlength80 = {'maxlength' : 80}
+    maxlength20 = {'maxlength' : 20}
 
 
 ################################################################################
@@ -389,14 +402,14 @@ class PulseRecord (object):
 
 
     # Common database fields
-    ident = models.CharField (max_length=200)
-    type = models.CharField (max_length=80)
+    ident = models.CharField (**maxlength200)
+    type = models.CharField (**maxlength80)
 
     name = PickleField ()
     desc = PickleField ()
 
-    icon_dir = models.CharField (max_length=200, null=True)
-    icon_name = models.CharField (max_length=80, null=True)
+    icon_dir = models.CharField (null=True, **maxlength200)
+    icon_name = models.CharField (null=True, **maxlength80)
 
     email = models.EmailField (null=True)
     web = models.URLField (verify_exists=False, null=True)
@@ -485,30 +498,30 @@ class Branchable (PulseRecord, models.Model):
     # Translation  /l10n/<lang>/i18n/<server>/<module>/<domain>
     #              /l10n/<lang>/doc/<server>/<module>/<document>
     #              /l10n/<lang>/ref/<server>/<module>/<document>
-    scm_type = models.CharField (max_length=20, null=True)
-    scm_server = models.CharField (max_length=200, null=True)
-    scm_module = models.CharField (max_length=80, null=True)
-    scm_path = models.CharField (max_length=200, null=True)
-    scm_dir = models.CharField (max_length=200, null=True)
-    scm_file = models.CharField (max_length=80, null=True)
+    scm_type = models.CharField (null=True, **maxlength20)
+    scm_server = models.CharField (null=True, **maxlength200)
+    scm_module = models.CharField (null=True, **maxlength80)
+    scm_path = models.CharField (null=True, **maxlength200)
+    scm_dir = models.CharField (null=True, **maxlength200)
+    scm_file = models.CharField (null=True, **maxlength80)
 
     default = models.ForeignKey ('Branch', related_name='is_default_query', null=True)
 
 
 class Branch (PulseRecord, models.Model):
     __metaclass__ = PulseModelBase
-    subtype = models.CharField (max_length=80, null=True)
+    subtype = models.CharField (null=True, **maxlength80)
     parent = models.ForeignKey ('Branch', related_name='children', null=True)
     branchable = models.ForeignKey ('Branchable', related_name='branches', null=True)
-    error = models.CharField (max_length=200, null=True)
+    error = models.CharField (null=True, **maxlength200)
 
-    scm_type = models.CharField (max_length=20, null=True)
-    scm_server = models.CharField (max_length=200, null=True)
-    scm_module = models.CharField (max_length=80, null=True)
-    scm_branch = models.CharField (max_length=80, null=True)
-    scm_path = models.CharField (max_length=200, null=True)
-    scm_dir = models.CharField (max_length=200, null=True)
-    scm_file = models.CharField (max_length=80, null=True)
+    scm_type = models.CharField (null=True, **maxlength20)
+    scm_server = models.CharField (null=True, **maxlength200)
+    scm_module = models.CharField (null=True, **maxlength80)
+    scm_branch = models.CharField (null=True, **maxlength80)
+    scm_path = models.CharField (null=True, **maxlength200)
+    scm_dir = models.CharField (null=True, **maxlength200)
+    scm_file = models.CharField (null=True, **maxlength80)
 
     mod_score = models.IntegerField (null=True)
     mod_datetime = models.DateTimeField (null=True)
@@ -607,7 +620,8 @@ class Branch (PulseRecord, models.Model):
 class Entity (PulseRecord, models.Model):
     __metaclass__ = PulseModelBase
 
-    nick = models.CharField (max_length=80, null=True)
+    parent = models.ForeignKey ('Entity', related_name='children', null=True)
+    nick = models.CharField (null=True, **maxlength80)
     mod_score = models.IntegerField (null=True)
 
 
@@ -699,6 +713,12 @@ class SetModule (PulseRelation, models.Model):
     subj = models.ForeignKey (ReleaseSet, related_name='set_module_preds')
     pred = models.ForeignKey (Branch, related_name='set_module_subjs')
 
+class TeamMember (PulseRelation, models.Model):
+    __metaclass__ = PulseModelBase
+    subj = models.ForeignKey (Entity, related_name='team_member_preds')
+    pred = models.ForeignKey (Entity, related_name='team_member_subjs')
+    coordinator = models.BooleanField (default=False)
+
 
 ################################################################################
 ## Other Tables
@@ -714,7 +734,7 @@ class Revision (models.Model):
     branch = models.ForeignKey (Branch)
     person = models.ForeignKey (Entity)
     alias = models.ForeignKey (Alias, null=True)
-    revision = models.CharField (max_length=80)
+    revision = models.CharField (**maxlength80)
     datetime = models.DateTimeField ()
     weeknum = models.IntegerField (null=True)
     comment = models.TextField ()
@@ -756,9 +776,9 @@ class RevisionFile (models.Model):
     __metaclass__ = PulseModelBase
 
     revision = models.ForeignKey (Revision, related_name='files')
-    filename = models.CharField (max_length=200)
-    filerev = models.CharField (max_length=80)
-    prevrev = models.CharField (max_length=80, null=True)
+    filename = models.CharField (**maxlength200)
+    filerev = models.CharField (**maxlength80)
+    prevrev = models.CharField (null=True, **maxlength80)
 
 
 class Statistic (models.Model):
@@ -766,7 +786,7 @@ class Statistic (models.Model):
 
     branch = models.ForeignKey (Branch)
     daynum = models.IntegerField ()
-    type = models.CharField (max_length=20)
+    type = models.CharField (**maxlength20)
     stat1 = models.IntegerField ()
     stat2 = models.IntegerField ()
     total = models.IntegerField ()
@@ -794,8 +814,8 @@ class Statistic (models.Model):
 class Timestamp (models.Model):
     __metaclass__ = PulseModelBase
 
-    filename = models.CharField (max_length=200)
-    sourcefunc = models.CharField (max_length=200)
+    filename = models.CharField (**maxlength200)
+    sourcefunc = models.CharField (**maxlength200)
     stamp = models.IntegerField ()
 
     @classmethod
@@ -825,11 +845,11 @@ class Timestamp (models.Model):
 class OutputFile (models.Model):
     __metaclass__ = PulseModelBase
 
-    type = models.CharField (max_length=80)
-    ident = models.CharField (max_length=200)
-    subdir = models.CharField (max_length=200, null=True)
-    filename = models.CharField (max_length=200)
-    source = models.CharField (max_length=200, null=True)
+    type = models.CharField (**maxlength80)
+    ident = models.CharField (**maxlength200)
+    subdir = models.CharField (null=True, **maxlength200)
+    filename = models.CharField (**maxlength200)
+    source = models.CharField (null=True, **maxlength200)
     datetime = models.DateTimeField ()
     statistic = models.IntegerField (null=True)
     data = PickleField ()
@@ -865,8 +885,8 @@ class OutputFile (models.Model):
 class Queue (models.Model):
     __metaclass__ = PulseModelBase
 
-    module = models.CharField (max_length=80)
-    ident = models.CharField (max_length=200)
+    module = models.CharField (**maxlength80)
+    ident = models.CharField (**maxlength200)
 
     @classmethod
     def push (cls, module, ident):
@@ -884,4 +904,10 @@ class Queue (models.Model):
         except:
             return None
 
-
+    @classmethod
+    def remove (cls, module, ident):
+        try:
+            rec = cls.objects.filter (module=module, ident=ident)
+            rec.delete()
+        except:
+            pass

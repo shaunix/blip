@@ -168,6 +168,9 @@ class FactsComponent (Component):
     def add_fact_sep (self):
         self._facts.append (None)
 
+    def has_facts (self):
+        return len(self._facts) > 0
+
     def output (self, fd=None):
         """Output the HTML."""
         if len (self._facts) == 0:
@@ -369,12 +372,12 @@ class HttpComponent (Component):
 ################################################################################
 ## Pages
 
-class Page (Widget, HttpComponent, ContentComponent):
+class Page (Widget, HttpComponent, ContentComponent, SublinksComponent, FactsComponent):
     """
     Complete web page.
 
     The output method creates all the standard HTML for the top and bottom
-    of the page, and call output_page_content in between.  Subclasses should
+    of the page, and calls output_page_content in between.  Subclasses should
     override output_page_content.
 
     Keyword arguments:
@@ -387,6 +390,10 @@ class Page (Widget, HttpComponent, ContentComponent):
         self._title = kw.get ('title')
         self._icon = kw.get ('icon')
         self._screenshot_file = None
+        self._sidebar = None
+        self._url = kw.get ('url')
+        self._tabs = []
+        self._panes = {}
 
     def set_title (self, title):
         """Set the title of the page."""
@@ -395,6 +402,16 @@ class Page (Widget, HttpComponent, ContentComponent):
     def set_icon (self, icon):
         """Set the URL of an icon for the page."""
         self._icon = icon
+
+    def add_tab (self, tabid, title):
+        self._tabs.append ((tabid, title))
+
+    def add_to_tab (self, id, content):
+        pane = self._panes.get(id, None)
+        if pane == None:
+            pane = ContentComponent()
+            self._panes[id] = pane
+        pane.add_content (content)
 
     def add_screenshot (self, screenshot):
         """
@@ -413,36 +430,30 @@ class Page (Widget, HttpComponent, ContentComponent):
         except:
             pass
 
+    def add_sidebar_content (self, content):
+        if self._sidebar == None:
+            self._sidebar = ContentComponent ()
+        self._sidebar.add_content (content)
+
     def output (self, fd=None):
         """Output the HTML."""
         HttpComponent.output (self, fd=fd)
         p (fd, ('<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN"'
                 ' "http://www.w3.org/TR/html4/strict.dtd">'))
         p (fd, '<html><head>')
-        p (fd, '  <title>%s</title>', self._title)
-        p (fd, '  <meta http-equiv="Content-type" content="text/html; charset=utf-8">')
-        p (fd, '  <link rel="stylesheet" href="%spulse.css">', pulse.config.data_root)
-        p (fd, '  <script language="javascript" type="text/javascript" src="%sjquery.js"></script>',
+        p (fd, '<title>%s</title>', self._title)
+        p (fd, '<meta http-equiv="Content-type" content="text/html; charset=utf-8">')
+        p (fd, '<link rel="stylesheet" href="%spulse.css">', pulse.config.data_root)
+        p (fd, '<script language="javascript" type="text/javascript">')
+        p (fd, 'pulse_data="%s"', pulse.config.data_root)
+        if self._url != None:
+            p (fd, 'pulse_url="%s";', self._url)
+        p (fd, '</script>')
+        p (fd, '<script language="javascript" type="text/javascript" src="%sjquery.js"></script>',
            pulse.config.data_root)
-        p (fd, '  <script language="javascript" type="text/javascript" src="%spulse.js"></script>',
+        p (fd, '<script language="javascript" type="text/javascript" src="%spulse.js"></script>',
            pulse.config.data_root)
         p (fd, '</head><body>')
-        p (fd, '<ul id="general">')
-        p (fd, ('  <li id="siteaction-gnome_home" class="home">'
-                '<a href="http://www.gnome.org/">Home</a></li>'))
-        p (fd, ('  <li id="siteaction-gnome_news">'
-                '<a href="http://news.gnome.org">News</a></li>'))
-        p (fd, ('  <li id="siteaction-gnome_projects">'
-                '<a href="http://www.gnome.org/projects/">Projects</a></li>'))
-        p (fd, ('  <li id="siteaction-gnome_art">'
-                '<a href="http://art.gnome.org">Art</a></li>'))
-        p (fd, ('  <li id="siteaction-gnome_support">'
-                '<a href="http://www.gnome.org/support/">Support</a></li>'))
-        p (fd, ('  <li id="siteaction-gnome_development">'
-                '<a href="http://developer.gnome.org">Development</a></li>'))
-        p (fd, ('  <li id="siteaction-gnome_community">'
-                '<a href="http://www.gnome.org/community/">Community</a></li>'))
-        p (fd, '</ul>')
         p (fd, '<div id="header"><a href="%s"><img src="%s" alt="Pulse"></a></div>',
            (pulse.config.web_root, pulse.config.data_root + 'pulse-logo.png'))
         p (fd, '<h1>')
@@ -450,8 +461,23 @@ class Page (Widget, HttpComponent, ContentComponent):
             p (fd, '<img class="icon" src="%s" alt="%s"> ', (self._icon, self._title), False)
         p (fd, None, self._title)
         p (fd, '</h1>')
-        p (fd, '<div id="body">')
-        if self._screenshot_file != None:
+        if self._sidebar != None:
+            p (fd, '<div id="sidebar">')
+            if self._screenshot_file != None:
+                p (fd, '<div class="screenshot">', None, False)
+                url = self._screenshot_file.get_pulse_url ()
+                p (fd, '<a href="%s" class="zoom">', self._screenshot_file.pulse_url, False)
+                p (fd, '<img src="%s" width="%i" height="%i">',
+                   (self._screenshot_file.get_pulse_url ('thumbs'),
+                    self._screenshot_file.data['thumb_width'],
+                    self._screenshot_file.data['thumb_height']))
+                p (fd, '</a></div>')
+            self._sidebar.output (fd=fd)
+            p (fd, '</div><div id="bodyside">')
+        else:
+            p (fd, '<div id="body">')
+        SublinksComponent.output (self, fd=fd)
+        if self._screenshot_file != None and self._sidebar == None:
             p (fd, '<div class="screenshot">', None, False)
             url = self._screenshot_file.get_pulse_url ()
             p (fd, '<a href="%s" class="zoom">', self._screenshot_file.pulse_url, False)
@@ -460,8 +486,33 @@ class Page (Widget, HttpComponent, ContentComponent):
                 self._screenshot_file.data['thumb_width'],
                 self._screenshot_file.data['thumb_height']))
             p (fd, '</a></div>')
-        
+
+        if len(self._tabs) == 0:
+            p (fd, '<div id="notabs">')
+        # FIXME: what do we do with these when there are tabs?
+        FactsComponent.output (self, fd=fd)
         self.output_page_content (fd=fd)
+        if len(self._tabs) == 0:
+            p (fd, '</div>')
+
+        if len(self._tabs) > 0:
+            p (fd, '<div id="tabbed">')
+            p (fd, '<div id="reload"><a href="javascript:reload()"><img src="%sreload.png"></a></div>',
+               pulse.config.data_root)
+            p (fd, '<div id="throbber"></div>')
+            p (fd, '<div id="tabs">')
+            for tabid, title in self._tabs:
+                title = esc (title).replace(' ', '&nbsp;')
+                p (fd, '<span class="tab" id="tab-%s">', tabid, False)
+                p (fd, '<a href="javascript:tab(\'%s\')">' + title + '</a></span>', tabid)
+            p (fd, '</div>')
+            p (fd, '<div id="panes">')
+            for pane in self._panes:
+                p (fd, '<div class="pane" id="pane-%s">', pane)
+                self._panes[pane].output (fd=fd)
+                p (fd, '</div>')
+            p (fd, '</div>')
+
         p (fd, '</div></body></html>')
         
     def output_page_content (self, fd=None):
@@ -487,7 +538,7 @@ class Fragment (Widget, HttpComponent, ContentComponent):
         ContentComponent.output (self, fd=fd)
 
 
-class RecordPage (Page, SublinksComponent, FactsComponent):
+class RecordPage (Page):
     """
     Convenience wrapper for Page for Records.
 
@@ -498,13 +549,8 @@ class RecordPage (Page, SublinksComponent, FactsComponent):
     def __init__ (self, record, **kw):
         kw.setdefault ('title', record.title)
         kw.setdefault ('icon', record.icon_url)
+        kw.setdefault ('url', record.pulse_url)
         super (RecordPage, self).__init__ (**kw)
-
-    def output_page_content (self, fd=None):
-        """Output the contents of the page."""
-        SublinksComponent.output (self, fd=fd)
-        FactsComponent.output (self, fd=fd)
-        Page.output_page_content (self, fd=fd)
 
 
 class PageNotFound (Page):
@@ -572,6 +618,20 @@ class AjaxBox (Widget):
         """Output the HTML."""
         p (fd, '<div class="ajax"><img src="%sprocess00.png"><a href="%s">%s</a></div>',
            (pulse.config.data_root, self._url, pulse.utils.gettext ('Loading')) )
+
+
+class SidebarBox (Widget, ContentComponent, LinkBoxesComponent):
+    def __init__ (self, title, **kw):
+        super (SidebarBox, self).__init__ (**kw)
+        self._title = title
+
+    def output (self, fd=None):
+        """Output the HTML."""
+        p (fd, '<div class="sidetitle">%s</div>', self._title, False)
+        p (fd, '<div class="sidecont">')
+        ContentComponent.output (self, fd=fd)
+        LinkBoxesComponent.output (self, fd=fd)
+        p (fd, '</div>')
 
 
 class InfoBox (Widget, ContentComponent, LinkBoxesComponent):
@@ -706,9 +766,12 @@ class Calendar (Widget):
             p (fd, '<span class="caldtstart">%s</span> ', event[0].strftime('%Y-%m-%d'), False)
             p (fd, '<span class="calsummary">%s</span>', event[2], False)
             p (fd, '</dt>')
-            p (fd, '<dd class="calevent">%s</dd>', event[3])
+            p (fd, '<dd class="calevent">', None, False)
+            p (fd, EllipsizedLabel (event[3], 130), None, False)
+            p (fd, '</dd>')
         p (fd, '</dl>')
         p (fd, '</div>')
+
 
 class LinkBox (Widget, FactsComponent, ContentComponent):
     """
@@ -1137,7 +1200,7 @@ class Graph (Widget):
         self._map_only = kw.get('map_only', False)
         self._comments = []
 
-    def add_comment (self, coords, comment, href=None):
+    def add_comment (self, coords, label, comment, href=None):
         """
         Add a comment to the graph.
 
@@ -1145,7 +1208,7 @@ class Graph (Widget):
         area defined by coords.  If the href argument is not None, that
         area will be a link to href.
         """
-        self._comments.append ((coords, comment, href))
+        self._comments.append ((coords, label, comment, href))
 
     def output (self, fd=None):
         """Output the HTML."""
@@ -1185,14 +1248,16 @@ class Graph (Widget):
                 p (fd, ' onmouseout="javascript:comment(%i, %i, %i)"',
                    (self._count, self._num, i), False)
                 if comment[2] != None:
-                    p (fd, ' href="%s"', comment[2])
+                    p (fd, ' href="%s"', comment[3])
                 p (fd, '>')
             p (fd, '</map>')
             i = 0
             for comment in self._comments:
                 i += 1
-                p (fd, '<div class="comment" id="comment-%i-%i-%i">%s</div>',
-                   (self._count, self._num, i, comment[1]))
+                p (fd, '<div class="comment" id="comment-%i-%i-%i">',
+                   (self._count, self._num, i))
+                p (fd, '<div class="label">%s</div>', comment[1])
+                p (fd, '<div>%s</div></div>', comment[2])
             p (fd, '</div>', None, False)
         if not self._map_only:
             p (fd, '</div>', None, False)
@@ -1221,14 +1286,16 @@ class Graph (Widget):
         for (coords, tot, weeknum) in of.data.get ('coords', []):
             ago = thisweek - weeknum
             if ago == 0:
-                cmt = pulse.utils.gettext ('this week: %i commits') % tot
+                label = pulse.utils.gettext ('this week:')
             elif ago == 1:
-                cmt = pulse.utils.gettext ('last week: %i commits') % tot
+                label = pulse.utils.gettext ('last week:')
             else:
-                cmt = pulse.utils.gettext ('%i weeks ago: %i commits') % (ago, tot)
+                label = (pulse.utils.gettext ('week of %s:') %
+                         pulse.utils.weeknumday(weeknum).strftime('%Y-%m-%d'))
+            cmt = pulse.utils.gettext ('%i commits') % tot
             jslink = 'javascript:replace(\'commits\', '
             jslink += '\'%s?ajax=commits&weeknum=%i\')' % (url, weeknum)
-            graph.add_comment (coords, cmt, jslink)
+            graph.add_comment (coords, label, cmt, jslink)
         return graph
 
 
@@ -1378,8 +1445,8 @@ class PopupLink (Widget):
                         break
             if line == '':
                 line = maybe
-            if len(line) > 40:
-                i = 30
+            if len(line) > 80:
+                i = 60
                 while i < len(line):
                     if line[i] == ' ':
                         break
@@ -1482,6 +1549,10 @@ class StatusSpan (Widget, ContentComponent):
         ContentComponent.output (self, fd=fd)
 
 
+class FactsTable (FactsComponent):
+    pass
+
+
 class Div (Widget, ContentComponent):
     """
     A simple block.
@@ -1496,15 +1567,18 @@ class Div (Widget, ContentComponent):
     def __init__ (self, *args, **kw):
         super (Div, self).__init__ (**kw)
         self._id = kw.get('id', None)
+        self._classname = kw.get ('classname', None)
         for arg in args:
             self.add_content (arg)
 
     def output (self, fd=None):
         """Output the HTML."""
+        p (fd, '<div', None, False)
         if self._id != None:
-            p (fd, '<div id="%s">', self._id)
-        else:
-            p (fd, '<div>')
+            p (fd, ' id="%s"', self._id)
+        if self._classname != None:
+            p (fd, ' class="%s"', self._classname)
+        p (fd, '>', None, False)
         ContentComponent.output (self, fd=fd)
         p (fd, '</div>')
 

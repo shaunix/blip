@@ -111,7 +111,7 @@ def output_app (app, **kw):
     rels = db.SetModule.get_related (pred=app.parent)
     if len(rels) > 0:
         sets = pulse.utils.attrsorted ([rel.subj for rel in rels], 'title')
-        span = [pulse.html.Link(obj.pulse_url + '/prog', obj.title) for obj in sets]
+        span = [pulse.html.Link(obj.pulse_url + '#prog', obj.title) for obj in sets]
         span = pulse.html.Span (*span)
         span.set_divider (pulse.html.BULLET)
         page.add_fact (pulse.utils.gettext ('Release Sets'), span)
@@ -134,17 +134,14 @@ def output_app (app, **kw):
             span.add_content (pulse.html.Link (app.mod_person))
         page.add_fact (pulse.utils.gettext ('Last Modified'), span)
 
-    columns = pulse.html.ColumnBox (2)
-    page.add_content (columns)
-
     # Developers
     box = pulse.pages.mod.get_developers_box (app.parent)
-    columns.add_to_column (0, box)
+    page.add_sidebar_content (box)
 
     # Documentation
     rels = db.Documentation.get_related (subj=app)
     box = pulse.html.InfoBox (pulse.utils.gettext ('Documentation'))
-    columns.add_to_column (1, box)
+    page.add_content (box)
     if len(rels) > 0:
         docs = pulse.utils.attrsorted ([rel.pred for rel in rels], 'title')
         for doc in docs:

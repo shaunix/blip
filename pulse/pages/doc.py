@@ -82,7 +82,9 @@ def main (path, query, http=True, fd=None):
         pass
 
     kw = {'path' : path, 'query' : query, 'http' : http, 'fd' : fd}
-    if query.get('ajax', None) == 'commits':
+    if query.get('ajax', None) == 'tab':
+        return output_ajax_tab (doc, **kw)
+    elif query.get('ajax', None) == 'commits':
         return output_ajax_commits (doc, **kw)
     elif query.get('ajax', None) == 'figures':
         return output_ajax_figures (doc, **kw)
@@ -97,7 +99,6 @@ def main (path, query, http=True, fd=None):
 def output_doc (doc, **kw):
     """Output information about a document"""
     page = pulse.html.RecordPage (doc, http=kw.get('http', True))
-    checkout = pulse.scm.Checkout.from_record (doc, checkout=False, update=False)
 
     branches = pulse.utils.attrsorted (list(doc.branchable.branches.all()), 'scm_branch')
     if len(branches) > 1:
@@ -115,57 +116,13 @@ def output_doc (doc, **kw):
                        pulse.html.AdmonBox (pulse.html.AdmonBox.error, doc.error))
         page.add_fact_sep ()
 
-    sep = False
-    try:
-        desc = doc.localized_desc
-        page.add_fact (pulse.utils.gettext ('Description'), desc)
-        sep = True
-    except:
-        pass
-
-    rels = db.SetModule.get_related (pred=doc.parent)
-    if len(rels) > 0:
-        sets = pulse.utils.attrsorted ([rel.subj for rel in rels], 'title')
-        span = pulse.html.Span (*[pulse.html.Link(rset.pulse_url + '/doc', rset.title)
-                                  for rset in sets])
-        span.set_divider (pulse.html.BULLET)
-        page.add_fact (pulse.utils.gettext ('Release Sets'), span)
-        sep = True
-
-    page.add_fact (pulse.utils.gettext ('Module'), pulse.html.Link (doc.parent))
-
-    rels = db.Documentation.get_related (pred=doc)
-    if len(rels) > 0:
-        objs = pulse.utils.attrsorted ([rel.subj for rel in rels], 'title')
-        span = pulse.html.Span (*[pulse.html.Link(obj) for obj in objs])
-        span.set_divider (pulse.html.BULLET)
-        page.add_fact (pulse.utils.gettext ('Describes'), span)
-        sep = True
-
-    if sep:
-        page.add_fact_sep ()
-    
-    page.add_fact (pulse.utils.gettext ('Location'),
-                   checkout.get_location (doc.scm_dir, doc.scm_file))
-
-    if doc.mod_datetime != None:
-        span = pulse.html.Span(divider=pulse.html.SPACE)
-        # FIXME: i18n, word order, but we want to link person
-        span.add_content (doc.mod_datetime.strftime('%Y-%m-%d %T'))
-        if doc.mod_person != None:
-            span.add_content (' by ')
-            span.add_content (pulse.html.Link (doc.mod_person))
-        page.add_fact (pulse.utils.gettext ('Last Modified'), span)
-
-    page.add_fact_sep ()
-    page.add_fact (pulse.utils.gettext ('Score'), str(doc.mod_score))
-
-    columns = pulse.html.ColumnBox (2)
-    page.add_content (columns)
+    page.add_tab ('info', 'Info')
+    box = get_info_tab (doc, **kw)
+    page.add_to_tab ('info', box)
 
     # Release Info
-    box = pulse.html.InfoBox (pulse.utils.gettext ('Release Info'))
-    columns.add_to_column (0, box)
+    box = pulse.html.SidebarBox (pulse.utils.gettext ('Release Info'))
+    page.add_sidebar_content (box)
     facts = pulse.html.FactList ()
     facts.add_term ('Status:')
     facts.add_entry (doc.data.get ('status', 'none'))
@@ -188,8 +145,8 @@ def output_doc (doc, **kw):
     box.add_content (facts)
 
     # Developers
-    box = pulse.html.InfoBox (pulse.utils.gettext ('Developers'))
-    columns.add_to_column (0, box)
+    box = pulse.html.SidebarBox (pulse.utils.gettext ('Developers'))
+    page.add_sidebar_content (box)
     rels = db.DocumentEntity.get_related (subj=doc)
     if len(rels) > 0:
         people = {}
@@ -211,9 +168,150 @@ def output_doc (doc, **kw):
         box.add_content (pulse.html.AdmonBox (pulse.html.AdmonBox.warning,
                                               pulse.utils.gettext ('No developers') ))
 
-    # Activity
-    box = pulse.html.InfoBox (pulse.utils.gettext ('Activity'))
-    columns.add_to_column (0, box)
+    page.add_tab ('activity', pulse.utils.gettext ('Activity'))
+    page.add_tab ('components', pulse.utils.gettext ('Components'))
+
+    page.output(fd=kw.get('fd'))
+    return 0
+
+
+def output_ajax_figures (doc, **kw):
+    page = pulse.html.Fragment (http=kw.get('http', True))
+    figures = doc.data.get('figures', {})
+    page.add_content (get_figures (doc, figures))
+    page.output(fd=kw.get('fd'))
+    return 0
+
+
+def output_ajax_graphmap (doc, **kw):
+    query = kw.get ('query', {})
+    page = pulse.html.Fragment (http=kw.get('http', True))
+    id = query.get('id')
+    num = query.get('num')
+    filename = query.get('filename')
+    
+    of = db.OutputFile.objects.filter (type='graphs', ident=doc.ident, filename=filename)
+    try:
+        of = of[0]
+        graph = pulse.html.Graph.activity_graph (of, doc.pulse_url,
+                                                 count=int(id), num=int(num), map_only=True)
+        page.add_content (graph)
+    except IndexError:
+        pass
+    
+    page.output(fd=kw.get('fd'))
+    return 0
+
+
+def output_ajax_xmlfiles (doc, **kw):
+    page = pulse.html.Fragment (http=kw.get('http', True))
+    xmlfiles = doc.data.get('xmlfiles', [])
+    page.add_content (get_xmlfiles (doc, xmlfiles))
+    page.output(fd=kw.get('fd'))
+    return 0
+
+
+def output_ajax_tab (doc, **kw):
+    query = kw.get ('query', {})
+    page = pulse.html.Fragment (http=kw.get('http', True))
+    tab = query.get('tab', None)
+    if tab == 'info':
+        page.add_content (get_info_tab (doc, **kw))
+    elif tab == 'activity':
+        page.add_content (get_activity_tab (doc, **kw))
+    elif tab == 'components':
+        page.add_content (get_components_tab (doc, **kw))
+    page.output(fd=kw.get('fd'))
+    return 0
+
+
+def output_ajax_commits (doc, **kw):
+    page = pulse.html.Fragment (http=kw.get('http', True))
+    query = kw.get('query', {})
+    weeknum = query.get('weeknum', None)
+    files = [os.path.join (doc.scm_dir, f) for f in doc.data.get ('xmlfiles', [])]
+    if weeknum != None:
+        weeknum = int(weeknum)
+        thisweek = pulse.utils.weeknum (datetime.datetime.now())
+        ago = thisweek - weeknum
+        revs = db.Revision.select_revisions (branch=doc.parent, files=files, weeknum=weeknum)
+        cnt = revs.count()
+        revs = revs[:20]
+    else:
+        revs = db.Revision.select_revisions (branch=doc.parent, files=files)
+        cnt = revs.count()
+        revs = revs[:10]
+    if weeknum == None:
+        title = (pulse.utils.gettext('Showing %i of %i commits:')
+                 % (len(revs), cnt))
+    elif ago == 0:
+        title = (pulse.utils.gettext('Showing %i of %i commits from this week:')
+                 % (len(revs), cnt))
+    elif ago == 1:
+        title = (pulse.utils.gettext('Showing %i of %i commits from last week:')
+                 % (len(revs), cnt))
+    else:
+        title = (pulse.utils.gettext('Showing %i of %i commits from %i weeks ago:')
+                 % (len(revs), cnt, ago))
+    div = get_commits_div (doc, revs, title)
+    page.add_content (div)
+    page.output(fd=kw.get('fd'))
+    return 0
+
+
+def get_info_tab (doc, **kw):
+    facts = pulse.html.FactsTable()
+    sep = False
+    try:
+        desc = doc.localized_desc
+        facts.add_fact (pulse.utils.gettext ('Description'), desc)
+        sep = True
+    except:
+        pass
+
+    rels = db.SetModule.get_related (pred=doc.parent)
+    if len(rels) > 0:
+        sets = pulse.utils.attrsorted ([rel.subj for rel in rels], 'title')
+        span = pulse.html.Span (*[pulse.html.Link(rset.pulse_url + '#doc', rset.title)
+                                  for rset in sets])
+        span.set_divider (pulse.html.BULLET)
+        facts.add_fact (pulse.utils.gettext ('Release Sets'), span)
+        sep = True
+
+    facts.add_fact (pulse.utils.gettext ('Module'), pulse.html.Link (doc.parent))
+
+    rels = db.Documentation.get_related (pred=doc)
+    if len(rels) > 0:
+        objs = pulse.utils.attrsorted ([rel.subj for rel in rels], 'title')
+        span = pulse.html.Span (*[pulse.html.Link(obj) for obj in objs])
+        span.set_divider (pulse.html.BULLET)
+        facts.add_fact (pulse.utils.gettext ('Describes'), span)
+        sep = True
+
+    if sep:
+        facts.add_fact_sep ()
+    
+    checkout = pulse.scm.Checkout.from_record (doc, checkout=False, update=False)
+    facts.add_fact (pulse.utils.gettext ('Location'),
+                   checkout.get_location (doc.scm_dir, doc.scm_file))
+
+    if doc.mod_datetime != None:
+        span = pulse.html.Span(divider=pulse.html.SPACE)
+        # FIXME: i18n, word order, but we want to link person
+        span.add_content (doc.mod_datetime.strftime('%Y-%m-%d %T'))
+        if doc.mod_person != None:
+            span.add_content (' by ')
+            span.add_content (pulse.html.Link (doc.mod_person))
+        facts.add_fact (pulse.utils.gettext ('Last Modified'), span)
+
+    facts.add_fact_sep ()
+    facts.add_fact (pulse.utils.gettext ('Score'), str(doc.mod_score))
+
+    return facts
+
+
+def get_activity_tab (doc, **kw):
+    box = pulse.html.Div ()
     of = db.OutputFile.objects.filter (type='graphs', ident=doc.ident, filename='commits-0.png')
     try:
         of = of[0]
@@ -222,8 +320,19 @@ def output_doc (doc, **kw):
     except IndexError:
         pass
 
-    div = pulse.html.AjaxBox (doc.pulse_url + '?ajax=commits')
+    files = [os.path.join (doc.scm_dir, f) for f in doc.data.get ('xmlfiles', [])]
+    revs = db.Revision.select_revisions (branch=doc.parent, files=files)
+    cnt = revs.count()
+    revs = revs[:10]
+    title = (pulse.utils.gettext('Showing %i of %i commits:') % (len(revs), cnt))
+    div = get_commits_div (doc, revs, title)
     box.add_content (div)
+
+    return box
+
+
+def get_components_tab (doc, **kw):
+    columns = pulse.html.ColumnBox (2)
 
     # Files
     box = pulse.html.InfoBox (pulse.utils.gettext ('Files'))
@@ -248,7 +357,7 @@ def output_doc (doc, **kw):
 
     # Translations
     box = pulse.html.InfoBox (pulse.utils.gettext ('Translations'))
-    columns.add_to_column (1, box)
+    columns.add_to_column (0, box)
     cont = pulse.html.ContainerBox ()
     cont.set_id ('po')
     box.add_content (cont)
@@ -315,79 +424,7 @@ def output_doc (doc, **kw):
             elif percent >= 50:
                 grid.add_row_class (idx, 'po50')
 
-    page.output(fd=kw.get('fd'))
-
-    return 0
-
-
-def output_ajax_figures (doc, **kw):
-    page = pulse.html.Fragment (http=kw.get('http', True))
-    figures = doc.data.get('figures', {})
-    page.add_content (get_figures (doc, figures))
-    page.output(fd=kw.get('fd'))
-    return 0
-
-
-def output_ajax_graphmap (doc, **kw):
-    query = kw.get ('query', {})
-    page = pulse.html.Fragment (http=kw.get('http', True))
-    id = query.get('id')
-    num = query.get('num')
-    filename = query.get('filename')
-    
-    of = db.OutputFile.objects.filter (type='graphs', ident=doc.ident, filename=filename)
-    try:
-        of = of[0]
-        graph = pulse.html.Graph.activity_graph (of, doc.pulse_url,
-                                                 count=int(id), num=int(num), map_only=True)
-        page.add_content (graph)
-    except IndexError:
-        pass
-    
-    page.output(fd=kw.get('fd'))
-    return 0
-
-
-def output_ajax_xmlfiles (doc, **kw):
-    page = pulse.html.Fragment (http=kw.get('http', True))
-    xmlfiles = doc.data.get('xmlfiles', [])
-    page.add_content (get_xmlfiles (doc, xmlfiles))
-    page.output(fd=kw.get('fd'))
-    return 0
-
-
-def output_ajax_commits (doc, **kw):
-    page = pulse.html.Fragment (http=kw.get('http', True))
-    query = kw.get('query', {})
-    weeknum = query.get('weeknum', None)
-    files = [os.path.join (doc.scm_dir, f) for f in doc.data.get ('xmlfiles', [])]
-    if weeknum != None:
-        weeknum = int(weeknum)
-        thisweek = pulse.utils.weeknum (datetime.datetime.now())
-        ago = thisweek - weeknum
-        revs = db.Revision.select_revisions (branch=doc.parent, files=files, weeknum=weeknum)
-        cnt = revs.count()
-        revs = revs[:20]
-    else:
-        revs = db.Revision.select_revisions (branch=doc.parent, files=files)
-        cnt = revs.count()
-        revs = revs[:10]
-    if weeknum == None:
-        title = (pulse.utils.gettext('Showing %i of %i commits:')
-                 % (len(revs), cnt))
-    elif ago == 0:
-        title = (pulse.utils.gettext('Showing %i of %i commits from this week:')
-                 % (len(revs), cnt))
-    elif ago == 1:
-        title = (pulse.utils.gettext('Showing %i of %i commits from last week:')
-                 % (len(revs), cnt))
-    else:
-        title = (pulse.utils.gettext('Showing %i of %i commits from %i weeks ago:')
-                 % (len(revs), cnt, ago))
-    div = get_commits_div (doc, revs, title)
-    page.add_content (div)
-    page.output(fd=kw.get('fd'))
-    return 0
+    return columns
 
 
 def get_xmlfiles (doc, xmlfiles):

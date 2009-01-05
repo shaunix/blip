@@ -1,6 +1,65 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <group>
 
+<!-- Teams -->
+<team id="a11y">
+  <name>Accessibility Team</name>
+</team>
+
+<team id="develdocs">
+  <name>Developer Documentation Team</name>
+  <coordinators>
+    <item>/person/gnome.org/shaunm</item>
+  </coordinators>
+</team>
+
+<team id="i18n">
+  <name>Translation Team</name>
+  <coordinators>
+    <item>/person/gnome.org/danilo</item>
+    <item>/person/gnome.org/menthos</item>
+  </coordinators>
+</team>
+
+<team id="usability">
+  <name>Usability Team</name>
+  <coordinators>
+  </coordinators>
+</team>
+
+<team id="userdocs">
+  <name>User Documentation Team</name>
+  <alias>
+    <item>/ghost/GNOME%20Documentation%20Project</item>
+  </alias>
+  <coordinators>
+    <item>/person/gnome.org/shaunm</item>
+  </coordinators>
+</team>
+
+
+<!-- Translation Teams -->
+<group>
+<defaults>
+  <team>
+    <parent>/team/i18n</parent>
+  </team>
+</defaults>
+
+<team id="l10n-af">
+  <name>Afrikaans Translation Team</name>
+  <web>https://savannah.gnu.org/projects/gnomeaf/</web>
+</team>
+
+<team id="l10n-de">
+  <name>German Translation Team</name>
+  <web>http://www.gnome-ev.de/</web>
+</team>
+
+</group>
+
+
+<!-- People -->
 <person id="abock">
   <name>Aaron Bockover</name>
   <nick>abock</nick>
@@ -81,6 +140,16 @@
   <blog>http://blogs.gnome.org/kmaraas/feed/</blog>
   <alias>
     <item>/person/gnome.org/kmaraas</item>
+  </alias>
+</person>
+
+<person id="menthos">
+  <name>Christian Rose</name>
+  <nick>menthos</nick>
+  <icon>http://planet.gnome.org/heads/menthos.png</icon>
+  <blog>http://www.advogato.org/person/menthos/rss.xml</blog>
+  <alias>
+    <item>/person/gnome.org/menthos</item>
   </alias>
 </person>
 
