@@ -205,6 +205,51 @@ class FactsComponent (Component):
         p (fd, '</table>')
 
 
+class FilterableComponent (Component):
+    def __init__ (self, **kw):
+        super (FilterableComponent, self).__init__ (**kw)
+        self._filtertag = kw.get ('filterable_tag', None)
+        self._filterclass = kw.get ('filterable_class', None)
+        self._filters = []
+
+    def set_filterable_tag (self, tag):
+        self._filtertag = tag
+
+    def get_filterable_tag (self):
+        return self._filtertag
+
+    def set_filterable_class (self, cls):
+        self._filterclass = cls
+
+    def get_filterable_class (self):
+        return self._filterclass
+
+    def add_badge_filter (self, badge):
+        self._filters.append (badge)
+
+    def output (self, fd=None):
+        if len(self._filters) == 0:
+            return
+        filtertag = self._filtertag or 'table'
+        filterclass = self._filterclass or 'lbox'
+        p (fd, '<div class="filters" id="filters__%s"><span class="filters">', filterclass, False)
+        p (fd, '<a class="filter filter-%s filterall filteron"', filterclass, False)
+        p (fd, ' href="javascript:filter(\'%s\',\'%s\',null)"', (filtertag, filterclass), False)
+        p (fd, ' id="filter__%s___all">', filterclass, False)
+        p (fd, None, pulse.utils.gettext ('All'), False)
+        p (fd, '</a>', None, False)
+        for badge in self._filters:
+            txt = get_badge_title (badge)
+            p (fd, '<a class="filter filter-%s"', filterclass, False)
+            p (fd, ' href="javascript:filter(\'%s\',\'%s\',\'%s\')"',
+               (filtertag, filterclass, badge), False)
+            p (fd, ' id="filter__%s__%s">', (filterclass, badge), False)
+            p (fd, '<img src="%sbadge-%s-16.png" width="16" height="16" alt="%s">',
+               (pulse.config.data_root, badge, txt), False)
+            p (fd, ' %s</a>', txt, False)
+        p (fd, '</span></div>')
+
+
 class SortableComponent (Component):
     """
     Component for widgets that have sortable content.
@@ -294,15 +339,24 @@ class LinkBoxesComponent (Component):
         self._boxes = []
         self._columns = kw.get('columns', 1)
         self._show_icons = None
+        self._link_class = None
 
     def add_link_box (self, *args, **kw):
         """Add a link box."""
         lbox = LinkBox (*args, **kw)
+        if self._link_class != None:
+            lbox.add_class (self._link_class)
         self._boxes.append (lbox)
         return lbox
 
     def set_show_icons (self, show):
         self._show_icons = show
+
+    def get_link_class (self):
+        return self._link_class
+
+    def set_link_class (self, link_class):
+        self._link_class = link_class
 
     def set_columns (self, columns):
         """Set the number of columns."""
@@ -634,7 +688,7 @@ class SidebarBox (Widget, ContentComponent, LinkBoxesComponent):
         p (fd, '</div>')
 
 
-class InfoBox (Widget, ContentComponent, LinkBoxesComponent):
+class InfoBox (Widget, ContentComponent, FilterableComponent, LinkBoxesComponent):
     """
     A box containing information.
 
@@ -642,23 +696,38 @@ class InfoBox (Widget, ContentComponent, LinkBoxesComponent):
     of information.  Most pages are constructed primarily of info boxes.
     """
     def __init__ (self, title, **kw):
-        super (InfoBox, self).__init__ (**kw)
+        self._id = kw.get('id', None)
         self._title = title
+        if self._id != None:
+            kw.setdefault ('filterable_class', self._id)
+            kw.setdefault ('link_class', self._id)
+        super (InfoBox, self).__init__ (**kw)
+
+    def set_id (self, id_):
+        """Set the id of the container."""
+        if self.get_filterable_class() == None:
+            self.set_filterable_class (id_)
+        if self.get_link_class() == None:
+            self.set_link_class (id_)
+        self._id = id_
 
     def output (self, fd=None):
         """Output the HTML."""
-        p (fd, '<div class="info">')
-        p (fd, '<div class="infotitle">', None, False)
+        p (fd, '<div class="info"', None, False)
+        if self._id != None:
+            p (fd, ' id="%s"', self._id, False)
+        p (fd, '><div class="infotitle">', None, False)
         p (fd, '<span><img class="infoimg" src="%sexpander-open.png"></span>',
            (pulse.config.data_root), False)
         p (fd, '%s</div>', self._title)
+        FilterableComponent.output (self, fd=fd)
         p (fd, '<div class="infocont">')
         ContentComponent.output (self, fd=fd)
         LinkBoxesComponent.output (self, fd=fd)
         p (fd, '</div></div>')
 
 
-class ContainerBox (Widget, SortableComponent, ContentComponent, LinkBoxesComponent):
+class ContainerBox (Widget, FilterableComponent, SortableComponent, ContentComponent, LinkBoxesComponent):
     """
     An all-purpose container box.
 
@@ -675,25 +744,18 @@ class ContainerBox (Widget, SortableComponent, ContentComponent, LinkBoxesCompon
         self._title = kw.get('title', None)
         if self._id != None:
             kw.setdefault ('sortable_class', self._id)
+            kw.setdefault ('filterable_class', self._id)
+            kw.setdefault ('link_class', self._id)
         super (ContainerBox, self).__init__ (**kw)
-
-    def add_link_box (self, *args, **kw):
-        """
-        Add a link box.
-
-        This extends the method from LinkBoxesComponent to call add_class
-        on the added link box, allowing the link boxes to be sorted.
-        """
-        lbox = LinkBoxesComponent.add_link_box (self, *args, **kw)
-        scls = self.get_sortable_class()
-        if scls != None:
-            lbox.add_class (scls)
-        return lbox
 
     def set_id (self, id_):
         """Set the id of the container."""
         if self.get_sortable_class() == None:
             self.set_sortable_class (id_)
+        if self.get_filterable_class() == None:
+            self.set_filterable_class (id_)
+        if self.get_link_class() == None:
+            self.set_link_class (id_)
         self._id = id_
 
     def set_title (self, title):
@@ -724,7 +786,8 @@ class ContainerBox (Widget, SortableComponent, ContentComponent, LinkBoxesCompon
             if self._title != None:
                 p (fd, '</td></tr>')
                 p (fd, '<tr><td></td><td class="cont-content">', None, False)
-            p (fd, '<div class="cont-content">')
+        FilterableComponent.output (self, fd=fd)
+        p (fd, '<div class="cont-content">')
         ContentComponent.output (self, fd=fd)
         LinkBoxesComponent.output (self, fd=fd)
         p (fd, '</div>')
@@ -867,8 +930,8 @@ class LinkBox (Widget, FactsComponent, ContentComponent):
         if len(self._badges) > 0:
             p (fd, ' ')
             for badge in self._badges:
-                p (fd, '<img src="%sbadge-%s-16.png" width="16" height="16" alt="%s">',
-                   (pulse.config.data_root, badge, badge))
+                p (fd, '<img class="badge-%s" src="%sbadge-%s-16.png" width="16" height="16" alt="%s">',
+                   (badge, pulse.config.data_root, badge, get_badge_title (badge)))
         p (fd, '</div>')
         if self._desc != None:
             p (fd, '<div class="lboxdesc desc">')
@@ -1728,3 +1791,17 @@ class escdict (dict):
     def __getitem__ (self, key):
         """Get the value for key, HTML escaped."""
         return esc (dict.__getitem__ (self, key))
+
+def get_badge_title (badge):
+    if badge == 'maintainer':
+        return pulse.utils.gettext ('Maintainer')
+    elif badge == 'coordinator':
+        return pulse.utils.gettext ('Coordinator')
+    elif badge == 'author':
+        return pulse.utils.gettext ('Author')
+    elif badge == 'editor':
+        return pulse.utils.gettext ('Editor')
+    elif badge == 'publisher':
+        return pulse.utils.gettext ('Publisher')
+    else:
+        return ''

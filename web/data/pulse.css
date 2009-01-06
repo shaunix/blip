@@ -231,6 +231,29 @@ dd.calevent {
   color: #555753;
 }
 
+div.filters {
+  text-align: center;
+  margin: 0.5em 0 0.5em 0;
+}
+span.filters {
+  text-align: left;
+  background-color: #eeeeec;
+  border: solid 1px #d3d7cf;
+  -moz-border-radius: 4px;
+}
+a.filter {
+  padding: 0 0.5em 0 0.5em;
+  border-left: solid 1px #d3d7cf;
+}
+a.filter img {
+  vertical-align: -0.1em;
+}
+a.filterall { border-left: none; }
+a.filteron {
+  background-color: #729fcf;
+  color: white;
+}
+
 div.slinks {
   text-align: right;
   color: #555753;

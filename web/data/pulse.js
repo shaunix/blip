@@ -759,6 +759,37 @@ function mlink (id) {
 
 
 /******************************************************************************/
+/** Filters **/
+
+function filter (tag, cls, key) {
+  $('a.filter-' + cls).each (function () {
+    var link = $(this);
+    if (link.is('#filter__' + cls + '___all')) {
+      if (key == null)
+        link.addClass ('filteron');
+      else
+        link.removeClass ('filteron');
+    }
+    else if (link.is('#filter__' + cls + '__' + key))
+      link.addClass ('filteron');
+    else
+      link.removeClass ('filteron');
+  });
+  $(tag + '.' + cls).each (function () {
+    var el = $(this);
+    var show = false;
+    if (key == null)
+      show = true;
+    else
+      show = (el.find('img.badge-' + key).length > 0);
+    if (!el.is(':visible') && show)
+      el.fadeIn ();
+    else if (el.is(':visible') && !show)
+      el.fadeOut ();
+  });
+}
+
+/******************************************************************************/
 /** Sort links **/
 
 function keyedThing (key, title, thing, extras) {

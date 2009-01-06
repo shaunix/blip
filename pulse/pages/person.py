@@ -137,30 +137,79 @@ def output_person (person, **kw):
     except IndexError:
         pass
 
+    # Teams
+    rels = db.TeamMember.get_related (pred=person)
+    rels = pulse.utils.attrsorted (list(rels), ('subj', 'title'))
+    if len(rels) > 0:
+        box = pulse.html.InfoBox (pulse.utils.gettext ('Teams'))
+        columns.add_to_column (1, box)
+        for rel in rels:
+            lbox = box.add_link_box (rel.subj)
+            if rel.coordinator:
+                lbox.add_badge ('coordinator')
+
     # Modules and Documents
-    mods = db.Branch.objects.filter (type='Module', module_entity_preds__pred=person)
-    mods = pulse.utils.attrsorted (list(mods), 'title')
-    if len(mods) > 0:
-        modbox = pulse.html.InfoBox (pulse.utils.gettext ('Modules'))
-        columns.add_to_column (1, modbox)
+    rels = db.ModuleEntity.get_related (pred=person)
+    rels = pulse.utils.attrsorted (list(rels), ('subj', 'title'), ('-', 'subj', 'scm_branch'))
+    if len(rels) > 0:
         brs = []
-        for mod in mods:
+        mods = pulse.utils.odict()
+        bmaint = 0
+        for rel in rels:
+            mod = rel.subj
             if mod.branchable_id in brs:
                 continue
             brs.append (mod.branchable_id)
-            modbox.add_link_box (mod)
+            mods[mod] = rel
+        box = pulse.html.InfoBox (pulse.utils.gettext ('Modules'))
+        box.set_id ('mods')
+        columns.add_to_column (1, box)
+        for mod in mods:
+            lbox = box.add_link_box (mod)
+            if rel.maintainer:
+                lbox.add_badge ('maintainer')
+                bmaint += 1
+        if 0 < bmaint < len(mods):
+            box.add_badge_filter ('maintainer')
 
-    docs = db.Branch.objects.filter (type='Document', document_entity_preds__pred=person)
-    docs = pulse.utils.attrsorted (list(docs), 'title')
-    if len(docs) > 0:
-        docbox = pulse.html.InfoBox (pulse.utils.gettext ('Documents'))
-        columns.add_to_column (1, docbox)
+    rels = db.DocumentEntity.get_related (pred=person)
+    rels = pulse.utils.attrsorted (list(rels), ('subj', 'title'), ('-', 'subj', 'scm_branch'))
+    if len(rels) > 0:
         brs = []
-        for doc in docs:
+        docs = pulse.utils.odict()
+        bmaint = bauth = bedit = bpub = 0
+        for rel in rels:
+            doc = rel.subj
             if doc.branchable_id in brs:
                 continue
             brs.append (doc.branchable_id)
-            docbox.add_link_box (doc)
+            docs[doc] = rel
+        box = pulse.html.InfoBox (pulse.utils.gettext ('Documents'))
+        box.set_id ('docs')
+        columns.add_to_column (1, box)
+        for doc in docs:
+            lbox = box.add_link_box (doc)
+            rel = docs[doc]
+            if rel.maintainer:
+                lbox.add_badge ('maintainer')
+                bmaint += 1
+            if rel.author:
+                lbox.add_badge ('author')
+                bauth += 1
+            if rel.editor:
+                lbox.add_badge ('editor')
+                bedit += 1
+            if rel.publisher:
+                lbox.add_badge ('publisher')
+                bpub += 1
+        if 0 < bmaint < len(docs):
+            box.add_badge_filter ('maintainer')
+        if 0 < bauth < len(docs):
+            box.add_badge_filter ('author')
+        if 0 < bedit < len(docs):
+            box.add_badge_filter ('editor')
+        if 0 < bpub < len(docs):
+            box.add_badge_filter ('publisher')
 
     page.output(fd=kw.get('fd'))
 
