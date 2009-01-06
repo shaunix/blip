@@ -137,6 +137,17 @@ def output_person (person, **kw):
     except IndexError:
         pass
 
+    # Teams
+    rels = db.TeamMember.get_related (pred=person)
+    rels = pulse.utils.attrsorted (list(rels), ('subj', 'title'))
+    if len(rels) > 0:
+        box = pulse.html.InfoBox (pulse.utils.gettext ('Teams'))
+        columns.add_to_column (1, box)
+        for rel in rels:
+            lbox = box.add_link_box (rel.subj)
+            if rel.coordinator:
+                lbox.add_badge ('coordinator')
+
     # Modules and Documents
     rels = db.ModuleEntity.get_related (pred=person)
     rels = pulse.utils.attrsorted (list(rels), ('subj', 'title'), ('-', 'subj', 'scm_branch'))
