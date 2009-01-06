@@ -55,6 +55,13 @@ def help_extra (fd=None):
 def update_branch (branch, **kw):
     checkout = pulse.scm.Checkout.from_record (branch, update=kw.get('update', True))
 
+    if checkout.error != None:
+        branch.error = checkout.error
+        branch.save()
+        return
+    else:
+        branch.error = None
+
     if kw.get('history', True):
         check_history (branch, checkout)
 

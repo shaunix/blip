@@ -79,6 +79,8 @@ class Checkout (object):
         self.scm_branch = kw.get('scm_branch')
         self.scm_path = kw.get('scm_path')
 
+        self.error = None
+
         if (hasattr (Checkout, '_init_' + self.scm_type) and self.scm_type in default_branches):
             initfunc = getattr (Checkout, '_init_' + self.scm_type)
         else:
@@ -227,7 +229,9 @@ class Checkout (object):
         try:
             os.chdir (topdir)
             (status, output) = commands.getstatusoutput (self._co)
-            # FIXME: check status, log output if error
+            if status != 0:
+                pulse.utils.warn ('Failed to check out %s from %s' % (self._name, self._server_dir))
+                self.error = output.split('\n')[-1]
         finally:
             os.chdir (owd)
         

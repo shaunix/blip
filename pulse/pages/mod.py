@@ -357,7 +357,14 @@ def output_ajax_revfiles (module, **kw):
 
 
 def get_info_tab (module, **kw):
+    div = pulse.html.PaddingBox()
+
+    if module.error != None:
+        div.add_content (pulse.html.AdmonBox (pulse.html.AdmonBox.error, module.error))
+
     facts = pulse.html.FactsTable()
+    div.add_content (facts)
+
     sep = False
     try:
         facts.add_fact (pulse.utils.gettext ('Description'),
@@ -401,7 +408,7 @@ def get_info_tab (module, **kw):
     facts.add_fact_sep ()
     facts.add_fact (pulse.utils.gettext ('Score'), str(module.mod_score))
 
-    return facts
+    return div
 
 
 def get_activity_tab (module, **kw):
