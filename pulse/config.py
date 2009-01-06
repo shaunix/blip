@@ -122,3 +122,15 @@ INSTALLED_APPS = 'pulse'
 
 # Do not change this.  We hook into Django's debugging stuff to do logging.
 DEBUG = True
+
+
+################################################################################
+## Local config
+# You can create a file called localconfig.py alongside config.py with any of
+# the above settings defined, rather than editing them here.  This is useful
+# for running Pulse directly from a Git clone where you want to make changes
+# and submit them back to master.
+try:
+    from localconfig import *
+except:
+    pass
