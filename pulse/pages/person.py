@@ -143,7 +143,7 @@ def output_person (person, **kw):
     if len(rels) > 0:
         brs = []
         mods = pulse.utils.odict()
-        bmaint = False
+        bmaint = 0
         for rel in rels:
             mod = rel.subj
             if mod.branchable_id in brs:
@@ -157,8 +157,8 @@ def output_person (person, **kw):
             lbox = box.add_link_box (mod)
             if rel.maintainer:
                 lbox.add_badge ('maintainer')
-                bmaint = True
-        if bmaint:
+                bmaint += 1
+        if 0 < bmaint < len(mods):
             box.add_badge_filter ('maintainer')
 
     rels = db.DocumentEntity.get_related (pred=person)
@@ -166,7 +166,7 @@ def output_person (person, **kw):
     if len(rels) > 0:
         brs = []
         docs = pulse.utils.odict()
-        bmaint = bauth = bedit = bpub = False
+        bmaint = bauth = bedit = bpub = 0
         for rel in rels:
             doc = rel.subj
             if doc.branchable_id in brs:
@@ -181,23 +181,23 @@ def output_person (person, **kw):
             rel = docs[doc]
             if rel.maintainer:
                 lbox.add_badge ('maintainer')
-                bmaint = True
+                bmaint += 1
             if rel.author:
                 lbox.add_badge ('author')
-                bauth = True
+                bauth += 1
             if rel.editor:
                 lbox.add_badge ('editor')
-                bedit = True
+                bedit += 1
             if rel.publisher:
                 lbox.add_badge ('publisher')
-                bpub = True
-        if bmaint:
+                bpub += 1
+        if 0 < bmaint < len(docs):
             box.add_badge_filter ('maintainer')
-        if bauth:
+        if 0 < bauth < len(docs):
             box.add_badge_filter ('author')
-        if bedit:
+        if 0 < bedit < len(docs):
             box.add_badge_filter ('editor')
-        if bpub:
+        if 0 < bpub < len(docs):
             box.add_badge_filter ('publisher')
 
     page.output(fd=kw.get('fd'))

@@ -181,7 +181,7 @@ def get_doc_tab (team, **kw):
     rels = db.DocumentEntity.get_related (pred=team)
     brs = []
     docs = pulse.utils.odict()
-    bmaint = bauth = bedit = bpub = False
+    bmaint = bauth = bedit = bpub = 0
     for rel in pulse.utils.attrsorted (list(rels), ('subj', 'title'), ('-', 'subj', 'scm_branch')):
         doc = rel.subj
         if doc.branchable_id in brs:
@@ -193,23 +193,23 @@ def get_doc_tab (team, **kw):
         rel = docs[doc]
         if rel.maintainer:
             lbox.add_badge ('maintainer')
-            bmaint = True
+            bmaint += 1
         if rel.author:
             lbox.add_badge ('author')
-            bauth = True
+            bauth += 1
         if rel.editor:
             lbox.add_badge ('editor')
-            bedit = True
+            bedit += 1
         if rel.publisher:
             lbox.add_badge ('publisher')
-            bpub = True
-    if bmaint:
+            bpub += 1
+    if 0 < bmaint < len(docs):
         box.add_badge_filter ('maintainer')
-    if bauth:
+    if 0 < bauth < len(docs):
         box.add_badge_filter ('author')
-    if bedit:
+    if 0 < bedit < len(docs):
         box.add_badge_filter ('editor')
-    if bpub:
+    if 0 < bpub < len(docs):
         box.add_badge_filter ('publisher')
     return box
 
