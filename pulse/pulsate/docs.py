@@ -365,6 +365,7 @@ def process_credits (doc, **kw):
     for cr_name, cr_email, cr_type, cr_maint in doc.credits:
         ent = None
         if cr_email != None:
+            # FIXME: look for /person/shaunm@example.com ident, could be Alias
             ent = db.Entity.objects.filter (email=cr_email)
             try:
                 ent = ent[0]
@@ -373,7 +374,8 @@ def process_credits (doc, **kw):
         if ent == None:
             ident = '/ghost/' + urllib.quote (cr_name)
             ent = db.Entity.get_record (ident, 'Ghost')
-            ent.update (name=cr_name)
+            if ent.ident == ident:
+                ent.update (name=cr_name)
             if cr_email != None:
                 ent.email = cr_email
             ent.save()
