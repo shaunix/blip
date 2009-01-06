@@ -1399,7 +1399,7 @@ class PopupLink (Widget):
     def output (self, fd=None):
         """Output the HTML."""
         PopupLink._count += 1
-        id = md5.md5(self._full).hexdigest()[:6] + str(PopupLink._count)
+        id = md5.md5(self._full.encode('utf-8')).hexdigest()[:6] + str(PopupLink._count)
         p (fd, '<a class="plink" id="plink%s" href="javascript:plink(\'%s\')">',
            (id, id), False)
         p (fd, None, self._short, False)

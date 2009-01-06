@@ -156,7 +156,7 @@ def update_alias (entity, alias, **kw):
     for rev in revs:
         needs_update = True
         rev.person = entity
-        rev.alias = alias
+        rev.alias = aliasrec
         rev.save()
     rec.delete()
 
