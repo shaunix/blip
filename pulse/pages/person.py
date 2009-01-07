@@ -150,7 +150,9 @@ def output_person (person, **kw):
 
     # Modules and Documents
     rels = db.ModuleEntity.get_related (pred=person)
-    rels = pulse.utils.attrsorted (list(rels), ('subj', 'title'), ('-', 'subj', 'scm_branch'))
+    rels = pulse.utils.attrsorted (list(rels), ('subj', 'title'),
+                                   ('-', 'subj', 'is_default'),
+                                   ('-', 'subj', 'scm_branch'))
     if len(rels) > 0:
         brs = []
         mods = pulse.utils.odict()
@@ -173,7 +175,9 @@ def output_person (person, **kw):
             box.add_badge_filter ('maintainer')
 
     rels = db.DocumentEntity.get_related (pred=person)
-    rels = pulse.utils.attrsorted (list(rels), ('subj', 'title'), ('-', 'subj', 'scm_branch'))
+    rels = pulse.utils.attrsorted (list(rels), ('subj', 'title'),
+                                   ('-', 'subj', 'is_default'),
+                                   ('-', 'subj', 'scm_branch'))
     if len(rels) > 0:
         brs = []
         docs = pulse.utils.odict()

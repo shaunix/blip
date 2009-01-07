@@ -48,7 +48,7 @@ def main (path, query, http=True, fd=None):
         branchable = db.Branchable.objects.filter (ident=ident)
         try:
             branchable = branchable[0]
-            po = branchable.default
+            po = branchable.get_default ()
         except IndexError:
             po = branchable = None
     else:
@@ -80,7 +80,8 @@ def output_translation (po, branchable, **kw):
     page = pulse.html.RecordPage (po, http=kw.get('http', True))
     checkout = pulse.scm.Checkout.from_record (po, checkout=False, update=False)
 
-    branches = pulse.utils.attrsorted (list(branchable.branches.all()), 'scm_branch')
+    branches = pulse.utils.attrsorted (list(branchable.branches.all()),
+                                       '-is_default', 'scm_branch')
     if len(branches) > 1:
         for branch in branches:
             if branch.ident != po.ident:

@@ -50,7 +50,7 @@ def main (path, query, http=True, fd=None):
             page.output(fd=fd)
             return 404
 
-        doc = branchable.default
+        doc = branchable.get_default ()
         if doc == None:
             kw = {'http': http}
             kw['title'] = pulse.utils.gettext ('Default Branch Not Found')
@@ -100,7 +100,8 @@ def output_doc (doc, **kw):
     """Output information about a document"""
     page = pulse.html.RecordPage (doc, http=kw.get('http', True))
 
-    branches = pulse.utils.attrsorted (list(doc.branchable.branches.all()), 'scm_branch')
+    branches = pulse.utils.attrsorted (list(doc.branchable.branches.all()),
+                                       '-is_default', 'scm_branch')
     if len(branches) > 1:
         for branch in branches:
             if branch.ident != doc.ident:

@@ -505,7 +505,13 @@ class Branchable (PulseRecord, models.Model):
     scm_dir = models.CharField (null=True, **maxlength200)
     scm_file = models.CharField (null=True, **maxlength80)
 
-    default = models.ForeignKey ('Branch', related_name='is_default_query', null=True)
+    def get_default (self):
+        rec = self.branches.filter (scm_branch=pulse.scm.default_branches.get(self.scm_type))
+        try:
+            rec = rec[0]
+        except:
+            rec = None
+        return rec
 
 
 class Branch (PulseRecord, models.Model):
@@ -527,8 +533,9 @@ class Branch (PulseRecord, models.Model):
     mod_datetime = models.DateTimeField (null=True)
     mod_person = models.ForeignKey ('Entity', related_name='branch_mods', null=True)
 
-    def is_default (self):
-        return (self.is_default_query.count() > 0)
+    def get_is_default (self):
+        return self.scm_branch == pulse.scm.default_branches.get (self.scm_type)
+    is_default = property (get_is_default)
 
     def select_children (self, type):
         return self.__class__.objects.filter (type=type, parent=self)
@@ -541,8 +548,6 @@ class Branch (PulseRecord, models.Model):
         for child in children:
             olddict.pop (child.ident, None)
             child.parent = self
-            if self.is_default:
-                child.branchable.default = child
             child.save()
         for old in olddict.values():
             old.delete ()
@@ -553,8 +558,7 @@ class Branch (PulseRecord, models.Model):
             rec = Branchable.get_record (ident, self.type)
             self.branchable = rec
         if getattr (self, 'scm_type', None) != None and getattr (self, 'scm_branch', None) != None:
-            if pulse.scm.default_branches[self.scm_type] == self.scm_branch:
-                self.branchable.default = self
+            if self.is_default:
                 do_save = False
                 for f in Branchable._meta.fields:
                     if f.name.startswith ('scm_'):

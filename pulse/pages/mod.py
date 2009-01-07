@@ -47,7 +47,7 @@ def main (path, query, http=True, fd=None):
             page.output(fd=fd)
             return 404
 
-        branch = branchable.default
+        branch = branchable.get_default ()
         if branch == None:
             kw = {'http': http}
             kw['title'] = pulse.utils.gettext ('Default Branch Not Found')
@@ -123,7 +123,8 @@ def output_module (module, **kw):
 
     page = pulse.html.RecordPage (module, http=kw.get('http', True))
 
-    branches = pulse.utils.attrsorted (list(branchable.branches.all()), 'scm_branch')
+    branches = pulse.utils.attrsorted (list(branchable.branches.all()),
+                                       '-is_default', 'scm_branch')
     if len(branches) > 1:
         for branch in branches:
             if branch.ident != module.ident:

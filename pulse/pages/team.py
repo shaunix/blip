@@ -161,7 +161,9 @@ def get_mod_tab (team, **kw):
     rels = db.ModuleEntity.get_related (pred=team)
     brs = []
     mods = pulse.utils.odict()
-    for rel in pulse.utils.attrsorted (list(rels), ('subj', 'title'), ('-', 'subj', 'scm_branch')):
+    for rel in pulse.utils.attrsorted (list(rels), ('subj', 'title'),
+                                       ('-', 'subj', 'is_default'),
+                                       ('-', 'subj', 'scm_branch')):
         mod = rel.subj
         if mod.branchable_id in brs:
             continue
@@ -182,7 +184,10 @@ def get_doc_tab (team, **kw):
     brs = []
     docs = pulse.utils.odict()
     bmaint = bauth = bedit = bpub = 0
-    for rel in pulse.utils.attrsorted (list(rels), ('subj', 'title'), ('-', 'subj', 'scm_branch')):
+    for rel in pulse.utils.attrsorted (list(rels),
+                                       ('subj', 'title'),
+                                       ('-', 'subj', 'is_default'),
+                                       ('-', 'subj', 'scm_branch')):
         doc = rel.subj
         if doc.branchable_id in brs:
             continue
