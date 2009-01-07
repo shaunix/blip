@@ -305,42 +305,81 @@ $(document).ready (function () { $('html').pulse_init(); });
 /** Tabs **/
 
 function tab (tabid) {
-  location.hash = tabid;
-  $.tabs.removeClass ('tabactive');
+  var tabbed = $('#tabbed');
+  var tabs = tabbed.children('#tabs').children('.tab');
+
+  if (tabid == undefined) {
+    tabid = location.hash;
+    if (tabid == '' || tabid == '#') {
+      tabid = tabs.attr('id');
+      tabid = tabid.substring(4);
+    } else {
+      tabid = tabid.substring(1);
+    }
+  }
+  else if (tabid == tabbed[0].current_tabid)
+    return;
+  else
+    location.hash = tabid;
+
+  var oldpane = undefined;
+  if (tabbed[0].current_tabid != undefined)
+    oldpane = $('#pane-' + tabbed[0].current_tabid);
+  if (oldpane != undefined)
+    oldpane.hide ();
+
+  tabs.removeClass ('tabactive');
   var tab = $('#tab-' + tabid);
   tab.addClass ('tabactive');
 
-  if ($.pane != null)
-    $.pane.hide();
-  var contid = 'pane-' + tabid;
-
-  var cont = $('#' + contid);
-  if (cont.length > 0) {
-    $.pane = cont;
-    $.pane.show();
-  } else {
-    var thr = throbber ();
+  tabbed[0].current_tabid = tabid;
+  var paneid = 'pane-' + tabid;
+  var pane = $('#' + paneid);
+  if (pane.length > 0)
+    pane.show();
+  else {
     $('#reload').hide ();
-    $('#throbber').append (thr).show ();
+    if (tabbed[0].loading_tabid == undefined) {
+      tabbed[0].throbber = throbber ();
+      $('#throbber').append (tabbed[0].throbber).show ();
+    }
+    tabbed[0].loading_tabid = tabid;
     var href = pulse_url + '?ajax=tab&tab=' + tabid;
-    $.get(href, {}, function (data) {
-      cont = $('<div class="pane"></div>');
-      cont.attr ('id', contid);
-      cont.append ($(data));
-      cont.css ('display', 'none');
-      $.tabbed.children ('#panes').append (cont);
-      thr.hide (0, function () { thr.addClass ('stop') });
-      $('#throbber').hide ();
-      $('#reload').show ();
-      $.pane = $('#' + contid);
-      $.pane.pulse_init ();
-      $.pane.show();
-    });
+    var func = function (data, status) {
+      pane = $('<div class="pane"></div>');
+      pane.attr ('id', paneid);
+      if (status == 'success')
+        pane.append ($(data));
+      else
+        /* FIXME: sucky.  Would rather send a Fragment back from index.cgi
+         * with an admon box or some such, but I can't get responseText
+         * from an XMLHttpRequest on error.
+         */
+        pane.text('There was a problem processing the request.');
+      pane.css ('display', 'none');
+      tabbed.children ('#panes').append (pane);
+      pane = $('#' + paneid);
+      pane.pulse_init ();
+      if (tabid == tabbed[0].current_tabid) {
+        tabbed[0].throbber.hide (0, function () {
+          tabbed[0].throbber.addClass ('stop')
+          tabbed[0].throbber = undefined;
+        });
+        $('#throbber').hide ();
+        $('#reload').show ();
+        tabbed[0].loading_tabid = undefined;
+        pane.show ();
+      }
+    };
+    $.ajax({url: href, success: func, error: func});
   }
 }
 
 function reload () {
-  $.pane.remove();
+  if (tabbed[0].current_tabid != undefined) {
+    oldpane = $('#pane-' + tabbed[0].current_tabid);
+    oldpane.remove ();
+  }
   tab (location.hash.substring(1));
 }
 
@@ -348,20 +387,7 @@ $(document).ready (function () {
   var tabbed = $('#tabbed');
   if (tabbed.length == 0)
     return;
-  var tabs = tabbed.children('#tabs').children('.tab');
-
-  $.tabbed = tabbed;
-  $.tabs = tabs;
-  $.pane = null;
-
-  tabid = location.hash;
-  if (tabid == '' || tabid == '#') {
-    tabid = tabs.attr('id');
-    tabid = tabid.substring(4);
-  } else {
-    tabid = tabid.substring(1);
-  }
-  tab (tabid);
+  tab ();
 });
 
 
