@@ -317,8 +317,6 @@ function tab (tabid) {
       tabid = tabid.substring(1);
     }
   }
-  else if (tabid == tabbed[0].current_tabid)
-    return;
   else
     location.hash = tabid;
 
@@ -381,11 +379,12 @@ function tab (tabid) {
 }
 
 function reload () {
+  var tabbed = $('#tabbed');
   if (tabbed[0].current_tabid != undefined) {
     oldpane = $('#pane-' + tabbed[0].current_tabid);
     oldpane.remove ();
   }
-  tab (location.hash.substring(1));
+  tab (tabbed[0].current_tabid);
 }
 
 $(document).ready (function () {
