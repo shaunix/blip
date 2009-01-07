@@ -146,3 +146,37 @@ class BarGraph (Graph):
         # FIXME: this is wrong for tight=True, but we're not using coords
         # for tight graphs, so it doesn't matter much.
         return [(3*i, 0, 3*i + 2, self.height) for i in range(len(self._stats))]
+
+
+class LineGraph (Graph):
+    def __init__ (self, stats, **kw):
+        top = max (stats)
+        spacing = kw.get('spacing', 5)
+        width = spacing * (len(stats) - 1)
+        height = kw.get ('height', 40)
+        Graph.__init__ (self, width=width, height=height)
+        self.context.set_antialias (cairo.ANTIALIAS_GRAY)
+        fill_rgb = [0.447059, 0.623529, 0.811765]
+        line_rgb = [0.203922, 0.396078, 0.643137]
+        self.context.new_path ()
+        height -= 2
+        last = -1
+        for i in range(len(stats)):
+            if stats[i] != None:
+                stat = stats[i] / (top * 1.0)
+                if last >= 0:
+                    self.context.line_to (i * spacing, height - (height * stat) + 1.5)
+                else:
+                    self.context.move_to (0, height - (height * stat) + 1.5)
+                    if i != 0:
+                        self.context.line_to (i * spacing, height - (height * stat) + 1.5)
+                last = i
+        if last != len(stats) - 1:
+            self.context.rel_line_to (width - (last * spacing), 0)
+        self.context.set_line_width (2)
+        self.context.set_source_rgb (*line_rgb)
+        self.context.stroke_preserve ()
+        self.context.line_to (width, height)
+        self.context.line_to (0, height)
+        self.context.set_source_rgb (*fill_rgb)
+        self.context.fill ()
