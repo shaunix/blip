@@ -332,6 +332,11 @@ function tab (tabid) {
   var tab = $('#tab-' + tabid);
   tab.addClass ('tabactive');
 
+  if (tabbed[0].current_tabid == undefined)
+    document.title = document.title + ' - ' + tab.text();
+  else
+    document.title = document.title.substr(0, document.title.lastIndexOf(' - ') + 3) + tab.text();
+
   tabbed[0].current_tabid = tabid;
   var paneid = 'pane-' + tabid;
   var pane = $('#' + paneid);
@@ -389,6 +394,15 @@ $(document).ready (function () {
     return;
   tab ();
 });
+
+setInterval (function () {
+  var tabbed = $('#tabbed');
+  var tabid = tabbed[0].current_tabid;
+  if (tabid == undefined)
+    return;
+  if ('#' + tabid != location.hash)
+    tab ();
+}, 200);
 
 
 /******************************************************************************/
