@@ -615,6 +615,7 @@ class PageNotFound (Page):
 
     def __init__ (self, message, **kw):
         kw.setdefault ('title', pulse.utils.gettext('Page Not Found'))
+        kw['status'] = 404
         super (PageNotFound, self).__init__ (**kw)
         self._pages = kw.get ('pages', [])
         self._message = message
@@ -644,6 +645,7 @@ class PageError (Page):
 
     def __init__ (self, message, **kw):
         kw.setdefault ('title', pulse.utils.gettext('Bad Monkeys'))
+        kw['status'] = 500
         super (PageError, self).__init__ (**kw)
         self._pages = kw.get ('pages', [])
         self._message = message
