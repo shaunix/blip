@@ -341,10 +341,13 @@ function tab (tabid) {
   if (pane.length > 0)
     pane.show();
   else {
-    $('#reload').hide ();
+    var panes = tabbed.children ('#panes');
+    $('#reload').shade ();
     if (tabbed[0].loading_tabid == undefined) {
-      tabbed[0].throbber = throbber ();
-      $('#throbber').append (tabbed[0].throbber).show ();
+      var thr = throbberbar();
+      thr.css('width', panes.width() / 2);
+      panes.append (thr);
+      thr.start ();
     }
     tabbed[0].loading_tabid = tabid;
     var href = pulse_url + '?ajax=tab&tab=' + tabid;
@@ -360,16 +363,12 @@ function tab (tabid) {
          */
         pane.text('There was a problem processing the request.');
       pane.css ('display', 'none');
-      tabbed.children ('#panes').append (pane);
+      panes.append (pane);
       pane = $('#' + paneid);
       pane.pulse_init ();
       if (tabid == tabbed[0].current_tabid) {
-        tabbed[0].throbber.hide (0, function () {
-          tabbed[0].throbber.addClass ('stop')
-          tabbed[0].throbber = undefined;
-        });
-        $('#throbber').hide ();
-        $('#reload').show ();
+        thr.stop ();
+        $('#reload').unshade ();
         tabbed[0].loading_tabid = undefined;
         pane.show ();
       }
@@ -432,6 +431,24 @@ function throbber () {
   div.current = div.children('img:first-child');
   div.current.css('display', 'inline');
   div.timer = setInterval(process, 80);
+  return div;
+}
+
+function throbberbar () {
+  var div = $('<div class="throbberbar"><div></div></div>');
+  var bar = div.children('div');
+  var process = function () {
+    var margin = parseInt (bar.css ('margin-left'));
+    if (margin > div.width())
+      bar.css('margin-left', -bar.width());
+    else
+      bar.css('margin-left', margin + 3);
+  };
+  div.start = function () { div.timer = setInterval (process, 20); }
+  div.stop = function () {
+    clearInterval (div.timer);
+    div.remove ();
+  }
   return div;
 }
 

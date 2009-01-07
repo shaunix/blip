@@ -425,6 +425,17 @@ div.zoom {
 }
 .pane { display: none; }
 
+.throbberbar {
+  border: solid 1px #babdb6;
+  padding: 1px;
+  overflow: hidden;
+}
+.throbberbar div {
+  background-color: #729fcf;
+  line-height: 6px;
+  height: 6px;
+  width: 36px;
+}
 
 .vbox-el { margin-top: 1em; }
 
