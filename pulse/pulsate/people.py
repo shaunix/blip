@@ -39,6 +39,7 @@ def help_extra (fd=None):
 
 
 def update_entities (**kw):
+    queue = []
     data = pulse.xmldata.get_data (os.path.join (pulse.config.input_dir, 'xml', 'people.xml'))
     for key in data.keys():
         if not data[key]['__type__'] in ('person', 'team'):
@@ -91,9 +92,10 @@ def update_entities (**kw):
             entity.update ({'icon_dir' : icondir, 'icon_name' : iconname})
 
         if needs_update:
-            update_entity (entity, **kw)
-        else:
-            entity.save()
+            queue.append (entity)
+        entity.save()
+
+    return queue
 
 
 def update_alias (entity, alias, **kw):
@@ -220,12 +222,17 @@ def main (argv, options={}):
     else:
         prefix = argv[0]
 
-    update_entities (timestamps=timestamps, shallow=shallow)
+    queue = update_entities (timestamps=timestamps, shallow=shallow)
 
     if not shallow:
+        for entity in queue:
+            update_entity (entity, timestamps=timestamps, shallow=shallow)
         if prefix == None:
             entities = db.Entity.objects.filter (type__in=('Person', 'Team'))
         else:
             entities = db.Entity.objects.filter (type__in=('Person', 'Team'), ident__startswith=prefix)
         for entity in entities:
             update_entity (entity, timestamps=timestamps, shallow=shallow)
+    else:
+        for entity in queue:
+            db.Queue.push ('people', entity.ident)
