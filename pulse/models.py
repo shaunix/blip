@@ -672,6 +672,7 @@ class Alias (PulseRecord, models.Model):
 
 class Forum (PulseRecord, models.Model):
     __metaclass__ = PulseModelBase
+    mod_score = models.IntegerField (null=True)
 
 
 class ForumPost (PulseRecord, models.Model):

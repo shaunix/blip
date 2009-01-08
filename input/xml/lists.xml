@@ -3,34 +3,37 @@
 
 <defaults>
   <list>
+    <ident>/list/gnome.org/%(id)</ident>
     <name>%(id)</name>
-    <mail>%(id)@gnome.org</mail>
+    <email>%(id)@gnome.org</email>
+    <list_id>%(id).gnome.org</list_id>
     <list_info>http://mail.gnome.org/mailman/listinfo/%(id)</list_info>
     <list_archive>http://mail.gnome.org/archives/%(id)/</list_archive>
   </list>
 </defaults>
 
 <list id="deskbar-applet-list"/>
+<list id="desktop-devel-list"/>
 <list id="epiphany-list"/>
 <list id="evince-list"/>
-<list id="evolution-hackers" list_type="devel"/>
-<list id="evolution-list" list_type="users"/>
+<list id="evolution-hackers"/>
+<list id="evolution-list"/>
 <list id="games-list"/>
 <list id="gconf-list"/>
 <list id="gdm-list"/>
 <list id="gedit-list"/>
-<list id="gnome-accessibility-devel" list_type="devel"/>
-<list id="gnome-accessibility-list" list_type="users"/>
-<list id="gnome-doc-devel-list" list_type="devel"/>
-<list id="gnome-doc-list" list_type="users"/>
+<list id="gnome-accessibility-devel"/>
+<list id="gnome-accessibility-list"/>
+<list id="gnome-doc-devel-list"/>
+<list id="gnome-doc-list"/>
 <list id="gnome-i18n-tools"/>
 <list id="gnome-multimedia"/>
 <list id="gnome-power-manager-list"/>
 <list id="gnome-utils-list"/>
 <list id="gnome-vfs-list"/>
-<list id="gtk-devel-list" list_type="devel"/>
+<list id="gtk-devel-list"/>
 <list id="gtk-doc-list"/>
-<list id="gtk-list" list_type="users"/>
+<list id="gtk-list"/>
 <list id="libsoup-list"/>
 <list id="metacity-devel-list"/>
 <list id="nautilus-list"/>
