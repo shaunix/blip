@@ -5,46 +5,76 @@ body {
   color: #2e3436;
   font-family: sans-serif;
 }
+.notfound, .servererror { max-width: 40em; }
+
+
+/******************************************************************************/
+/** Header and Subheader **/
 
 #header {
   background: #555753 url(header-bg.png) 0 0 repeat-x;
   height: 56px;
   padding: 0 0 0 2.4em;
 }
-
-#body {
+#subheader {
+  background-color: #f7f7f5;
+  border-top: solid 1px #f7f7f5;
+  border-bottom: solid 1px #d3d7cf;
+}
+.sidebarred #subheader { padding-right: 300px; }
+h1 {
+  font-size: 1.44em;
+  background-color: #f7f7f5; color: #555753;
+  margin: 0; padding: 0.2em 300px 0.2em 1.67em;
+}
+h1 img { vertical-align: middle; }
+.sublinks {
+  padding: 0 2.89em 0 2.89em;
+  margin: 0 0 1.2em 0;
+  font-size: 0.83em;
+}
+#tabs { padding: 0 2.4em 0 2.4em; margin: 1em 0 0 0; }
+#reload, #throbber {
+  float: right;
   margin: 0; padding: 0;
-  border-top: solid 1px #f7f7f5;
-  background-color: #f7f7f5;
+  line-height: 0; height: 22px;
 }
-#bodyside {
-  margin: 0 300px 0 0; padding: 0;
-  border-top: solid 1px #f7f7f5;
-  background-color: #f7f7f5;
+#reload { padding: 2px 2px 0 0; }
+.tab {
+  border: solid 1px #d3d7cf;
+  -moz-border-radius-topleft: 4px;
+  -moz-border-radius-topright: 4px;
+  padding: 0 0.5em 0 0.5em;
+  background-color: #eeeeec;
 }
+.tabactive {
+  border-bottom: solid 1px white;
+  background-color: white;
+}
+
+
+/******************************************************************************/
+/** Main Content **/
+
+#body { margin: 0; padding: 1em 0 0 0; }
+.sidebarred #body { padding-right: 300px; }
+#panes {
+  padding: 0em 2.4em 0 2.4em;
+  background-color: white;
+}
+.pane { display: none; }
 #sidebar {
   background-color: #eeeeec;
-  position: absolute;
-  top: 56px;
-  right: 0px;
+  position: absolute; top: 56px; right: 0px;
   width: 300px;
   padding-top: 1em;
   border-left: solid 1px #dcd7cf;
   border-bottom: solid 1px #dcd7cf;
 }
 
-.notfound, .servererror {
-  max-width: 40em;
-}
 
-h1 {
-  font-size: 1.44em;
-  color: #555753;
-  background-color: #f7f7f5;
-  margin: 0;
-  padding: 0.2em 300px 0.2em 1.67em;
-}
-h1 img { vertical-align: middle; }
+/******************************************************************************/
+/** Core Content **/
 
 a { color: #204a87; text-decoration: none; }
 a:visited { color: #5c3566; }
@@ -77,18 +107,16 @@ td.col-first { padding: 0; }
 
 .grid-td { padding: 0 0 0 1em; }
 
+
+/******************************************************************************/
+/** Misc **/
+
 .ajax {
   display: none;
   font-weight: bold;
   color: #555753;
 }
 .ajax img { vertical-align: bottom; }
-
-.sublinks {
-  padding: 0 2.89em 0 2.89em;
-  margin-bottom: 1em;
-  font-size: 0.83em;
-}
 
 .trentry {
   margin: 1em 0 1em 0;
@@ -387,43 +415,6 @@ div.zoom {
 .admon { font-style: italic; }
 .admon img { vertical-align: -10%; }
 
-/** Tabs **/
-#notabs {
-  background-color: white;
-  border-top: solid 1px #d3d7cf;
-  margin-top: 1em;
-  padding: 1em 2.4em 0 2.4em;
-}
-#tabbed { margin: 1em 0 0 0; }
-#tabs {
-  padding: 0 2.4em 0 2.4em;
-  border-bottom: solid 1px #d3d7cf;
-}
-#reload, #throbber {
-  float: right;
-  margin: 0 2.4em 0 0; padding: 0;
-  line-height: 0;
-  height: 22px;
-}
-#reload { padding: 2px 2px 0 0; }
-.tab {
-  border-left: solid 1px #d3d7cf;
-  border-right: solid 1px #d3d7cf;
-  border-top: solid 1px #d3d7cf;
-  -moz-border-radius-topleft: 4px;
-  -moz-border-radius-topright: 4px;
-  padding: 0 1em 0 1em;
-  background-color: #eeeeec;
-}
-.tabactive {
-  border-bottom: solid 1px white;
-  background-color: white;
-}
-#panes {
-  background-color: white;
-  padding: 1em 2.4em 0 2.4em;
-}
-.pane { display: none; }
 
 .throbberbar {
   border: solid 1px #babdb6;

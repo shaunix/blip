@@ -305,8 +305,8 @@ $(document).ready (function () { $('html').pulse_init(); });
 /** Tabs **/
 
 function tab (tabid) {
-  var tabbed = $('#tabbed');
-  var tabs = tabbed.children('#tabs').children('.tab');
+  var tabbar = $('#tabs');
+  var tabs = tabbar.children ('.tab');
 
   if (tabid == undefined) {
     tabid = location.hash;
@@ -321,8 +321,8 @@ function tab (tabid) {
     location.hash = tabid;
 
   var oldpane = undefined;
-  if (tabbed[0].current_tabid != undefined)
-    oldpane = $('#pane-' + tabbed[0].current_tabid);
+  if (tabbar[0].current_tabid != undefined)
+    oldpane = $('#pane-' + tabbar[0].current_tabid);
   if (oldpane != undefined)
     oldpane.hide ();
 
@@ -330,26 +330,26 @@ function tab (tabid) {
   var tab = $('#tab-' + tabid);
   tab.addClass ('tabactive');
 
-  if (tabbed[0].current_tabid == undefined)
+  if (tabbar[0].current_tabid == undefined)
     document.title = document.title + ' - ' + tab.text();
   else
     document.title = document.title.substr(0, document.title.lastIndexOf(' - ') + 3) + tab.text();
 
-  tabbed[0].current_tabid = tabid;
+  tabbar[0].current_tabid = tabid;
   var paneid = 'pane-' + tabid;
   var pane = $('#' + paneid);
   if (pane.length > 0)
     pane.show();
   else {
-    var panes = tabbed.children ('#panes');
+    var panes = $('#panes');
     $('#reload').shade ();
-    if (tabbed[0].loading_tabid == undefined) {
+    if (tabbar[0].loading_tabid == undefined) {
       var thr = throbberbar();
       thr.css('width', panes.width() / 2);
       panes.append (thr);
       thr.start ();
     }
-    tabbed[0].loading_tabid = tabid;
+    tabbar[0].loading_tabid = tabid;
     var href = pulse_url + '?ajax=tab&tab=' + tabid;
     var func = function (data, status) {
       pane = $('<div class="pane"></div>');
@@ -366,10 +366,10 @@ function tab (tabid) {
       panes.append (pane);
       pane = $('#' + paneid);
       pane.pulse_init ();
-      if (tabid == tabbed[0].current_tabid) {
+      if (tabid == tabbar[0].current_tabid) {
         thr.stop ();
         $('#reload').unshade ();
-        tabbed[0].loading_tabid = undefined;
+        tabbar[0].loading_tabid = undefined;
         pane.show ();
       }
     };
@@ -378,24 +378,24 @@ function tab (tabid) {
 }
 
 function reload () {
-  var tabbed = $('#tabbed');
-  if (tabbed[0].current_tabid != undefined) {
-    oldpane = $('#pane-' + tabbed[0].current_tabid);
+  var tabbar = $('#tabs');
+  if (tabbar[0].current_tabid != undefined) {
+    oldpane = $('#pane-' + tabbar[0].current_tabid);
     oldpane.remove ();
   }
-  tab (tabbed[0].current_tabid);
+  tab (tabbar[0].current_tabid);
 }
 
 $(document).ready (function () {
-  var tabbed = $('#tabbed');
-  if (tabbed.length == 0)
+  var tabbar = $('#tabs');
+  if (tabbar.length == 0)
     return;
   tab ();
 });
 
 setInterval (function () {
-  var tabbed = $('#tabbed');
-  var tabid = tabbed[0].current_tabid;
+  var tabbar = $('#tabs');
+  var tabid = tabbar[0].current_tabid;
   if (tabid == undefined)
     return;
   if ('#' + tabid != location.hash)

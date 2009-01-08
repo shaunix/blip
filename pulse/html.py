@@ -507,14 +507,33 @@ class Page (Widget, HttpComponent, ContentComponent, SublinksComponent, FactsCom
         p (fd, '<script language="javascript" type="text/javascript" src="%spulse.js"></script>',
            pulse.config.data_root)
         p (fd, '</head><body>')
+
+        sidebarred = self._sidebar != None or self._screenshot_file != None
+        if sidebarred:
+            p (fd, '<div class="sidebarred">')
+
         p (fd, '<div id="header"><a href="%s"><img src="%s" alt="Pulse"></a></div>',
            (pulse.config.web_root, pulse.config.data_root + 'pulse-logo.png'))
-        p (fd, '<h1>')
+
+        p (fd, '<div id="subheader"><h1>', None, False)
         if self._icon != None:
             p (fd, '<img class="icon" src="%s" alt="%s"> ', (self._icon, self._title), False)
         p (fd, None, self._title)
         p (fd, '</h1>')
-        if self._sidebar != None:
+        SublinksComponent.output (self, fd=fd)
+        if len(self._tabs) > 0:
+            p (fd, '<div id="tabs">')
+            p (fd, '<div id="reload"><a href="javascript:reload()"><img src="%sreload.png"></a></div>',
+               pulse.config.data_root)
+            p (fd, '<div id="throbber"></div>')
+            for tabid, title in self._tabs:
+                title = esc (title).replace(' ', '&nbsp;')
+                p (fd, '<span class="tab" id="tab-%s">', tabid, False)
+                p (fd, '<a href="javascript:tab(\'%s\')">' + title + '</a></span>', tabid)
+            p (fd, '</div>')
+        p (fd, '</div>')
+
+        if sidebarred:
             p (fd, '<div id="sidebar">')
             if self._screenshot_file != None:
                 p (fd, '<div class="screenshot">', None, False)
@@ -526,47 +545,21 @@ class Page (Widget, HttpComponent, ContentComponent, SublinksComponent, FactsCom
                     self._screenshot_file.data['thumb_height']))
                 p (fd, '</a></div>')
             self._sidebar.output (fd=fd)
-            p (fd, '</div><div id="bodyside">')
-        else:
-            p (fd, '<div id="body">')
-        SublinksComponent.output (self, fd=fd)
-        if self._screenshot_file != None and self._sidebar == None:
-            p (fd, '<div class="screenshot">', None, False)
-            url = self._screenshot_file.get_pulse_url ()
-            p (fd, '<a href="%s" class="zoom">', self._screenshot_file.pulse_url, False)
-            p (fd, '<img src="%s" width="%i" height="%i">',
-               (self._screenshot_file.get_pulse_url ('thumbs'),
-                self._screenshot_file.data['thumb_width'],
-                self._screenshot_file.data['thumb_height']))
-            p (fd, '</a></div>')
+            p (fd, '</div>')
 
-        if len(self._tabs) == 0:
-            p (fd, '<div id="notabs">')
-        # FIXME: what do we do with these when there are tabs?
+        p (fd, '<div id="body"><div id="panes">')
         FactsComponent.output (self, fd=fd)
         self.output_page_content (fd=fd)
-        if len(self._tabs) == 0:
-            p (fd, '</div>')
-
         if len(self._tabs) > 0:
-            p (fd, '<div id="tabbed">')
-            p (fd, '<div id="reload"><a href="javascript:reload()"><img src="%sreload.png"></a></div>',
-               pulse.config.data_root)
-            p (fd, '<div id="throbber"></div>')
-            p (fd, '<div id="tabs">')
-            for tabid, title in self._tabs:
-                title = esc (title).replace(' ', '&nbsp;')
-                p (fd, '<span class="tab" id="tab-%s">', tabid, False)
-                p (fd, '<a href="javascript:tab(\'%s\')">' + title + '</a></span>', tabid)
-            p (fd, '</div>')
-            p (fd, '<div id="panes">')
             for pane in self._panes:
                 p (fd, '<div class="pane" id="pane-%s">', pane)
                 self._panes[pane].output (fd=fd)
                 p (fd, '</div>')
-            p (fd, '</div>')
+        p (fd, '</div></div>')
 
-        p (fd, '</div></body></html>')
+        if sidebarred:
+            p (fd, '</div>')
+        p (fd, '</body></html>')
         
     def output_page_content (self, fd=None):
         """Output the contents of the page."""
