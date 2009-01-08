@@ -37,14 +37,16 @@ Here's some basic instructions for running Pulse on your machine:
    Fedora.  Your distro probably packaged it as well.  You need to edit
    web/htaccess to reflect the paths on your system.  Note that RewriteRule
    really wants to see absolute paths.  Then symlink as follows:
+     pulse          ->  $(webroot)/pulse
      web/data       ->  $(webroot)/data
      web/files      ->  $(webroot)/files
      web/index.cgi  ->  $(webroot)/index.cgi
      web/htaccess   ->  $(webroot)/.htaccess
    Note that htaccess should become .htaccess.  I just prefer not to work
-   on hidden files in the repository.  You also need to edit web/index.cgi.
-   It calls 'sys.path.append' so it can locate pulse.  Edit that path to
-   reflect your directory layout.
+   on hidden files in the repository.  You also have to symlink the pulse
+   directory into the same direction index.cgi is in, so it's in the path
+   for imports.  This is unnecessary if you install Pulse, but we currently
+   have no tools for doing that.
 
 *) Alternatively, if you don't want to muck with rewrite rules, change
    pulse.config.web_root to include index.cgi.  If you do this, you also
