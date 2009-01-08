@@ -249,18 +249,18 @@ def process_docbook_docfile (docfile, doc, **kw):
                     cr_name = None
                     for ch in pulse.utils.xmliter (infonode):
                         if ch.type == 'element' and ch.name == 'collabname':
-                            cr_name = ch.getContent()
+                            cr_name = normalize (ch.getContent())
                     if cr_name != None:
                         maint = (infonode.prop('role') == 'maintainer')
                         credits.append ((cr_name, None, 'collab', maint))
                 elif infonode.name in ('corpauthor', 'corpcredit'):
                     maint = (infonode.prop('role') == 'maintainer')
-                    credits.append ((infonode.getContent(), None, infonode.name, maint))
+                    credits.append ((normalize (infonode.getContent()), None, infonode.name, maint))
                 elif infonode.name == 'publisher':
                     cr_name = None
                     for ch in pulse.utils.xmliter (infonode):
                         if ch.type == 'element' and ch.name == 'publishername':
-                            cr_name = ch.getContent()
+                            cr_name = normalize (ch.getContent())
                     if cr_name != None:
                         maint = (infonode.prop('role') == 'maintainer')
                         credits.append ((cr_name, None, 'publisher', maint))
