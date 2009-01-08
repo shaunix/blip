@@ -107,11 +107,11 @@ def output_team (team, **kw):
 
     cnt = db.Branch.objects.filter (type='Module', document_entity_preds__pred=team).count()
     if cnt > 0:
-        page.add_tab ('doc', pulse.utils.gettext ('Modules (%i)') % cnt)
+        page.add_tab ('modules', pulse.utils.gettext ('Modules (%i)') % cnt)
 
     cnt = db.Branch.objects.filter (type='Document', document_entity_preds__pred=team).count()
     if cnt > 0:
-        page.add_tab ('doc', pulse.utils.gettext ('Documents (%i)') % cnt)
+        page.add_tab ('documents', pulse.utils.gettext ('Documents (%i)') % cnt)
 
     page.output(fd=kw.get('fd'))
     return 0
@@ -138,7 +138,7 @@ def get_info_tab (team, **kw):
     sep = False
     try:
         facts.add_fact (pulse.utils.gettext ('Description'),
-                       module.localized_desc)
+                       team.localized_desc)
         sep = True
     except:
         pass

@@ -56,6 +56,11 @@
   <web>http://www.gnome-ev.de/</web>
 </team>
 
+<team id="l10n-sq">
+  <name>Albanian Translation Team</name>
+  <web>http://gnome-albanian.sourceforge.net/</web>
+</team>
+
 </group>
 
 
