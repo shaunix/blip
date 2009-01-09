@@ -23,9 +23,13 @@
 from datetime import datetime, timedelta
 import HTMLParser
 import math
+import os
 import os.path
 import sys
+import tempfile
 import urllib
+
+import pulse.config
 
 
 # Just a dummy until we hook up gettext
@@ -56,6 +60,15 @@ def weeknumday (num):
     Return the the first day of the givin week number
     """
     return (epoch_week + timedelta(days=7*(num-1)))
+
+
+def tmpfile ():
+    """
+    Return the location of a temporary file
+    """
+    if not os.path.exists (pulse.config.tmp_dir):
+        os.makedirs (pulse.config.tmp_dir)
+    return tempfile.mkstemp (dir=pulse.config.tmp_dir)[1]
 
 
 def score (stats):

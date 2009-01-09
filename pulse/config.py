@@ -41,6 +41,9 @@ scratch_dir = os.path.join (base_dir, 'scratch')
 # The directory where Pulse checks stuff out from SCM systems
 scm_dir = os.path.join (scratch_dir, 'scm')
 
+# The directory where Pulse puts temporary files
+tmp_dir = os.path.join (scratch_dir, 'tmp')
+
 
 ################################################################################
 ## Directores for web stuff

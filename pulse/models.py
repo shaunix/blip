@@ -532,6 +532,7 @@ class Branch (PulseRecord, models.Model):
     mod_score = models.IntegerField (null=True)
     mod_datetime = models.DateTimeField (null=True)
     mod_person = models.ForeignKey ('Entity', related_name='branch_mods', null=True)
+    post_score = models.IntegerField (null=True)
 
     def get_is_default (self):
         return self.scm_branch == pulse.scm.default_branches.get (self.scm_type)
@@ -627,6 +628,7 @@ class Entity (PulseRecord, models.Model):
     parent = models.ForeignKey ('Entity', related_name='children', null=True)
     nick = models.CharField (null=True, **maxlength80)
     mod_score = models.IntegerField (null=True)
+    post_score = models.IntegerField (null=True)
 
 
     # Convenience routine to get objects that might already exist
@@ -651,6 +653,31 @@ class Entity (PulseRecord, models.Model):
                 return (rec, None)
 
 
+    @classmethod
+    def get_by_email (cls, email):
+        try:
+            rec = cls.objects.filter (email=email)
+            rec = rec[0]
+            return rec
+        except IndexError:
+            pass
+        ident = '/person/' + email
+        try:
+            rec = cls.objects.filter (ident=ident)
+            rec = rec[0]
+            return rec
+        except IndexError:
+            pass
+        try:
+            rec = Alias.objects.filter (ident=ident)
+            rec = rec[0]
+            return rec.entity
+        except IndexError:
+            pass
+        rec, cr = cls.objects.get_or_create (ident=ident, type='Person')
+        return rec
+
+
     def get_name_nick (self):
         # FIXME: latinized names
         if self.nick != None:
@@ -672,14 +699,14 @@ class Alias (PulseRecord, models.Model):
 
 class Forum (PulseRecord, models.Model):
     __metaclass__ = PulseModelBase
-    mod_score = models.IntegerField (null=True)
+    post_score = models.IntegerField (null=True)
 
 
 class ForumPost (PulseRecord, models.Model):
     __metaclass__ = PulseModelBase
 
     forum = models.ForeignKey (Forum, related_name='forum_posts')
-    author = models.ForeignKey (Entity, related_name='forum_posts')
+    author = models.ForeignKey (Entity, related_name='forum_posts', null=True)
     parent = models.ForeignKey ('ForumPost', related_name='children', null=True)
     datetime = models.DateTimeField (null=True)
 

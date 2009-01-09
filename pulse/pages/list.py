@@ -127,6 +127,13 @@ def get_info_tab (mlist, **kw):
 
 def get_activity_tab (mlist, **kw):
     box = pulse.html.Div ()
+    dl = pulse.html.DefinitionList()
+    box.add_content (dl)
+
+    posts = db.ForumPost.objects.filter (forum=mlist).order_by ('-datetime')
+    for post in posts[:20]:
+        dl.add_term (post.title)
+        dl.add_entry (pulse.html.Link (post.author))
 
     return box
 
