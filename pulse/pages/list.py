@@ -57,7 +57,7 @@ def main (path, query, http=True, fd=None):
 def synopsis ():
     """Construct an info box for the front page"""
     box = pulse.html.InfoBox (pulse.utils.gettext ('Mailing Lists'))
-    mlists = db.Forum.objects.filter (type='List').order_by ('-mod_score')
+    mlists = db.Forum.objects.filter (type='List').order_by ('-post_score')
     box.add_content (str(mlists.count()))
     bl = pulse.html.BulletList ()
     box.add_content (bl)
@@ -69,7 +69,7 @@ def synopsis ():
 def output_top (**kw):
     page = pulse.html.Page (http=kw.get('http', True))
     page.set_title (pulse.utils.gettext ('Mailing Lists'))
-    mlists = db.Forum.objects.filter (type='List').order_by ('-mod_score')
+    mlists = db.Forum.objects.filter (type='List').order_by ('-post_score')
     for mlist in mlists[:42]:
         lbox = pulse.html.LinkBox (mlist)
         page.add_content (lbox)
