@@ -125,9 +125,9 @@ def output_ajax_tab (team, **kw):
         page.add_content (get_info_tab (team, **kw))
     elif tab == 'subteams':
         page.add_content (get_subteams_tab (team, **kw))
-    elif tab == 'mod':
+    elif tab == 'modules':
         page.add_content (get_mod_tab (team, **kw))
-    elif tab == 'doc':
+    elif tab == 'documents':
         page.add_content (get_doc_tab (team, **kw))
     page.output(fd=kw.get('fd'))
     return 0
