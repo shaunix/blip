@@ -131,40 +131,40 @@ def output_set (rset, **kw):
     # Sets
     setcnt = rset.subsets.count()
     if setcnt > 0:
-        page.add_tab ('set', pulse.utils.gettext ('Subsets (%i)') % setcnt)
+        page.add_tab ('subsets', pulse.utils.gettext ('Subsets (%i)') % setcnt)
 
     # Modules
     modcnt = db.SetModule.count_related (subj=rset)
     if modcnt > 0:
-        page.add_tab ('mod', pulse.utils.gettext ('Modules (%i)') % modcnt)
+        page.add_tab ('modules', pulse.utils.gettext ('Modules (%i)') % modcnt)
 
         # Documents
         objs = db.Branch.objects.filter (type='Document',
                                          parent__set_module_subjs__subj=rset)
         cnt = objs.count()
         if cnt > 0:
-            page.add_tab ('doc', pulse.utils.gettext ('Documents (%i)') % cnt)
+            page.add_tab ('documents', pulse.utils.gettext ('Documents (%i)') % cnt)
 
         # Domains
         objs = db.Branch.objects.filter (type='Domain',
                                          parent__set_module_subjs__subj=rset)
         cnt = objs.count()
         if cnt > 0:
-            page.add_tab ('i18n', pulse.utils.gettext ('Domains (%i)') % cnt)
+            page.add_tab ('domains', pulse.utils.gettext ('Domains (%i)') % cnt)
 
         # Programs
         objs = db.Branch.objects.filter (type__in=('Application', 'Capplet', 'Applet'),
                                          parent__set_module_subjs__subj=rset)
         cnt = objs.count()
         if cnt > 0:
-            page.add_tab ('prog', pulse.utils.gettext ('Programs (%i)') % cnt)
+            page.add_tab ('programs', pulse.utils.gettext ('Programs (%i)') % cnt)
 
         # Libraries
         objs = db.Branch.objects.filter (type='Library',
                                          parent__set_module_subjs__subj=rset)
         cnt = objs.count()
         if cnt > 0:
-            page.add_tab ('lib', pulse.utils.gettext ('Libraries (%i)') % cnt)
+            page.add_tab ('libraries', pulse.utils.gettext ('Libraries (%i)') % cnt)
 
     page.output(fd=kw.get('fd'))
 
@@ -175,17 +175,17 @@ def output_ajax_tab (rset, **kw):
     query = kw.get ('query', {})
     page = pulse.html.Fragment (http=kw.get('http', True))
     tab = query.get('tab', None)
-    if tab == 'set':
+    if tab == 'subsets':
         page.add_content (get_set_box (rset, **kw))
-    elif tab == 'mod':
+    elif tab == 'modules':
         page.add_content (get_mod_box (rset, **kw))
-    elif tab == 'doc':
+    elif tab == 'documents':
         page.add_content (get_doc_box (rset, **kw))
-    elif tab == 'i18n':
+    elif tab == 'domains':
         page.add_content (get_i18n_box (rset, **kw))
-    elif tab == 'prog':
+    elif tab == 'programs':
         page.add_content (get_prog_box (rset, **kw))
-    elif tab == 'lib':
+    elif tab == 'libraries':
         page.add_content (get_lib_box (rset, **kw))
     page.output(fd=kw.get('fd'))
     return 0
