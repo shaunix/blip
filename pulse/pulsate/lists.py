@@ -125,12 +125,12 @@ def update_list (mlist, **kw):
                 elif lower.startswith ('subject:'):
                     msgsubject = hdr[8:].strip()
                 elif lower.startswith ('message-id:'):
-                    # FIXME: don't use [1:-1], instead parse as email address
-                    msgid = hdr[11:].strip()[1:-1]
+                    msgid = hdr[11:]
                 elif lower.startswith ('in-reply-to:'):
-                    msgparent = hdr[12:].strip()[1:-1]
+                    msgparent = hdr[12:]
             if msgid == None:
                 continue
+            msgid = emailutils.parseaddr (msgid)[1]
             ident = mlist.ident + '/' + msgid
             post = db.ForumPost.objects.filter (ident=ident)
             try:
@@ -140,6 +140,7 @@ def update_list (mlist, **kw):
             postdata = {'forum': mlist, 'name': msgsubject}
 
             if msgparent != None:
+                msgparent = emailutils.parseaddr (msgparent)[1]
                 pident = mlist.ident + '/' + msgparent
                 parent = db.ForumPost.objects.filter (ident=pident)
                 try:
