@@ -34,6 +34,7 @@ import urlparse
 import StringIO
 
 import pulse.models as db
+import pulse.utils
 import pulse.xmldata
 
 synop = 'update information about mailing lists'
@@ -87,12 +88,13 @@ def update_list (mlist, **kw):
         for link in links:
             if link.endswith ('.txt.gz'):
                 mboxes.append (urlparse.urljoin (archive, link))
+    mlist.data.setdefault ('archives', {})
     for url in mboxes:
         parsed = urlparse.urlparse (url)
         con = httplib.HTTPConnection (parsed[1])
         headers = {'Accept-encoding': 'gzip'}
         if kw.get('timestamps', True):
-            dats = mlist.data.get ('archives', {}).get (url, {})
+            dats = mlist.data['archives'].get (url, {})
             mod = dats.get ('modified')
             if mod != None:
                 headers['If-Modified-Since'] = mod
@@ -130,7 +132,7 @@ def update_list (mlist, **kw):
                     msgparent = hdr[12:]
             if msgid == None:
                 continue
-            msgid = emailutils.parseaddr (msgid)[1]
+            msgid = pulse.utils.utf8dec (emailutils.parseaddr (msgid)[1])
             ident = mlist.ident + '/' + msgid
             post = db.ForumPost.objects.filter (ident=ident)
             try:
@@ -140,7 +142,7 @@ def update_list (mlist, **kw):
             postdata = {'forum': mlist, 'name': msgsubject}
 
             if msgparent != None:
-                msgparent = emailutils.parseaddr (msgparent)[1]
+                msgparent = pulse.utils.utf8dec (emailutils.parseaddr (msgparent)[1])
                 pident = mlist.ident + '/' + msgparent
                 parent = db.ForumPost.objects.filter (ident=pident)
                 try:
@@ -170,11 +172,69 @@ def update_list (mlist, **kw):
             os.remove (tmp)
         except:
             pass
-        mlist.data.setdefault ('archives', {})
         mlist.data['archives'].setdefault (url, {})
         mlist.data['archives'][url]['modified'] = res.getheader ('Last-Modified')
         mlist.data['archives'][url]['etag'] = res.getheader ('Etag')
-        mlist.save()
+
+    update_graphs (mlist, **kw)
+    mlist.save()
+
+
+def update_graphs (mlist, **kw):
+    now = datetime.datetime.now()
+    thisweek = pulse.utils.weeknum (datetime.datetime.utcnow())
+    numweeks = 104
+    i = 0
+    finalpost = db.ForumPost.objects.filter (forum=mlist).order_by ('datetime')
+    outpath = None
+    try:
+        finalpost = finalpost[0]
+        stillpost = True
+    except:
+        finalpost = None
+        stillpost = False
+    while stillpost or i < 2:
+        topweek = thisweek - (i * numweeks)
+        posts = db.ForumPost.objects.filter (forum=mlist,
+                                             weeknum__gt=(topweek - numweeks),
+                                             weeknum__lte=topweek)
+        if stillpost:
+            fname = 'posts-' + str(i) + '.png'
+            of = db.OutputFile.objects.filter (type='graphs', ident=mlist.ident, filename=fname)
+            try:
+                of = of[0]
+            except IndexError:
+                of = None
+            if i == 0 and of != None:
+                if kw.get('timestamps', True):
+                    count = of.data.get ('count', None)
+                    weeknum = of.data.get ('weeknum', None)
+                    if weeknum == thisweek and posts.count() == count:
+                        pulse.utils.log ('Skipping activity graph for %s' % mlist.ident)
+                        return
+            elif of == None:
+                of = db.OutputFile (type='graphs', ident=mlist.ident, filename=fname, datetime=now)
+            outpath = of.get_file_path()
+        else:
+            of = None
+
+        if i == 0:
+            pulse.utils.log ('Creating activity graphs for %s' % mlist.ident)
+
+        stats = [0] * numweeks
+        posts = list (posts)
+        for post in posts:
+            if post.id == finalpost:
+                stillpost = False
+            idx = post.weeknum - topweek + numweeks - 1
+            stats[idx] += 1
+
+        if i == 0:
+            score = pulse.utils.score (stats[numweeks - 26:])
+            print stats
+            print score
+            return
+            mlist.mod_score = score
 
 
 def main (argv, options={}):

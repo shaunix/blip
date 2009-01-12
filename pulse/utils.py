@@ -20,6 +20,7 @@
 
 """Various utility functions"""
 
+import codecs
 from datetime import datetime, timedelta
 import HTMLParser
 import math
@@ -30,6 +31,10 @@ import tempfile
 import urllib
 
 import pulse.config
+
+
+def utf8dec (s):
+    return codecs.getdecoder('utf-8')(s, errors='replace')[0]
 
 
 # Just a dummy until we hook up gettext

@@ -705,10 +705,16 @@ class Forum (PulseRecord, models.Model):
 class ForumPost (PulseRecord, models.Model):
     __metaclass__ = PulseModelBase
 
+    def __init__ (self, *args, **kw):
+        models.Model.__init__ (self, *args, **kw)
+        if self.weeknum == None and self.datetime != None:
+            self.weeknum = pulse.utils.weeknum (self.datetime)
+
     forum = models.ForeignKey (Forum, related_name='forum_posts')
     author = models.ForeignKey (Entity, related_name='forum_posts', null=True)
     parent = models.ForeignKey ('ForumPost', related_name='children', null=True)
     datetime = models.DateTimeField (null=True)
+    weeknum = models.IntegerField (null=True)
 
 
 ################################################################################
