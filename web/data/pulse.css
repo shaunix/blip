@@ -25,7 +25,7 @@ body {
 h1 {
   font-size: 1.44em;
   background-color: #f7f7f5; color: #555753;
-  margin: 0; padding: 0.2em 300px 0.2em 1.67em;
+  margin: 0; padding: 0.2em 1.67em 0.2em 1.67em;
 }
 h1 img { vertical-align: middle; }
 .sublinks {
