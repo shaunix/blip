@@ -100,7 +100,7 @@ def main (path, query, http=True, fd=None):
 synopsis_sort = -1
 def synopsis ():
     """Construct an info box for the front page"""
-    box = pulse.html.ContainerBox (title=pulse.utils.gettext ('Modules'))
+    box = pulse.html.SectionBox (pulse.utils.gettext ('Modules'))
     txt = (pulse.utils.gettext ('Pulse is watching %i branches in %i modules.') %
            (db.Branch.objects.filter(type='Module').count(),
             db.Branchable.objects.filter(type='Module').count() ))

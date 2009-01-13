@@ -208,6 +208,15 @@ div.lboxhead {
 }
 td.lboxgraph { vertical-align: top; text-align: right; }
 
+div.section { margin: 0.5em 0 1.2em 0; }
+div.sectiontitle {
+  color: #555753;
+  font-weight: bold;
+  border-bottom: solid 1px #888a85;
+  margin: 0 0 0.2em 0;
+}
+
+
 table.cont { width: 100%; }
 .contexp { cursor: pointer; }
 td.contexp {

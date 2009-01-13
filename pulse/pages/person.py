@@ -60,9 +60,10 @@ def main (path, query, http=True, fd=None):
         return output_person (person, **kw)
 
 
+synopsis_sort = -1
 def synopsis ():
     """Construct an info box for the front page"""
-    box = pulse.html.ContainerBox (title=pulse.utils.gettext ('People'))
+    box = pulse.html.SectionBox (pulse.utils.gettext ('People'))
     txt = (pulse.utils.gettext ('Pulse is watching %i people.') %
            db.Entity.objects.filter(type='Person').count() )
     box.add_content (pulse.html.Div (txt))

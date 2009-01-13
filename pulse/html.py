@@ -728,6 +728,21 @@ class InfoBox (Widget, SortableComponent, ContentComponent, FilterableComponent,
         p (fd, '</div></div>')
 
 
+class SectionBox (Widget, ContentComponent):
+    def __init__ (self, title, **kw):
+        super (SectionBox, self).__init__ (**kw)
+        self._title = title
+
+    def output (self, fd=None):
+        p (fd, '<div class="section"', None, False)
+        wid = self.get_widget_id ()
+        if wid != None:
+            p (fd, ' id="%s"', wid, False)
+        p (fd, '><div class="sectiontitle">%s</div>', self._title)
+        ContentComponent.output (self, fd=fd)
+        p (fd, '</div>')
+
+
 class ContainerBox (Widget, FilterableComponent, SortableComponent, ContentComponent, LinkBoxesComponent):
     """
     An all-purpose container box.
@@ -1215,7 +1230,7 @@ class BulletList (Widget):
         """Output the HTML."""
         p (fd, '<div class="ul">')
         if self._title != None:
-            p (fd, '<div class="title">', None, False)
+            p (fd, '<div class="ultitle">', None, False)
             p (fd, None, self._title, False)
             p (fd, '</div>')
         p (fd, '<ul', None, False)

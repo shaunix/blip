@@ -56,7 +56,7 @@ def main (path, query, http=True, fd=None):
 
 def synopsis ():
     """Construct an info box for the front page"""
-    box = pulse.html.ContainerBox (title=pulse.utils.gettext ('Mailing Lists'))
+    box = pulse.html.SectionBox (pulse.utils.gettext ('Mailing Lists'))
     txt = (pulse.utils.gettext ('Pulse is watching %i mailing lists.  ') %
            db.Forum.objects.filter(type='List').count() )
     div = pulse.html.Div (txt)
