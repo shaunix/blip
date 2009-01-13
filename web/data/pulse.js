@@ -377,34 +377,38 @@ function tab (tabid) {
   tabbar[0].current_tabid = tabid;
   var paneid = 'pane-' + tabid;
   var pane = $('#' + paneid);
-  if (pane.length > 0)
+  if (pane.length > 0) {
+    if (pane.hasClass ('paneloading'))
+      $('#reload').shade ();
+    else
+      $('#reload').unshade ();
     pane.show();
-  else {
+  } else {
     var panes = $('#panes');
     $('#reload').shade ();
-    if (tabbar[0].loading_tabid == undefined) {
-      var thr = throbberbar();
-      thr.css('width', panes.width() / 2);
-      panes.append (thr);
-      thr.start ();
-    }
+    pane = $('<div class="pane"></div>');
+    pane.attr ('id', paneid);
+    pane.addClass ('paneloading');
+    var thr = throbberbar();
+    thr.css('width', panes.width() / 2);
+    pane.append (thr);
+    panes.append (pane);
+    pane.show ();
+    thr.start ();
     tabbar[0].loading_tabid = tabid;
     var href = pulse_url + '?ajax=tab&tab=' + tabid;
     var func = function (data, status) {
-      pane = $('<div class="pane"></div>');
-      pane.attr ('id', paneid);
+      var pane = $('#' + paneid);
       if (status == 'success')
-        pane.append ($(data));
+        pane.html ($(data));
       else
         /* FIXME: sucky.  Would rather send a Fragment back from index.cgi
          * with an admon box or some such, but I can't get responseText
          * from an XMLHttpRequest on error.
          */
         pane.text('There was a problem processing the request.');
-      pane.css ('display', 'none');
-      panes.append (pane);
-      pane = $('#' + paneid);
       pane.pulse_init ();
+      pane.removeClass ('paneloading');
       if (tabid == tabbar[0].current_tabid) {
         thr.stop ();
         $('#reload').unshade ();
