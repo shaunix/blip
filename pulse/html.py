@@ -1236,11 +1236,10 @@ class BulletList (Widget):
 
 class LinkList (BulletList):
     def __init__ (self, **kw):
-        kw['classname'] = 'linklist'
         super (LinkList, self).__init__ (**kw)
 
     def add_link (self, *args, **kw):
-        self.add_item (Link(*args, **kw))
+        self.add_item (Link(*args, **kw), 'link')
 
     def output (self, fd=None):
         BulletList.output (self, fd=fd)

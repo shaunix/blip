@@ -85,13 +85,15 @@ table { margin: 0; padding: 0; border-collapse: collapse; }
 tr { margin: 0; padding: 0; }
 td { margin: 0; padding: 0; vertical-align: top; }
 
-div.title { color: #555753; }
-
 div.ul { margin: 0.2em 0 0 0; }
-ul { margin: 0; padding: 0; }
-ul li { margin: -0.2em 0 0 1.44em; padding: 0; line-height: 1.44em; }
-
-ul.linklist { list-style-type: none; }
+ul {
+  margin: 0; padding: 0;
+  list-style-image: url(bullet.png);
+}
+ul li { margin: 0 0 0 1.44em; padding: 0; }
+li.link {
+  list-style-image: url(linkbullet.png);
+}
 
 dl { margin: 0 0 0.5em 0; pading: 0; }
 dt { margin: 0.5em 0 0 0; }

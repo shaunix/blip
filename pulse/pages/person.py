@@ -63,12 +63,27 @@ def main (path, query, http=True, fd=None):
 def synopsis ():
     """Construct an info box for the front page"""
     box = pulse.html.ContainerBox (title=pulse.utils.gettext ('People'))
+    txt = (pulse.utils.gettext ('Pulse is watching %i people.') %
+           db.Entity.objects.filter(type='Person').count() )
+    box.add_content (pulse.html.Div (txt))
+
+    columns = pulse.html.ColumnBox (2)
+    box.add_content (columns)
+
     people = db.Entity.objects.filter (type='Person').order_by ('-mod_score')
-    box.add_content (pulse.html.Div (pulse.utils.gettext ('These people deserve a beer:')))
-    bl = pulse.html.BulletList ()
-    box.add_content (bl)
-    for person in people[:12]:
-        bl.add_item (pulse.html.Link (person))
+    bl = pulse.html.LinkList ()
+    bl.set_title (pulse.utils.gettext ('These people deserve a beer:'))
+    columns.add_to_column (0, bl)
+    for person in people[:6]:
+        bl.add_link (person)
+
+    people = db.Entity.objects.filter (type='Person').order_by ('-mod_score_diff')
+    bl = pulse.html.LinkList ()
+    bl.set_title (pulse.utils.gettext ('Up-and-coming rock stars:'))
+    columns.add_to_column (1, bl)
+    for person in people[:6]:
+        bl.add_link (person)
+
     return box
 
 

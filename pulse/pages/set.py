@@ -56,12 +56,12 @@ def main (path, query, http=True, fd=None):
 def synopsis ():
     """Construct an info box for the front page"""
     box = pulse.html.SidebarBox (pulse.utils.gettext ('Sets'))
-    bl = pulse.html.BulletList ()
+    bl = pulse.html.LinkList ()
     box.add_content (bl)
     sets = db.ReleaseSet.objects.filter (parent__isnull=True)
     sets = pulse.utils.attrsorted (list(sets), 'title')
     for rset in sets:
-        bl.add_item (pulse.html.Link (rset))
+        bl.add_link (rset)
     return box
 
 

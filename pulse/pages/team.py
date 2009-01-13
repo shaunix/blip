@@ -60,14 +60,13 @@ def main (path, query, http=True, fd=None):
 
 def synopsis ():
     """Construct an info box for the front page"""
-    box = pulse.html.ContainerBox (title=pulse.utils.gettext ('Teams'))
+    box = pulse.html.SidebarBox (title=pulse.utils.gettext ('Teams'))
     teams = db.Entity.objects.filter (type='Team', parent__isnull=True)
     teams = pulse.utils.attrsorted (list(teams), 'title')
-    box.add_content (pulse.html.Div (pulse.utils.gettext ('Root for the home team:')))
-    bl = pulse.html.BulletList ()
+    bl = pulse.html.LinkList ()
     box.add_content (bl)
     for team in teams:
-        bl.add_item (pulse.html.Link (team))
+        bl.add_link (team)
     return box
 
 

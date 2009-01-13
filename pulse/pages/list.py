@@ -65,14 +65,14 @@ def synopsis ():
 
     mlists = db.Forum.objects.filter (type='List').order_by ('-post_score')
     cols = pulse.html.ColumnBox (2)
-    bl = (pulse.html.BulletList (), pulse.html.BulletList ())
+    bl = (pulse.html.LinkList (), pulse.html.LinkList ())
     cols.add_to_column (0, bl[0])
     cols.add_to_column (1, bl[1])
     box.add_content (cols)
     i = 0
     for mlist in mlists[:12]:
         col = i >= 6 and 1 or 0
-        bl[col].add_item (pulse.html.Link (mlist.pulse_url, mlist.email))
+        bl[col].add_link (mlist.pulse_url, mlist.email)
         i += 1
     return box
 

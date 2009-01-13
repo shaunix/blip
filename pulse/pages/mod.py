@@ -113,7 +113,7 @@ def synopsis ():
     bl = pulse.html.LinkList ()
     bl.set_title (pulse.utils.gettext ('Kicking ass and taking names:'))
     columns.add_to_column (0, bl)
-    modules = modules[:5]
+    modules = modules[:6]
     scm_mods = {}
     for module in modules:
         scm_mods.setdefault (module.scm_module, 0)
@@ -128,7 +128,7 @@ def synopsis ():
     bl = pulse.html.LinkList ()
     bl.set_title (pulse.utils.gettext ('Recent spikes:'))
     columns.add_to_column (1, bl)
-    modules = modules[:5]
+    modules = modules[:6]
     scm_mods = {}
     for module in modules:
         scm_mods.setdefault (module.scm_module, 0)
