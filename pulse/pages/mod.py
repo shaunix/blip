@@ -109,7 +109,7 @@ def synopsis ():
     columns = pulse.html.ColumnBox (2)
     box.add_content (columns)
 
-    modules = db.Branch.objects.filter (type='Module').order_by ('-mod_score_diff')
+    modules = db.Branch.objects.filter (type='Module').order_by ('-mod_score')
     bl = pulse.html.LinkList ()
     bl.set_title (pulse.utils.gettext ('Kicking ass and taking names:'))
     columns.add_to_column (0, bl)
