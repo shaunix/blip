@@ -530,9 +530,11 @@ class Branch (PulseRecord, models.Model):
     scm_file = models.CharField (null=True, **maxlength80)
 
     mod_score = models.IntegerField (null=True)
+    mod_score_diff = models.IntegerField (null=True)
     mod_datetime = models.DateTimeField (null=True)
     mod_person = models.ForeignKey ('Entity', related_name='branch_mods', null=True)
     post_score = models.IntegerField (null=True)
+    post_score_diff = models.IntegerField (null=True)
 
     def get_is_default (self):
         return self.scm_branch == pulse.scm.default_branches.get (self.scm_type)
@@ -628,7 +630,9 @@ class Entity (PulseRecord, models.Model):
     parent = models.ForeignKey ('Entity', related_name='children', null=True)
     nick = models.CharField (null=True, **maxlength80)
     mod_score = models.IntegerField (null=True)
+    mod_score_diff = models.IntegerField (null=True)
     post_score = models.IntegerField (null=True)
+    post_score_diff = models.IntegerField (null=True)
 
 
     # Convenience routine to get objects that might already exist
@@ -700,6 +704,7 @@ class Alias (PulseRecord, models.Model):
 class Forum (PulseRecord, models.Model):
     __metaclass__ = PulseModelBase
     post_score = models.IntegerField (null=True)
+    post_score_diff = models.IntegerField (null=True)
 
 
 class ForumPost (PulseRecord, models.Model):

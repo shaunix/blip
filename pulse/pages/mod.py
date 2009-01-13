@@ -97,24 +97,47 @@ def main (path, query, http=True, fd=None):
     else:
         return output_module (branch, **kw)
 
-
+synopsis_sort = -1
 def synopsis ():
     """Construct an info box for the front page"""
-    box = pulse.html.InfoBox (pulse.utils.gettext ('Modules'))
-    modules = db.Branch.objects.filter (type='Module').order_by ('-mod_score')
-    box.add_content (pulse.html.Div (pulse.utils.gettext ('Kicking ass and taking names:')))
-    bl = pulse.html.BulletList ()
-    box.add_content (bl)
-    modules = modules[:12]
+    box = pulse.html.ContainerBox (title=pulse.utils.gettext ('Modules'))
+    txt = (pulse.utils.gettext ('Pulse is watching %i branches in %i modules.') %
+           (db.Branch.objects.filter(type='Module').count(),
+            db.Branchable.objects.filter(type='Module').count() ))
+    box.add_content (pulse.html.Div (txt))
+
+    columns = pulse.html.ColumnBox (2)
+    box.add_content (columns)
+
+    modules = db.Branch.objects.filter (type='Module').order_by ('-mod_score_diff')
+    bl = pulse.html.LinkList ()
+    bl.set_title (pulse.utils.gettext ('Kicking ass and taking names:'))
+    columns.add_to_column (0, bl)
+    modules = modules[:5]
     scm_mods = {}
     for module in modules:
         scm_mods.setdefault (module.scm_module, 0)
         scm_mods[module.scm_module] += 1
     for module in modules:
         if scm_mods[module.scm_module] > 1:
-            bl.add_item (pulse.html.Link (module.get_pulse_url(), module.get_branch_title()))
+            bl.add_link (module.get_pulse_url(), module.get_branch_title())
         else:
-            bl.add_item (pulse.html.Link (module))
+            bl.add_link (module)
+
+    modules = db.Branch.objects.filter (type='Module').order_by ('-mod_score_diff')
+    bl = pulse.html.LinkList ()
+    bl.set_title (pulse.utils.gettext ('Recent spikes:'))
+    columns.add_to_column (1, bl)
+    modules = modules[:5]
+    scm_mods = {}
+    for module in modules:
+        scm_mods.setdefault (module.scm_module, 0)
+        scm_mods[module.scm_module] += 1
+    for module in modules:
+        if scm_mods[module.scm_module] > 1:
+            bl.add_link (module.get_pulse_url(), module.get_branch_title())
+        else:
+            bl.add_link (module)
     return box
 
 
@@ -145,6 +168,8 @@ def output_module (module, **kw):
 
     page.add_tab ('activity', pulse.utils.gettext ('Activity'))
     page.add_tab ('components', pulse.utils.gettext ('Components'))
+    if module.select_children ('Domain').count() > 0:
+        page.add_tab ('translations', pulse.utils.gettext ('Translations'))
 
     # Dependencies
     deps = db.ModuleDependency.get_related (subj=module)
@@ -182,6 +207,8 @@ def output_ajax_tab (module, **kw):
         page.add_content (get_activity_tab (module, **kw))
     elif tab == 'components':
         page.add_content (get_components_tab (module, **kw))
+    elif tab == 'translations':
+        page.add_content (get_translations_tab (module, **kw))
     page.output(fd=kw.get('fd'))
     return 0
 
@@ -243,7 +270,7 @@ def output_ajax_domain (module, **kw):
         pad.add_content (grid)
         for translation in translations:
             span = pulse.html.Span (translation.scm_file[:-3])
-            span.add_class ('title')
+            span.add_widget_class ('title')
             link = pulse.html.Link (translation.pulse_url, span)
             row = [link]
             percent = 0
@@ -253,7 +280,7 @@ def output_ajax_domain (module, **kw):
             untranslated = total - stat1 - stat2
             percent = total and math.floor (100 * (float(stat1) / total)) or 0
             span = pulse.html.Span ('%i%%' % percent)
-            span.add_class ('percent')
+            span.add_widget_class ('percent')
             row.append (span)
 
             row.append (pulse.utils.gettext ('%i.%i.%i') %
@@ -383,7 +410,7 @@ def get_info_tab (module, **kw):
         sep = True
 
     if sep:
-        facts.add_fact_sep ()
+        facts.add_fact_divider ()
 
     checkout = pulse.scm.Checkout.from_record (module, checkout=False, update=False)
     facts.add_fact (pulse.utils.gettext ('Location'), checkout.location)
@@ -399,14 +426,14 @@ def get_info_tab (module, **kw):
         facts.add_fact (pulse.utils.gettext ('Last Modified'), span)
 
     if module.data.has_key ('tarname'):
-        facts.add_fact_sep ()
+        facts.add_fact_divider ()
         facts.add_fact (pulse.utils.gettext ('Tarball Name'), module.data['tarname'])
     if module.data.has_key ('tarversion'):
         if not module.data.has_key ('tarname'):
-            facts.add_fact_sep ()
+            facts.add_fact_divider ()
         facts.add_fact (pulse.utils.gettext ('Version'), module.data['tarversion'])
 
-    facts.add_fact_sep ()
+    facts.add_fact_divider ()
     facts.add_fact (pulse.utils.gettext ('Score'), str(module.mod_score))
 
     return div
@@ -444,35 +471,35 @@ def get_components_tab (module, **kw):
 
         box = get_component_info_box (module, branchtype, title)
         if box != None:
-            columns.add_to_column (1, box)
+            columns.add_to_column (0, box)
 
     # Documents
-    box = pulse.html.InfoBox (pulse.utils.gettext ('Documents'))
-    columns.add_to_column (0, box)
+    box = pulse.html.InfoBox (title=pulse.utils.gettext ('Documents'))
+    columns.add_to_column (1, box)
     docs = module.select_children ('Document')
     docs = pulse.utils.attrsorted (list(docs), 'title')
     if len(docs) > 0:
-        cont = pulse.html.ContainerBox ()
-        cont.set_id ('docs')
-        cont.add_sort_link ('title', pulse.utils.gettext ('title'), 1)
-        cont.add_sort_link ('status', pulse.utils.gettext ('status'), 0)
-        cont.add_sort_link ('translations', pulse.utils.gettext ('translations'), 0)
-        box.add_content (cont)
+        if len(docs) > 1:
+            box.add_sort_link ('title', pulse.utils.gettext ('title'), 1)
+            box.add_sort_link ('status', pulse.utils.gettext ('status'), 0)
+            box.add_sort_link ('translations', pulse.utils.gettext ('translations'), 0)
         for doc in docs:
-            lbox = cont.add_link_box (doc)
+            lbox = box.add_link_box (doc)
             lbox.add_fact (pulse.utils.gettext ('status'),
                            pulse.html.StatusSpan (doc.data.get('status')))
             res = doc.select_children ('Translation')
             span = pulse.html.Span (str(res.count()))
-            span.add_class ('translations')
+            span.add_widget_class ('translations')
             lbox.add_fact (pulse.utils.gettext ('translations'), span)
     else:
         box.add_content (pulse.html.AdmonBox (pulse.html.AdmonBox.warning,
                                               pulse.utils.gettext ('No documents') ))
 
-    # Translations
-    box = pulse.html.InfoBox (pulse.utils.gettext ('Translations'))
-    columns.add_to_column (0, box)
+    return columns
+
+
+def get_translations_tab (module, **kw):
+    box = pulse.html.PaddingBox ()
     domains = module.select_children ('Domain')
     domains = pulse.utils.attrsorted (list(domains), 'title')
     if len(domains) > 0:
@@ -480,9 +507,10 @@ def get_components_tab (module, **kw):
             domainid = domain.ident.split('/')[-2].replace('-', '_')
             translations = db.Branch.objects.filter (type='Translation', parent=domain)
             cont = pulse.html.ContainerBox ()
-            cont.set_id ('po_' + domainid)
-            cont.set_title (pulse.utils.gettext ('%s (%s)')
-                            % (domain.title, translations.count()))
+            cont.set_widget_id ('po_' + domainid)
+            if len(domains) > 1:
+                cont.set_title (pulse.utils.gettext ('%s (%s)')
+                                % (domain.title, translations.count()))
             cont.set_sortable_tag ('tr')
             cont.set_sortable_class ('po_' + domainid)
             cont.add_sort_link ('title', pulse.utils.gettext ('lang'), 1)
@@ -494,11 +522,11 @@ def get_components_tab (module, **kw):
     else:
         box.add_content (pulse.html.AdmonBox (pulse.html.AdmonBox.warning,
                                               pulse.utils.gettext ('No domains') ))
+    return box
 
-    return columns
 
 def get_developers_box (module):
-    box = pulse.html.SidebarBox (pulse.utils.gettext ('Developers'))
+    box = pulse.html.SidebarBox (title=pulse.utils.gettext ('Developers'))
     rels = db.ModuleEntity.get_related (subj=module)
     if len(rels) > 0:
         people = {}
@@ -520,7 +548,7 @@ def get_component_info_box (module, branchtype, title):
     objs = module.select_children (branchtype)
     objs = pulse.utils.attrsorted (list(objs), 'title')
     if len(objs) > 0:
-        box = pulse.html.InfoBox (title)
+        box = pulse.html.InfoBox (title=title)
         for obj in objs:
             lbox = box.add_link_box (obj)
             doc = db.Documentation.get_related (subj=obj)

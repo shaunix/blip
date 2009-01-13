@@ -60,7 +60,7 @@ def main (path, query, http=True, fd=None):
 
 def synopsis ():
     """Construct an info box for the front page"""
-    box = pulse.html.InfoBox (pulse.utils.gettext ('Teams'))
+    box = pulse.html.ContainerBox (title=pulse.utils.gettext ('Teams'))
     teams = db.Entity.objects.filter (type='Team', parent__isnull=True)
     teams = pulse.utils.attrsorted (list(teams), 'title')
     box.add_content (pulse.html.Div (pulse.utils.gettext ('Root for the home team:')))

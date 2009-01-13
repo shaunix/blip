@@ -84,8 +84,15 @@ a img { border: none; vertical-align: middle; }
 table { margin: 0; padding: 0; border-collapse: collapse; }
 tr { margin: 0; padding: 0; }
 td { margin: 0; padding: 0; vertical-align: top; }
-ul { margin: 0.2em 0 0 0; padding: 0; list-style-type: none; }
-ul li { margin-left: 1.44em; }
+
+div.title { color: #555753; }
+
+div.ul { margin: 0.2em 0 0 0; }
+ul { margin: 0; padding: 0; }
+ul li { margin: -0.2em 0 0 1.44em; padding: 0; line-height: 1.44em; }
+
+ul.linklist { list-style-type: none; }
+
 dl { margin: 0 0 0.5em 0; pading: 0; }
 dt { margin: 0.5em 0 0 0; }
 dd { margin: 0 0 0 1.44em; }
@@ -101,11 +108,16 @@ pre {
 }
 .hr hr { display: none; }
 
+
+.grid-td { padding: 0 0 0 1em; }
+
+/******************************************************************************/
+/** ColumnBox **/
+
 table.cols { width: 100%; }
 td.col { padding: 0 0 0 1em; }
 td.col-first { padding: 0; }
 
-.grid-td { padding: 0 0 0 1em; }
 
 
 /******************************************************************************/
@@ -153,13 +165,22 @@ td.col-first { padding: 0; }
   padding: 0 0 0 0.5em;
 }
 
-.info { margin: 1em 0 2em 0; }
+.info {
+  margin: 1em 0 2em 0;
+  border: solid 1px #d3d7cf;
+  -moz-border-radius: 4px;
+}
+.info div.sortlinks { display: none; }
+.info table.facts { display: none; }
+.info div.lboxdesc { display: none; }
+.infoactive .infotitle {
+  background-color: #fce94f;
+}
 .infotitle {
-  background-color: #ffffff;
+  background-color: #eeeeec;
   color: #555753;
   font-weight: bold;
-  border-top: solid 1px #888a85;
-  border-bottom: solid 1px #888a85;
+  border-bottom: solid 1px #d3d7cf;
   padding: 0 0 0.2em 0.5em;
   cursor: pointer;
 }
@@ -282,25 +303,29 @@ a.filteron {
   color: white;
 }
 
-div.slinks {
+div.sortlinks {
   text-align: right;
   color: #555753;
   font-weight: normal;
 }
-span.slinks {
+span.sortlinks {
   background-color: #eeeeec;
   border: solid 1px #d3d7cf;
   padding: 0 0.5em 0 0.5em;
+ cursor: pointer;
 }
-div.slinks a { color: #204a87; }
-div.slinkmenu {
+span.sortlinksactive {
+  background-color: #fce94f;
+}
+div.sortlinks a { color: #204a87; }
+div.sortmenu {
   position: absolute;
   background-color: #eeeeec;
-  border: solid 1px #729fcf;
+  border: solid 1px #d3d7cf;
   padding: 0 0.5em 0.2em 0.5em;
   display: none;
 }
-span.slink { color: #888a85; }
+span.sortlink { color: #888a85; }
 
 a.plink:hover { text-decoration: none; }
 div.pcont {

@@ -62,7 +62,7 @@ def main (path, query, http=True, fd=None):
 
 def synopsis ():
     """Construct an info box for the front page"""
-    box = pulse.html.InfoBox (pulse.utils.gettext ('People'))
+    box = pulse.html.ContainerBox (title=pulse.utils.gettext ('People'))
     people = db.Entity.objects.filter (type='Person').order_by ('-mod_score')
     box.add_content (pulse.html.Div (pulse.utils.gettext ('These people deserve a beer:')))
     bl = pulse.html.BulletList ()

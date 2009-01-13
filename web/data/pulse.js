@@ -156,17 +156,20 @@ $.fn.pulse_init = function () {
   this.find ('div.info').each (function () {
     var div = $(this);
     div.children ('div.infotitle').click (function () {
-      var cont = div.children ('div.infocont');
-      var img = $(this).find ('img');
-      var visible = cont.is(':visible');
-      if (visible) {
-        $(this).css ({ backgroundColor: '#eeeeec' });
-        img.attr('src', img.attr('src').replace('open', 'up'))
-      } else {
-        $(this).css ({ backgroundColor: '#ffffff' });
-        img.attr('src', img.attr('src').replace('up', 'open'))
-      }
-      cont.onScreenSlideToggle ();
+    var active = div.hasClass ('infoactive');
+    $('div.info').each (function () {
+      $this = $(this).removeClass('infoactive')
+      $this.find('div.sortmenu').hide();
+      $this.find('div.sortlinks').slideUp('fast');
+      $this.find('div.lboxdesc').slideUp('fast');
+      $this.find('table.facts').slideUp('fast');
+    });
+    if (!active) {
+      div.addClass ('infoactive');
+      div.find('div.sortlinks').slideDown('fast');
+      div.find('div.lboxdesc').slideDown('fast');
+      div.find('table.facts').slideDown('fast');
+    }
     });
   });
 
@@ -253,7 +256,7 @@ $.fn.pulse_init = function () {
     else
       par.find ('td.contexp:first').html ('&#9662;');
 
-    var slinks = par.find ('div.slinks:first');
+    var slinks = par.find ('div.sortlinks:first');
     if (slinks.length > 0) {
       if (open)
         slinks.shade();
@@ -295,6 +298,42 @@ $.fn.pulse_init = function () {
       success: function () {
         thisq.unshade();
     }});
+  });
+
+  /** Sort Menus **/
+  this.find ('span.sortlinks').each (function () {
+    var links = $(this);
+    var div = links.parent ('div.sortlinks');
+    var id = div.attr ('id').substr (11);
+    links.click (function () {
+      var container = $('#' + id);
+      var menu = container.find ('#sortmenu__' + id);
+      menu.css ({
+        top: div.offset().top + div.height(),
+        right: $(document).width() - (div.offset().left + div.width())
+      });
+      var away = function (e) {
+        var e = e || window.event;
+        var target = e.target || e.srcElement;
+        do {
+          if (target == links[0])
+            break;
+          if (target == menu[0])
+            break;
+        } while (target = target.parentNode);
+        if (target != menu[0]) {
+          links.removeClass ('sortlinksactive');
+          menu.hide ();
+          $('body').unbind('click', away);
+          return (target != div[0]);
+        }
+      }
+      menu.data('awayfunc', away);
+      links.addClass ('sortlinksactive');
+      $('body').click (away);
+      menu.show ();
+      return false;
+    })
   });
 }
 
@@ -895,10 +934,11 @@ function keyCmp (thing1, thing2, asc) {
     return lowerCmp(k1, k2, asc);
   return 0;
 }
-function sort (tag, cls, key, asc) {
+function sort (id, tag, cls, key, asc) {
   var things = [];
 
-  var els = $(tag + '.' + cls);
+  var container = $('#' + id);
+  var els = container.find (tag + '.' + cls);
   els.each (function (el) {
     var el = $(this);
     var these = el;
@@ -942,10 +982,10 @@ function sort (tag, cls, key, asc) {
     things[i].thing.after (things[i].extras);
   }
 
-  var slinks = $('#slink__' + cls);
-  slinks.find('.slink').each(function () {
+  var links = $('#sortlinks__' + id);
+  links.find('.sortlink').each(function () {
     var slink = $(this);
-    if (slink.is('#slink__' + tag + '__' + cls + '__' + key + '__' + asc)) {
+    if (slink.is('#sortlink__' + id + '__' + tag + '__' + cls + '__' + key + '__' + asc)) {
       if (slink.is('a')) {
         var span = $('<span></span>').attr ({
           id: slink.attr ('id'),
@@ -959,50 +999,22 @@ function sort (tag, cls, key, asc) {
       if (slink.is('span')) {
         dat = slink.attr('id').split('__');
         var a = $('<a></a>').attr ({
-          id: slink.attr ('id'),
-          class: slink.attr ('class'),
-          href: 'javascript:sort(\'' + dat[1] + '\', \'' + dat[2]+ '\', \'' + dat[3] + '\', ' + dat[4] + ')'
+          'id': slink.attr ('id'),
+          'class': slink.attr ('class'),
+          'href': 'javascript:sort(\'' + dat[1] + '\', \'' + dat[2] + '\', \'' + dat[3]+ '\', \'' + dat[4] + '\', ' + dat[5] + ')'
         });
         a.html (slink.html());
         slink.replaceWith (a);
       }
     }
   });
-  curtxt = $('#slink__' + tag + '__' + cls + '__' + key).html();
+  curtxt = $('#sortlink__' + id + '__' + key).html();
   curtxt += (asc == 1) ? ' ▴' : ' ▾';
-  slinks.find ('a.slinkcur').html (curtxt);
-  var menu = $('#slinkmenu__' + cls);
+  links.find ('span.sortcur').html (curtxt);
+  var menu = $('#sortmenu__' + id);
   $('body').unbind('click', menu.data('awayfunc'));
-  slinks.find ('span.slinks').css ('border-color', '#d3d7cf');
+  links.children ('span.sortlinks').removeClass ('sortlinksactive');
   menu.hide();
-}
-function slinkmenu (cls) {
-  var div = $('#slink__' + cls);
-  var menu = $('#slinkmenu__' + cls);
-  menu.css ({
-    top: div.offset().top + div.height(),
-    right: $(document).width() - (div.offset().left + div.width()) - 1
-  });
-  var away = function (e) {
-    var e = e || window.event;
-    var target = e.target || e.srcElement;
-    do {
-      if (target == div[0])
-        break;
-      if (target == menu[0])
-        break;
-    } while (target = target.parentNode);
-    if (target != menu[0]) {
-      div.find ('span.slinks').css ('border-color', '#d3d7cf');
-      menu.hide();
-      $('body').unbind('click', away);
-      return (target != div[0]);
-    }
-  }
-  menu.data('awayfunc', away);
-  $('body').click (away);
-  div.find ('span.slinks').css ('border-color', '#729fcf');
-  menu.show();
 }
 
 

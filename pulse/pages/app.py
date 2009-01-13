@@ -120,7 +120,7 @@ def output_app (app, **kw):
     page.add_fact (pulse.utils.gettext ('Module'), pulse.html.Link (app.parent))
 
     if sep:
-        page.add_fact_sep ()
+        page.add_fact_divider ()
     
     page.add_fact (pulse.utils.gettext ('Location'),
                    checkout.get_location (app.scm_dir, app.scm_file))
@@ -140,7 +140,7 @@ def output_app (app, **kw):
 
     # Documentation
     rels = db.Documentation.get_related (subj=app)
-    box = pulse.html.InfoBox (pulse.utils.gettext ('Documentation'))
+    box = pulse.html.InfoBox (title=pulse.utils.gettext ('Documentation'))
     page.add_content (box)
     if len(rels) > 0:
         docs = pulse.utils.attrsorted ([rel.pred for rel in rels], 'title')

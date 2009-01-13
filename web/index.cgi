@@ -72,14 +72,23 @@ def main ():
     if len (path) == 0:
         page = html.Page (http=http)
         page.set_title (pulse.utils.gettext ('Pulse'))
-        cont = html.ColumnBox (2)
+        cont = html.PaddingBox ()
         page.add_content (cont)
-        i = 0
-        for type in pulse.pages.__all__:
-            mod = pulse.utils.import_ ('pulse.pages.' + type)
+        types = pulse.pages.__all__
+        mods = [pulse.utils.import_ ('pulse.pages.' + t) for t in types]
+        for mod in mods:
+            if not hasattr(mod, 'synopsis_sort'):
+                setattr (mod, 'synopsis_sort', 0)
+        for mod in sorted (mods,
+                           cmp=(lambda x, y:
+                                cmp(x.synopsis_sort, y.synopsis_sort) or
+                                cmp(x.__name__, y.__name__))):
             if hasattr (mod, 'synopsis'):
-                cont.add_to_column (i % 2, mod.synopsis ())
-                i += 1
+                box = mod.synopsis ()
+                if isinstance (box, pulse.html.SidebarBox):
+                    page.add_sidebar_content (box)
+                else:
+                    cont.add_content (box)
         page.output (fd=fd)
     else:
         if not http:

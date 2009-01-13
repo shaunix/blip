@@ -50,6 +50,30 @@ class Widget (object):
 
     def __init__ (self, **kw):
         super (Widget, self).__init__ (**kw)
+        self._widget_id = kw.get ('widget_id', None)
+        self._widget_class = kw.get ('widget_class', None)
+        
+
+    def set_widget_id (self, widget_id):
+        self._widget_id = widget_id
+
+    def get_widget_id (self):
+        if self._widget_id != None:
+            return self._widget_id
+        else:
+            return 'x' + str(hash(self))
+
+    def add_widget_class (self, widget_class):
+        if isinstance (self._widget_class, basestring):
+            self._widget_class = self._widget_class + ' ' + widget_class
+        else:
+            self._widget_class = widget_class
+
+    def set_widget_class (self, widget_class):
+        self._widget_class = widget_class
+
+    def get_widget_class (self):
+        return self._widget_class
 
     def output (self, fd=None):
         """
@@ -164,7 +188,7 @@ class FactsComponent (Component):
         fact = {'label' : label, 'content' : content, 'badge' : kw.get('badge', None)}
         self._facts.append (fact)
 
-    def add_fact_sep (self):
+    def add_fact_divider (self):
         self._facts.append (None)
 
     def has_facts (self):
@@ -229,20 +253,22 @@ class FilterableComponent (Component):
     def output (self, fd=None):
         if len(self._filters) == 0:
             return
+        filterid = self.get_widget_id ()
         filtertag = self._filtertag or 'table'
-        filterclass = self._filterclass or 'lbox'
+        filterclass = self._filterable_class() or 'lbox'
         p (fd, '<div class="filters" id="filters__%s"><span class="filters">', filterclass, False)
-        p (fd, '<a class="filter filter-%s filterall filteron"', filterclass, False)
-        p (fd, ' href="javascript:filter(\'%s\',\'%s\',null)"', (filtertag, filterclass), False)
-        p (fd, ' id="filter__%s___all">', filterclass, False)
+        p (fd, '<a class="filter filter-%s filterall filteron"', filterid, False)
+        p (fd, ' href="javascript:filter(\'%s\',\'%s\',\'%s\',null)"',
+           (filterid, filtertag, filterclass), False)
+        p (fd, ' id="filter__%s__all">', filterid, False)
         p (fd, None, pulse.utils.gettext ('All'), False)
         p (fd, '</a>', None, False)
         for badge in self._filters:
             txt = get_badge_title (badge)
-            p (fd, '<a class="filter filter-%s"', filterclass, False)
-            p (fd, ' href="javascript:filter(\'%s\',\'%s\',\'%s\')"',
-               (filtertag, filterclass, badge), False)
-            p (fd, ' id="filter__%s__%s">', (filterclass, badge), False)
+            p (fd, '<a class="filter filter-%s"', filterid, False)
+            p (fd, ' href="javascript:filter(\'%s\',\'%s\',\'%s\',\'%s\')"',
+               (filterid, filtertag, filterclass, badge), False)
+            p (fd, ' id="filter__%s__%s">', (filterid, badge), False)
             p (fd, '<img src="%sbadge-%s-16.png" width="16" height="16" alt="%s">',
                (pulse.config.data_root, badge, txt), False)
             p (fd, ' %s</a>', txt, False)
@@ -277,7 +303,7 @@ class SortableComponent (Component):
     def get_sortable_class (self):
         return self._slinkclass
 
-    def add_sort_link (self, key, txt, cur=False):
+    def add_sort_link (self, key, txt, cur=0):
         self._slinks.append ((key, txt, cur))
 
     def get_sort_links (self):
@@ -285,42 +311,45 @@ class SortableComponent (Component):
 
     def output (self, fd=None):
         """Output the HTML."""
+        if len(self._slinks) == 0:
+            return
+        slinkid = self.get_widget_id ()
         slinktag = self._slinktag or 'table'
         slinkclass = self._slinkclass or 'lbox'
-        p (fd, '<div class="slinks" id="slink__%s"><span class="slinks">', slinkclass, False)
+        p (fd, '<div class="sortlinks" id="sortlinks__%s">', slinkid, False)
+        p (fd, '<span class="sortlinks">', None, False)
         p (fd, None, pulse.utils.gettext ('sort by: '), False)
-        for slink in self._slinks:
-            if slink[2] == 1:
-                p (fd, '<a href="javascript:slinkmenu(\'%s\')" class="slinkcur">%s ▴</a>',
-                   (slinkclass, slink[1]), False)
+        for key, txt, cur in self._slinks:
+            if cur == 1:
+                p (fd, '<span class="sortcur">%s ▴</span>', txt, False)
                 break
-            elif slink[2] == -1:
-                p (fd, '<a href="javascript:slinkmenu(\'%s\')" class="slinkcur">%s ▾</a>',
-                   (slinkclass, slink[1]), False)
+            elif cur == -1:
+                p (fd, '<span class="sortcur">%s ▾</span>', txt, False)
                 break
-        p (fd, '<div class="slinkmenu" id="slinkmenu__%s">', slinkclass)
-        for slink in self._slinks:
-            p (fd, '<div class="slinkitem">', None, False)
-            p (fd, '<span class="slinklabel" id="slink__%s__%s__%s">%s</span>:',
-               (slinktag, slinkclass, slink[0], slink[1]))
-            if slink[2] == 1:
-                p (fd, '<span class="slink" id="slink__%s__%s__%s__1">▴</span>',
-                   (slinktag, slinkclass, slink[0]))
+        p (fd, '</span>')
+        p (fd, '<div class="sortmenu" id="sortmenu__%s">', slinkid)
+        for key, txt, cur in self._slinks:
+            p (fd, '<div class="sortlink">', None, False)
+            p (fd, '<span class="sortlabel" id="sortlink__%s__%s">%s</span>:',
+               (slinkid, key, txt))
+            if cur == 1:
+                p (fd, '<span class="sortlink" id="sortlink__%s__%s__%s__%s__1">▴</span>',
+                   (slinkid, slinktag, slinkclass, key))
             else:
-                p (fd, ('<a class="slink" id="slink__%s__%s__%s__1"'
-                        ' href="javascript:sort(\'%s\', \'%s\', \'%s\', 1)">▴</a>'),
-                   (slinktag, slinkclass, slink[0],
-                    slinktag, slinkclass, slink[0]))
-            if slink[2] == -1:
-                p (fd, '<span class="slink" id="slink__%s__%s__%s__-1">▾</span>',
-                   (slinktag, slinkclass, slink[0]))
+                p (fd, ('<a class="sortlink" id="sortlink__%s__%s__%s__%s__1"'
+                        ' href="javascript:sort(\'%s\',\'%s\',\'%s\',\'%s\',1)">▴</a>'),
+                   (slinkid, slinktag, slinkclass, key,
+                    slinkid, slinktag, slinkclass, key))
+            if cur == -1:
+                p (fd, '<span class="sortlink" id="sortlink__%s__%s__%s__%s__-1">▾</span>',
+                   (slinkid, slinktag, slinkclass, key))
             else:
-               p (fd, ('<a class="slink" id="slink__%s__%s__%s__-1"'
-                        ' href="javascript:sort(\'%s\', \'%s\', \'%s\', -1)">▾</a>'),
-                   (slinktag, slinkclass, slink[0],
-                    slinktag, slinkclass, slink[0]))
+                p (fd, ('<a class="sortlink" id="sortlink__%s__%s__%s__%s__-1"'
+                        ' href="javascript:sort(\'%s\',\'%s\',\'%s\',\'%s\',-1)">▾</a>'),
+                   (slinkid, slinktag, slinkclass, key,
+                    slinkid, slinktag, slinkclass, key))
             p (fd, '</div>')
-        p (fd, '</div></span></div>')
+        p (fd, '</div></div>')
 
 
 class LinkBoxesComponent (Component):
@@ -338,24 +367,15 @@ class LinkBoxesComponent (Component):
         self._boxes = []
         self._columns = kw.get('columns', 1)
         self._show_icons = None
-        self._link_class = None
 
     def add_link_box (self, *args, **kw):
         """Add a link box."""
         lbox = LinkBox (*args, **kw)
-        if self._link_class != None:
-            lbox.add_class (self._link_class)
         self._boxes.append (lbox)
         return lbox
 
     def set_show_icons (self, show):
         self._show_icons = show
-
-    def get_link_class (self):
-        return self._link_class
-
-    def set_link_class (self, link_class):
-        self._link_class = link_class
 
     def set_columns (self, columns):
         """Set the number of columns."""
@@ -682,40 +702,27 @@ class SidebarBox (Widget, ContentComponent, LinkBoxesComponent):
         p (fd, '</div>')
 
 
-class InfoBox (Widget, ContentComponent, FilterableComponent, LinkBoxesComponent):
+class InfoBox (Widget, SortableComponent, ContentComponent, FilterableComponent, LinkBoxesComponent):
     """
     A box containing information.
 
     An info box is a framed and titled box that contains various related bits
     of information.  Most pages are constructed primarily of info boxes.
     """
-    def __init__ (self, title, **kw):
-        self._id = kw.get('id', None)
-        self._title = title
-        if self._id != None:
-            kw.setdefault ('filterable_class', self._id)
-            kw.setdefault ('link_class', self._id)
+    def __init__ (self, **kw):
         super (InfoBox, self).__init__ (**kw)
-
-    def set_id (self, id_):
-        """Set the id of the container."""
-        if self.get_filterable_class() == None:
-            self.set_filterable_class (id_)
-        if self.get_link_class() == None:
-            self.set_link_class (id_)
-        self._id = id_
+        self._title = kw.get ('title', None)
 
     def output (self, fd=None):
         """Output the HTML."""
         p (fd, '<div class="info"', None, False)
-        if self._id != None:
-            p (fd, ' id="%s"', self._id, False)
-        p (fd, '><div class="infotitle">', None, False)
-        p (fd, '<span><img class="infoimg" src="%sexpander-open.png"></span>',
-           (pulse.config.data_root), False)
-        p (fd, '%s</div>', self._title)
-        FilterableComponent.output (self, fd=fd)
+        wid = self.get_widget_id ()
+        if wid != None:
+            p (fd, ' id="%s"', wid, False)
+        p (fd, '><div class="infotitle">%s</div>', self._title or '')
         p (fd, '<div class="infocont">')
+        SortableComponent.output (self, fd=fd)
+        FilterableComponent.output (self, fd=fd)
         ContentComponent.output (self, fd=fd)
         LinkBoxesComponent.output (self, fd=fd)
         p (fd, '</div></div>')
@@ -734,23 +741,8 @@ class ContainerBox (Widget, FilterableComponent, SortableComponent, ContentCompo
     """
 
     def __init__ (self, **kw):
-        self._id = kw.get('id', None)
-        self._title = kw.get('title', None)
-        if self._id != None:
-            kw.setdefault ('sortable_class', self._id)
-            kw.setdefault ('filterable_class', self._id)
-            kw.setdefault ('link_class', self._id)
         super (ContainerBox, self).__init__ (**kw)
-
-    def set_id (self, id_):
-        """Set the id of the container."""
-        if self.get_sortable_class() == None:
-            self.set_sortable_class (id_)
-        if self.get_filterable_class() == None:
-            self.set_filterable_class (id_)
-        if self.get_link_class() == None:
-            self.set_link_class (id_)
-        self._id = id_
+        self._title = kw.get('title', None)
 
     def set_title (self, title):
         """Set the title of the container."""
@@ -759,8 +751,12 @@ class ContainerBox (Widget, FilterableComponent, SortableComponent, ContentCompo
     def output (self, fd=None):
         """Output the HTML."""
         slinks = len(self.get_sort_links())
+        p (fd, '<div class="cont"', None, False)
+        wid = self.get_widget_id ()
+        if wid != None:
+            p (fd, ' id="%s"', wid, False)
+        p (fd, '>', None, False)
         if self._title != None or slinks > 0:
-            p (fd, '<div>')
             if self._title != None:
                 p (fd, '<table class="cont"><tr>')
                 p (fd, '<td class="contexp">&#9662;</td>')
@@ -771,10 +767,7 @@ class ContainerBox (Widget, FilterableComponent, SortableComponent, ContentCompo
                 p (fd, '<span class="contexp">%s</span>', (self._title), False)
             if self._title != None and slinks > 0:
                 p (fd, '</td><td class="cont-slinks">')
-            if slinks > 0:
-                if self.get_sortable_class() == None:
-                    self.set_sortable_class (self._id)
-                SortableComponent.output (self, fd=fd)
+            SortableComponent.output (self, fd=fd)
             if self._title != None and slinks > 0:
                 p (fd, '</td></tr></table>')
             if self._title != None:
@@ -1209,16 +1202,28 @@ class BulletList (Widget):
         super (BulletList, self).__init__ (**kw)
         self._id = kw.get ('id', None)
         self._items = []
+        self._title = None
+        self._classname = kw.get ('classname', None)
 
     def add_item (self, item, classname=None):
         self._items.append ((item, classname))
 
+    def set_title (self, title):
+        self._title = title
+
     def output (self, fd=None):
         """Output the HTML."""
+        p (fd, '<div class="ul">')
+        if self._title != None:
+            p (fd, '<div class="title">', None, False)
+            p (fd, None, self._title, False)
+            p (fd, '</div>')
+        p (fd, '<ul', None, False)
         if self._id != None:
-            p (fd, '<ul id="%s">', self._id)
-        else:
-            p (fd, '<ul>')
+            p (fd, ' id="%s"', self._id, False)
+        if self._classname != None:
+            p (fd, ' class="%s"', self._classname, False)
+        p (fd, '>')
         for item, cname in self._items:
             if cname != None:
                 p (fd, '<li class="%s">', cname, False)
@@ -1226,7 +1231,19 @@ class BulletList (Widget):
                 p (fd, '<li>', None, False)
             p (fd, None, item, False)
             p (fd, '</li>')
-        p (fd, '</ul>')
+        p (fd, '</ul></div>')
+
+
+class LinkList (BulletList):
+    def __init__ (self, **kw):
+        kw['classname'] = 'linklist'
+        super (LinkList, self).__init__ (**kw)
+
+    def add_link (self, *args, **kw):
+        self.add_item (Link(*args, **kw))
+
+    def output (self, fd=None):
+        BulletList.output (self, fd=fd)
                 
 
 
@@ -1456,12 +1473,12 @@ class PopupLink (Widget):
     def output (self, fd=None):
         """Output the HTML."""
         PopupLink._count += 1
-        id = str(PopupLink._count)
+        pid = str(PopupLink._count)
         p (fd, '<a class="plink" id="plink%s" href="javascript:plink(\'%s\')">',
-           (id, id), False)
+           (pid, pid), False)
         p (fd, None, self._short, False)
         p (fd, '</a>')
-        p (fd, '<div class="pcont" id="pcont%s">', id)
+        p (fd, '<div class="pcont" id="pcont%s">', pid)
         if isinstance (self._full, basestring):
             while len(self._full) > 0 and self._full[-1] == '\n': self._full = self._full[:-1]
         p (fd, '<pre class="pcont-content">', None, False)
@@ -1555,22 +1572,21 @@ class Span (Widget, ContentComponent):
         for arg in args:
             self.add_content (arg)
         self._divider = kw.get('divider', None)
-        self._classes = []
 
     def set_divider (self, divider):
         """Set a divider to be placed between child elements."""
         self._divider = divider
 
-    def add_class (self, class_):
-        """Add an HTML class to the span."""
-        self._classes.append (class_)
-
     def output (self, fd=None):
         """Output the HTML."""
-        if len(self._classes) > 0:
-            p (fd, '<span class="%s">', ' '.join(self._classes), False)
-        else:
-            p (fd, '<span>', None, False)
+        p (fd, '<span', None, False)
+        wid = self.get_widget_id ()
+        if wid != None:
+            p (fd, ' id="%s"', wid, False)
+        wcls = self.get_widget_class ()
+        if wcls != None:
+            p (fd, ' class="%s"', wcls, False)
+        p (fd, '>', None, False)
         content = self.get_content()
         for i in range(len(content)):
             if i != 0 and self._divider != None:

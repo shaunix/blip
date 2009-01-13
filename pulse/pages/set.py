@@ -55,9 +55,7 @@ def main (path, query, http=True, fd=None):
 
 def synopsis ():
     """Construct an info box for the front page"""
-    box = pulse.html.InfoBox (pulse.utils.gettext ('Sets'))
-    div = pulse.html.Div (pulse.utils.gettext ('Pulse is watching the following release sets:'))
-    box.add_content (div)
+    box = pulse.html.SidebarBox (pulse.utils.gettext ('Sets'))
     bl = pulse.html.BulletList ()
     box.add_content (bl)
     sets = db.ReleaseSet.objects.filter (parent__isnull=True)
@@ -218,13 +216,13 @@ def get_mod_box (rset, **kw):
                         '/'.join(mod.ident.split('/')[1:] + ['commits-tight.png']),
                         width=208, height=40)
         span = pulse.html.Span (mod.branch_module)
-        span.add_class ('module')
+        span.add_widget_class ('module')
         lbox.add_fact (pulse.utils.gettext ('module'), pulse.html.Link (mod.pulse_url, span))
         if mod.mod_datetime != None:
             span = pulse.html.Span (divider=pulse.html.SPACE)
             # FIXME: i18n, word order, but we want to link person
             span.add_content (pulse.html.Span(mod.mod_datetime.strftime('%Y-%m-%d %T')))
-            span.add_class ('mtime')
+            span.add_widget_class ('mtime')
             if mod.mod_person_id != None:
                 span.add_content (pulse.utils.gettext ('by'))
                 if not people_cache.has_key (mod.mod_person_id):
@@ -234,7 +232,7 @@ def get_mod_box (rset, **kw):
             lbox.add_fact (pulse.utils.gettext ('modified'), span)
         if mod.mod_score != None:
             span = pulse.html.Span(str(mod.mod_score))
-            span.add_class ('score')
+            span.add_widget_class ('score')
             lbox.add_fact (pulse.utils.gettext ('score'), span)
     return cont
 
@@ -258,12 +256,12 @@ def get_doc_box (rset, **kw):
         if doc.error != None:
             slink_error = True
             span = pulse.html.Span (doc.error)
-            span.add_class ('errormsg')
+            span.add_widget_class ('errormsg')
             lbox.add_fact (pulse.utils.gettext ('error'),
                            pulse.html.AdmonBox (pulse.html.AdmonBox.error, span))
             boxes[boxid]['err'] = True
         span = pulse.html.Span (doc.branch_module)
-        span.add_class ('module')
+        span.add_widget_class ('module')
         url = doc.ident.split('/')
         url = '/'.join(['mod'] + url[2:4] + [url[5]])
         url = pulse.config.web_root + url
@@ -272,7 +270,7 @@ def get_doc_box (rset, **kw):
             span = pulse.html.Span (divider=pulse.html.SPACE)
             # FIXME: i18n, word order, but we want to link person
             span.add_content (pulse.html.Span(doc.mod_datetime.strftime('%Y-%m-%d %T')))
-            span.add_class ('mtime')
+            span.add_widget_class ('mtime')
             if doc.mod_person_id != None:
                 span.add_content (pulse.utils.gettext ('by'))
                 if not people_cache.has_key (doc.mod_person_id):
@@ -282,7 +280,7 @@ def get_doc_box (rset, **kw):
             lbox.add_fact (pulse.utils.gettext ('modified'), span)
         if doc.mod_score != None:
             span = pulse.html.Span(str(doc.mod_score))
-            span.add_class ('score')
+            span.add_widget_class ('score')
             lbox.add_fact (pulse.utils.gettext ('score'), span)
         lbox.add_fact (pulse.utils.gettext ('status'),
                        pulse.html.StatusSpan (doc.data.get('status')))
@@ -319,12 +317,12 @@ def get_i18n_box (rset, **kw):
         if obj.error != None:
             slink_error = True
             span = pulse.html.Span (obj.error)
-            span.add_class ('errormsg')
+            span.add_widget_class ('errormsg')
             lbox.add_fact (pulse.utils.gettext ('error'),
                            pulse.html.AdmonBox (pulse.html.AdmonBox.error, span))
             slink_error = True
         span = pulse.html.Span (obj.branch_module)
-        span.add_class ('module')
+        span.add_widget_class ('module')
         url = obj.ident.split('/')
         url = '/'.join(['mod'] + url[2:4] + [url[5]])
         url = pulse.config.web_root + url
@@ -339,7 +337,7 @@ def get_i18n_box (rset, **kw):
         try:
             of = of[0]
             span = pulse.html.Span (str(of.statistic))
-            span.add_class ('messages')
+            span.add_widget_class ('messages')
             lbox.add_fact (pulse.utils.gettext ('messages'), span)
             slink_messages = True
         except IndexError:
@@ -374,12 +372,12 @@ def get_prog_box (rset, **kw):
             if obj.error != None:
                 slink_error = True
                 span = pulse.html.Span (obj.error)
-                span.add_class ('errormsg')
+                span.add_widget_class ('errormsg')
                 lbox.add_fact (pulse.utils.gettext ('error'),
                                pulse.html.AdmonBox (pulse.html.AdmonBox.error, span))
                 slink_error = True
             span = pulse.html.Span (obj.branch_module)
-            span.add_class ('module')
+            span.add_widget_class ('module')
             url = obj.ident.split('/')
             url = '/'.join(['mod'] + url[2:4] + [url[5]])
             url = pulse.config.web_root + url
@@ -389,7 +387,7 @@ def get_prog_box (rset, **kw):
                 # FIXME: multiple docs look bad and sort poorly
                 doc = doc.pred
                 span = pulse.html.Span(doc.title)
-                span.add_class ('docs')
+                span.add_widget_class ('docs')
                 lbox.add_fact (pulse.utils.gettext ('docs'),
                                pulse.html.Link (doc.pulse_url, span))
                 slink_docs = True
@@ -416,12 +414,12 @@ def get_lib_box (rset, **kw):
         if obj.error != None:
             slink_error = True
             span = pulse.html.Span (obj.error)
-            span.add_class ('errormsg')
+            span.add_widget_class ('errormsg')
             lbox.add_fact (pulse.utils.gettext ('error'),
                            pulse.html.AdmonBox (pulse.html.AdmonBox.error, span))
             slink_error = True
         span = pulse.html.Span (obj.branch_module)
-        span.add_class ('module')
+        span.add_widget_class ('module')
         url = obj.ident.split('/')
         url = '/'.join(['mod'] + url[2:4] + [url[5]])
         url = pulse.config.web_root + url
@@ -431,7 +429,7 @@ def get_lib_box (rset, **kw):
             # FIXME: multiple docs look bad and sort poorly
             doc = doc.pred
             span = pulse.html.Span(doc.title)
-            span.add_class ('docs')
+            span.add_widget_class ('docs')
             lbox.add_fact (pulse.utils.gettext ('docs'),
                            pulse.html.Link (doc.pulse_url, span))
             slink_docs = True

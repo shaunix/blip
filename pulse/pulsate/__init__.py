@@ -87,8 +87,14 @@ def update_graphs (obj, select, max, **kw):
             stats[idx] += 1
 
         if i == 0:
-            score = pulse.utils.score (stats[numweeks - 26:])
+            scorestats = stats[numweeks - 26:]
+            score = pulse.utils.score (scorestats)
             obj.mod_score = score
+            scorestats = scorestats[:-3]
+            avg = int(round(sum(scorestats) / (len(scorestats) * 1.0)))
+            scorestats = scorestats + [avg, avg, avg]
+            old = pulse.utils.score (scorestats)
+            obj.mod_score_diff = score - old
 
         if of != None:
             graph = pulse.graphs.BarGraph (stats, max, height=40)
