@@ -429,17 +429,20 @@ $(document).ready (function () {
   var tabbar = $('#tabs');
   if (tabbar.length == 0)
     return;
+  tabbar[0].default_tabid = tabbar.children('.tab').attr('id').substring(4);
   tab ();
+  setInterval (function () {
+    var tabbar = $('#tabs');
+    var tabid = tabbar[0].current_tabid;
+    if (tabid == undefined)
+      return;
+    if (location.hash == '' || location.hash == '#')
+      if (tabid == tabbar[0].default_tabid)
+        return;
+    if ('#' + tabid != location.hash)
+      tab ();
+  }, 200);
 });
-
-setInterval (function () {
-  var tabbar = $('#tabs');
-  var tabid = tabbar[0].current_tabid;
-  if (tabid == undefined)
-    return;
-  if ('#' + tabid != location.hash)
-    tab ();
-}, 200);
 
 
 /******************************************************************************/

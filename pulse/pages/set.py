@@ -174,22 +174,22 @@ def output_ajax_tab (rset, **kw):
     page = pulse.html.Fragment (http=kw.get('http', True))
     tab = query.get('tab', None)
     if tab == 'subsets':
-        page.add_content (get_set_box (rset, **kw))
+        page.add_content (get_subsets_tab (rset, **kw))
     elif tab == 'modules':
-        page.add_content (get_mod_box (rset, **kw))
+        page.add_content (get_modules_tab (rset, **kw))
     elif tab == 'documents':
-        page.add_content (get_doc_box (rset, **kw))
+        page.add_content (get_documents_tab (rset, **kw))
     elif tab == 'domains':
-        page.add_content (get_i18n_box (rset, **kw))
+        page.add_content (get_domains_tab (rset, **kw))
     elif tab == 'programs':
-        page.add_content (get_prog_box (rset, **kw))
+        page.add_content (get_programs_tab (rset, **kw))
     elif tab == 'libraries':
-        page.add_content (get_lib_box (rset, **kw))
+        page.add_content (get_libraries_tab (rset, **kw))
     page.output(fd=kw.get('fd'))
     return 0
 
 
-def get_set_box (rset, **kw):
+def get_subsets_tab (rset, **kw):
     subsets = pulse.utils.attrsorted (rset.subsets.all(), ['title'])
     cont = pulse.html.ContainerBox ()
     cont.set_show_icons (False)
@@ -200,7 +200,7 @@ def get_set_box (rset, **kw):
     return cont
 
 
-def get_mod_box (rset, **kw):
+def get_modules_tab (rset, **kw):
     mods = [mod.pred for mod in db.SetModule.get_related (subj=rset)]
     mods = pulse.utils.attrsorted (mods, 'title')
     modcnt = len(mods)
@@ -237,7 +237,7 @@ def get_mod_box (rset, **kw):
     return cont
 
 
-def get_doc_box (rset, **kw):
+def get_documents_tab (rset, **kw):
     boxes = (
         {'box' : pulse.html.ContainerBox (id='userdocs'),
          'cnt' : 0, 'err' : False },
@@ -304,7 +304,7 @@ def get_doc_box (rset, **kw):
     return pad
 
 
-def get_i18n_box (rset, **kw):
+def get_domains_tab (rset, **kw):
     objs = db.Branch.objects.filter (type='Domain',
                                      parent__set_module_subjs__subj=rset)
     objs = pulse.utils.attrsorted (list(objs), 'title')
@@ -351,7 +351,7 @@ def get_i18n_box (rset, **kw):
     return cont
 
 
-def get_prog_box (rset, **kw):
+def get_programs_tab (rset, **kw):
     pad = pulse.html.PaddingBox()
     for id, type, txt in (
         ('applications', 'Application', pulse.utils.gettext ('Applications (%i)')),
@@ -401,7 +401,7 @@ def get_prog_box (rset, **kw):
     return pad
 
 
-def get_lib_box (rset, **kw):
+def get_libraries_tab (rset, **kw):
     objs = db.Branch.objects.filter (type='Library',
                                      parent__set_module_subjs__subj=rset)
     objs = pulse.utils.attrsorted (list(objs), 'title')
