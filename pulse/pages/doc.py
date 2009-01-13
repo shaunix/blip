@@ -115,7 +115,7 @@ def output_doc (doc, **kw):
     if doc.error != None:
         page.add_fact (pulse.utils.gettext ('Error'),
                        pulse.html.AdmonBox (pulse.html.AdmonBox.error, doc.error))
-        page.add_fact_sep ()
+        page.add_fact_divider ()
 
     page.add_tab ('info', 'Info')
     box = get_info_tab (doc, **kw)
@@ -290,7 +290,7 @@ def get_info_tab (doc, **kw):
         sep = True
 
     if sep:
-        facts.add_fact_sep ()
+        facts.add_fact_divider ()
     
     checkout = pulse.scm.Checkout.from_record (doc, checkout=False, update=False)
     facts.add_fact (pulse.utils.gettext ('Location'),
@@ -305,7 +305,7 @@ def get_info_tab (doc, **kw):
             span.add_content (pulse.html.Link (doc.mod_person))
         facts.add_fact (pulse.utils.gettext ('Last Modified'), span)
 
-    facts.add_fact_sep ()
+    facts.add_fact_divider ()
     facts.add_fact (pulse.utils.gettext ('Score'), str(doc.mod_score))
 
     return facts

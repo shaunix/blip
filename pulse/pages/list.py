@@ -124,7 +124,7 @@ def get_info_tab (mlist, **kw):
     try:
         facts.add_fact (pulse.utils.gettext ('Description'),
                        module.localized_desc)
-        facts.add_fact_sep ()
+        facts.add_fact_divider ()
     except:
         pass
 

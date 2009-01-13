@@ -98,7 +98,7 @@ def output_translation (po, branchable, **kw):
     else:
         page.add_fact (pulse.utils.gettext ('Domain'), parent)
 
-    page.add_fact_sep ()
+    page.add_fact_divider ()
     page.add_fact (pulse.utils.gettext ('Location'),
                    checkout.get_location (po.scm_dir, po.scm_file))
     if po.mod_datetime != None:

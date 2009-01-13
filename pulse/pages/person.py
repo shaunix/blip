@@ -107,7 +107,7 @@ def output_person (person, **kw):
 
     if person.nick != None:
         page.add_fact (pulse.utils.gettext ('Nick'), person.nick)
-        page.add_fact_sep ()
+        page.add_fact_divider ()
     if person.email != None:
         page.add_fact (pulse.utils.gettext ('Email'),
                        pulse.html.Link ('mailto:' + person.email, person.email))
