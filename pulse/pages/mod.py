@@ -126,7 +126,7 @@ def synopsis ():
 
     modules = db.Branch.objects.filter (type='Module').order_by ('-mod_score_diff')
     bl = pulse.html.LinkList ()
-    bl.set_title (pulse.utils.gettext ('Recent spikes:'))
+    bl.set_title (pulse.utils.gettext ('Recently rocking:'))
     columns.add_to_column (1, bl)
     modules = modules[:6]
     scm_mods = {}
