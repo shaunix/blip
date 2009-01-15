@@ -238,7 +238,7 @@ def update_graphs (mlist, max, **kw):
 
         if i == 0:
             score = pulse.utils.score (stats[numweeks - 26:])
-            mlist.mod_score = score
+            mlist.post_score = score
 
         if of != None:
             graph = pulse.graphs.BarGraph (stats, max, height=40)
