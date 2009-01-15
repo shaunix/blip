@@ -154,15 +154,19 @@ def update_list (mlist, **kw):
                 postdata['parent'] = parent
 
             msgfrom = emailutils.parseaddr (msgfrom)
-            person = db.Entity.get_by_email (msgfrom[1])
+            person = db.Entity.get_by_email (pulse.utils.utf8dec (msgfrom[1]))
             if person.name.get('C') == None:
                 person.update (name=msgfrom[0])
                 person.save ()
             postdata['author'] = person
 
             msgdate = emailutils.parsedate_tz (msgdate)
-            dt = datetime.datetime (*msgdate[:6])
-            dt = dt + datetime.timedelta (seconds=msgdate[-1])
+            try:
+                dt = datetime.datetime (*msgdate[:6])
+                if msgdate[-1] != None:
+                    dt = dt + datetime.timedelta (seconds=msgdate[-1])
+            except:
+                dt = None
             postdata['datetime'] = dt
 
             post.update (postdata)
@@ -176,28 +180,31 @@ def update_list (mlist, **kw):
         mlist.data['archives'][url]['modified'] = res.getheader ('Last-Modified')
         mlist.data['archives'][url]['etag'] = res.getheader ('Etag')
 
-    update_graphs (mlist, **kw)
+    update_graphs (mlist, 100, **kw)
     mlist.save()
 
 
-def update_graphs (mlist, **kw):
+def update_graphs (mlist, max, **kw):
     now = datetime.datetime.now()
     thisweek = pulse.utils.weeknum (datetime.datetime.utcnow())
     numweeks = 104
     i = 0
-    finalpost = db.ForumPost.objects.filter (forum=mlist).order_by ('datetime')
+    finalpost = db.ForumPost.objects.filter (forum=mlist, datetime__isnull=False, weeknum__gt=0).order_by ('datetime')
     outpath = None
     try:
-        finalpost = finalpost[0]
+        finalpost = finalpost[0].id
         stillpost = True
     except:
         finalpost = None
         stillpost = False
     while stillpost or i < 2:
         topweek = thisweek - (i * numweeks)
+        if topweek < 0:
+            break
         posts = db.ForumPost.objects.filter (forum=mlist,
                                              weeknum__gt=(topweek - numweeks),
                                              weeknum__lte=topweek)
+        postcount = posts.count()
         if stillpost:
             fname = 'posts-' + str(i) + '.png'
             of = db.OutputFile.objects.filter (type='graphs', ident=mlist.ident, filename=fname)
@@ -209,7 +216,7 @@ def update_graphs (mlist, **kw):
                 if kw.get('timestamps', True):
                     count = of.data.get ('count', None)
                     weeknum = of.data.get ('weeknum', None)
-                    if weeknum == thisweek and posts.count() == count:
+                    if weeknum == thisweek and postcount == count:
                         pulse.utils.log ('Skipping activity graph for %s' % mlist.ident)
                         return
             elif of == None:
@@ -231,10 +238,25 @@ def update_graphs (mlist, **kw):
 
         if i == 0:
             score = pulse.utils.score (stats[numweeks - 26:])
-            print stats
-            print score
-            return
             mlist.mod_score = score
+
+        if of != None:
+            graph = pulse.graphs.BarGraph (stats, max, height=40)
+            graph.save (of.get_file_path())
+
+        if i == 0:
+            stats0 = stats
+        elif i == 1 and outpath != None:
+            graph_t = pulse.graphs.BarGraph (stats + stats0, max, height=40, tight=True)
+            graph_t.save (os.path.join (os.path.dirname (outpath), 'posts-tight.png'))
+
+        if of != None:
+            of.data['coords'] = zip (graph.get_coords(), stats, range(topweek - numweeks + 1, topweek + 1))
+            of.data['count'] = postcount
+            of.data['weeknum'] = topweek
+            of.save()
+
+        i += 1
 
 
 def main (argv, options={}):
