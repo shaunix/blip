@@ -53,6 +53,10 @@
     <name>Gnome 2.26 Python Bindings</name>
     <jhbuild_metamodule>meta-gnome-bindings-python</jhbuild_metamodule>
   </set>
+  <set id="gnome-2-26-bindings-mono">
+    <name>Gnome 2.26 Mono Bindings</name>
+    <jhbuild_metamodule>meta-gnome-bindings-mono</jhbuild_metamodule>
+  </set>
   <set id="gnome-2-26-devtools">
     <name>Gnome 2.26 Developer Tools</name>
     <jhbuild_metamodule>meta-gnome-devtools-suite</jhbuild_metamodule>
@@ -149,51 +153,6 @@
   </set>
   <set id="gnome-2-22-proposed">
     <name>Gnome 2.22 Proposed Modules</name>
-    <jhbuild_metamodule>meta-gnome-proposed</jhbuild_metamodule>
-  </set>
-</set>
-
-<set id="gnome-2-20">
-  <name>Gnome 2.20</name>
-
-  <defaults>
-    <set>
-      <jhbuild_scm_file>gnome-2.20.modules</jhbuild_scm_file>
-    </set>
-  </defaults>
-
-  <links>
-    <item>http://feeds.delicious.com/v2/rss/tag/gnome220</item>
-  </links>
-
-  <set id="gnome-2-20-platform">
-    <name>Gnome 2.20 Platform</name>
-    <jhbuild_metamodule>
-      <item>meta-gnome-devel-platform</item>
-      <item>meta-gnome-devel-platform-upcoming-deprecations</item>
-    </jhbuild_metamodule>
-  </set>
-  <set id="gnome-2-20-desktop">
-    <name>Gnome 2.20 Desktop</name>
-    <jhbuild_metamodule>
-      <item>meta-gnome-desktop-suite</item>
-      <item>meta-gnome-desktop-upcoming-deprecations</item>
-    </jhbuild_metamodule>
-  </set>
-  <set id="gnome-2-20-bindings-c++">
-    <name>Gnome 2.20 C++ Bindings</name>
-    <jhbuild_metamodule>meta-gnome-bindings-c++</jhbuild_metamodule>
-  </set>
-  <set id="gnome-2-20-bindings-python">
-    <name>Gnome 2.20 Python Bindings</name>
-    <jhbuild_metamodule>meta-gnome-bindings-python</jhbuild_metamodule>
-  </set>
-  <set id="gnome-2-20-devtools">
-    <name>Gnome 2.20 Developer Tools</name>
-    <jhbuild_metamodule>meta-gnome-devtools-suite</jhbuild_metamodule>
-  </set>
-  <set id="gnome-2-20-proposed">
-    <name>Gnome 2.20 Proposed Modules</name>
     <jhbuild_metamodule>meta-gnome-proposed</jhbuild_metamodule>
   </set>
 </set>
