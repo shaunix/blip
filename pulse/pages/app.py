@@ -111,7 +111,7 @@ def output_app (app, **kw):
     rels = db.SetModule.get_related (pred=app.parent)
     if len(rels) > 0:
         sets = pulse.utils.attrsorted ([rel.subj for rel in rels], 'title')
-        span = [pulse.html.Link(obj.pulse_url + '#prog', obj.title) for obj in sets]
+        span = [pulse.html.Link(obj.pulse_url + '#programs', obj.title) for obj in sets]
         span = pulse.html.Span (*span)
         span.set_divider (pulse.html.BULLET)
         page.add_fact (pulse.utils.gettext ('Release Sets'), span)
