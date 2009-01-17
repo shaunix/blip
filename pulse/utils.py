@@ -53,10 +53,12 @@ def daynum (when=datetime.now()):
 
 
 epoch_week = datetime(1970, 1, 5, 0, 0, 0)
-def weeknum (dt):
+def weeknum (dt=None):
     """
     Return the number of weeks since the epoch for a given date
     """
+    if dt == None:
+        dt = datetime.now()
     return ((dt - epoch_week).days // 7) + 1
 
 

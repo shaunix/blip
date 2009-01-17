@@ -133,18 +133,35 @@ def get_info_tab (mlist, **kw):
     facts.add_fact (pulse.utils.gettext ('Archives'),
                     pulse.html.Link (mlist.data.get('list_archive')))
 
+    facts.add_fact_divider ()
+    facts.add_fact (pulse.utils.gettext ('Score'),
+                    str(mlist.post_score))
+
     return facts
 
 
 def get_activity_tab (mlist, **kw):
     box = pulse.html.Div ()
-    dl = pulse.html.DefinitionList()
-    box.add_content (dl)
+    of = db.OutputFile.objects.filter (type='graphs', ident=mlist.ident, filename='posts-0.png')
+    try:
+        of = of[0]
+        graph = pulse.html.Graph.activity_graph (of, mlist.pulse_url)
+        box.add_content (graph)
+    except IndexError:
+        pass
 
-    posts = db.ForumPost.objects.filter (forum=mlist).order_by ('-datetime')
-    for post in posts[:20]:
-        dl.add_term (post.title)
-        dl.add_entry (pulse.html.Link (post.author))
+    table = pulse.html.Table()
+    box.add_content (table)
+
+    weeknum = pulse.utils.weeknum()
+    posts = db.ForumPost.objects.filter (forum=mlist,
+                                         weeknum=weeknum,
+                                         datetime__isnull=False)
+    posts = posts.order_by ('-datetime')
+    for post in posts[:30]:
+        table.add_row (pulse.html.EllipsizedLabel (post.title, 40, truncate=True),
+                       post.datetime.strftime('%Y-%m-%d'),
+                       pulse.html.Link (post.author))
 
     return box
 

@@ -1400,6 +1400,7 @@ class EllipsizedLabel (Widget):
         super (EllipsizedLabel, self).__init__ (**kw)
         self._label = label
         self._size = size
+        self._truncate = kw.get ('truncate', False)
 
     def output (self, fd=None):
         """Output the HTML."""
@@ -1412,10 +1413,13 @@ class EllipsizedLabel (Widget):
                     break
                 i += 1
             if i == len(self._label):
-                p (fd, None, self._label)
+                p (fd, None, self._label, False)
             else:
-                p (fd, None, self._label[:i])
-                p (fd, '<span class="elliptxt">%s</span>', (self._label[i+1:]))
+                p (fd, None, self._label[:i], False)
+                if self._truncate:
+                    p (fd, None, pulse.utils.gettext ('...'), False)
+                else:
+                    p (fd, '<span class="elliptxt">%s</span>', self._label[i+1:], False)
         else:
             p (fd, None, self._label)
 
@@ -1653,21 +1657,52 @@ class Div (Widget, ContentComponent):
 
     def __init__ (self, *args, **kw):
         super (Div, self).__init__ (**kw)
-        self._id = kw.get('id', None)
-        self._classname = kw.get ('classname', None)
         for arg in args:
             self.add_content (arg)
 
     def output (self, fd=None):
         """Output the HTML."""
         p (fd, '<div', None, False)
-        if self._id != None:
-            p (fd, ' id="%s"', self._id)
-        if self._classname != None:
-            p (fd, ' class="%s"', self._classname)
+        wid = self.get_widget_id ()
+        if wid != None:
+            p (fd, ' id="%s"', wid, False)
+        wcls = self.get_widget_class ()
+        if wcls != None:
+            p (fd, ' class="%s"', wcls, False)
         p (fd, '>', None, False)
         ContentComponent.output (self, fd=fd)
         p (fd, '</div>')
+
+
+class Table (Widget):
+    def __init__ (self, **kw):
+        super (Table, self).__init__ (**kw)
+        self._cols = 0
+        self._rows = []
+
+    def add_row (self, *args):
+        self._cols = max (self._cols, len(args))
+        self._rows.append (args)
+
+    def output (self, fd=None):
+        p (fd, '<div class="table"><table', None, False)
+        wid = self.get_widget_id ()
+        if wid != None:
+            p (fd, ' id="%s"', wid, False)
+        wcls = self.get_widget_class ()
+        if wcls != None:
+            p (fd, ' class="%s"', wcls, False)
+        p (fd, '>', None, False)
+        for row in self._rows:
+            p (fd, '<tr>')
+            for col in row:
+                p (fd, '<td>', None, False)
+                p (fd, None, col, False)
+                p (fd, '</td>')
+            for col in range(self._cols - len(row)):
+                p (fd, '<td></td>')
+            p (fd, '</tr>')
+        p (fd, '</table></div>')
 
 
 class Pre (Widget, ContentComponent):
