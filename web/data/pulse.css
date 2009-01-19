@@ -314,8 +314,8 @@ a.filter img {
 }
 a.filterall { border-left: none; }
 a.filteron {
-  background-color: #729fcf;
-  color: white;
+  background-color: #fce94f;
+  color: #555753;
 }
 
 div.sortlinks {
