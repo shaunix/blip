@@ -255,7 +255,7 @@ class FilterableComponent (Component):
             return
         filterid = self.get_id ()
         filtertag = self._filtertag or 'table'
-        filterclass = self._filterable_class() or 'lbox'
+        filterclass = self._filterclass or 'lbox'
         p (fd, '<div class="filters" id="filters__%s"><span class="filters">', filterclass, False)
         p (fd, '<a class="filter filter-%s filterall filteron"', filterid, False)
         p (fd, ' href="javascript:filter(\'%s\',\'%s\',\'%s\',null)"',
