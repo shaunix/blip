@@ -71,6 +71,7 @@ def output_top (**kw):
     page.set_title (pulse.utils.gettext ('Sets'))
     cont = pulse.html.ContainerBox ()
     cont.set_show_icons (False)
+    cont.set_columns (2)
     page.add_content (cont)
 
     sets = db.ReleaseSet.objects.filter (parent__isnull=True)
@@ -79,10 +80,10 @@ def output_top (**kw):
         lbox = cont.add_link_box (rset)
         subsets = pulse.utils.attrsorted (rset.subsets.all(), ['title'])
         if len(subsets) > 0:
-            dl = pulse.html.DefinitionList ()
-            lbox.add_content (dl)
+            bl = pulse.html.LinkList ()
+            lbox.add_content (bl)
             for subset in subsets:
-                dl.add_entry (pulse.html.Link (subset))
+                bl.add_link (subset)
         else:
             add_set_info (rset, lbox)
 
@@ -204,7 +205,7 @@ def get_modules_tab (rset, **kw):
     mods = [mod.pred for mod in db.SetModule.get_related (subj=rset)]
     mods = pulse.utils.attrsorted (mods, 'title')
     modcnt = len(mods)
-    cont = pulse.html.ContainerBox (id='modules')
+    cont = pulse.html.ContainerBox (widget_id='c-modules')
     cont.add_sort_link ('title', pulse.utils.gettext ('title'), 1)
     cont.add_sort_link ('module', pulse.utils.gettext ('module'))
     cont.add_sort_link ('mtime', pulse.utils.gettext ('modified'))
@@ -239,9 +240,9 @@ def get_modules_tab (rset, **kw):
 
 def get_documents_tab (rset, **kw):
     boxes = (
-        {'box' : pulse.html.ContainerBox (id='userdocs'),
+        {'box' : pulse.html.ContainerBox (widget_id='c-user-docs'),
          'cnt' : 0, 'err' : False },
-        {'box' : pulse.html.ContainerBox (id='develdocs'),
+        {'box' : pulse.html.ContainerBox (widget_id='c-devel-docs'),
          'cnt' : 0, 'err' : False }
         )
 
@@ -308,7 +309,7 @@ def get_domains_tab (rset, **kw):
     objs = db.Branch.objects.filter (type='Domain',
                                      parent__set_module_subjs__subj=rset)
     objs = pulse.utils.attrsorted (list(objs), 'title')
-    cont = pulse.html.ContainerBox (id='domains')
+    cont = pulse.html.ContainerBox (widget_id='c-domains')
     cont.set_columns (2)
     slink_error = False
 
@@ -353,17 +354,17 @@ def get_domains_tab (rset, **kw):
 
 def get_programs_tab (rset, **kw):
     pad = pulse.html.PaddingBox()
-    for id, type, txt in (
-        ('applications', 'Application', pulse.utils.gettext ('Applications (%i)')),
-        ('capplets', 'Capplet', pulse.utils.gettext ('Control Panels (%i)')),
-        ('applets','Applet', pulse.utils.gettext ('Panel Applets (%i)')) ):
+    for widget_id, type, title in (
+        ('c-applications', 'Application', pulse.utils.gettext ('Applications (%i)')),
+        ('c-capplets', 'Capplet', pulse.utils.gettext ('Control Panels (%i)')),
+        ('c-applets','Applet', pulse.utils.gettext ('Panel Applets (%i)')) ):
         objs = db.Branch.objects.filter (type=type,
                                          parent__set_module_subjs__subj=rset)
         objs = pulse.utils.attrsorted (list(objs), 'title')
         if len(objs) == 0:
             continue
-        cont = pulse.html.ContainerBox (id=id)
-        cont.set_title (txt % len(objs))
+        cont = pulse.html.ContainerBox (widget_id=widget_id)
+        cont.set_title (title % len(objs))
         cont.set_columns (2)
         slink_docs = False
         slink_error = False
@@ -405,7 +406,7 @@ def get_libraries_tab (rset, **kw):
     objs = db.Branch.objects.filter (type='Library',
                                      parent__set_module_subjs__subj=rset)
     objs = pulse.utils.attrsorted (list(objs), 'title')
-    cont = pulse.html.ContainerBox (id='libraries')
+    cont = pulse.html.ContainerBox (widget_id='c-libraries')
     cont.set_columns (2)
     slink_docs = False
     slink_error = False
@@ -442,6 +443,46 @@ def get_libraries_tab (rset, **kw):
     return cont
 
 
+def add_set_info (rset, lbox):
+    cnt = db.SetModule.count_related (subj=rset)
+    if cnt > 0:
+        bl = pulse.html.LinkList ()
+        lbox.add_content (bl)
+        bl.add_link (rset.pulse_url + '#modules',
+                     pulse.utils.gettext ('%i modules') % cnt)
+    else:
+        return
+
+    # Documents
+    cnt = db.Branch.objects.filter (type='Document', parent__set_module_subjs__subj=rset)
+    cnt = cnt.count()
+    if cnt > 0:
+        bl.add_link (rset.pulse_url + '#documents',
+                     pulse.utils.gettext ('%i documents') % cnt)
+
+    # Domains
+    cnt = db.Branch.objects.filter (type='Domain', parent__set_module_subjs__subj=rset)
+    cnt = cnt.count()
+    if cnt > 0:
+        bl.add_link (rset.pulse_url + '#domains',
+                     pulse.utils.gettext ('%i domains') % cnt)
+
+    # Programs
+    objs = db.Branch.objects.filter (type__in=('Application', 'Capplet', 'Applet'),
+                                     parent__set_module_subjs__subj=rset)
+    cnt = objs.count()
+    if cnt > 0:
+        bl.add_link (rset.pulse_url + '#programs',
+                     pulse.utils.gettext ('%i programs') % cnt)
+
+    # Libraries
+    cnt = db.Branch.objects.filter (type='Library', parent__set_module_subjs__subj=rset)
+    cnt = cnt.count()
+    if cnt > 0:
+        bl.add_link (rset.pulse_url + '#libraries',
+                     pulse.utils.gettext ('%i libraries') % cnt)
+
+
 def get_supersets (rset):
     """Get a list of the supersets of a release set"""
     superset = rset.parent
@@ -450,27 +491,3 @@ def get_supersets (rset):
     else:
         supers = get_supersets (superset)
         return supers + [superset]
-
-
-def add_set_info (rset, lbox):
-    """Add information to a release set link box"""
-    cnt = db.SetModule.count_related (subj=rset)
-    dl = pulse.html.DefinitionList ()
-    lbox.add_content (dl)
-    dl.add_entry (pulse.html.Link (rset.pulse_url + '/mod',
-                                   pulse.utils.gettext ('%i modules') % cnt))
-    if cnt == 0:
-        return
-
-    things = (('Document', pulse.utils.gettext ('%i documents'), 'doc'),
-              ('Domain', pulse.utils.gettext ('%i domains'), 'i18n'),
-              ('Library', pulse.utils.gettext ('%i libraries'), 'lib')
-              )
-    for typ, txt, ext in things:
-        if isinstance (typ, tuple):
-            cnt = db.Branch.objects.filter (type__in=typ, parent__set_module_subjs__subj=rset)
-        else:
-            cnt = db.Branch.objects.filter (type=typ, parent__set_module_subjs__subj=rset)
-        cnt = cnt.count()
-        if cnt > 0:
-            dl.add_entry (pulse.html.Link (rset.pulse_url + '/' + ext, txt % cnt))
