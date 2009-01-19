@@ -144,7 +144,7 @@ def synopsis ():
 def output_module (module, **kw):
     branchable = module.branchable
 
-    page = pulse.html.RecordPage (module, http=kw.get('http', True))
+    page = pulse.html.Page (module, http=kw.get('http', True))
 
     branches = pulse.utils.attrsorted (list(branchable.branches.all()),
                                        '-is_default', 'scm_branch')

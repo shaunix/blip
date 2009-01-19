@@ -94,7 +94,7 @@ def output_top (**kw):
 def output_set (rset, **kw):
     """Output information about a release set"""
     path = kw.get('path', [])
-    page = pulse.html.RecordPage (rset, http=kw.get('http', True))
+    page = pulse.html.Page (rset, http=kw.get('http', True))
 
     page.set_sublinks_divider (pulse.html.TRIANGLE)
     page.add_sublink (pulse.config.web_root + 'set', pulse.utils.gettext ('Sets'))

@@ -98,7 +98,7 @@ def main (path, query, http=True, fd=None):
 
 def output_doc (doc, **kw):
     """Output information about a document"""
-    page = pulse.html.RecordPage (doc, http=kw.get('http', True))
+    page = pulse.html.Page (doc, http=kw.get('http', True))
 
     branches = pulse.utils.attrsorted (list(doc.branchable.branches.all()),
                                        '-is_default', 'scm_branch')

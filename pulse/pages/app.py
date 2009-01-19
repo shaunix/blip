@@ -85,7 +85,7 @@ def main (path, query, http=True, fd=None):
 
 def output_app (app, **kw):
     """Output information about an application"""
-    page = pulse.html.RecordPage (app, http=kw.get('http', True))
+    page = pulse.html.Page (app, http=kw.get('http', True))
     checkout = pulse.scm.Checkout.from_record (app, checkout=False, update=False)
 
     branches = pulse.utils.attrsorted (list(app.branchable.branches.all()),

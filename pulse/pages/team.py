@@ -82,7 +82,7 @@ def output_top (**kw):
 
 
 def output_team (team, **kw):
-    page = pulse.html.RecordPage (team, http=kw.get('http', True))
+    page = pulse.html.Page (team, http=kw.get('http', True))
 
     page.set_sublinks_divider (pulse.html.TRIANGLE)
     page.add_sublink (pulse.config.web_root + 'team', pulse.utils.gettext ('Teams'))

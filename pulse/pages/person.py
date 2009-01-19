@@ -103,7 +103,7 @@ def output_top (**kw):
 
 
 def output_person (person, **kw):
-    page = pulse.html.RecordPage (person, http=kw.get('http', True))
+    page = pulse.html.Page (person, http=kw.get('http', True))
 
     if person.nick != None:
         page.add_fact (pulse.utils.gettext ('Nick'), person.nick)

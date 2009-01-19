@@ -77,7 +77,7 @@ def main (path, query, http=True, fd=None):
 def output_translation (po, branchable, **kw):
     """Output information about a translation"""
     lang = po.scm_file[:-3]
-    page = pulse.html.RecordPage (po, http=kw.get('http', True))
+    page = pulse.html.Page (po, http=kw.get('http', True))
     checkout = pulse.scm.Checkout.from_record (po, checkout=False, update=False)
 
     branches = pulse.utils.attrsorted (list(branchable.branches.all()),

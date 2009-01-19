@@ -458,15 +458,21 @@ class Page (Widget, HttpComponent, ContentComponent, SublinksComponent, FactsCom
     icon  -- The URL of an icon for the page.
     """
 
-    def __init__ (self, **kw):
+    def __init__ (self, *args, **kw):
         super (Page, self).__init__ (**kw)
-        self._title = kw.get ('title')
-        self._icon = kw.get ('icon')
+        if len(args) > 0 and isinstance (args[0], db.PulseRecord):
+            self._title = args[0].title
+            self._icon = args[0].icon_url
+            self._url = args[0].pulse_url
+        else:
+            self._title = kw.get ('title')
+            self._icon = kw.get ('icon')
+            self._url = kw.get ('url')
         self._screenshot_file = None
         self._sidebar = None
-        self._url = kw.get ('url')
         self._tabs = []
         self._panes = {}
+
 
     def set_title (self, title):
         """Set the title of the page."""
@@ -602,21 +608,6 @@ class Fragment (Widget, HttpComponent, ContentComponent):
         """Output the HTML."""
         HttpComponent.output (self, fd=fd)
         ContentComponent.output (self, fd=fd)
-
-
-class RecordPage (Page):
-    """
-    Convenience wrapper for Page for Records.
-
-    This convenience class knows how to extract basic information from Records
-    and insert it into the page.
-    """
-
-    def __init__ (self, record, **kw):
-        kw.setdefault ('title', record.title)
-        kw.setdefault ('icon', record.icon_url)
-        kw.setdefault ('url', record.pulse_url)
-        super (RecordPage, self).__init__ (**kw)
 
 
 class PageNotFound (Page):

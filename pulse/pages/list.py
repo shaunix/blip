@@ -88,7 +88,7 @@ def output_top (**kw):
 
 
 def output_list (mlist, **kw):
-    page = pulse.html.RecordPage (mlist, http=kw.get('http', True))
+    page = pulse.html.Page (mlist, http=kw.get('http', True))
 
     columns = pulse.html.ColumnBox (2)
     page.add_content (columns)
