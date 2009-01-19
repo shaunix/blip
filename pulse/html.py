@@ -746,9 +746,9 @@ class ContainerBox (Widget, FilterableComponent, SortableComponent, ContentCompo
     FIXME: document **kw
     """
 
-    def __init__ (self, **kw):
+    def __init__ (self, title=None, **kw):
         super (ContainerBox, self).__init__ (**kw)
-        self._title = kw.get('title', None)
+        self._title = title
 
     def set_title (self, title):
         """Set the title of the container."""

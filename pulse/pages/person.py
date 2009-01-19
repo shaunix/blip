@@ -278,7 +278,7 @@ def output_ajax_graphmap (person, **kw):
 
 
 def get_commits_div (person, revs, title):
-    div = pulse.html.Div (id='commits')
+    div = pulse.html.Div (widget_id='commits')
     div.add_content (title)
     dl = pulse.html.DefinitionList ()
     div.add_content (dl)
