@@ -216,13 +216,13 @@ def get_modules_tab (rset, **kw):
                         '/'.join(mod.ident.split('/')[1:] + ['commits-tight.png']),
                         width=208, height=40)
         span = pulse.html.Span (mod.branch_module)
-        span.add_widget_class ('module')
+        span.add_class ('module')
         lbox.add_fact (pulse.utils.gettext ('module'), pulse.html.Link (mod.pulse_url, span))
         if mod.mod_datetime != None:
             span = pulse.html.Span (divider=pulse.html.SPACE)
             # FIXME: i18n, word order, but we want to link person
             span.add_content (pulse.html.Span(mod.mod_datetime.strftime('%Y-%m-%d %T')))
-            span.add_widget_class ('mtime')
+            span.add_class ('mtime')
             if mod.mod_person_id != None:
                 span.add_content (pulse.utils.gettext ('by'))
                 if not people_cache.has_key (mod.mod_person_id):
@@ -232,7 +232,7 @@ def get_modules_tab (rset, **kw):
             lbox.add_fact (pulse.utils.gettext ('modified'), span)
         if mod.mod_score != None:
             span = pulse.html.Span(str(mod.mod_score))
-            span.add_widget_class ('score')
+            span.add_class ('score')
             lbox.add_fact (pulse.utils.gettext ('score'), span)
     return cont
 
@@ -256,12 +256,12 @@ def get_documents_tab (rset, **kw):
         if doc.error != None:
             slink_error = True
             span = pulse.html.Span (doc.error)
-            span.add_widget_class ('errormsg')
+            span.add_class ('errormsg')
             lbox.add_fact (pulse.utils.gettext ('error'),
                            pulse.html.AdmonBox (pulse.html.AdmonBox.error, span))
             boxes[boxid]['err'] = True
         span = pulse.html.Span (doc.branch_module)
-        span.add_widget_class ('module')
+        span.add_class ('module')
         url = doc.ident.split('/')
         url = '/'.join(['mod'] + url[2:4] + [url[5]])
         url = pulse.config.web_root + url
@@ -270,7 +270,7 @@ def get_documents_tab (rset, **kw):
             span = pulse.html.Span (divider=pulse.html.SPACE)
             # FIXME: i18n, word order, but we want to link person
             span.add_content (pulse.html.Span(doc.mod_datetime.strftime('%Y-%m-%d %T')))
-            span.add_widget_class ('mtime')
+            span.add_class ('mtime')
             if doc.mod_person_id != None:
                 span.add_content (pulse.utils.gettext ('by'))
                 if not people_cache.has_key (doc.mod_person_id):
@@ -280,7 +280,7 @@ def get_documents_tab (rset, **kw):
             lbox.add_fact (pulse.utils.gettext ('modified'), span)
         if doc.mod_score != None:
             span = pulse.html.Span(str(doc.mod_score))
-            span.add_widget_class ('score')
+            span.add_class ('score')
             lbox.add_fact (pulse.utils.gettext ('score'), span)
         lbox.add_fact (pulse.utils.gettext ('status'),
                        pulse.html.StatusSpan (doc.data.get('status')))
@@ -317,12 +317,12 @@ def get_domains_tab (rset, **kw):
         if obj.error != None:
             slink_error = True
             span = pulse.html.Span (obj.error)
-            span.add_widget_class ('errormsg')
+            span.add_class ('errormsg')
             lbox.add_fact (pulse.utils.gettext ('error'),
                            pulse.html.AdmonBox (pulse.html.AdmonBox.error, span))
             slink_error = True
         span = pulse.html.Span (obj.branch_module)
-        span.add_widget_class ('module')
+        span.add_class ('module')
         url = obj.ident.split('/')
         url = '/'.join(['mod'] + url[2:4] + [url[5]])
         url = pulse.config.web_root + url
@@ -337,7 +337,7 @@ def get_domains_tab (rset, **kw):
         try:
             of = of[0]
             span = pulse.html.Span (str(of.statistic))
-            span.add_widget_class ('messages')
+            span.add_class ('messages')
             lbox.add_fact (pulse.utils.gettext ('messages'), span)
             slink_messages = True
         except IndexError:
@@ -372,12 +372,12 @@ def get_programs_tab (rset, **kw):
             if obj.error != None:
                 slink_error = True
                 span = pulse.html.Span (obj.error)
-                span.add_widget_class ('errormsg')
+                span.add_class ('errormsg')
                 lbox.add_fact (pulse.utils.gettext ('error'),
                                pulse.html.AdmonBox (pulse.html.AdmonBox.error, span))
                 slink_error = True
             span = pulse.html.Span (obj.branch_module)
-            span.add_widget_class ('module')
+            span.add_class ('module')
             url = obj.ident.split('/')
             url = '/'.join(['mod'] + url[2:4] + [url[5]])
             url = pulse.config.web_root + url
@@ -387,7 +387,7 @@ def get_programs_tab (rset, **kw):
                 # FIXME: multiple docs look bad and sort poorly
                 doc = doc.pred
                 span = pulse.html.Span(doc.title)
-                span.add_widget_class ('docs')
+                span.add_class ('docs')
                 lbox.add_fact (pulse.utils.gettext ('docs'),
                                pulse.html.Link (doc.pulse_url, span))
                 slink_docs = True
@@ -414,12 +414,12 @@ def get_libraries_tab (rset, **kw):
         if obj.error != None:
             slink_error = True
             span = pulse.html.Span (obj.error)
-            span.add_widget_class ('errormsg')
+            span.add_class ('errormsg')
             lbox.add_fact (pulse.utils.gettext ('error'),
                            pulse.html.AdmonBox (pulse.html.AdmonBox.error, span))
             slink_error = True
         span = pulse.html.Span (obj.branch_module)
-        span.add_widget_class ('module')
+        span.add_class ('module')
         url = obj.ident.split('/')
         url = '/'.join(['mod'] + url[2:4] + [url[5]])
         url = pulse.config.web_root + url
@@ -429,7 +429,7 @@ def get_libraries_tab (rset, **kw):
             # FIXME: multiple docs look bad and sort poorly
             doc = doc.pred
             span = pulse.html.Span(doc.title)
-            span.add_widget_class ('docs')
+            span.add_class ('docs')
             lbox.add_fact (pulse.utils.gettext ('docs'),
                            pulse.html.Link (doc.pulse_url, span))
             slink_docs = True

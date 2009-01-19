@@ -54,25 +54,25 @@ class Widget (object):
         self._widget_class = kw.get ('widget_class', None)
         
 
-    def set_widget_id (self, widget_id):
+    def set_id (self, widget_id):
         self._widget_id = widget_id
 
-    def get_widget_id (self):
+    def get_id (self):
         if self._widget_id != None:
             return self._widget_id
         else:
             return 'x' + str(hash(self))
 
-    def add_widget_class (self, widget_class):
+    def add_class (self, widget_class):
         if isinstance (self._widget_class, basestring):
             self._widget_class = self._widget_class + ' ' + widget_class
         else:
             self._widget_class = widget_class
 
-    def set_widget_class (self, widget_class):
+    def set_class (self, widget_class):
         self._widget_class = widget_class
 
-    def get_widget_class (self):
+    def get_class (self):
         return self._widget_class
 
     def output (self, fd=None):
@@ -253,7 +253,7 @@ class FilterableComponent (Component):
     def output (self, fd=None):
         if len(self._filters) == 0:
             return
-        filterid = self.get_widget_id ()
+        filterid = self.get_id ()
         filtertag = self._filtertag or 'table'
         filterclass = self._filterable_class() or 'lbox'
         p (fd, '<div class="filters" id="filters__%s"><span class="filters">', filterclass, False)
@@ -313,7 +313,7 @@ class SortableComponent (Component):
         """Output the HTML."""
         if len(self._slinks) == 0:
             return
-        slinkid = self.get_widget_id ()
+        slinkid = self.get_id ()
         slinktag = self._slinktag or 'table'
         slinkclass = self._slinkclass or 'lbox'
         p (fd, '<div class="sortlinks" id="sortlinks__%s">', slinkid, False)
@@ -709,14 +709,14 @@ class InfoBox (Widget, SortableComponent, ContentComponent, FilterableComponent,
     An info box is a framed and titled box that contains various related bits
     of information.  Most pages are constructed primarily of info boxes.
     """
-    def __init__ (self, **kw):
+    def __init__ (self, title, **kw):
         super (InfoBox, self).__init__ (**kw)
-        self._title = kw.get ('title', None)
+        self._title = title
 
     def output (self, fd=None):
         """Output the HTML."""
         p (fd, '<div class="info"', None, False)
-        wid = self.get_widget_id ()
+        wid = self.get_id ()
         if wid != None:
             p (fd, ' id="%s"', wid, False)
         p (fd, '><div class="infotitle">%s</div>', self._title or '')
@@ -735,7 +735,7 @@ class SectionBox (Widget, ContentComponent):
 
     def output (self, fd=None):
         p (fd, '<div class="section"', None, False)
-        wid = self.get_widget_id ()
+        wid = self.get_id ()
         if wid != None:
             p (fd, ' id="%s"', wid, False)
         p (fd, '><div class="sectiontitle">%s</div>', self._title)
@@ -767,7 +767,7 @@ class ContainerBox (Widget, FilterableComponent, SortableComponent, ContentCompo
         """Output the HTML."""
         slinks = len(self.get_sort_links())
         p (fd, '<div class="cont"', None, False)
-        wid = self.get_widget_id ()
+        wid = self.get_id ()
         if wid != None:
             p (fd, ' id="%s"', wid, False)
         p (fd, '>', None, False)
@@ -1598,10 +1598,10 @@ class Span (Widget, ContentComponent):
     def output (self, fd=None):
         """Output the HTML."""
         p (fd, '<span', None, False)
-        wid = self.get_widget_id ()
+        wid = self.get_id ()
         if wid != None:
             p (fd, ' id="%s"', wid, False)
-        wcls = self.get_widget_class ()
+        wcls = self.get_class ()
         if wcls != None:
             p (fd, ' class="%s"', wcls, False)
         p (fd, '>', None, False)
@@ -1663,10 +1663,10 @@ class Div (Widget, ContentComponent):
     def output (self, fd=None):
         """Output the HTML."""
         p (fd, '<div', None, False)
-        wid = self.get_widget_id ()
+        wid = self.get_id ()
         if wid != None:
             p (fd, ' id="%s"', wid, False)
-        wcls = self.get_widget_class ()
+        wcls = self.get_class ()
         if wcls != None:
             p (fd, ' class="%s"', wcls, False)
         p (fd, '>', None, False)
@@ -1686,10 +1686,10 @@ class Table (Widget):
 
     def output (self, fd=None):
         p (fd, '<div class="table"><table', None, False)
-        wid = self.get_widget_id ()
+        wid = self.get_id ()
         if wid != None:
             p (fd, ' id="%s"', wid, False)
-        wcls = self.get_widget_class ()
+        wcls = self.get_class ()
         if wcls != None:
             p (fd, ' class="%s"', wcls, False)
         p (fd, '>', None, False)

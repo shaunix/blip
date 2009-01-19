@@ -270,7 +270,7 @@ def output_ajax_domain (module, **kw):
         pad.add_content (grid)
         for translation in translations:
             span = pulse.html.Span (translation.scm_file[:-3])
-            span.add_widget_class ('title')
+            span.add_class ('title')
             link = pulse.html.Link (translation.pulse_url, span)
             row = [link]
             percent = 0
@@ -280,7 +280,7 @@ def output_ajax_domain (module, **kw):
             untranslated = total - stat1 - stat2
             percent = total and math.floor (100 * (float(stat1) / total)) or 0
             span = pulse.html.Span ('%i%%' % percent)
-            span.add_widget_class ('percent')
+            span.add_class ('percent')
             row.append (span)
 
             row.append (pulse.utils.gettext ('%i.%i.%i') %
@@ -474,7 +474,7 @@ def get_components_tab (module, **kw):
             columns.add_to_column (0, box)
 
     # Documents
-    box = pulse.html.InfoBox (title=pulse.utils.gettext ('Documents'))
+    box = pulse.html.InfoBox (pulse.utils.gettext ('Documents'))
     columns.add_to_column (1, box)
     docs = module.select_children ('Document')
     docs = pulse.utils.attrsorted (list(docs), 'title')
@@ -489,7 +489,7 @@ def get_components_tab (module, **kw):
                            pulse.html.StatusSpan (doc.data.get('status')))
             res = doc.select_children ('Translation')
             span = pulse.html.Span (str(res.count()))
-            span.add_widget_class ('translations')
+            span.add_class ('translations')
             lbox.add_fact (pulse.utils.gettext ('translations'), span)
     else:
         box.add_content (pulse.html.AdmonBox (pulse.html.AdmonBox.warning,
@@ -507,7 +507,7 @@ def get_translations_tab (module, **kw):
             domainid = domain.ident.split('/')[-2].replace('-', '_')
             translations = db.Branch.objects.filter (type='Translation', parent=domain)
             cont = pulse.html.ContainerBox ()
-            cont.set_widget_id ('po_' + domainid)
+            cont.set_id ('po_' + domainid)
             if len(domains) > 1:
                 cont.set_title (pulse.utils.gettext ('%s (%s)')
                                 % (domain.title, translations.count()))
@@ -548,7 +548,7 @@ def get_component_info_box (module, branchtype, title):
     objs = module.select_children (branchtype)
     objs = pulse.utils.attrsorted (list(objs), 'title')
     if len(objs) > 0:
-        box = pulse.html.InfoBox (title=title)
+        box = pulse.html.InfoBox (title)
         for obj in objs:
             lbox = box.add_link_box (obj)
             doc = db.Documentation.get_related (subj=obj)

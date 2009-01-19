@@ -119,7 +119,7 @@ def output_person (person, **kw):
     page.add_content (columns)
 
     # Activity
-    box = pulse.html.InfoBox (title=pulse.utils.gettext ('Activity'))
+    box = pulse.html.InfoBox (pulse.utils.gettext ('Activity'))
     columns.add_to_column (0, box)
     of = db.OutputFile.objects.filter (type='graphs', ident=person.ident, filename='commits-0.png')
     try:
@@ -141,7 +141,7 @@ def output_person (person, **kw):
     blog = db.Forum.objects.filter (ident=bident)
     try:
         blog = blog[0]
-        box = pulse.html.InfoBox (title=pulse.utils.gettext ('Blog'))
+        box = pulse.html.InfoBox (pulse.utils.gettext ('Blog'))
         columns.add_to_column (0, box)
         dl = pulse.html.DefinitionList ()
         box.add_content (dl)
@@ -157,7 +157,7 @@ def output_person (person, **kw):
     rels = db.TeamMember.get_related (pred=person)
     rels = pulse.utils.attrsorted (list(rels), ('subj', 'title'))
     if len(rels) > 0:
-        box = pulse.html.InfoBox (title=pulse.utils.gettext ('Teams'))
+        box = pulse.html.InfoBox (pulse.utils.gettext ('Teams'))
         columns.add_to_column (1, box)
         for rel in rels:
             lbox = box.add_link_box (rel.subj)
@@ -179,8 +179,8 @@ def output_person (person, **kw):
                 continue
             brs.append (mod.branchable_id)
             mods[mod] = rel
-        box = pulse.html.InfoBox (title=pulse.utils.gettext ('Modules'))
-        box.set_widget_id ('modules')
+        box = pulse.html.InfoBox (pulse.utils.gettext ('Modules'))
+        box.set_id ('modules')
         columns.add_to_column (1, box)
         for mod in mods:
             lbox = box.add_link_box (mod)
@@ -204,8 +204,8 @@ def output_person (person, **kw):
                 continue
             brs.append (doc.branchable_id)
             docs[doc] = rel
-        box = pulse.html.InfoBox (title=pulse.utils.gettext ('Documents'))
-        box.set_widget_id ('documents')
+        box = pulse.html.InfoBox (pulse.utils.gettext ('Documents'))
+        box.set_id ('documents')
         columns.add_to_column (1, box)
         for doc in docs:
             lbox = box.add_link_box (doc)
