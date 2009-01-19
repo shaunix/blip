@@ -59,7 +59,7 @@ h1 img { vertical-align: middle; }
 #body { margin: 0; padding: 1em 0 0 0; }
 .sidebarred #body { padding-right: 300px; }
 #panes {
-  padding: 0em 2.4em 0 2.4em;
+  padding: 0 2.4em 2.4em 2.4em;
   background-color: white;
 }
 .pane { display: none; }
