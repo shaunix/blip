@@ -1406,7 +1406,7 @@ class EllipsizedLabel (Widget):
             if i == len(self._label):
                 p (fd, None, self._label, False)
             else:
-                p (fd, None, self._label[:i], False)
+                p (fd, None, self._label[:i+1], False)
                 if self._truncate:
                     p (fd, None, pulse.utils.gettext ('...'), False)
                 else:
