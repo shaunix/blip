@@ -260,7 +260,7 @@ class FilterableComponent (Component):
         p (fd, '<a class="filter filter-%s filterall filteron"', filterid, False)
         p (fd, ' href="javascript:filter(\'%s\',\'%s\',\'%s\',null)"',
            (filterid, filtertag, filterclass), False)
-        p (fd, ' id="filter__%s__all">', filterid, False)
+        p (fd, ' id="filter__%s___all">', filterid, False)
         p (fd, None, pulse.utils.gettext ('All'), False)
         p (fd, '</a>', None, False)
         for badge in self._filters:
