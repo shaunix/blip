@@ -170,7 +170,8 @@ def output_doc (doc, **kw):
                                               pulse.utils.gettext ('No developers') ))
 
     page.add_tab ('activity', pulse.utils.gettext ('Activity'))
-    page.add_tab ('components', pulse.utils.gettext ('Components'))
+    page.add_tab ('files', pulse.utils.gettext ('Files'))
+    page.add_tab ('translations', pulse.utils.gettext ('Translations'))
 
     page.output(fd=kw.get('fd'))
     return 0
@@ -220,8 +221,10 @@ def output_ajax_tab (doc, **kw):
         page.add_content (get_info_tab (doc, **kw))
     elif tab == 'activity':
         page.add_content (get_activity_tab (doc, **kw))
-    elif tab == 'components':
-        page.add_content (get_components_tab (doc, **kw))
+    elif tab == 'files':
+        page.add_content (get_files_tab (doc, **kw))
+    elif tab == 'translations':
+        page.add_content (get_translations_tab (doc, **kw))
     page.output(fd=kw.get('fd'))
     return 0
 
@@ -332,12 +335,12 @@ def get_activity_tab (doc, **kw):
     return box
 
 
-def get_components_tab (doc, **kw):
+def get_files_tab (doc, **kw):
     columns = pulse.html.ColumnBox (2)
 
     # Files
-    box = pulse.html.InfoBox (pulse.utils.gettext ('Files'))
-    columns.add_to_column (1, box)
+    box = pulse.html.InfoBox (pulse.utils.gettext ('XML Files'))
+    columns.add_to_column (0, box)
     xmlfiles = doc.data.get('xmlfiles', [])
     if len(xmlfiles) > 10:
         div = pulse.html.AjaxBox (doc.pulse_url + '?ajax=xmlfiles')
@@ -356,12 +359,12 @@ def get_components_tab (doc, **kw):
             div = get_figures (doc, figures)
         box.add_content (div)
 
-    # Translations
-    box = pulse.html.InfoBox (pulse.utils.gettext ('Translations'))
-    columns.add_to_column (0, box)
+    return columns
+
+
+def get_translations_tab (doc, **kw):
     cont = pulse.html.ContainerBox ()
-    cont.set_id ('po')
-    box.add_content (cont)
+    cont.set_id ('c-translations')
     pad = pulse.html.PaddingBox ()
     cont.add_content (pad)
 
@@ -424,17 +427,17 @@ def get_components_tab (doc, **kw):
                 grid.add_row_class (idx, 'po80')
             elif percent >= 50:
                 grid.add_row_class (idx, 'po50')
-
-    return columns
+    return cont
 
 
 def get_xmlfiles (doc, xmlfiles):
     cont = pulse.html.ContainerBox()
-    cont.set_id ('xmlfiles')
+    cont.set_id ('c-xmlfiles')
     dl = pulse.html.DefinitionList()
     cont.add_content (dl)
     if len(xmlfiles) > 1:
         cont.set_sortable_tag ('dt')
+        cont.set_sortable_class ('xmlfiles')
         cont.add_sort_link ('title', pulse.utils.gettext ('name'), 1)
         cont.add_sort_link ('mtime', pulse.utils.gettext ('modified'))
     for xmlfile in xmlfiles:
@@ -461,8 +464,9 @@ def get_xmlfiles (doc, xmlfiles):
 
 def get_figures (doc, figures):
     cont = pulse.html.ContainerBox()
-    cont.set_id ('figures')
+    cont.set_id ('c-figures')
     cont.set_sortable_tag ('dt')
+    cont.set_sortable_class ('figures')
     cont.add_sort_link ('title', pulse.utils.gettext ('name'), 1)
     cont.add_sort_link ('mtime', pulse.utils.gettext ('modified'))
     ofs = db.OutputFile.objects.filter (type='figures', ident=doc.ident, subdir='C')
