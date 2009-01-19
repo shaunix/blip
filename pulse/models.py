@@ -607,21 +607,21 @@ class Branch (PulseRecord, models.Model):
             # gets the order of the parameters wrong when there are multiple types.
             # The statistic types are completely under our control, and we only ever
             # use alphanumeric, so there's no real risk of an injection.
-            sel = sel.extra (tables = ['Statistic'],
-                             select = {stype + '_daynum' : 'Statistic.daynum',
-                                       stype + '_stat1' : 'Statistic.stat1',
-                                       stype + '_stat2' : 'Statistic.stat2',
-                                       stype + '_total' : 'Statistic.total'
+            sel = sel.extra (tables = ['Statistic AS ' + stype + 'Statistic'],
+                             select = {stype + '_daynum' : stype + 'Statistic.daynum',
+                                       stype + '_stat1' : stype + 'Statistic.stat1',
+                                       stype + '_stat2' : stype + 'Statistic.stat2',
+                                       stype + '_total' : stype + 'Statistic.total'
                                        },
-                             where = ['Statistic.type = "' + stype + '"',
-                                      'Statistic.branch_id = Branch.id',
-                                      ('Statistic.daynum = (' +
-                                       'SELECT daynum FROM Statistic AS MaxStatistic' +
-                                       ' WHERE MaxStatistic.branch_id = Branch.id' +
-                                       ' AND MaxStatistic.type = "' + stype + '"' +
+                             where = [stype + 'Statistic.type = "' + stype + '"',
+                                      stype + 'Statistic.branch_id = Branch.id',
+                                      (stype + 'Statistic.daynum = (' +
+                                       'SELECT daynum FROM Statistic' +
+                                       ' WHERE Statistic.branch_id = Branch.id' +
+                                       ' AND Statistic.type = "' + stype + '"' +
                                        ' ORDER BY daynum DESC LIMIT 1)')
                                       ])
-            return sel
+        return sel
 
 
 class Entity (PulseRecord, models.Model):
