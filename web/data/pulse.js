@@ -151,7 +151,7 @@ $.fn.pulse_init = function () {
       div.addClass ('infoactive');
       div.find('div.sortlinks').slideDown('fast');
       div.find('div.lboxdesc').slideDown('fast');
-      $this.find('div.filters').slideDown('fast');
+      div.find('div.filters').slideDown('fast');
       div.find('table.facts').slideDown('fast');
       div.find('dd').slideDown('fast');
     }
