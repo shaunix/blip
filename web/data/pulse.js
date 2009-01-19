@@ -207,8 +207,9 @@ $.fn.pulse_init = function () {
       mask.css({
         top: offset.top,
         left: offset.left,
-        height: body.height(),
-        width: body.width()
+        position: 'fixed',
+        height: window.innerHeight,
+        width: window.innerWidth
       });
     };
     maskresize();

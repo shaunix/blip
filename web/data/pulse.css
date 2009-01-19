@@ -234,8 +234,8 @@ div.cont-content { padding: 0.5em 0 0 0; }
 
 div.mask {
   position: absolute;
-  background-color: white;
-  opacity: 0.6;
+  background-color: #eeeeec;
+  opacity: 0.8;
   z-index: 10;
 }
 
@@ -446,8 +446,8 @@ div.zoom {
   position: absolute;
   display: none;
   padding: 10px;
-  border: solid 1px #d3d7cf;
-  background-color: #eeeeec;
+  border: solid 1px #babdb6;
+  background-color: white;
 }
 
 .admon { font-style: italic; }
