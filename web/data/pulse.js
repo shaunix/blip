@@ -114,39 +114,20 @@ $.fn.pulse_init = function () {
     var div = $(this);
     var link = $('a', div);
     var href = link.attr('href');
-    var msg = div.text();
-    var src = $('img', div).attr('src');
+
     div.empty();
-    var process = function (adiv) {
-      if (adiv.hasClass('stop')) {
-        clearInterval(div.timer);
-        div.remove();
-      } else {
-        var cur = adiv.current;
-        var next = cur.next('img');
-        if (next.length == 0)
-          next = adiv.children('img:first-child');
-        cur.css('display', 'none');
-        next.css('display', 'inline');
-        adiv.current = next;
-      }
-    };
-    var base = src.substring(0, src.length - 6);
-    for (var num = 0; num <= 35; num++) {
-      var url = base;
-      if (num < 10)
-        url = url + '0';
-      $('<img src="' + url + num + '.png">').css('display', 'none').appendTo(div);
-    }
-    div.append(' ' + msg);
-    div.current = div.children('img:first-child');
-    div.current.css('display', 'inline');
-    div.timer = setInterval(function () { process(div); }, 80);
-    div.slideDown('fast');
+    div.show();
+
+    var thr = throbberbar();
+    thr.css('width', div.width() - 20);
+    div.append (thr);
+    thr.start ();
+
     $.get(href, {}, function (data) {
       var cont = $(data).css('display', 'none');
       cont.insertAfter(div);
-      div.slideUp('fast', function () { div.addClass('stop'); });
+      thr.stop ();
+      div.remove ();
       cont.pulse_init ();
       cont.slideDown('fast');
     });
@@ -454,34 +435,6 @@ $(document).ready (function () {
 
 /******************************************************************************/
 /** Trobber **/
-
-function throbber () {
-  var div = $('<div class="throbber"></div>');
-  var process = function () {
-    if (div.hasClass('stop')) {
-      clearInterval(div.timer);
-      div.remove();
-    } else {
-      var cur = div.current;
-      var next = cur.next('img');
-      if (next.length == 0)
-        next = div.children('img:first-child');
-      cur.css('display', 'none');
-      next.css('display', 'inline');
-      div.current = next;
-    }
-  };
-  for (var num = 0; num <= 35; num++) {
-    var url = pulse_data + 'process'
-    if (num < 10)
-      url = url + '0';
-    $('<img src="' + url + num + '.png">').css('display', 'none').appendTo(div);
-  }
-  div.current = div.children('img:first-child');
-  div.current.css('display', 'inline');
-  div.timer = setInterval(process, 80);
-  return div;
-}
 
 function throbberbar () {
   var div = $('<div class="throbberbar"><div></div></div>');

@@ -675,8 +675,8 @@ class AjaxBox (Widget):
 
     def output (self, fd=None):
         """Output the HTML."""
-        p (fd, '<div class="ajax"><img src="%sprocess00.png"><a href="%s">%s</a></div>',
-           (pulse.config.data_root, self._url, pulse.utils.gettext ('Loading')) )
+        p (fd, '<div class="ajax"><a href="%s">%s</a></div>',
+           (self._url, pulse.utils.gettext ('Loading')) )
 
 
 class SidebarBox (Widget, ContentComponent, LinkBoxesComponent):
