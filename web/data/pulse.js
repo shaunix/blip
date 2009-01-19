@@ -821,21 +821,21 @@ function mlink (id) {
 /******************************************************************************/
 /** Filters **/
 
-function filter (tag, cls, key) {
-  $('a.filter-' + cls).each (function () {
+function filter (id, tag, cls, key) {
+  $('a.filter-' + id).each (function () {
     var link = $(this);
-    if (link.is('#filter__' + cls + '___all')) {
+    if (link.is('#filter__' + id + '___all')) {
       if (key == null)
         link.addClass ('filteron');
       else
         link.removeClass ('filteron');
     }
-    else if (link.is('#filter__' + cls + '__' + key))
+    else if (link.is('#filter__' + id + '__' + key))
       link.addClass ('filteron');
     else
       link.removeClass ('filteron');
   });
-  $(tag + '.' + cls).each (function () {
+  $('#' + id).find (tag + '.' + cls).each (function () {
     var el = $(this);
     var show = false;
     if (key == null)
@@ -843,9 +843,9 @@ function filter (tag, cls, key) {
     else
       show = (el.find('img.badge-' + key).length > 0);
     if (!el.is(':visible') && show)
-      el.fadeIn ();
+      el.slideDown ();
     else if (el.is(':visible') && !show)
-      el.fadeOut ();
+      el.slideUp ();
   });
 }
 
