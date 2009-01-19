@@ -177,6 +177,7 @@ td.col-first { padding: 0; }
 .info div.sortlinks { display: none; }
 .info table.facts { display: none; }
 .info div.lboxdesc { display: none; }
+.info dd { display: none; }
 .infoactive .infotitle {
   background-color: #fce94f;
 }

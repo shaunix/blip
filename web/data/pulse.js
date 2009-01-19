@@ -163,12 +163,14 @@ $.fn.pulse_init = function () {
       $this.find('div.sortlinks').slideUp('fast');
       $this.find('div.lboxdesc').slideUp('fast');
       $this.find('table.facts').slideUp('fast');
+      $this.find('dd').slideUp('fast');
     });
     if (!active) {
       div.addClass ('infoactive');
       div.find('div.sortlinks').slideDown('fast');
       div.find('div.lboxdesc').slideDown('fast');
       div.find('table.facts').slideDown('fast');
+      div.find('dd').slideDown('fast');
     }
     });
   });
