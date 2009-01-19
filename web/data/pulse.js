@@ -143,6 +143,7 @@ $.fn.pulse_init = function () {
       $this.find('div.sortmenu').hide();
       $this.find('div.sortlinks').slideUp('fast');
       $this.find('div.lboxdesc').slideUp('fast');
+      $this.find('div.filters').slideUp('fast');
       $this.find('table.facts').slideUp('fast');
       $this.find('dd').slideUp('fast');
     });
@@ -150,6 +151,7 @@ $.fn.pulse_init = function () {
       div.addClass ('infoactive');
       div.find('div.sortlinks').slideDown('fast');
       div.find('div.lboxdesc').slideDown('fast');
+      $this.find('div.filters').slideDown('fast');
       div.find('table.facts').slideDown('fast');
       div.find('dd').slideDown('fast');
     }
