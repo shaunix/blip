@@ -52,7 +52,9 @@ def main (path, query, http=True, fd=None):
         page.output(fd=fd)
         return 404
 
-    if query.get('ajax', None) == 'commits':
+    if query.get('ajax', None) == 'tab':
+        return output_ajax_tab (person, **kw)
+    elif query.get('ajax', None) == 'commits':
         return output_ajax_commits (person, **kw)
     elif query.get('ajax', None) == 'graphmap':
         return output_ajax_graphmap (person, **kw)
@@ -105,47 +107,27 @@ def output_top (**kw):
 def output_person (person, **kw):
     page = pulse.html.Page (person, http=kw.get('http', True))
 
-    if person.nick != None:
-        page.add_fact (pulse.utils.gettext ('Nick'), person.nick)
-        page.add_fact_divider ()
-    if person.email != None:
-        page.add_fact (pulse.utils.gettext ('Email'),
-                       pulse.html.Link ('mailto:' + person.email, person.email))
-    if person.web != None:
-        page.add_fact (pulse.utils.gettext ('Website'), pulse.html.Link (person.web))
-    page.add_fact (pulse.utils.gettext ('Score'), str(person.mod_score))
-
-    columns = pulse.html.ColumnBox (2)
-    page.add_content (columns)
-
-    # Activity
-    box = pulse.html.InfoBox (pulse.utils.gettext ('Activity'))
-    columns.add_to_column (0, box)
-    of = db.OutputFile.objects.filter (type='graphs', ident=person.ident, filename='commits-0.png')
-    try:
-        of = of[0]
-        graph = pulse.html.Graph.activity_graph (of, person.pulse_url)
-        box.add_content (graph)
-    except IndexError:
-        pass
-
-    revs = db.Revision.select_revisions (person=person)
-    cnt = revs.count()
-    revs = revs[:10]
-    div = get_commits_div (person, revs,
-                           pulse.utils.gettext('Showing %i of %i commits:') % (len(revs), cnt))
-    box.add_content (div)
+    # Teams
+    rels = db.TeamMember.get_related (pred=person)
+    rels = pulse.utils.attrsorted (list(rels), ('subj', 'title'))
+    if len(rels) > 0:
+        box = pulse.html.SidebarBox (pulse.utils.gettext ('Teams'))
+        page.add_sidebar_content (box)
+        for rel in rels:
+            lbox = box.add_link_box (rel.subj)
+            if rel.coordinator:
+                lbox.add_badge ('coordinator')
 
     # Blog
     bident = '/blog' + person.ident
     blog = db.Forum.objects.filter (ident=bident)
     try:
         blog = blog[0]
-        box = pulse.html.InfoBox (pulse.utils.gettext ('Blog'))
-        columns.add_to_column (0, box)
+        box = pulse.html.SidebarBox (pulse.utils.gettext ('Blog'))
+        page.add_sidebar_content (box)
         dl = pulse.html.DefinitionList ()
         box.add_content (dl)
-        for entry in blog.forum_posts.all()[:10]:
+        for entry in blog.forum_posts.all()[:6]:
             link = pulse.html.Link (entry.web, entry.title)
             dl.add_term (link)
             if entry.datetime != None:
@@ -153,86 +135,30 @@ def output_person (person, **kw):
     except IndexError:
         pass
 
-    # Teams
-    rels = db.TeamMember.get_related (pred=person)
-    rels = pulse.utils.attrsorted (list(rels), ('subj', 'title'))
-    if len(rels) > 0:
-        box = pulse.html.InfoBox (pulse.utils.gettext ('Teams'))
-        columns.add_to_column (1, box)
-        for rel in rels:
-            lbox = box.add_link_box (rel.subj)
-            if rel.coordinator:
-                lbox.add_badge ('coordinator')
+    # Tabs
+    page.add_tab ('info', pulse.utils.gettext ('Info'))
+    box = get_info_tab (person, **kw)
+    page.add_to_tab ('info', box)
 
-    # Modules and Documents
-    rels = db.ModuleEntity.get_related (pred=person)
-    rels = pulse.utils.attrsorted (list(rels), ('subj', 'title'),
-                                   ('-', 'subj', 'is_default'),
-                                   ('-', 'subj', 'scm_branch'))
-    if len(rels) > 0:
-        brs = []
-        mods = pulse.utils.odict()
-        bmaint = 0
-        for rel in rels:
-            mod = rel.subj
-            if mod.branchable_id in brs:
-                continue
-            brs.append (mod.branchable_id)
-            mods[mod] = rel
-        box = pulse.html.InfoBox (pulse.utils.gettext ('Modules'))
-        box.set_id ('modules')
-        columns.add_to_column (1, box)
-        for mod in mods:
-            lbox = box.add_link_box (mod)
-            if rel.maintainer:
-                lbox.add_badge ('maintainer')
-                bmaint += 1
-        if 0 < bmaint < len(mods):
-            box.add_badge_filter ('maintainer')
-
-    rels = db.DocumentEntity.get_related (pred=person)
-    rels = pulse.utils.attrsorted (list(rels), ('subj', 'title'),
-                                   ('-', 'subj', 'is_default'),
-                                   ('-', 'subj', 'scm_branch'))
-    if len(rels) > 0:
-        brs = []
-        docs = pulse.utils.odict()
-        bmaint = bauth = bedit = bpub = 0
-        for rel in rels:
-            doc = rel.subj
-            if doc.branchable_id in brs:
-                continue
-            brs.append (doc.branchable_id)
-            docs[doc] = rel
-        box = pulse.html.InfoBox (pulse.utils.gettext ('Documents'))
-        box.set_id ('documents')
-        columns.add_to_column (1, box)
-        for doc in docs:
-            lbox = box.add_link_box (doc)
-            rel = docs[doc]
-            if rel.maintainer:
-                lbox.add_badge ('maintainer')
-                bmaint += 1
-            if rel.author:
-                lbox.add_badge ('author')
-                bauth += 1
-            if rel.editor:
-                lbox.add_badge ('editor')
-                bedit += 1
-            if rel.publisher:
-                lbox.add_badge ('publisher')
-                bpub += 1
-        if 0 < bmaint < len(docs):
-            box.add_badge_filter ('maintainer')
-        if 0 < bauth < len(docs):
-            box.add_badge_filter ('author')
-        if 0 < bedit < len(docs):
-            box.add_badge_filter ('editor')
-        if 0 < bpub < len(docs):
-            box.add_badge_filter ('publisher')
+    page.add_tab ('activity', pulse.utils.gettext ('Activity'))
+    page.add_tab ('hacking', pulse.utils.gettext ('Hacking'))
 
     page.output(fd=kw.get('fd'))
 
+    return 0
+
+
+def output_ajax_tab (person, **kw):
+    query = kw.get ('query', {})
+    page = pulse.html.Fragment (http=kw.get('http', True))
+    tab = query.get('tab', None)
+    if tab == 'info':
+        page.add_content (get_info_tab (person, **kw))
+    elif tab == 'activity':
+        page.add_content (get_activity_tab (person, **kw))
+    elif tab == 'hacking':
+        page.add_content (get_hacking_tab (person, **kw))
+    page.output(fd=kw.get('fd'))
     return 0
 
 
@@ -275,6 +201,115 @@ def output_ajax_graphmap (person, **kw):
     
     page.output(fd=kw.get('fd'))
     return 0
+
+
+def get_info_tab (person, **kw):
+    facts = pulse.html.FactsTable ()
+
+    if person.nick != None:
+        facts.add_fact (pulse.utils.gettext ('Nick'), person.nick)
+        facts.add_fact_divider ()
+    if person.email != None:
+        facts.add_fact (pulse.utils.gettext ('Email'),
+                       pulse.html.Link ('mailto:' + person.email, person.email))
+    if person.web != None:
+        facts.add_fact (pulse.utils.gettext ('Website'), pulse.html.Link (person.web))
+    facts.add_fact (pulse.utils.gettext ('Score'), str(person.mod_score))
+
+    return facts
+
+
+def get_activity_tab (person, **kw):
+    box = pulse.html.Div ()
+    of = db.OutputFile.objects.filter (type='graphs', ident=person.ident, filename='commits-0.png')
+    try:
+        of = of[0]
+        graph = pulse.html.Graph.activity_graph (of, person.pulse_url)
+        box.add_content (graph)
+    except IndexError:
+        pass
+
+    revs = db.Revision.select_revisions (person=person)
+    cnt = revs.count()
+    revs = revs[:10]
+    div = get_commits_div (person, revs,
+                           pulse.utils.gettext('Showing %i of %i commits:') % (len(revs), cnt))
+    box.add_content (div)
+    return box
+
+
+def get_hacking_tab (person, **kw):
+    columns = pulse.html.ColumnBox (2)
+
+    # Modules
+    rels = db.ModuleEntity.get_related (pred=person)
+    rels = pulse.utils.attrsorted (list(rels), ('subj', 'title'),
+                                   ('-', 'subj', 'is_default'),
+                                   ('-', 'subj', 'scm_branch'))
+    if len(rels) > 0:
+        brs = []
+        mods = pulse.utils.odict()
+        bmaint = 0
+        for rel in rels:
+            mod = rel.subj
+            if mod.branchable_id in brs:
+                continue
+            brs.append (mod.branchable_id)
+            mods[mod] = rel
+        box = pulse.html.InfoBox (pulse.utils.gettext ('Modules'))
+        box.set_id ('modules')
+        columns.add_to_column (0, box)
+        for mod in mods:
+            lbox = box.add_link_box (mod)
+            if rel.maintainer:
+                lbox.add_badge ('maintainer')
+                bmaint += 1
+        if 0 < bmaint < len(mods):
+            box.add_badge_filter ('maintainer')
+
+    # Documents
+    rels = db.DocumentEntity.get_related (pred=person)
+    rels = pulse.utils.attrsorted (list(rels), ('subj', 'title'),
+                                   ('-', 'subj', 'is_default'),
+                                   ('-', 'subj', 'scm_branch'))
+    if len(rels) > 0:
+        brs = []
+        docs = pulse.utils.odict()
+        bmaint = bauth = bedit = bpub = 0
+        for rel in rels:
+            doc = rel.subj
+            if doc.branchable_id in brs:
+                continue
+            brs.append (doc.branchable_id)
+            docs[doc] = rel
+        box = pulse.html.InfoBox (pulse.utils.gettext ('Documents'))
+        box.set_id ('documents')
+        columns.add_to_column (1, box)
+        for doc in docs:
+            lbox = box.add_link_box (doc)
+            rel = docs[doc]
+            if rel.maintainer:
+                lbox.add_badge ('maintainer')
+                bmaint += 1
+            if rel.author:
+                lbox.add_badge ('author')
+                bauth += 1
+            if rel.editor:
+                lbox.add_badge ('editor')
+                bedit += 1
+            if rel.publisher:
+                lbox.add_badge ('publisher')
+                bpub += 1
+        if 0 < bmaint < len(docs):
+            box.add_badge_filter ('maintainer')
+        if 0 < bauth < len(docs):
+            box.add_badge_filter ('author')
+        if 0 < bedit < len(docs):
+            box.add_badge_filter ('editor')
+        if 0 < bpub < len(docs):
+            box.add_badge_filter ('publisher')
+
+    return columns
 
 
 def get_commits_div (person, revs, title):
