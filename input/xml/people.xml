@@ -188,9 +188,12 @@
   <blog>http://blogs.gnome.org/shaunm/feed/</blog>
   <alias>
     <item>/person/gnome.org/shaunm</item>
+    <item>/person/shaunm@fastmail.net</item>
+    <item>/person/shaunm@gmail.com</item>
     <item>/person/shaunm@gnome.org</item>
     <item>/person/shaunm@localhost.localdomain</item>
     <item>/person/shaunm@window.gnome.org</item>
+    <item>/person/shaunm@wolfram.com</item>
   </alias>
 </person>
 

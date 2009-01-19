@@ -149,6 +149,11 @@ def update_alias (entity, alias, **kw):
         needs_update = True
         rel.pred = entity
         rel.save()
+    posts = db.ForumPost.objects.filter (author=rec)
+    for post in posts:
+        needs_update = True
+        post.author = entity
+        post.save()
     branches = db.Branch.objects.filter (mod_person=rec)
     for branch in branches:
         needs_update = True
