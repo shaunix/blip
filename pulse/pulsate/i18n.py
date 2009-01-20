@@ -48,12 +48,20 @@ def get_checkout (record, update=True):
     return checkouts[key]
 
 
-def update_intltool (po, **kw):
+def update_translation (po, **kw):
+    if not po.subtype in ('intltool', 'xml2po'):
+        pulse.utils.log ('Skipping translation %s with unknown type %s' %
+                         (po.ident, po.subtype))
+        return
+
     checkout = kw.pop('checkout', None)
     if checkout == None:
         checkout = get_checkout (po, update=kw.get('update', True))
 
-    potfile = get_intltool_potfile (po.parent, checkout, **kw)
+    if po.subtype == 'intltool':
+        potfile = get_intltool_potfile (po.parent, checkout, **kw)
+    else:
+        potfile = get_xml2po_potfile (po.parent, checkout, **kw)
     if potfile == None: return
 
     filepath = os.path.join (checkout.directory, po.scm_dir, po.scm_file)
@@ -72,19 +80,10 @@ def update_intltool (po, **kw):
                 pulse.utils.log ('Skipping file %s' % rel_scm)
                 return
 
-    podir = os.path.join (checkout.directory, po.scm_dir)
-    cmd = 'msgmerge "%s" "%s" 2>&1' % (po.scm_file, potfile.get_file_path())
-    owd = os.getcwd ()
-    try:
-        os.chdir (podir)
-        pulse.utils.log ('Processing file ' + rel_scm)
-        popo = pulse.parsers.Po (os.popen (cmd))
-        stats = popo.get_stats()
-        total = stats[0] + stats[1] + stats[2]
-        db.Statistic.set_statistic (po, pulse.utils.daynum(), 'Messages',
-                                    stats[0], stats[1], total)
-    finally:
-        os.chdir (owd)
+    if po.subtype == 'intltool':
+        update_intltool (po, checkout, potfile, rel_scm, **kw)
+    elif po.subtype == 'xml2po':
+        update_xml2po (po, checkout, potfile, rel_scm, **kw)
 
     of = db.OutputFile.objects.filter (type='l10n', ident=po.parent.ident, filename=po.scm_file)
     try:
@@ -98,7 +97,8 @@ def update_intltool (po, **kw):
     if not os.path.exists (outdir):
         os.makedirs (outdir)
     pulse.utils.log ('Copying PO file %s' % outfile_rel)
-    shutil.copyfile (os.path.join (podir, po.scm_file), os.path.join (outdir, po.scm_file))
+    shutil.copyfile (os.path.join (checkout.directory, po.scm_dir, po.scm_file),
+                     os.path.join (outdir, po.scm_file))
     of.datetime = datetime.datetime.now()
     of.data['revision'] = checkout.get_revision()
     of.save()
@@ -109,6 +109,25 @@ def update_intltool (po, **kw):
         po.mod_datetime = revision.datetime
         po.mod_person = revision.person
 
+    po.data['md5'] = potfile.data.get('md5', None)
+    po.save()
+    db.Timestamp.set_timestamp (rel_scm, mtime)
+
+
+def update_intltool (po, checkout, potfile, rel_scm, **kw):
+    podir = os.path.join (checkout.directory, po.scm_dir)
+    cmd = 'msgmerge "%s" "%s" 2>&1' % (po.scm_file, potfile.get_file_path())
+    owd = os.getcwd ()
+    try:
+        os.chdir (podir)
+        pulse.utils.log ('Processing file ' + rel_scm)
+        popo = pulse.parsers.Po (os.popen (cmd))
+        stats = popo.get_stats()
+        total = stats[0] + stats[1] + stats[2]
+        db.Statistic.set_statistic (po, pulse.utils.daynum(), 'Messages',
+                                    stats[0], stats[1], total)
+    finally:
+        os.chdir (owd)
     # FIXME: things like .desktop files might not be reprocessed because
     # they haven't changed, but translators might have updated the name
     # or description.  Rather than trying to make those things run when
@@ -117,35 +136,8 @@ def update_intltool (po, **kw):
     # for Application, Capplet, Applet, and Library and see if we can
     # provide an updated name or description.
 
-    po.data['md5'] = potfile.data.get('md5', None)
-    po.save()
-    db.Timestamp.set_timestamp (rel_scm, mtime)
 
-
-def update_xml2po (po, **kw):
-    checkout = kw.pop('checkout', None)
-    if checkout == None:
-        checkout = get_checkout (po, update=kw.get('update', True))
-
-    potfile = get_xml2po_potfile (po.parent, checkout, **kw)
-    if potfile == None: return
-
-    filepath = os.path.join (checkout.directory, po.scm_dir, po.scm_file)
-    if not os.path.exists (filepath):
-        pulse.utils.warn('Could not locate file %s for %s' % (po.scm_file, po.parent.ident))
-        return
-    rel_scm = pulse.utils.relative_path (filepath, pulse.config.scm_dir)
-    mtime = os.stat(filepath).st_mtime
-
-    if kw.get('timestamps', True):
-        stamp = db.Timestamp.get_timestamp (rel_scm)
-        if mtime <= stamp:
-            pomd5 = po.data.get('md5', None)
-            potmd5 = potfile.data.get('md5', None)
-            if pomd5 != None and pomd5 == potmd5:
-                pulse.utils.log ('Skipping file %s' % rel_scm)
-                return
-
+def update_xml2po (po, checkout, potfile, rel_scm, **kw):
     makedir = os.path.join (checkout.directory, os.path.dirname (po.scm_dir))
     cmd = 'msgmerge "%s" "%s" 2>&1' % (
         os.path.join (os.path.basename (po.scm_dir), po.scm_file),
@@ -176,16 +168,6 @@ def update_xml2po (po, **kw):
         elif popo.has_message (comment):
             po.data['figures'][figure]['comment'] = popo.get_translations (comment)[0]
 
-    files = [os.path.join (po.scm_dir, po.scm_file)]
-    revision = db.Revision.get_last_revision (branch=po.parent.parent, files=files)
-    if revision != None:
-        po.mod_datetime = revision.datetime
-        po.mod_person = revision.person
-
-    po.data['md5'] = potfile.data.get('md5', None)
-    po.save()
-    db.Timestamp.set_timestamp (rel_scm, mtime)
-    
 
 intltool_potfiles = {}
 def get_intltool_potfile (domain, checkout, **kw):
@@ -353,10 +335,4 @@ def main (argv, options={}):
                                         ident__startswith=prefix)
 
     for po in list(pos):
-        if po.subtype == 'intltool':
-            update_intltool (po, update=update, timestamps=timestamps)
-        elif po.subtype == 'xml2po':
-            update_xml2po (po, update=update, timestamps=timestamps)
-        else:
-            pulse.utils.log ('Skipping translation %s with unknown type %s' %
-                             (po.ident, po.subtype))
+        update_translation (po, update=update, timestamps=timestamps)

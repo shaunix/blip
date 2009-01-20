@@ -486,7 +486,7 @@ def process_podir (branch, checkout, podir, **kw):
 
     if kw.get('do_i18n', True):
         for po in translations:
-            pulse.pulsate.i18n.update_intltool (po, checkout=checkout, **kw)
+            pulse.pulsate.i18n.update_translation (po, checkout=checkout, **kw)
 
     db.Timestamp.set_timestamp (rel_scm, mtime)
 
@@ -532,7 +532,7 @@ def process_gdu_docdir (branch, checkout, docdir, makefile, **kw):
 
     if kw.get('do_i18n', True):
         for po in translations:
-            pulse.pulsate.i18n.update_xml2po (po, checkout=checkout, **kw)
+            pulse.pulsate.i18n.update_translation (po, checkout=checkout, **kw)
 
     return document
 
