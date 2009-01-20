@@ -193,7 +193,8 @@ def output_ajax_graphmap (person, **kw):
     of = db.OutputFile.objects.filter (type='graphs', ident=person.ident, filename=filename)
     try:
         of = of[0]
-        graph = pulse.html.Graph.activity_graph (of, person.pulse_url,
+        graph = pulse.html.Graph.activity_graph (of, person.pulse_url, 'commits',
+                                                 pulse.utils.gettext ('%i commits'),
                                                  count=int(id), num=int(num), map_only=True)
         page.add_content (graph)
     except IndexError:
@@ -224,7 +225,8 @@ def get_activity_tab (person, **kw):
     of = db.OutputFile.objects.filter (type='graphs', ident=person.ident, filename='commits-0.png')
     try:
         of = of[0]
-        graph = pulse.html.Graph.activity_graph (of, person.pulse_url)
+        graph = pulse.html.Graph.activity_graph (of, person.pulse_url, 'commits',
+                                                 pulse.utils.gettext ('%i commits'))
         box.add_content (graph)
     except IndexError:
         pass

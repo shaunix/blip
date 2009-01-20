@@ -50,6 +50,10 @@ def main (path, query, http=True, fd=None):
 
     if query.get('ajax', None) == 'tab':
         return output_ajax_tab (mlist, **kw)
+    elif query.get('ajax', None) == 'graphmap':
+        return output_ajax_graphmap (mlist, **kw)
+    elif query.get('ajax', None) == 'posts':
+        return output_ajax_posts (mlist, **kw)
     else:
         return output_list (mlist, **kw)
 
@@ -119,6 +123,58 @@ def output_ajax_tab (mlist, **kw):
     return 0
 
 
+def output_ajax_graphmap (mlist, **kw):
+    query = kw.get ('query', {})
+    page = pulse.html.Fragment (http=kw.get('http', True))
+    id = query.get('id')
+    num = query.get('num')
+    filename = query.get('filename')
+    
+    of = db.OutputFile.objects.filter (type='graphs', ident=mlist.ident, filename=filename)
+    try:
+        of = of[0]
+        graph = pulse.html.Graph.activity_graph (of, mlist.pulse_url, 'posts',
+                                                 pulse.utils.gettext ('%i posts'),
+                                                 count=int(id), num=int(num), map_only=True)
+        page.add_content (graph)
+    except IndexError:
+        pass
+    
+    page.output(fd=kw.get('fd'))
+    return 0
+
+
+def output_ajax_posts (mlist, **kw):
+    query = kw.get ('query', {})
+    page = pulse.html.Fragment (http=kw.get('http', True))
+    weeknum = query.get('weeknum', None)
+    if weeknum != None:
+        weeknum = int(weeknum)
+    else:
+        weeknum = pulse.utils.weeknum ()
+    thisweek = pulse.utils.weeknum ()
+    ago = thisweek - weeknum
+    posts = db.ForumPost.objects.filter (forum=mlist,
+                                         weeknum=weeknum,
+                                         datetime__isnull=False)
+    cnt = posts.count()
+    posts = posts[:30]
+    if ago == 0:
+        title = (pulse.utils.gettext('Showing %i of %i posts from this week:')
+                 % (len(posts), cnt))
+    elif ago == 1:
+        title = (pulse.utils.gettext('Showing %i of %i posts from last week:')
+                 % (len(posts), cnt))
+    else:
+        title = (pulse.utils.gettext('Showing %i of %i posts from %i weeks ago:')
+                 % (len(posts), cnt, ago))
+
+    div = get_posts_div (mlist, posts, title)
+    page.add_content (div)
+    page.output(fd=kw.get('fd'))
+    return 0
+
+
 def get_info_tab (mlist, **kw):
     facts = pulse.html.FactsTable()
     try:
@@ -145,25 +201,40 @@ def get_activity_tab (mlist, **kw):
     of = db.OutputFile.objects.filter (type='graphs', ident=mlist.ident, filename='posts-0.png')
     try:
         of = of[0]
-        graph = pulse.html.Graph.activity_graph (of, mlist.pulse_url)
+        graph = pulse.html.Graph.activity_graph (of, mlist.pulse_url, 'posts',
+                                                 pulse.utils.gettext ('%i posts'))
         box.add_content (graph)
     except IndexError:
         pass
 
-    table = pulse.html.Table()
+    table = pulse.html.Table(widget_id='posts')
     box.add_content (table)
 
     weeknum = pulse.utils.weeknum()
     posts = db.ForumPost.objects.filter (forum=mlist,
                                          weeknum=weeknum,
                                          datetime__isnull=False)
-    posts = posts.order_by ('-datetime')
-    for post in posts[:30]:
+    cnt = posts.count()
+    posts = posts[:30]
+    title = (pulse.utils.gettext('Showing %i of %i posts from this week:')
+             % (len(posts), cnt))
+    box.add_content (get_posts_div (mlist, posts, title))
+
+    return box
+
+
+def get_posts_div (mlist, posts, title):
+    div = pulse.html.Div (widget_id='posts')
+    div.add_content (title)
+    table = pulse.html.Table ()
+    div.add_content (table)
+
+    for post in posts:
         table.add_row (pulse.html.EllipsizedLabel (post.title, 40, truncate=True),
                        post.datetime.strftime('%Y-%m-%d'),
                        pulse.html.Link (post.author))
 
-    return box
+    return div
 
 
 def get_members_box (mlist):

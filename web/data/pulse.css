@@ -85,7 +85,7 @@ table { margin: 0; padding: 0; border-collapse: collapse; }
 tr { margin: 0; padding: 0; }
 td { margin: 0; padding: 0; vertical-align: top; }
 
-div.table td { padding: 0 0.5em 0 0.5em; overflow: hidden; }
+div.table td { padding: 0 1em 0 0; overflow: hidden; }
 
 div.ul { margin: 0.2em 0 0 0; }
 ul {

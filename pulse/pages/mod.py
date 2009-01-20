@@ -307,7 +307,8 @@ def output_ajax_graphmap (module, **kw):
     of = db.OutputFile.objects.filter (type='graphs', ident=module.ident, filename=filename)
     try:
         of = of[0]
-        graph = pulse.html.Graph.activity_graph (of, module.pulse_url,
+        graph = pulse.html.Graph.activity_graph (of, module.pulse_url, 'commits',
+                                                 pulse.utils.gettext ('%i commits'),
                                                  count=int(id), num=int(num), map_only=True)
         page.add_content (graph)
     except IndexError:
@@ -444,7 +445,8 @@ def get_activity_tab (module, **kw):
     of = db.OutputFile.objects.filter (type='graphs', ident=module.ident, filename='commits-0.png')
     try:
         of = of[0]
-        graph = pulse.html.Graph.activity_graph (of, module.pulse_url)
+        graph = pulse.html.Graph.activity_graph (of, module.pulse_url, 'commits',
+                                                 pulse.utils.gettext ('%i commits'))
         box.add_content (graph)
     except IndexError:
         pass
@@ -562,7 +564,7 @@ def get_component_info_box (module, branchtype, title):
 
 
 def get_commits_div (module, revs, title):
-    div = pulse.html.Div (id='commits')
+    div = pulse.html.Div (widget_id='commits')
     div.add_content (title)
     dl = pulse.html.DefinitionList()
     div.add_content (dl)

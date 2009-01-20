@@ -1355,14 +1355,14 @@ class Graph (Widget):
                 p (fd, '</td></tr></table>')
 
     @classmethod
-    def activity_graph (cls, of, url, **kw):
+    def activity_graph (cls, outfile, url, boxid, title, **kw):
         """A convenience constructor to make an activity graph from an OutputFile."""
         kw.setdefault ('links', True)
-        kw.setdefault ('width', of.data.get('width'))
-        kw.setdefault ('height', of.data.get('height'))
-        graph = cls (of.pulse_url, **kw)
+        kw.setdefault ('width', outfile.data.get('width'))
+        kw.setdefault ('height', outfile.data.get('height'))
+        graph = cls (outfile.pulse_url, **kw)
         thisweek = pulse.utils.weeknum (datetime.datetime.now())
-        for (coords, tot, weeknum) in of.data.get ('coords', []):
+        for (coords, tot, weeknum) in outfile.data.get ('coords', []):
             ago = thisweek - weeknum
             if ago == 0:
                 label = pulse.utils.gettext ('this week:')
@@ -1371,9 +1371,9 @@ class Graph (Widget):
             else:
                 label = (pulse.utils.gettext ('week of %s:') %
                          pulse.utils.weeknumday(weeknum).strftime('%Y-%m-%d'))
-            cmt = pulse.utils.gettext ('%i commits') % tot
-            jslink = 'javascript:replace(\'commits\', '
-            jslink += '\'%s?ajax=commits&weeknum=%i\')' % (url, weeknum)
+            cmt = title % tot
+            jslink = 'javascript:replace(\'' + boxid + '\', '
+            jslink += ('\'%s?ajax=' + boxid + '&weeknum=%i\')') % (url, weeknum)
             graph.add_comment (coords, label, cmt, jslink)
         return graph
 
