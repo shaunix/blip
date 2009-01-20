@@ -28,8 +28,6 @@ import pulse.utils
 
 import pulse.pages.mod
 
-people_cache = pulse.pages.mod.people_cache
-
 def main (path, query, http=True, fd=None):
     """Output information about applications"""
     if len(path) == 4:

@@ -25,8 +25,6 @@ import pulse.html
 import pulse.models as db
 import pulse.utils
 
-people_cache = {}
-
 def main (path, query, http=True, fd=None):
     """Output information about release sets"""
     kw = {'path' : path, 'query' : query, 'http' : http, 'fd' : fd}
@@ -226,9 +224,7 @@ def get_modules_tab (rset, **kw):
             span.add_class ('mtime')
             if mod.mod_person_id != None:
                 span.add_content (pulse.utils.gettext ('by'))
-                if not people_cache.has_key (mod.mod_person_id):
-                    people_cache[mod.mod_person_id] = mod.mod_person
-                person = people_cache[mod.mod_person_id]
+                person = db.Entity.get_cached (mod.mod_person_id)
                 span.add_content (pulse.html.Link (person))
             lbox.add_fact (pulse.utils.gettext ('modified'), span)
         if mod.mod_score != None:
@@ -274,9 +270,7 @@ def get_documents_tab (rset, **kw):
             span.add_class ('mtime')
             if doc.mod_person_id != None:
                 span.add_content (pulse.utils.gettext ('by'))
-                if not people_cache.has_key (doc.mod_person_id):
-                    people_cache[doc.mod_person_id] = doc.mod_person
-                person = people_cache[doc.mod_person_id]
+                person = db.Entity.get_cached (doc.mod_person_id)
                 span.add_content (pulse.html.Link (person))
             lbox.add_fact (pulse.utils.gettext ('modified'), span)
         if doc.mod_score != None:

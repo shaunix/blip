@@ -316,6 +316,21 @@ class PulseRecord (object):
         rec, cr = cls.objects.get_or_create (ident=ident, type=type)
         return rec
 
+    cached_records = {}
+
+    @classmethod
+    def get_cached (cls, record_id):
+        cls.cached_records.setdefault (cls, {})
+        if not cls.cached_records[cls].has_key (record_id):
+            cls.cached_records[cls][record_id] = cls.objects.get (id=record_id)
+        return cls.cached_records[cls][record_id]
+
+    @classmethod
+    def set_cached (cls, record_id, record):
+        cls.cached_records.setdefault (cls, {})
+        cls.cached_records[cls][record_id] = record
+        return cls.cached_records[cls][record_id]
+
     # Convenience routine to set multiple attributes
     def update (self, data={}, **kw):
         for key, val in data.items() + kw.items():

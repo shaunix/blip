@@ -29,8 +29,6 @@ import pulse.html
 import pulse.scm
 import pulse.utils
 
-people_cache = {}
-
 def main (path, query, http=True, fd=None):
     if len(path) == 3:
         branchables = db.Branchable.objects.filter(ident=('/' + '/'.join(path)))
@@ -422,8 +420,8 @@ def get_info_tab (module, **kw):
         span.add_content (module.mod_datetime.strftime('%Y-%m-%d %T'))
         if module.mod_person != None:
             span.add_content (' by ')
-            people_cache[module.mod_person.id] = module.mod_person
-            span.add_content (pulse.html.Link (module.mod_person))
+            person = db.Entity.set_cached (module.mod_person.id, module.mod_person)
+            span.add_content (pulse.html.Link (person))
         facts.add_fact (pulse.utils.gettext ('Last Modified'), span)
 
     if module.data.has_key ('tarname'):
@@ -534,7 +532,7 @@ def get_developers_box (module):
         people = {}
         for rel in rels:
             people[rel.pred] = rel
-            people_cache[rel.pred.id] = rel.pred
+            db.Entity.set_cached (rel.pred.id, rel.pred)
         for person in pulse.utils.attrsorted (people.keys(), 'title'):
             lbox = box.add_link_box (person)
             rel = people[person]
@@ -579,9 +577,7 @@ def get_commits_div (module, revs, title):
         span.add_content ('on')
         span.add_content (rev.datetime.strftime('%Y-%m-%d %T'))
         span.add_content ('by')
-        if not rev.person_id in people_cache:
-            people_cache[rev.person_id] = rev.person
-        person = people_cache[rev.person_id]
+        person = db.Entity.get_cached (rev.person_id)
         span.add_content (pulse.html.Link (person))
         dl.add_term (span)
         dl.add_entry (pulse.html.PopupLink.from_revision (rev, branch=module))

@@ -31,8 +31,6 @@ import pulse.models as db
 import pulse.scm
 import pulse.utils
 
-people_cache = {}
-
 def main (path, query, http=True, fd=None):
     """Output information about documents"""
     if len(path) == 4:
@@ -153,7 +151,7 @@ def output_doc (doc, **kw):
         people = {}
         for rel in rels:
             people[rel.pred] = rel
-            people_cache[rel.pred.id] = rel.pred
+            db.Entity.set_cached (rel.pred.id, rel.pred)
         for person in pulse.utils.attrsorted (people.keys(), 'title'):
             lbox = box.add_link_box (person)
             rel = people[person]
@@ -456,9 +454,7 @@ def get_xmlfiles (doc, xmlfiles):
             mspan.add_class ('mtime')
             span.add_content (mspan)
             span.add_content (' by ')
-            if not commit.person_id in people_cache:
-                people_cache[commit.person_id] = commit.person
-            person = people_cache[commit.person_id]
+            person = db.Entity.get_cached (commit.person_id)
             span.add_content (pulse.html.Link (person))
             dl.add_entry (span)
     return cont
@@ -493,9 +489,7 @@ def get_figures (doc, figures):
                 mspan.add_class ('mtime')
                 span.add_content (mspan)
                 span.add_content (' by ')
-                if not commit.person_id in people_cache:
-                    people_cache[commit.person_id] = commit.person
-                person = people_cache[commit.person_id]
+                person = db.Entity.get_cached (commit.person_id)
                 span.add_content (pulse.html.Link (person))
                 dl.add_entry (span)
             if figures[figure].get('comment', '') != '':
@@ -521,9 +515,7 @@ def get_commits_div (doc, revs, title):
         span.add_content ('on')
         span.add_content (rev.datetime.strftime('%Y-%m-%d %T'))
         span.add_content ('by')
-        if not rev.person_id in people_cache:
-            people_cache[rev.person_id] = rev.person
-        person = people_cache[rev.person_id]
+        person = db.Entity.get_cached (rev.person_id)
         span.add_content (pulse.html.Link (person))
         dl.add_term (span)
         dl.add_entry (pulse.html.PopupLink.from_revision (rev, branch=doc.parent))
