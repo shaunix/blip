@@ -1308,7 +1308,7 @@ class Graph (Widget):
                 p (fd, '>', None, False)
         else:
             if not self._map_only:
-                p (fd, '<img src="%s" usemap="#graphmap%i-%i" ismap',
+                p (fd, '<img src="%s" class="graphmap" usemap="#graphmap%i-%i" ismap',
                    (self._url, self._count, self._num), False)
                 if self._width != None:
                     p (fd, ' width="i"', self._width, False)

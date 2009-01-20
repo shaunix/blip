@@ -391,6 +391,7 @@ div.graph {
   margin: 0 0 12px 0;
   padding: 0;
 }
+img.graphmap { cursor: crosshair; }
 table.graph { margin: 0 0 12px 0; }
 table.graph div.graph { margin: 0; }
 table.graph td { line-height: 0; }
