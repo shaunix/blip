@@ -32,8 +32,6 @@ import pulse.parsers
 import pulse.scm
 import pulse.utils
 
-people_cache = {}
-
 def main (path, query, http=True, fd=None):
     """Output information about translations"""
     ident = '/' + '/'.join(path)
@@ -120,13 +118,14 @@ def output_translation (po, branchable, **kw):
             entry.set_comment (pofile.get_comment (msgkey))
             if pofile.has_message (msgkey):
                 entry.set_translated (pofile.get_translations (msgkey))
-    except IndexError:
+    except:
         pass
 
     # Figures
     if parent.type == 'Document':
         figures = sorted (parent.data.get('figures', []))
         if len(figures) > 0:
+            page.add_fact ('foo', 'bar')
             ofs = db.OutputFile.objects.filter (type='figures', ident=parent.ident,
                                                 subdir__in=['C', lang])
             ofs_by_source_C = {}
@@ -137,7 +136,7 @@ def output_translation (po, branchable, **kw):
                 else:
                     ofs_by_source_lc[of.source] = of
             box = pulse.html.InfoBox (pulse.utils.gettext ('Figures'))
-            columns.add_to_column (1, box)
+            page.add_content (box)
             dl = pulse.html.DefinitionList ()
             box.add_content (dl)
             for figure in figures:
@@ -167,9 +166,7 @@ def output_translation (po, branchable, **kw):
                         mspan.add_class ('mtime')
                         span.add_content (mspan)
                         span.add_content (' by ')
-                        if not commit.person_id in people_cache:
-                            people_cache[commit.person_id] = commit.person
-                        person = people_cache[commit.person_id]
+                        person = db.Entity.get_cached (commit.person_id)
                         span.add_content (pulse.html.Link (person))
                         dl.add_entry (span)
                 else:

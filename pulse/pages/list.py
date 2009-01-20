@@ -230,9 +230,10 @@ def get_posts_div (mlist, posts, title):
     div.add_content (table)
 
     for post in posts:
+        author = db.Entity.get_cached (post.author_id)
         table.add_row (pulse.html.EllipsizedLabel (post.title, 40, truncate=True),
                        post.datetime.strftime('%Y-%m-%d'),
-                       pulse.html.Link (post.author))
+                       pulse.html.Link (author))
 
     return div
 
