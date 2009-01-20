@@ -108,12 +108,12 @@ class BarGraph (Graph):
             width = kw.get ('width', len(stats))
             line_width = 1
             def get_left (i):
-                return i + 0.5
+                return i
         else:
-            width = kw.get ('width', 3 * len(stats))
-            line_width = 2
+            width = kw.get ('width', 5 * len(stats))
+            line_width = 4
             def get_left (i):
-                return (3 * i) + 1
+                return 5 * i
         height = kw.get ('height', 40)
         Graph.__init__ (self, width=width, height=height)
         self.context.set_antialias (cairo.ANTIALIAS_GRAY)
@@ -123,8 +123,12 @@ class BarGraph (Graph):
             stat = stats[i] / (top * 1.0) 
             self.context.new_path ()
             self.context.set_line_width (line_width)
-            self.context.move_to (get_left (i), self.height)
-            self.context.rel_line_to (0, -0.5 - (self.height * min(stat, 1)))
+            barleft = get_left (i)
+            bartop = self.height - (self.height * min(stat, 1))
+            self.context.move_to (barleft, self.height)
+            self.context.line_to (barleft, bartop)
+            self.context.line_to (barleft + line_width, bartop)
+            self.context.line_to (barleft + line_width, self.height)
             self.context.close_path ()
             if stat > 1:
                 value = alum_hsv[2] / stat
@@ -132,7 +136,7 @@ class BarGraph (Graph):
                     *colorsys.hsv_to_rgb (alum_hsv[0], alum_hsv[1], value))
             else:
                 self.context.set_source_rgb (*alum_rgb)
-            self.context.stroke ()
+            self.context.fill ()
 
     def get_coords (self):
         """
@@ -145,7 +149,7 @@ class BarGraph (Graph):
         """
         # FIXME: this is wrong for tight=True, but we're not using coords
         # for tight graphs, so it doesn't matter much.
-        return [(3*i, 0, 3*i + 2, self.height) for i in range(len(self._stats))]
+        return [(5*i, 0, 5*i + 4, self.height) for i in range(len(self._stats))]
 
 
 class LineGraph (Graph):
