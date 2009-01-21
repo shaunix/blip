@@ -1322,8 +1322,8 @@ class Graph (Widget):
                 i += 1
                 p (fd, '<area shape="rect" coords="%s"',
                    ','.join(map(str, comment[0])), False)
-                p (fd, ' onmouseover="javascript:comment(%i, %i, %i, %i)"',
-                   (self._count, self._num, i, comment[0][0]), False)
+                p (fd, ' onmouseover="javascript:comment(%i, %i, %i, %i, %i)"',
+                   (self._count, self._num, i, comment[0][0], comment[0][2]), False)
                 p (fd, ' onmouseout="javascript:comment(%i, %i, %i)"',
                    (self._count, self._num, i), False)
                 if comment[2] != None:

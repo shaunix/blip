@@ -598,7 +598,7 @@ function slide (id, dir) {
     curdiv.css({
       top: curdiv.offset().top
     });
-    newimg = $('<img src="' + newsrc + '" usemap="#' + newmapid + '" ismap>');
+    newimg = $('<img src="' + newsrc + '" class="graphmap" usemap="#' + newmapid + '" ismap>');
     newimg.css({
       marginLeft: dir * width
     });
@@ -669,20 +669,66 @@ function slidecalc(src, dir) {
 /******************************************************************************/
 /** Graph comments **/
 
-function comment (count, num, j, x) {
+function comment (count, num, j, x1, x2) {
+  var graph = $('#graph-' + count);
+  var offset = graph.offset();
+  var targetw;
+  var targete;
+  var targetn = $('#graphtarget-' + count + 'n');
+  if (targetn.length == 0) {
+    $('body').append ($('<div class="graphtarget" id="graphtarget-' + count + 'n"></div>'));
+    targetn = $('#graphtarget-' + count + 'n');
+    targetn.css ({
+      borderBottom: 'solid 1px',
+      lineHeight: 0, height: 0,
+      top: offset.top - 1
+    });
+    $('body').append ($('<div class="graphtarget" id="graphtarget-' + count + 'w"></div>'));
+    targetw = $('#graphtarget-' + count + 'w');
+    targetw.css ({
+      borderRight: 'solid 1px',
+      lineHeight: graph.height() + 1, height: graph.height() + 1,
+      top: offset.top - 1
+    });
+    $('body').append ($('<div class="graphtarget" id="graphtarget-' + count + 'e"></div>'));
+    targete = $('#graphtarget-' + count + 'e');
+    targete.css ({
+      borderLeft: 'solid 1px',
+      lineHeight: graph.height() + 1, height: graph.height() + 1,
+      top: offset.top - 1
+    });
+  } else {
+    targetw = $('#graphtarget-' + count + 'w');
+    targete = $('#graphtarget-' + count + 'e');
+  }
+
   var el = $('#comment-' + count + '-' + num + '-' + j);
   if (el.css('display') != 'block') {
     $('.comment').css('display', 'none');
-    var graph = $('#graph-' + count);
-    var offset = graph.offset();
     el.css({
-      left: offset.left + x - 10,
+      left: offset.left + x1 - 1,
       top: offset.top + graph.height(),
       zIndex: 20
     });
     el.css('display', 'block');
+    targetn.css ({
+      width: x2 - x1 + 2,
+      left: offset.left + x1 - 1,
+      display: 'block'
+    });
+    targetw.css ({
+      left: offset.left + x1 - 1,
+      display: 'block'
+    })
+    targete.css ({
+      left: offset.left + x2,
+      display: 'block'
+    })
   } else {
     el.css('display', 'none');
+    targetn.css ('display', 'none');
+    targetw.css ('display', 'none');
+    targete.css ('display', 'none');
   }
 }
 
