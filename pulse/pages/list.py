@@ -157,17 +157,16 @@ def output_ajax_posts (mlist, **kw):
     posts = db.ForumPost.objects.filter (forum=mlist,
                                          weeknum=weeknum,
                                          datetime__isnull=False)
-    cnt = posts.count()
-    posts = posts[:30]
+    posts = list(posts)
     if ago == 0:
-        title = (pulse.utils.gettext('Showing %i of %i posts from this week:')
-                 % (len(posts), cnt))
+        title = (pulse.utils.gettext('Showing %i posts from this week:')
+                 % len(posts))
     elif ago == 1:
-        title = (pulse.utils.gettext('Showing %i of %i posts from last week:')
-                 % (len(posts), cnt))
+        title = (pulse.utils.gettext('Showing %i posts from last week:')
+                 % len(posts))
     else:
-        title = (pulse.utils.gettext('Showing %i of %i posts from %i weeks ago:')
-                 % (len(posts), cnt, ago))
+        title = (pulse.utils.gettext('Showing %i posts from %i weeks ago:')
+                 % (len(posts), ago))
 
     div = get_posts_div (mlist, posts, title)
     page.add_content (div)
@@ -211,10 +210,8 @@ def get_activity_tab (mlist, **kw):
     posts = db.ForumPost.objects.filter (forum=mlist,
                                          weeknum=weeknum,
                                          datetime__isnull=False)
-    cnt = posts.count()
-    posts = posts[:30]
-    title = (pulse.utils.gettext('Showing %i of %i posts from this week:')
-             % (len(posts), cnt))
+    posts = list(posts)
+    title = pulse.utils.gettext ('Showing %i posts from this week') % len(posts)
     box.add_content (get_posts_div (mlist, posts, title))
 
     return box
@@ -226,14 +223,39 @@ def get_posts_div (mlist, posts, title):
     table = pulse.html.Table ()
     div.add_content (table)
 
+    byid = pulse.utils.odict ()
     for post in posts:
+        byid.setdefault (post.id, {'post': None, 'children': []})
+        byid[post.id]['post'] = post
+        if post.parent_id != None:
+            byid.setdefault (post.parent_id, {'post': None, 'children': []})
+            byid[post.parent_id]['children'].append (post.id)
+    def add_row (key, post, depth):
         author = db.Entity.get_cached (post.author_id)
-        title = pulse.html.EllipsizedLabel (post.title, 40, truncate=True)
+        depth = min (depth, 8)
+        # FIXME: would be better to do this with colspan so that line wraps
+        # don't look funky.  But we'll have to change html.Table for that.
+        prefix = '\xc2\xa0' * (2 * depth)
+        title = pulse.html.EllipsizedLabel (post.title, 40 - depth, truncate=True)
         if post.web != None:
             title = pulse.html.Link (post.web, title)
+        title = pulse.html.Span (prefix, title)
         table.add_row (title,
                        post.datetime.strftime('%Y-%m-%d'),
                        pulse.html.Link (author))
+        for child in byid[key]['children']:
+            childpost = byid[child]['post']
+            if childpost == None:
+                continue
+            add_row (child, childpost, depth + 1)
+    for key in byid.keys():
+        post = byid[key]['post']
+        if post == None:
+            continue
+        if post.parent_id != None:
+            if byid.get (post.parent_id, {'post': None})['post'] != None:
+                continue
+        add_row (key, post, 0)
 
     return div
 
