@@ -321,6 +321,60 @@ $.fn.pulse_init = function () {
       return false;
     })
   });
+
+  /** Graph Maps **/
+  if (this.is ('img.graphmap'))
+    var graphmaps = this;
+  else
+    var graphmaps = this.find ('img.graphmap');
+  graphmaps.each (function () {
+    var graphmap = $(this);
+    var dat = graphmap.attr('id').split('-');
+    var count = dat[1];
+    var num = dat[2];
+    var target = $('#graphtarget-' + count);
+    var div = $('div#graph-' + count);
+    if (target.length == 0) {
+      div.append ('<a class="graphtarget" id="graphtarget-' + count + '"></a>');
+      target = $('#graphtarget-' + count);
+      div.bind ("mouseleave", function () {
+        target.fadeOut ('fast');
+        div.find ('.comment').fadeOut ('fast');
+      });
+    }
+    graphmap.mousemove (function (e) {
+      var offset = graphmap.offset();
+      var i = e.clientX - offset.left;
+      var comment;
+      while (i >= 0) {
+        comment = $('#comment-' + count + '-' + num + '-' + i);
+        if (comment.length > 0)
+          break;
+        i -= 1;
+      }
+      if (comment.length != 1)
+        return;
+      if (comment.is (':hidden')) {
+        div.find ('.comment').css ('display', 'none');
+        comment.css ({
+          left: offset.left + i - 1,
+          top: offset.top + graphmap.height(),
+          zIndex: 20,
+          display: 'block'
+        });
+        target.attr ('href', comment.attr('href'));
+        target.css ({
+          top: offset.top - 1,
+          left: offset.left + i - 1,
+          height: graphmap.height(),
+          lineHeight: graphmap.height(),
+          width: 4,
+          display: 'block'
+        });
+        target.blur();
+      }
+    });
+  });
 }
 
 $(document).ready (function () { $('html').pulse_init(); });
@@ -563,9 +617,8 @@ function slide (id, dir) {
   var cursrc = curimg.attr('src');
   var newdata = slidecalc(cursrc, dir);
   var newsrc = newdata.src;
-  var newmapid = 'graphmap' + id + '-' + newdata.num;
-  var newmap = $('#' + newmapid);
-  if (newmap.length == 0) {
+  var newcmt = $('#comments-' + id + '-' + newdata.num);
+  if (newcmt.length == 0) {
     var filename = newdata.filename;
     var graphurl = pulse_url + '?ajax=graphmap&id=' + id + '&num=' + newdata.num + '&filename=' + filename;
     $.get(graphurl, function (data) {
@@ -598,7 +651,8 @@ function slide (id, dir) {
     curdiv.css({
       top: curdiv.offset().top
     });
-    newimg = $('<img src="' + newsrc + '" class="graphmap" usemap="#' + newmapid + '" ismap>');
+    var newimgid = 'graphmap-' + id + '-' + newdata.num;
+    newimg = $('<img src="' + newsrc + '" class="graphmap" id="' + newimgid + '">');
     newimg.css({
       marginLeft: dir * width
     });
@@ -629,7 +683,8 @@ function slide (id, dir) {
         clearInterval(div[0].timer);
         div[0].timer = undefined;
         curdiv.remove();
-        div.css ({overflow: 'normal'});
+        div.css ({overflow: 'visible'});
+        newimg.pulse_init ();
       }
     };
     if (dir == -1) {
@@ -663,73 +718,6 @@ function slidecalc(src, dir) {
     src: newsrc,
     num: newnum
   };
-}
-
-
-/******************************************************************************/
-/** Graph comments **/
-
-function comment (count, num, j, x1, x2) {
-  var graph = $('#graph-' + count);
-  var offset = graph.offset();
-  var targetw;
-  var targete;
-  var targetn = $('#graphtarget-' + count + 'n');
-  if (targetn.length == 0) {
-    $('body').append ($('<div class="graphtarget" id="graphtarget-' + count + 'n"></div>'));
-    targetn = $('#graphtarget-' + count + 'n');
-    targetn.css ({
-      borderBottom: 'solid 1px',
-      lineHeight: 0, height: 0,
-      top: offset.top - 1
-    });
-    $('body').append ($('<div class="graphtarget" id="graphtarget-' + count + 'w"></div>'));
-    targetw = $('#graphtarget-' + count + 'w');
-    targetw.css ({
-      borderRight: 'solid 1px',
-      lineHeight: graph.height() + 1, height: graph.height() + 1,
-      top: offset.top - 1
-    });
-    $('body').append ($('<div class="graphtarget" id="graphtarget-' + count + 'e"></div>'));
-    targete = $('#graphtarget-' + count + 'e');
-    targete.css ({
-      borderLeft: 'solid 1px',
-      lineHeight: graph.height() + 1, height: graph.height() + 1,
-      top: offset.top - 1
-    });
-  } else {
-    targetw = $('#graphtarget-' + count + 'w');
-    targete = $('#graphtarget-' + count + 'e');
-  }
-
-  var el = $('#comment-' + count + '-' + num + '-' + j);
-  if (el.css('display') != 'block') {
-    $('.comment').css('display', 'none');
-    el.css({
-      left: offset.left + x1 - 1,
-      top: offset.top + graph.height(),
-      zIndex: 20
-    });
-    el.css('display', 'block');
-    targetn.css ({
-      width: x2 - x1 + 2,
-      left: offset.left + x1 - 1,
-      display: 'block'
-    });
-    targetw.css ({
-      left: offset.left + x1 - 1,
-      display: 'block'
-    })
-    targete.css ({
-      left: offset.left + x2,
-      display: 'block'
-    })
-  } else {
-    el.css('display', 'none');
-    targetn.css ('display', 'none');
-    targetw.css ('display', 'none');
-    targete.css ('display', 'none');
-  }
 }
 
 

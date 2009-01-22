@@ -1298,45 +1298,23 @@ class Graph (Widget):
             if self._links:
                 p (fd, '<table class="graph"><tr><td colspan="2">', None, False)
             p (fd, '<div class="graph" id="graph-%i">', self._count, False)
-        if len(self._comments) == 0:
-            if not self._map_only:
-                p (fd, '<img src="%s"', self._url, False)
-                if self._width != None:
-                    p (fd, ' width="%i"', self._width, False)
-                if self._height != None:
-                    p (fd, ' height="%i"', self._height, False)
-                p (fd, '>', None, False)
-        else:
-            if not self._map_only:
-                p (fd, '<img src="%s" class="graphmap" usemap="#graphmap%i-%i" ismap',
-                   (self._url, self._count, self._num), False)
-                if self._width != None:
-                    p (fd, ' width="i"', self._width, False)
-                if self._height != None:
-                    p (fd, ' height="i"', self._height, False)
-                p (fd, '>', None, False)
-            p (fd, '<div class="comments">', None, False)
-            p (fd, '<map name="graphmap%i-%i">', (self._count, self._num))
-            i = 0
+            p (fd, '<img src="%s"', self._url, False)
+            if len(self._comments) > 0:
+                p (fd, ' class="graphmap" id="graphmap-%i-%i" ',
+                   (self._count, self._num), False)
+            if self._width != None:
+                p (fd, ' width="%i"', self._width, False)
+            if self._height != None:
+                p (fd, ' height="%i"', self._height, False)
+            p (fd, '>', None, False)
+        if len(self._comments) > 0:
+            p (fd, '<div class="comments" id="comments-%i-%i">',
+               (self._count, self._num), False)
             for comment in self._comments:
-                i += 1
-                p (fd, '<area shape="rect" coords="%s"',
-                   ','.join(map(str, comment[0])), False)
-                p (fd, ' onmouseover="javascript:comment(%i, %i, %i, %i, %i)"',
-                   (self._count, self._num, i, comment[0][0], comment[0][2]), False)
-                p (fd, ' onmouseout="javascript:comment(%i, %i, %i)"',
-                   (self._count, self._num, i), False)
-                if comment[2] != None:
-                    p (fd, ' href="%s"', comment[3])
-                p (fd, '>')
-            p (fd, '</map>')
-            i = 0
-            for comment in self._comments:
-                i += 1
-                p (fd, '<div class="comment" id="comment-%i-%i-%i">',
-                   (self._count, self._num, i))
-                p (fd, '<div class="label">%s</div>', comment[1])
-                p (fd, '<div>%s</div></div>', comment[2])
+                p (fd, '<a class="comment" id="comment-%i-%i-%i" href="%s">',
+                   (self._count, self._num, comment[0][0], comment[3]), False)
+                p (fd, '<div class="label">%s</div>', comment[1], False)
+                p (fd, '<div>%s</div></a>', comment[2], False)
             p (fd, '</div>', None, False)
         if not self._map_only:
             p (fd, '</div>', None, False)
