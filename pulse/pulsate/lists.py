@@ -110,13 +110,16 @@ def update_list (mlist, **kw):
         if urlslash >= 0:
             urlfile = urlfile[urlslash+1:]
         pulse.utils.log ('Processing list archive %s %s' % (mlist.ident, urlfile))
+        urlbase = url[:-7] + '/'
         tmp = pulse.utils.tmpfile()
         fd = open (tmp, 'w')
         fd.write (gzip.GzipFile (fileobj=StringIO.StringIO (res.read ())).read ())
         fd.close ()
 
         mbox = mailbox.PortableUnixMailbox (open(tmp, 'rb'))
+        i = -1
         for msg in mbox:
+            i += 1
             msgfrom = msgdate = msgsubject = msgid = msgparent = None
             for hdr in msg.headers:
                 lower = hdr.lower()
@@ -168,6 +171,8 @@ def update_list (mlist, **kw):
             except:
                 dt = None
             postdata['datetime'] = dt
+
+            postdata['web'] = urlbase + 'msg%05i.html' % i
 
             post.update (postdata)
             post.save ()

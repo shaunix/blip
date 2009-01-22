@@ -207,9 +207,6 @@ def get_activity_tab (mlist, **kw):
     except IndexError:
         pass
 
-    table = pulse.html.Table(widget_id='posts')
-    box.add_content (table)
-
     weeknum = pulse.utils.weeknum()
     posts = db.ForumPost.objects.filter (forum=mlist,
                                          weeknum=weeknum,
@@ -231,7 +228,10 @@ def get_posts_div (mlist, posts, title):
 
     for post in posts:
         author = db.Entity.get_cached (post.author_id)
-        table.add_row (pulse.html.EllipsizedLabel (post.title, 40, truncate=True),
+        title = pulse.html.EllipsizedLabel (post.title, 40, truncate=True)
+        if post.web != None:
+            title = pulse.html.Link (post.web, title)
+        table.add_row (title,
                        post.datetime.strftime('%Y-%m-%d'),
                        pulse.html.Link (author))
 

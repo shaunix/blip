@@ -730,14 +730,15 @@ function replace (id, url) {
   if (par.length > 0) {
    par.shade();
   }
+  el.empty ();
+  var thr = throbberbar ();
+  thr.css('width', el.width() / 2);
+  el.append (thr);
+  thr.start ();
   $.get(url, function (data) {
-    if (document.createRange) {
-      range = document.createRange();
-      range.selectNode(el[0]);
-      el[0].parentNode.replaceChild(range.createContextualFragment(data), el[0]);
-    } else {
-      el[0].outerHTML = data;
-    }
+    el.after ($(data));
+    thr.stop ();
+    el.remove ();
     par.unshade();
   });
 }
