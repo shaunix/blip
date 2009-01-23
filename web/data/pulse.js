@@ -988,8 +988,8 @@ function sort (id, tag, cls, key, asc) {
     if (slink.is('#sortlink__' + id + '__' + tag + '__' + cls + '__' + key + '__' + asc)) {
       if (slink.is('a')) {
         var span = $('<span></span>').attr ({
-          id: slink.attr ('id'),
-          class: slink.attr ('class')
+          'id': slink.attr ('id'),
+          'class': slink.attr ('class')
         });
         span.html (slink.html());
         slink.replaceWith (span);
