@@ -538,8 +538,16 @@ class Page (Widget, HttpComponent, ContentComponent, SublinksComponent, FactsCom
         if sidebarred:
             p (fd, '<div class="sidebarred">')
 
-        p (fd, '<div id="header"><a href="%s"><img src="%s" alt="Pulse"></a></div>',
+        p (fd, '<div id="header"><table><tr>')
+        p (fd, '<td><a href="%s"><img src="%s" alt="Pulse"></a></td>',
            (pulse.config.web_root, pulse.config.data_root + 'pulse-logo.png'))
+        p (fd, '<td class="headerlinks">')
+        p (fd, '<a href="%saccount/login">%s</a>',
+           (pulse.config.web_root, pulse.utils.gettext ('Log in')))
+        p (fd, ' | ')
+        p (fd, '<a href="%saccount/new">%s</a>',
+           (pulse.config.web_root, pulse.utils.gettext ('Register')))
+        p (fd, '</td></tr></table></div>')
 
         p (fd, '<div id="subheader"><h1>', None, False)
         if self._icon != None:
@@ -1158,6 +1166,34 @@ class TranslationForm (Widget):
 
 
 ################################################################################
+## Forms
+
+class TextInput (Widget):
+    def __init__ (self, name, **kw):
+        super (TextInput, self).__init__ (**kw)
+        self._name = name
+        self._password = kw.get('password', False)
+
+    def output (self, fd=None):
+        """Output the HTML."""
+        p (fd, '<input type="%s" name="%s" class="text">', 
+           (self._password and 'password' or 'text', self._name))
+
+
+class SubmitButton (Widget):
+    def __init__ (self, name, title, **kw):
+        super (SubmitButton, self).__init__ (**kw)
+        self._name = name
+        self._title = title
+
+    def output (self, fd=None):
+        """Output the HTML."""
+        p (fd, '<input type="submit" name="%s" value="%s" class="submit">',
+           (self._name, self._title))
+    
+
+
+################################################################################
 ## Lists
 
 class DefinitionList (Widget):
@@ -1169,6 +1205,12 @@ class DefinitionList (Widget):
 
     def add_term (self, term, classname=None):
         self._all.append (('dt', term, classname))
+
+    def add_bold_term (self, term, classname=None):
+        if classname == None:
+            self._all.append (('dt', term, 'bold'))
+        else:
+            self._all.append (('dt', term, classname + ' bold'))
 
     def add_entry (self, entry, classname=None):
         self._all.append (('dd', entry, classname))

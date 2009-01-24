@@ -109,6 +109,52 @@ $.fn.unshade = function (speed) {
 /******************************************************************************/
 
 $.fn.pulse_init = function () {
+  /** Forms **/
+  var pass1 = null;
+  var pass2 = null;
+  this.find ('input').each (function () {
+    var input = $(this);
+    if (input.attr ('name') == 'password1')
+      pass1 = input;
+    else if (input.attr ('name') == 'password2')
+      pass2 = input;
+    input.focus (function () { $(this).addClass ('inputactive'); });
+    input.blur (function () { $(this).removeClass ('inputactive'); });
+  });
+  if (pass1 != null && pass2 != null) {
+    var linker = $('<div></div>');
+    var ltop = Math.floor(pass1.offset().top + (pass1.height() / 2));
+    var lbot = Math.floor(pass2.offset().top + (pass2.height() / 2));
+    linker.css ({
+      position: 'absolute',
+      borderRight: 'solid 1px #888a85',
+      borderTop: 'solid 1px #888a85',
+      borderBottom: 'solid 1px #888a85',
+      left: pass1.offset().left + pass2.width() + 6,
+      top: ltop,
+      height: lbot - ltop,
+      lineHeight: lbot - ltop,
+      width: 12
+    });
+    $('body').append(linker);
+    var img = $('<img id="passworderror" src="' + pulse_data + 'admon-error-16.png">')
+    img.css ({
+      position: 'absolute',
+      left: pass1.offset().left + pass2.width() + 10,
+      top: ltop + ((lbot - ltop - 16) / 2) + 1,
+    });
+    img.hide ();
+    $('body').append(img);
+    var onchange = function () {
+      if (pass1.attr('value') == pass2.attr('value'))
+        $('#passworderror').fadeOut ('fast');
+      else
+        $('#passworderror').fadeIn ('fast');
+    };
+    pass1.keyup (onchange);
+    pass2.keyup (onchange);
+  }
+
   /** AJAX Boxes **/
   this.find ('.ajax').each(function (i) {
     var div = $(this);

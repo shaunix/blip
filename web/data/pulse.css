@@ -16,6 +16,16 @@ body {
   height: 56px;
   padding: 0 0 0 2.4em;
 }
+#header table {
+  width: 100%;
+}
+td.headerlinks {
+  text-align: right;
+  vertical-align: bottom;
+  padding: 6px 1.2em 6px 0;
+  color: #888a85;
+}
+td.headerlinks a { color: white; }
 #subheader {
   background-color: #f7f7f5;
   border-top: solid 1px #f7f7f5;
@@ -99,6 +109,10 @@ li.link {
 
 dl { margin: 0 0 0.5em 0; pading: 0; }
 dt { margin: 0.5em 0 0 0; }
+dt.bold {
+  color: #555753;
+  font-weight: bold;
+}
 dd { margin: 0 0 0 1.44em; }
 pre {
   margin: 0; padding: 0;
@@ -114,6 +128,21 @@ pre {
 
 
 .grid-td { padding: 0 0 0 1em; }
+
+/******************************************************************************/
+/** Forms **/
+
+input { border: solid 1px #555753; }
+input.text {
+  padding: 0 0.2em 0 0.2em;
+  width: 20em;
+}
+input.submit { background-color: #eeeeec; }
+input.inputactive {
+  background-color: #fce94f;
+}
+
+
 
 /******************************************************************************/
 /** ColumnBox **/
