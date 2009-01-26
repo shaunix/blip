@@ -63,7 +63,7 @@ def synopsis ():
     box = pulse.html.SidebarBox (title=pulse.utils.gettext ('Teams'))
     teams = db.Entity.objects.filter (type='Team', parent__isnull=True)
     teams = pulse.utils.attrsorted (list(teams), 'title')
-    bl = pulse.html.LinkList ()
+    bl = pulse.html.BulletList ()
     box.add_content (bl)
     for team in teams:
         bl.add_link (team)
@@ -151,7 +151,7 @@ def get_info_tab (team, **kw):
 def get_subteams_tab (team, **kw):
     bl = pulse.html.BulletList ()
     for subteam in pulse.utils.attrsorted (list(team.children.all()), 'title'):
-        bl.add_item (pulse.html.Link (subteam))
+        bl.add_link (subteam)
     return bl
 
 

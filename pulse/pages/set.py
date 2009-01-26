@@ -54,7 +54,7 @@ def main (path, query, http=True, fd=None):
 def synopsis ():
     """Construct an info box for the front page"""
     box = pulse.html.SidebarBox (pulse.utils.gettext ('Sets'))
-    bl = pulse.html.LinkList ()
+    bl = pulse.html.BulletList ()
     box.add_content (bl)
     sets = db.ReleaseSet.objects.filter (parent__isnull=True)
     sets = pulse.utils.attrsorted (list(sets), 'title')
@@ -78,7 +78,7 @@ def output_top (**kw):
         lbox = cont.add_link_box (rset)
         subsets = pulse.utils.attrsorted (rset.subsets.all(), ['title'])
         if len(subsets) > 0:
-            bl = pulse.html.LinkList ()
+            bl = pulse.html.BulletList ()
             lbox.add_content (bl)
             for subset in subsets:
                 bl.add_link (subset)
@@ -440,7 +440,7 @@ def get_libraries_tab (rset, **kw):
 def add_set_info (rset, lbox):
     cnt = db.SetModule.count_related (subj=rset)
     if cnt > 0:
-        bl = pulse.html.LinkList ()
+        bl = pulse.html.BulletList ()
         lbox.add_content (bl)
         bl.add_link (rset.pulse_url + '#modules',
                      pulse.utils.gettext ('%i modules') % cnt)
