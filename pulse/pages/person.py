@@ -74,14 +74,14 @@ def synopsis ():
     box.add_content (columns)
 
     people = db.Entity.objects.filter (type='Person').order_by ('-mod_score')
-    bl = pulse.html.LinkList ()
+    bl = pulse.html.BulletList ()
     bl.set_title (pulse.utils.gettext ('These people deserve a beer:'))
     columns.add_to_column (0, bl)
     for person in people[:6]:
         bl.add_link (person)
 
     people = db.Entity.objects.filter (type='Person').order_by ('-mod_score_diff')
-    bl = pulse.html.LinkList ()
+    bl = pulse.html.BulletList ()
     bl.set_title (pulse.utils.gettext ('Up-and-coming rock stars:'))
     columns.add_to_column (1, bl)
     for person in people[:6]:

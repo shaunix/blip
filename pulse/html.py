@@ -1214,6 +1214,9 @@ class BulletList (Widget):
     def add_item (self, item, classname=None):
         self._items.append ((item, classname))
 
+    def add_link (self, *args, **kw):
+        self.add_item (Link(*args, **kw), 'link')
+
     def set_title (self, title):
         self._title = title
 
@@ -1238,18 +1241,6 @@ class BulletList (Widget):
             p (fd, None, item, False)
             p (fd, '</li>')
         p (fd, '</ul></div>')
-
-
-class LinkList (BulletList):
-    def __init__ (self, **kw):
-        super (LinkList, self).__init__ (**kw)
-
-    def add_link (self, *args, **kw):
-        self.add_item (Link(*args, **kw), 'link')
-
-    def output (self, fd=None):
-        BulletList.output (self, fd=fd)
-                
 
 
 ################################################################################

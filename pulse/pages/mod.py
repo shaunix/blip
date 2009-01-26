@@ -108,7 +108,7 @@ def synopsis ():
     box.add_content (columns)
 
     modules = db.Branch.objects.filter (type='Module').order_by ('-mod_score')
-    bl = pulse.html.LinkList ()
+    bl = pulse.html.BulletList ()
     bl.set_title (pulse.utils.gettext ('Kicking ass and taking names:'))
     columns.add_to_column (0, bl)
     modules = modules[:6]
@@ -123,7 +123,7 @@ def synopsis ():
             bl.add_link (module)
 
     modules = db.Branch.objects.filter (type='Module').order_by ('-mod_score_diff')
-    bl = pulse.html.LinkList ()
+    bl = pulse.html.BulletList ()
     bl.set_title (pulse.utils.gettext ('Recently rocking:'))
     columns.add_to_column (1, bl)
     modules = modules[:6]

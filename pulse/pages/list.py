@@ -69,7 +69,7 @@ def synopsis ():
 
     mlists = db.Forum.objects.filter (type='List').order_by ('-post_score')
     cols = pulse.html.ColumnBox (2)
-    bl = (pulse.html.LinkList (), pulse.html.LinkList ())
+    bl = (pulse.html.BulletList (), pulse.html.BulletList ())
     cols.add_to_column (0, bl[0])
     cols.add_to_column (1, bl[1])
     box.add_content (cols)
