@@ -128,6 +128,18 @@ DEBUG = True
 
 
 ################################################################################
+## Other Stuff
+
+# Django email settings
+EMAIL_HOST = 'localhost'
+EMAIL_USER = ''
+EMAIL_PASSWORD = ''
+
+# The email address from which Pulse sends email
+server_email = 'gnomeweb@gnome.org'
+
+
+################################################################################
 ## Local config
 # You can create a file called localconfig.py alongside config.py with any of
 # the above settings defined, rather than editing them here.  This is useful

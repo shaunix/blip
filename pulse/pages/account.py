@@ -18,6 +18,14 @@
 # Suite 330, Boston, MA  0211-1307  USA.
 #
 
+import cgi
+import crypt
+import datetime
+import random
+
+from django.core import mail
+from django.db import transaction
+
 import pulse.config
 import pulse.html
 import pulse.models as db
@@ -25,22 +33,119 @@ import pulse.utils
 
 def main (path, query, http=True, fd=None):
     kw = {'path' : path, 'query' : query, 'http' : http, 'fd' : fd}
-    if path[1] == 'new':
+
+    if query.get('action', None) == 'create':
+        return output_account_create (**kw)
+    elif path[1] == 'new':
         return output_account_new (**kw)
+    elif path[1] == 'auth' and len(path) > 2:
+        return output_account_auth (path[2], **kw)
+
+
+@transaction.commit_manually
+def output_account_create (**kw):
+    data = cgi.parse ()
+    for key in data.keys():
+        data[key] = data[key][0]
+    realname = data.get ('realname', '')
+    if realname == '':
+        page = pulse.html.Fragment (http=kw.get('http', True), status=500)
+        admon = pulse.html.AdmonBox (pulse.html.AdmonBox.error,
+                                     pulse.utils.gettext('Please enter your name'))
+        page.add_content (admon)
+        page.output(fd=kw.get('fd'))
+        return
+    username = data.get ('username', '')
+    if username == '':
+        page = pulse.html.Fragment (http=kw.get('http', True), status=500)
+        admon = pulse.html.AdmonBox (pulse.html.AdmonBox.error,
+                                     pulse.utils.gettext('Please enter a username'))
+        page.add_content (admon)
+        page.output(fd=kw.get('fd'))
+        return
+    email = data.get ('email', '')
+    if email == '':
+        page = pulse.html.Fragment (http=kw.get('http', True), status=500)
+        admon = pulse.html.AdmonBox (pulse.html.AdmonBox.error,
+                                     pulse.utils.gettext('Please enter a valid email address'))
+        page.add_content (admon)
+        page.output(fd=kw.get('fd'))
+        return
+    password = data.get ('password', '')
+    if password == '':
+        page = pulse.html.Fragment (http=kw.get('http', True), status=500)
+        admon = pulse.html.AdmonBox (pulse.html.AdmonBox.error,
+                                     pulse.utils.gettext('Please enter a password'))
+        page.add_content (admon)
+        page.output(fd=kw.get('fd'))
+        return
+    try:
+        ident = '/person/' + username
+        if (db.Account.objects.filter (username=username).count() > 0 or
+            db.Entity.objects.filter (ident=ident).count() > 0):
+            page = pulse.html.Fragment (http=kw.get('http', True), status=500)
+            admon = pulse.html.AdmonBox (pulse.html.AdmonBox.error,
+                                         pulse.utils.gettext('Username already in use'))
+            page.add_content (admon)
+            page.output(fd=kw.get('fd'))
+            return
+        person = db.Entity.get_record (ident, 'Person')
+        person.save ()
+        token = '%x' % random.randint (16**32, 16**33 - 1)
+        user = db.Account (username=username,
+                           password=crypt.crypt(password, 'pu'),
+                           person=person,
+                           realname=realname,
+                           email=email,
+                           check_time=datetime.datetime.now(),
+                           check_type="new",
+                           check_hash=token,
+                           data={})
+        user.save ()
+        subject = pulse.utils.gettext ('Confirm New Pulse Account')
+        message = ((
+            'Hello %s\n\n' +
+            'You have registered a Pulse account. To complete your account registration,\n' +
+            'you need to verify your email address. Please visit the URL below.\n\n' +
+            '%saccount/auth/%s')
+                   % (realname, pulse.config.web_root, token))
+        mail.send_mail (subject, message, pulse.config.server_email, [email])
+        page = pulse.html.Fragment (http=kw.get('http', True))
+        div = pulse.html.Div (pulse.utils.gettext (
+            'Pulse has sent you a confirmation email.  Please visit the link' +
+            ' in that email to complete your registration.'
+            ))
+        page.add_content (div)
+        page.output (fd=kw.get('fd'))
+    except:
+        transaction.rollback ()
+        page = pulse.html.Fragment (http=kw.get('http', True), status=500)
+        admon = pulse.html.AdmonBox (pulse.html.AdmonBox.error,
+                                     pulse.utils.gettext('There was a problem processing the request'))
+        page.add_content (admon)
+        page.output(fd=kw.get('fd'))
+        return
+    else:
+        transaction.commit ()
 
 
 def output_account_new (**kw):
-    page = pulse.html.Page (http=kw.get('http', True))
+    page = pulse.html.Page (http=kw.get('http', True),
+                            url=(pulse.config.web_root + 'account/new'))
     page.set_title (pulse.utils.gettext ('Create New Account'))
 
     columns = pulse.html.ColumnBox (2)
     page.add_content (columns)
 
-    section = pulse.html.SectionBox (pulse.utils.gettext ('Create an Account'))
+    section = pulse.html.SectionBox (pulse.utils.gettext ('Create an Account'),
+                                     widget_id='accountform')
     columns.add_to_column (0, section)
 
+    form = pulse.html.Form ('GET', 'javascript:createaccount()')
+    section.add_content (form)
+
     table = pulse.html.Table ()
-    section.add_content (table)
+    form.add_content (table)
 
     table.add_row (
         pulse.utils.gettext ('Name:'),
@@ -93,3 +198,25 @@ def output_account_new (**kw):
         ))
 
     page.output (fd=kw.get('fd'))
+
+
+@transaction.commit_manually
+def output_account_auth (token, **kw):
+    try:
+        account = db.Account.objects.get (check_hash=token)
+    except:
+        page = pulse.html.PageError (
+            pulse.utils.gettext ('The authorization token %s was not found.') % token,
+            **kw)
+        page.output (fd=kw.get('fd'))
+        return
+    try:
+        pulse.html.HttpRedirect (pulse.config.web_root + 'home').output (fd=kw.get('fd'))
+    except:
+        transaction.rollback ()
+        page = pulse.html.PageError (pulse.utils.gettext('There was a problem processing the request'),
+                                     **kw)
+        page.output(fd=kw.get('fd'))
+        return
+    else:
+        transaction.commit ()

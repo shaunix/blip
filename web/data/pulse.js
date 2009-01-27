@@ -122,7 +122,7 @@ $.fn.pulse_init = function () {
     input.blur (function () { $(this).removeClass ('inputactive'); });
   });
   if (pass1 != null && pass2 != null) {
-    var linker = $('<div></div>');
+    var linker = $('<div id="passwordlinker"></div>');
     var ltop = Math.floor(pass1.offset().top + (pass1.height() / 2));
     var lbot = Math.floor(pass2.offset().top + (pass2.height() / 2));
     linker.css ({
@@ -146,10 +146,13 @@ $.fn.pulse_init = function () {
     img.hide ();
     $('body').append(img);
     var onchange = function () {
-      if (pass1.attr('value') == pass2.attr('value'))
+      if (pass1.attr('value') == pass2.attr('value')) {
         $('#passworderror').fadeOut ('fast');
-      else
+        $('#create')[0].disabled = false;
+      } else {
         $('#passworderror').fadeIn ('fast');
+        $('#create')[0].disabled = true;
+      }
     };
     pass1.keyup (onchange);
     pass2.keyup (onchange);
@@ -1082,3 +1085,42 @@ function get_offsetTop (el) {
   } while (el = el.offsetParent);
   return top;
 }
+
+/******************************************************************************/
+/** Account Stuff **/
+
+function createaccount () {
+  var realname = $('#realname').attr('value');
+  var username = $('#username').attr('value');
+  var email = $('#email').attr('value');
+  var pass1 = $('#password1').attr('value');
+  var pass2 = $('#password2').attr('value');
+  if (pass1 != pass2) {
+    $('#passworderror').fadeOut ('fast', function () {
+    $('#passworderror').fadeIn ('fast', function () {
+    $('#passworderror').fadeOut ('fast', function () {
+    $('#passworderror').fadeIn ('fast');
+    }) }) });
+    return;
+  }
+  $('input').blur().each (function () { this.disabled = true; });
+  $.ajax ({
+    type: 'POST',
+    url: pulse_url + '?action=create',
+    data: {'realname': realname, 'username': username, 'email': email, 'password': pass1},
+    complete: function (req, status) {
+      if (status == 'success') {
+        $('#accountform').children ('form').remove ();
+        $('#accountform').children ('.admon').remove ();
+        $('#passwordlinker').remove ();
+        $('#passworderror').remove ();
+        $('#accountform').append(req.responseText);
+      } else {
+        $('#accountform').children ('.admon').remove ();
+        $('#accountform').append(req.responseText);
+        $('input').each (function () { this.disabled = false; });
+      }
+    }
+  });
+}
+

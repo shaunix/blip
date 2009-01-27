@@ -430,6 +430,7 @@ class HttpComponent (Component):
         super (HttpComponent, self).__init__ (**kw)
         self._http = kw.get ('http', True)
         self._status = kw.get ('status', 200)
+        self._location = kw.get ('location', None)
 
     def output (self, fd=None):
         """Output the HTML."""
@@ -438,7 +439,12 @@ class HttpComponent (Component):
                 p (fd, 'Status: 404 Not found')
             elif self._status == 500:
                 p (fd, 'Status: 500 Internal server error')
-            p (fd, 'Content-type: text/html; charset=utf-8\n')
+            if self._status == 301:
+                p (fd, 'Status: 301 Moved permanently')
+                p (fd, 'Location: %s' % self._location)
+            else:
+                p (fd, 'Content-type: text/html; charset=utf-8')
+            p (fd, '')
         
 
 
@@ -646,6 +652,13 @@ class PageNotFound (Page):
             p (fd, '</ul></div>')
         p (fd, '</div>')
         Page.output_page_content (self, fd=fd)
+
+
+class HttpRedirect (HttpComponent):
+    def __init__ (self, location, **kw):
+        kw['status'] = 301
+        kw['location'] = location
+        super (HttpRedirect, self).__init__ (**kw)
 
 
 class PageError (Page):
@@ -1051,8 +1064,11 @@ class AdmonBox (Widget):
     def output (self, fd=None):
         """Output the HTML."""
         class_ = ' '.join(['admon'] + self._classes)
-        p (fd, '<%s class="admon-%s %s">', (self._tag, self._kind, class_))
-        p (fd, '<img src="%sadmon-%s-16.png" width="16" height="16">',
+        p (fd, '<%s class="admon-%s %s"', (self._tag, self._kind, class_))
+        wid = self.get_id ()
+        if wid != None:
+            p (fd, ' id="%s"', wid, False)
+        p (fd, '><img src="%sadmon-%s-16.png" width="16" height="16">',
            (pulse.config.data_root, self._kind))
         p (fd, None, self._title)
         p (fd, '</%s>', self._tag)
@@ -1168,16 +1184,29 @@ class TranslationForm (Widget):
 ################################################################################
 ## Forms
 
+class Form (Widget, ContentComponent):
+    def __init__ (self, method, action, **kw):
+        super (Form, self).__init__ (**kw)
+        self._method = method
+        self._action = action
+
+    def output (self, fd=None):
+        """Output the HTML."""
+        p (fd, '<form method="%s" action="%s">', (self._method, self._action))
+        ContentComponent.output (self, fd=fd)
+        p (fd, '</form>')
+        
+
 class TextInput (Widget):
     def __init__ (self, name, **kw):
         super (TextInput, self).__init__ (**kw)
         self._name = name
         self._password = kw.get('password', False)
-
+ 
     def output (self, fd=None):
         """Output the HTML."""
-        p (fd, '<input type="%s" name="%s" class="text">', 
-           (self._password and 'password' or 'text', self._name))
+        p (fd, '<input type="%s" id="%s" name="%s" class="text">', 
+           (self._password and 'password' or 'text', self._name, self._name))
 
 
 class SubmitButton (Widget):
@@ -1188,8 +1217,8 @@ class SubmitButton (Widget):
 
     def output (self, fd=None):
         """Output the HTML."""
-        p (fd, '<input type="submit" name="%s" value="%s" class="submit">',
-           (self._name, self._title))
+        p (fd, '<input type="submit" id="%s" name="%s" value="%s" class="submit">',
+           (self._name, self._name, self._title))
     
 
 

@@ -19,6 +19,7 @@
 #
 
 import cPickle
+import datetime
 import inspect
 import os
 import os.path
@@ -776,6 +777,67 @@ class TeamMember (PulseRelation, models.Model):
     subj = models.ForeignKey (Entity, related_name='team_member_preds')
     pred = models.ForeignKey (Entity, related_name='team_member_subjs')
     coordinator = models.BooleanField (default=False)
+
+
+################################################################################
+## User Accounts
+
+class Account (models.Model):
+    __metaclass__ = PulseModelBase
+
+    username = models.CharField (**maxlength200)
+    password = models.CharField (**maxlength200)
+    person = models.ForeignKey (Entity, related_name='account')
+    realname = models.TextField ()
+    email = models.EmailField ()
+    check_time = models.DateTimeField (null=True)
+    check_type = models.CharField (null=True, **maxlength20)
+    check_hash = models.CharField (null=True, **maxlength200)
+    data = PickleField ()
+
+class AccountWatch (models.Model):
+    __metaclass__ = PulseModelBase
+
+    account = models.ForeignKey (Account, related_name='account_watches')
+    ident = models.CharField (**maxlength200)
+
+class Message (models.Model):
+    __metaclass__ = PulseModelBase
+
+    def __init__ (self, *args, **kw):
+        models.Model.__init__ (self, *args, **kw)
+        if self.weeknum == None and self.datetime != None:
+            self.weeknum = pulse.utils.weeknum (self.datetime)
+
+    @classmethod
+    def make_message (cls, type, primary, secondary, datetime):
+        daystart = datetime.datetime (datetime.year, datetime.month, datetime.day)
+        if (datetime.datetime.now() - daystart).days > 28:
+            return None
+        oldmsg = cls.objects.filter (type=type,
+                                     primary=primary,
+                                     secondary=secondary,
+                                     datetime=daystart)
+        try:
+            oldmsg = oldmsg[0]
+        except:
+            oldmsg = None
+        if oldmsg != None:
+            oldmsg.count = oldmsg.count + 1
+            oldmsg.save ()
+            return oldmsg
+        msg = cls (type=type, primary=primary, secondary=secondary,
+                   datetime=daystart, weeknum=pulse.utils.weeknum(daystart))
+        msg.save ()
+        return msg
+
+    type = models.CharField (null=True, **maxlength80)
+    primary = models.CharField (null=True, **maxlength200)
+    secondary = models.CharField (null=True, **maxlength200)
+    count = models.IntegerField (null=True)
+
+    datetime = models.DateTimeField (null=True)
+    weeknum = models.IntegerField (null=True)
 
 
 ################################################################################
