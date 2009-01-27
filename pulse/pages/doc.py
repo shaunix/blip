@@ -115,7 +115,7 @@ def output_doc (doc, **kw):
                        pulse.html.AdmonBox (pulse.html.AdmonBox.error, doc.error))
         page.add_fact_divider ()
 
-    page.add_tab ('info', 'Info')
+    page.add_tab ('info', pulse.utils.gettext ('Info'))
     box = get_info_tab (doc, **kw)
     page.add_to_tab ('info', box)
 
