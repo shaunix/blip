@@ -156,7 +156,7 @@ def output_module (module, **kw):
     if module.data.has_key ('screenshot'):
         page.add_screenshot (module.data['screenshot'])
 
-    page.add_tab ('info', 'Info')
+    page.add_tab ('info', pulse.utils.gettext ('Info'))
     box = get_info_tab (module, **kw)
     page.add_to_tab ('info', box)
 
