@@ -27,16 +27,16 @@ import pulse.models as db
 import pulse.response
 import pulse.utils
 
-def main (path, query):
+def main (response, path, query):
     kw = {'path' : path, 'query' : query}
 
     if query.get('ajax', None) == 'tab':
-        return output_ajax_tab (**kw)
+        return output_ajax_tab (response, **kw)
     else:
-        return output_home (**kw)
+        return output_home (response, **kw)
 
 
-def output_home (**kw):
+def output_home (response, **kw):
     page = pulse.html.Page (url=(pulse.config.web_root + 'home'))
     page.set_title (pulse.utils.gettext ('Home'))
     if pulse.response.user_account != None:
@@ -46,17 +46,14 @@ def output_home (**kw):
     box = get_ticker_tab (**kw)
     page.add_to_tab ('ticker', box)
 
-    page.output ()
+    response.set_contents (page)
 
 
-def output_ajax_tab (**kw):
+def output_ajax_tab (response, **kw):
     query = kw.get ('query', {})
-    page = pulse.html.Fragment ()
     tab = query.get('tab', None)
     if tab == 'ticker':
-        page.add_content (get_ticker_tab (**kw))
-    page.output ()
-    return 0
+        response.set_contents (get_ticker_tab (**kw))
 
 
 def get_ticker_tab (**kw):

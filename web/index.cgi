@@ -6,10 +6,7 @@ import os
 import sys
 import cgi
 
-import pulse.config
-import pulse.models as db
-import pulse.pages
-import pulse.response
+import pulse.config as config
 import pulse.utils
 
 def usage ():
@@ -26,25 +23,26 @@ def main ():
         if opt in ('-o', '--output'):
             fd = file (arg, 'w')
         elif opt == '--debug-db':
-            pulse.config.debug_db = True
+            config.debug_db = True
         elif opt == '--webroot':
-            pulse.config.web_root = arg
+            config.web_root = arg
 
     # If we're not using the debugging, just turn off Django's DEBUG
     # setting.  This is set to True in pulse.config, because logging
     # in Pulse piggybacks off Django's debug system.  But that's just
     # wasted CPU cycles when we're making pages for the outside world.
-    if not getattr (pulse.config, 'debug_db', False):
-        pulse.config.DEBUG = False
+    if not getattr (config, 'debug_db', False):
+        config.DEBUG = False
 
     if len(args) > 0:
+        http = False
         pathInfo = args[0]
         if len(args) > 1:
             queryString = args[1]
         else:
             queryString = os.getenv ('QUERY_STRING')
     else:
-        pulse.output_http = True
+        http = True
         pathInfo = os.getenv ('PATH_INFO')
         queryString = os.getenv ('QUERY_STRING')
 
@@ -68,9 +66,13 @@ def main ():
 
     # It's important that we don't do this at the top, because this
     # will cause pulse.models to be imported, and we have to be able
-    # to set pulse.config.DEBUG to False before that.
-    import pulse.html as html
+    # to set config.DEBUG to False before that.
+    import pulse.models as db
+    import pulse.pages
+    import pulse.response
     retcode = 0
+
+    response = pulse.response.HttpResponse (http=http)
 
     try:
         ck = Cookie.SimpleCookie ()
@@ -82,9 +84,10 @@ def main ():
         pass
 
     if len (path) == 0:
-        page = html.Page ()
+        import pulse.html
+        page = pulse.html.Page ()
         page.set_title (pulse.utils.gettext ('Pulse'))
-        cont = html.PaddingBox ()
+        cont = pulse.html.PaddingBox ()
         page.add_content (cont)
         types = pulse.pages.__all__
         mods = [pulse.utils.import_ ('pulse.pages.' + t) for t in types]
@@ -101,25 +104,31 @@ def main ():
                     page.add_sidebar_content (box)
                 else:
                     cont.add_content (box)
-        page.output ()
+        response.set_contents (page)
     else:
         try:
             mod = pulse.utils.import_ ('pulse.pages.' + path[0])
-            retcode =  mod.main (path, query)
+            mod.main (response, path, query)
         except:
-            if not pulse.reponse.output_http:
+            if not http:
                 raise
-            page = html.PageError (pulse.utils.gettext (
+            page = pulse.html.PageError (pulse.utils.gettext (
                 'Pulse does not know how to construct this page.  This is' +
                 ' probably because some naughty little monkeys didn\'t finish' +
                 ' their programming assignment.'))
-            page.output()
-            retcode = 500
-    if getattr (pulse.config, 'debug_db', False):
+            response.set_contents (page)
+
+    if getattr (config, 'debug_db', False):
         print ('%i SELECT statements in %.3f seconds' %
                (pulse.models.PulseDebugCursor.debug_select_count,
                 pulse.models.PulseDebugCursor.debug_select_time))
-    return retcode
+
+    status = response.http_status
+    response.output (fd=fd)
+    if status == 200:
+        return 0
+    else:
+        return status
 
 
 if __name__ == "__main__":

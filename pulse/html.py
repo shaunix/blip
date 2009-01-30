@@ -36,7 +36,7 @@ import sys
 
 import pulse.config
 import pulse.models as db
-import pulse.response
+from pulse.response import *
 import pulse.utils
 
 
@@ -45,13 +45,14 @@ BULLET = u' • '
 TRIANGLE = u' ‣ '
 
 
-class Widget (object):
+class HtmlWidget (HttpWidget):
     """
-    Base class for all widgets.
+    Base class for all HTML widgets.
     """
 
     def __init__ (self, **kw):
-        super (Widget, self).__init__ (**kw)
+        super (HtmlWidget, self).__init__ (**kw)
+        self.http_content_type = 'Content-type: text/html; charset=utf-8'
         self._widget_id = kw.get ('widget_id', None)
         self._widget_class = kw.get ('widget_class', None)
         
@@ -77,7 +78,7 @@ class Widget (object):
     def get_class (self):
         return self._widget_class
 
-    def output (self, fd=pulse.response.output_fd):
+    def output (self, fd=None):
         """
         Output the HTML for this widget.
 
@@ -86,7 +87,7 @@ class Widget (object):
         pass
 
 
-class Component (object):
+class Component (HttpWidget):
     """
     Base class for all components.
 
@@ -98,7 +99,7 @@ class Component (object):
     def __init__ (self, **kw):
         super (Component, self).__init__ (**kw)
 
-    def output (self, fd=pulse.response.output_fd):
+    def output (self, fd=None):
         """
         Output the HTML for this component.
 
@@ -131,7 +132,7 @@ class ContentComponent (Component):
         """Get a list of all added content."""
         return self._content
 
-    def output (self, fd=pulse.response.output_fd):
+    def output (self, fd=None):
         """Output the HTML."""
         for cont in self._content:
             p (fd, None, cont)
@@ -159,7 +160,7 @@ class SublinksComponent (Component):
     def set_sublinks_divider (self, div):
         self._divider = div
 
-    def output (self, fd=pulse.response.output_fd):
+    def output (self, fd=None):
         """Output the HTML."""
         if len(self._sublinks) > 0:
             p (fd, '<div class="sublinks">', None, False)
@@ -196,7 +197,7 @@ class FactsComponent (Component):
     def has_facts (self):
         return len(self._facts) > 0
 
-    def output (self, fd=pulse.response.output_fd):
+    def output (self, fd=None):
         """Output the HTML."""
         if len (self._facts) == 0:
             return
@@ -216,7 +217,7 @@ class FactsComponent (Component):
                 else:
                     p (fd, '<td class="fact-val" colspan="2">', None, False)
                 def factout (val):
-                    if isinstance (val, (basestring, Widget, Component)):
+                    if isinstance (val, (basestring, HtmlWidget, Component)):
                         p (fd, None, val, False)
                     elif isinstance (val, db.PulseRecord):
                         p (fd, Link(val))
@@ -252,7 +253,7 @@ class FilterableComponent (Component):
     def add_badge_filter (self, badge):
         self._filters.append (badge)
 
-    def output (self, fd=pulse.response.output_fd):
+    def output (self, fd=None):
         if len(self._filters) == 0:
             return
         filterid = self.get_id ()
@@ -311,7 +312,7 @@ class SortableComponent (Component):
     def get_sort_links (self):
         return self._slinks
 
-    def output (self, fd=pulse.response.output_fd):
+    def output (self, fd=None):
         """Output the HTML."""
         if len(self._slinks) == 0:
             return
@@ -383,7 +384,7 @@ class LinkBoxesComponent (Component):
         """Set the number of columns."""
         self._columns = columns
 
-    def output (self, fd=pulse.response.output_fd):
+    def output (self, fd=None):
         """Output the HTML."""
         if self._show_icons == None:
             self._show_icons = False
@@ -417,56 +418,10 @@ class LinkBoxesComponent (Component):
                     p (fd, '</div>')
 
 
-class HttpComponent (Component):
-    """
-    Component for widgets that output HTTP headers.
-
-    Widgets using this component are generally top-level that are not added to
-    any other widgets.  The output method will generate the HTTP headers, if the
-    http paramater has not been set to False.
-
-    FIXME: document **kw
-    """
-
-    def __init__ (self, **kw):
-        super (HttpComponent, self).__init__ (**kw)
-        self._status = kw.get ('status', 200)
-        self._location = kw.get ('location', None)
-        self._cookies = []
-
-    def set_cookie (self, cookie, value):
-        self._cookies.append ((cookie, value))
-
-    def output (self, fd=pulse.response.output_fd):
-        """Output the HTML."""
-        if pulse.response.output_http:
-            if self._status == 404:
-                p (fd, 'Status: 404 Not found')
-            elif self._status == 500:
-                p (fd, 'Status: 500 Internal server error')
-            if self._status == 301:
-                p (fd, 'Status: 301 Moved permanently')
-                p (fd, 'Location: %s' % self._location)
-            else:
-                p (fd, 'Content-type: text/html; charset=utf-8')
-            if len(self._cookies) > 0:
-                ck = Cookie.SimpleCookie()
-                for cookie, value in self._cookies:
-                    ck[cookie] = value
-                    # FIXME: this sucks.  let's change the way we keep stuff in config
-                    nohttp = pulse.config.web_root
-                    nohttp = nohttp[nohttp.find('://') + 3:]
-                    ck[cookie]['domain'] = nohttp[:nohttp.find('/')]
-                    ck[cookie]['path'] = nohttp[nohttp.find('/'):]
-                p (fd, ck.output())
-            p (fd, '')
-        
-
-
 ################################################################################
 ## Pages
 
-class Page (Widget, HttpComponent, ContentComponent, SublinksComponent, FactsComponent):
+class Page (HtmlWidget, ContentComponent, SublinksComponent, FactsComponent):
     """
     Complete web page.
 
@@ -535,9 +490,8 @@ class Page (Widget, HttpComponent, ContentComponent, SublinksComponent, FactsCom
             self._sidebar = ContentComponent ()
         self._sidebar.add_content (content)
 
-    def output (self, fd=pulse.response.output_fd):
+    def output (self, fd=None):
         """Output the HTML."""
-        HttpComponent.output (self, fd=fd)
         p (fd, ('<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN"'
                 ' "http://www.w3.org/TR/html4/strict.dtd">'))
         p (fd, '<html><head>')
@@ -616,26 +570,8 @@ class Page (Widget, HttpComponent, ContentComponent, SublinksComponent, FactsCom
             p (fd, '</div>')
         p (fd, '</body></html>')
         
-    def output_page_content (self, fd=pulse.response.output_fd):
+    def output_page_content (self, fd=None):
         """Output the contents of the page."""
-        ContentComponent.output (self, fd=fd)
-
-
-class Fragment (Widget, HttpComponent, ContentComponent):
-    """
-    Fragment of a web page.
-
-    Unlike Page, Fragment will not output any boilerplate HTML.  Instead, it
-    only outputs the HTTP headers and the added content.  This is generally
-    used for AJAX content.
-    """
-
-    def __init__ (self, **kw):
-        super (Fragment, self).__init__ (**kw)
-
-    def output (self, fd=pulse.response.output_fd):
-        """Output the HTML."""
-        HttpComponent.output (self, fd=fd)
         ContentComponent.output (self, fd=fd)
 
 
@@ -648,12 +584,12 @@ class PageNotFound (Page):
 
     def __init__ (self, message, **kw):
         kw.setdefault ('title', pulse.utils.gettext('Page Not Found'))
-        kw['status'] = 404
         super (PageNotFound, self).__init__ (**kw)
+        self.http_status = 400
         self._pages = kw.get ('pages', [])
         self._message = message
 
-    def output_page_content (self, fd=pulse.response.output_fd):
+    def output_page_content (self, fd=None):
         """Output the contents of the page."""
         p (fd, '<div class="notfound">')
         p (fd, '<div class="message">%s</div>', self._message)
@@ -669,13 +605,6 @@ class PageNotFound (Page):
         Page.output_page_content (self, fd=fd)
 
 
-class HttpRedirect (HttpComponent):
-    def __init__ (self, location, **kw):
-        kw['status'] = 301
-        kw['location'] = location
-        super (HttpRedirect, self).__init__ (**kw)
-
-
 class PageError (Page):
     """
     A page for when an error has occurred.
@@ -685,12 +614,12 @@ class PageError (Page):
 
     def __init__ (self, message, **kw):
         kw.setdefault ('title', pulse.utils.gettext('Bad Monkeys'))
-        kw['status'] = 500
         super (PageError, self).__init__ (**kw)
+        self.http_status = 501
         self._pages = kw.get ('pages', [])
         self._message = message
     
-    def output_page_content (self, fd=pulse.response.output_fd):
+    def output_page_content (self, fd=None):
         """Output the contents of the page."""
         p (fd, '<div class="servererror">')
         p (fd, '<div class="message">%s</div>', self._message)
@@ -701,7 +630,7 @@ class PageError (Page):
 ################################################################################
 ## Boxes
 
-class AjaxBox (Widget):
+class AjaxBox (HtmlWidget):
     """
     A box that loads its contents over AJAX.
     """
@@ -709,18 +638,18 @@ class AjaxBox (Widget):
         super (AjaxBox, self).__init__ (**kw)
         self._url = url
 
-    def output (self, fd=pulse.response.output_fd):
+    def output (self, fd=None):
         """Output the HTML."""
         p (fd, '<div class="ajax"><a href="%s">%s</a></div>',
            (self._url, pulse.utils.gettext ('Loading')) )
 
 
-class SidebarBox (Widget, ContentComponent, LinkBoxesComponent):
+class SidebarBox (HtmlWidget, ContentComponent, LinkBoxesComponent):
     def __init__ (self, title, **kw):
         super (SidebarBox, self).__init__ (**kw)
         self._title = title
 
-    def output (self, fd=pulse.response.output_fd):
+    def output (self, fd=None):
         """Output the HTML."""
         p (fd, '<div class="sidetitle">%s</div>', self._title, False)
         p (fd, '<div class="sidecont">')
@@ -729,7 +658,7 @@ class SidebarBox (Widget, ContentComponent, LinkBoxesComponent):
         p (fd, '</div>')
 
 
-class InfoBox (Widget, SortableComponent, ContentComponent, FilterableComponent, LinkBoxesComponent):
+class InfoBox (HtmlWidget, SortableComponent, ContentComponent, FilterableComponent, LinkBoxesComponent):
     """
     A box containing information.
 
@@ -740,7 +669,7 @@ class InfoBox (Widget, SortableComponent, ContentComponent, FilterableComponent,
         super (InfoBox, self).__init__ (**kw)
         self._title = title
 
-    def output (self, fd=pulse.response.output_fd):
+    def output (self, fd=None):
         """Output the HTML."""
         p (fd, '<div class="info"', None, False)
         wid = self.get_id ()
@@ -755,12 +684,12 @@ class InfoBox (Widget, SortableComponent, ContentComponent, FilterableComponent,
         p (fd, '</div></div>')
 
 
-class SectionBox (Widget, ContentComponent):
+class SectionBox (HtmlWidget, ContentComponent):
     def __init__ (self, title, **kw):
         super (SectionBox, self).__init__ (**kw)
         self._title = title
 
-    def output (self, fd=pulse.response.output_fd):
+    def output (self, fd=None):
         p (fd, '<div class="section"', None, False)
         wid = self.get_id ()
         if wid != None:
@@ -770,7 +699,7 @@ class SectionBox (Widget, ContentComponent):
         p (fd, '</div>')
 
 
-class ContainerBox (Widget, FilterableComponent, SortableComponent, ContentComponent, LinkBoxesComponent):
+class ContainerBox (HtmlWidget, FilterableComponent, SortableComponent, ContentComponent, LinkBoxesComponent):
     """
     An all-purpose container box.
 
@@ -790,7 +719,7 @@ class ContainerBox (Widget, FilterableComponent, SortableComponent, ContentCompo
         """Set the title of the container."""
         self._title = title
 
-    def output (self, fd=pulse.response.output_fd):
+    def output (self, fd=None):
         """Output the HTML."""
         slinks = len(self.get_sort_links())
         p (fd, '<div class="cont"', None, False)
@@ -825,7 +754,7 @@ class ContainerBox (Widget, FilterableComponent, SortableComponent, ContentCompo
         p (fd, '</div>')
 
 
-class Calendar (Widget):
+class Calendar (HtmlWidget):
     def __init__ (self, **kw):
         super (Calendar, self).__init__ (**kw)
         self._events = []
@@ -833,7 +762,7 @@ class Calendar (Widget):
     def add_event (self, start, end, summary, desc):
         self._events.append ((start, end, summary, desc))
 
-    def output (self, fd=pulse.response.output_fd):
+    def output (self, fd=None):
         p (fd, '<div class="cal">')
         p (fd, '<table class="cal">')
         p (fd, '<tr class="calnav">')
@@ -865,7 +794,7 @@ class Calendar (Widget):
         p (fd, '</div>')
 
 
-class LinkBox (Widget, FactsComponent, ContentComponent):
+class LinkBox (HtmlWidget, FactsComponent, ContentComponent):
     """
     A block-level link to an object with optional extra information.
 
@@ -933,7 +862,7 @@ class LinkBox (Widget, FactsComponent, ContentComponent):
     def add_graph (self, url, width=None, height=None):
         self._graphs.append ((url, width, height))
 
-    def output (self, fd=pulse.response.output_fd):
+    def output (self, fd=None):
         """Output the HTML."""
         cls = ' '.join(['lbox'] + self._classes)
         p (fd, '<table class="%s"><tr>', cls)
@@ -977,7 +906,7 @@ class LinkBox (Widget, FactsComponent, ContentComponent):
         p (fd, '</tr></table>')
         
 
-class ColumnBox (Widget):
+class ColumnBox (HtmlWidget):
     def __init__ (self, num, **kw):
         super (ColumnBox, self).__init__ (**kw)
         self._columns = [[] for i in range(num)]
@@ -986,7 +915,7 @@ class ColumnBox (Widget):
         self._columns[index].append (content)
         return content
 
-    def output (self, fd=pulse.response.output_fd):
+    def output (self, fd=None):
         """Output the HTML."""
         p (fd, '<table class="cols"><tr>', None)
         width = str (100 / len(self._columns))
@@ -1002,7 +931,7 @@ class ColumnBox (Widget):
         p (fd, '</tr></table>')
 
 
-class GridBox (Widget):
+class GridBox (HtmlWidget):
     def __init__ (self, **kw):
         super (GridBox, self).__init__ (**kw)
         self._rows = []
@@ -1019,7 +948,7 @@ class GridBox (Widget):
         self._rows[idx].setdefault ('classes', [])
         self._rows[idx]['classes'].append (cls)
 
-    def output (self, fd=pulse.response.output_fd):
+    def output (self, fd=None):
         """Output the HTML."""
         if len (self._rows) == 0:
             return
@@ -1044,12 +973,12 @@ class GridBox (Widget):
         p (fd, '</table>')
 
 
-class PaddingBox (Widget, ContentComponent):
+class PaddingBox (HtmlWidget, ContentComponent):
     """A box which puts vertical padding between its children."""
     def __init__ (self, **kw):
         super (PaddingBox, self).__init__ (**kw)
 
-    def output (self, fd=pulse.response.output_fd):
+    def output (self, fd=None):
         """Output the HTML."""
         content = self.get_content()
         for i in range(len(content)):
@@ -1061,13 +990,15 @@ class PaddingBox (Widget, ContentComponent):
                 p (fd, '</div>')
 
 
-class AdmonBox (Widget):
+class AdmonBox (HtmlWidget):
     error = "error"
     information = "information"
     warning = "warning"
     
     def __init__ (self, kind, title, **kw):
         super (AdmonBox, self).__init__ (**kw)
+        # We often use AdmonBox as an error fragment
+        self.http_status = 500
         self._kind = kind
         self._title = title
         self._tag = kw.get('tag', 'div')
@@ -1076,7 +1007,7 @@ class AdmonBox (Widget):
     def add_class (self, class_):
         self._classes.append (class_)
 
-    def output (self, fd=pulse.response.output_fd):
+    def output (self, fd=None):
         """Output the HTML."""
         class_ = ' '.join(['admon'] + self._classes)
         p (fd, '<%s class="admon-%s %s"', (self._tag, self._kind, class_))
@@ -1089,7 +1020,7 @@ class AdmonBox (Widget):
         p (fd, '</%s>', self._tag)
 
 
-class TabbedBox (Widget, ContentComponent):
+class TabbedBox (HtmlWidget, ContentComponent):
     def __init__ (self, **kw):
         super (TabbedBox, self).__init__ (**kw)
         self._tabs = []
@@ -1103,7 +1034,7 @@ class TabbedBox (Widget, ContentComponent):
         """
         self._tabs.append ((url, title))
 
-    def output (self, fd=pulse.response.output_fd):
+    def output (self, fd=None):
         """Output the HTML."""
         p (fd, '<div class="tabbed">')
         p (fd, '<div class="tabbed-tabs">')
@@ -1119,12 +1050,12 @@ class TabbedBox (Widget, ContentComponent):
         p (fd, '</div>')
 
 
-class TranslationForm (Widget):
+class TranslationForm (HtmlWidget):
     def __init__ (self, **kw):
         super (TranslationForm, self).__init__ (**kw)
         self._msgs = []
 
-    class Entry (Widget):
+    class Entry (HtmlWidget):
         def __init__ (self, msgkey, **kw):
             super (TranslationForm.Entry, self).__init__ (**kw)
             self._msg = msgkey[0]
@@ -1142,7 +1073,7 @@ class TranslationForm (Widget):
         def set_translated (self, trans):
             self._trans = trans
 
-        def output (self, fd=pulse.response.output_fd):
+        def output (self, fd=None):
             if self._trans == None:
                 p (fd, '<div class="trentry trnotrans">')
             else:
@@ -1189,7 +1120,7 @@ class TranslationForm (Widget):
         self._msgs.append (entry)
         return entry
 
-    def output (self, fd=pulse.response.output_fd):
+    def output (self, fd=None):
         p (fd, '<div class="trform">')
         for msg in self._msgs:
             msg.output (fd=fd)
@@ -1199,38 +1130,38 @@ class TranslationForm (Widget):
 ################################################################################
 ## Forms
 
-class Form (Widget, ContentComponent):
+class Form (HtmlWidget, ContentComponent):
     def __init__ (self, method, action, **kw):
         super (Form, self).__init__ (**kw)
         self._method = method
         self._action = action
 
-    def output (self, fd=pulse.response.output_fd):
+    def output (self, fd=None):
         """Output the HTML."""
         p (fd, '<form method="%s" action="%s">', (self._method, self._action))
         ContentComponent.output (self, fd=fd)
         p (fd, '</form>')
         
 
-class TextInput (Widget):
+class TextInput (HtmlWidget):
     def __init__ (self, name, **kw):
         super (TextInput, self).__init__ (**kw)
         self._name = name
         self._password = kw.get('password', False)
  
-    def output (self, fd=pulse.response.output_fd):
+    def output (self, fd=None):
         """Output the HTML."""
         p (fd, '<input type="%s" id="%s" name="%s" class="text">', 
            (self._password and 'password' or 'text', self._name, self._name))
 
 
-class SubmitButton (Widget):
+class SubmitButton (HtmlWidget):
     def __init__ (self, name, title, **kw):
         super (SubmitButton, self).__init__ (**kw)
         self._name = name
         self._title = title
 
-    def output (self, fd=pulse.response.output_fd):
+    def output (self, fd=None):
         """Output the HTML."""
         p (fd, '<input type="submit" id="%s" name="%s" value="%s" class="submit">',
            (self._name, self._name, self._title))
@@ -1240,7 +1171,7 @@ class SubmitButton (Widget):
 ################################################################################
 ## Lists
 
-class DefinitionList (Widget):
+class DefinitionList (HtmlWidget):
     def __init__ (self, **kw):
         super (DefinitionList, self).__init__ (**kw)
         self._id = kw.get('id', None)
@@ -1262,7 +1193,7 @@ class DefinitionList (Widget):
     def add_divider (self):
         self._all.append (('dt', None, 'hr'))
         
-    def output (self, fd=pulse.response.output_fd):
+    def output (self, fd=None):
         """Output the HTML."""
         p (fd, '<dl', None, False)
         if self._id != None:
@@ -1289,7 +1220,7 @@ class FactList (DefinitionList):
         super (FactList, self).__init__ (**kw)
 
 
-class BulletList (Widget):
+class BulletList (HtmlWidget):
     def __init__ (self, **kw):
         super (BulletList, self).__init__ (**kw)
         self._id = kw.get ('id', None)
@@ -1306,7 +1237,7 @@ class BulletList (Widget):
     def set_title (self, title):
         self._title = title
 
-    def output (self, fd=pulse.response.output_fd):
+    def output (self, fd=None):
         """Output the HTML."""
         p (fd, '<div class="ul">')
         if self._title != None:
@@ -1332,13 +1263,13 @@ class BulletList (Widget):
 ################################################################################
 ## Other...
 
-class Rule (Widget):
-    def output (self, fd=pulse.response.output_fd):
+class Rule (HtmlWidget):
+    def output (self, fd=None):
         """Output the HTML."""
         p (fd, '<div class="hr"><hr></div>')
 
 
-class Graph (Widget):
+class Graph (HtmlWidget):
     """
     A generated graph with optional comments.
     """
@@ -1366,7 +1297,7 @@ class Graph (Widget):
         """
         self._comments.append ((coords, label, comment, href))
 
-    def output (self, fd=pulse.response.output_fd):
+    def output (self, fd=None):
         """Output the HTML."""
         if self._count == None:
             Graph._count += 1
@@ -1433,7 +1364,7 @@ class Graph (Widget):
         return graph
 
 
-class EllipsizedLabel (Widget):
+class EllipsizedLabel (HtmlWidget):
     """
     A text label that gets ellipsized if it exceeds a certain length.
 
@@ -1448,7 +1379,7 @@ class EllipsizedLabel (Widget):
         self._size = size
         self._truncate = kw.get ('truncate', False)
 
-    def output (self, fd=pulse.response.output_fd):
+    def output (self, fd=None):
         """Output the HTML."""
         if len (self._label) > self._size:
             i = self._size - 10
@@ -1470,7 +1401,7 @@ class EllipsizedLabel (Widget):
             p (fd, None, self._label)
 
 
-class MenuLink (Widget):
+class MenuLink (HtmlWidget):
     """
     A link that pops down a menu of links.
 
@@ -1492,7 +1423,7 @@ class MenuLink (Widget):
         self._menu_url = None
 
     def add_link (self, *args):
-        if isinstance (args[0], Widget):
+        if isinstance (args[0], HtmlWidget):
             self._links.append (args[0])
         else:
             self._links.append (Link(*args))
@@ -1500,7 +1431,7 @@ class MenuLink (Widget):
     def set_menu_url (self, url):
         self._menu_url = url
 
-    def output (self, fd=pulse.response.output_fd):
+    def output (self, fd=None):
         """Output the HTML."""
         MenuLink._count += 1
         if self._menu_only != True:
@@ -1519,7 +1450,7 @@ class MenuLink (Widget):
             p (fd, '</div></div>')
 
 
-class PopupLink (Widget):
+class PopupLink (HtmlWidget):
     _count = 0
 
     def __init__ (self, short, full, **kw):
@@ -1529,12 +1460,12 @@ class PopupLink (Widget):
         self._links = []
 
     def add_link (self, *args):
-        if isinstance (args[0], Widget):
+        if isinstance (args[0], HtmlWidget):
             self._links.append (args[0])
         else:
             self._links.append (Link(*args))
 
-    def output (self, fd=pulse.response.output_fd):
+    def output (self, fd=None):
         """Output the HTML."""
         PopupLink._count += 1
         pid = str(PopupLink._count)
@@ -1620,7 +1551,7 @@ class PopupLink (Widget):
         return lnk
 
 
-class Span (Widget, ContentComponent):
+class Span (HtmlWidget, ContentComponent):
     """
     A simple inline span.
 
@@ -1641,7 +1572,7 @@ class Span (Widget, ContentComponent):
         """Set a divider to be placed between child elements."""
         self._divider = divider
 
-    def output (self, fd=pulse.response.output_fd):
+    def output (self, fd=None):
         """Output the HTML."""
         p (fd, '<span', None, False)
         wid = self.get_id ()
@@ -1659,7 +1590,7 @@ class Span (Widget, ContentComponent):
         p (fd, '</span>')
 
 
-class StatusSpan (Widget, ContentComponent):
+class StatusSpan (HtmlWidget, ContentComponent):
     _statuses = {
         'none' : 0,
         'stub' : 1,
@@ -1680,7 +1611,7 @@ class StatusSpan (Widget, ContentComponent):
         else:
             self.add_content (str)
 
-    def output (self, fd=pulse.response.output_fd):
+    def output (self, fd=None):
         """Output the HTML."""
         p (fd, '<span class="status">%i</span>', self._status, False)
         ContentComponent.output (self, fd=fd)
@@ -1690,7 +1621,7 @@ class FactsTable (FactsComponent):
     pass
 
 
-class Div (Widget, ContentComponent):
+class Div (HtmlWidget, ContentComponent):
     """
     A simple block.
 
@@ -1706,7 +1637,7 @@ class Div (Widget, ContentComponent):
         for arg in args:
             self.add_content (arg)
 
-    def output (self, fd=pulse.response.output_fd):
+    def output (self, fd=None):
         """Output the HTML."""
         p (fd, '<div', None, False)
         wid = self.get_id ()
@@ -1720,7 +1651,7 @@ class Div (Widget, ContentComponent):
         p (fd, '</div>')
 
 
-class Table (Widget):
+class Table (HtmlWidget):
     def __init__ (self, **kw):
         super (Table, self).__init__ (**kw)
         self._cols = 0
@@ -1730,7 +1661,7 @@ class Table (Widget):
         self._cols = max (self._cols, len(args))
         self._rows.append (args)
 
-    def output (self, fd=pulse.response.output_fd):
+    def output (self, fd=None):
         p (fd, '<div class="table"><table', None, False)
         wid = self.get_id ()
         if wid != None:
@@ -1751,7 +1682,7 @@ class Table (Widget):
         p (fd, '</table></div>')
 
 
-class Pre (Widget, ContentComponent):
+class Pre (HtmlWidget, ContentComponent):
     """
     A simple pre-formatted block.
 
@@ -1768,7 +1699,7 @@ class Pre (Widget, ContentComponent):
         for arg in args:
             self.add_content (arg)
 
-    def output (self, fd=pulse.response.output_fd):
+    def output (self, fd=None):
         """Output the HTML."""
         if self._id != None:
             p (fd, '<pre id="%s">', self._id)
@@ -1778,7 +1709,7 @@ class Pre (Widget, ContentComponent):
         p (fd, '</pre>')
 
 
-class Link (Widget):
+class Link (HtmlWidget):
     """
     A link to another page.
 
@@ -1809,7 +1740,7 @@ class Link (Widget):
         self._icon = kw.get ('icon', None)
         self._classname = kw.get ('classname', None)
     
-    def output (self, fd=pulse.response.output_fd):
+    def output (self, fd=None):
         """Output the HTML."""
         if self._href != None:
             if self._classname != None:
@@ -1825,77 +1756,6 @@ class Link (Widget):
             p (fd, '</a>')
 
 
-################################################################################
-## Utility Functions
-
-def p (fd, obj, arg=None, newline=True):
-    """
-    Generalized thing printer.
-
-    This function is used to print widgets, components, and plain old strings
-    in a consistent manner that avoids littering the rest of the code with a
-    bunch of conditionals.
-
-    A widget or component can be printed by passing it in as the obj argument,
-    or by passing None for obj and passing the object in as the arg argument.
-
-    If obj is a string and arg is None, obj is simply printed.  If arg is not
-    None, it is interpolated in, except all substituted values are escaped to
-    be safe for HTML.  Note that obj itself is not escaped, since that is used
-    to print the actual HTML.  If obj is None, it is treated as "%s".
-
-    String printing can suppress a trailing newline by passing in False for
-    the newline argument.
-    """
-    if fd == None:
-        fd = sys.stdout
-    if isinstance (obj, Widget) or isinstance (obj, Component):
-        obj.output (fd=fd)
-    elif obj == None and (isinstance (arg, Widget) or isinstance (arg, Component)):
-        arg.output (fd=fd)
-    else:
-        if obj == None:
-            outstr = esc(arg)
-        elif arg == None:
-            outstr = obj
-        else:
-            outstr = obj % esc(arg)
-        if newline:
-            outstr += '\n'
-        try:
-            fd.write(outstr.encode('utf-8'))
-        except:
-            fd.write(outstr)
-
-def esc (obj):
-    """
-    Make some object safe for HTML output.
-
-    This function works on everything you can put on the right-hand side of
-    an interpolation.  Strings are simply escaped, tuples have their elements
-    escaped, and dictionaries are wrapped with escdict.
-    """
-    if isinstance (obj, unicode):
-        return cgi.escape (obj, True).encode('utf-8')
-    elif isinstance (obj, basestring):
-        return cgi.escape (obj, True)
-    elif isinstance (obj, tuple):
-        return tuple (map (esc, obj))
-    elif isinstance (obj, dict):
-        return escdict (obj)
-    else:
-        return obj
-
-class escdict (dict):
-    """
-    A dictionary wrapper that HTML escaped its values.
-    """
-    def __init__ (self, *args):
-        dict.__init__ (self, *args)
-
-    def __getitem__ (self, key):
-        """Get the value for key, HTML escaped."""
-        return esc (dict.__getitem__ (self, key))
 
 def get_badge_title (badge):
     if badge == 'maintainer':

@@ -31,63 +31,53 @@ import pulse.html
 import pulse.models as db
 import pulse.utils
 
-def main (path, query, http=True, fd=None):
+def main (response, path, query, http=True, fd=None):
     kw = {'path' : path, 'query' : query, 'http' : http, 'fd' : fd}
 
     if query.get('action', None) == 'create':
-        return output_account_create (**kw)
+        return output_account_create (response, **kw)
     elif path[1] == 'new':
-        return output_account_new (**kw)
+        return output_account_new (response, **kw)
     elif path[1] == 'auth' and len(path) > 2:
-        return output_account_auth (path[2], **kw)
+        return output_account_auth (response, path[2], **kw)
 
 
 @transaction.commit_manually
-def output_account_create (**kw):
+def output_account_create (response, **kw):
     data = cgi.parse ()
     for key in data.keys():
         data[key] = data[key][0]
     realname = data.get ('realname', '')
     if realname == '':
-        page = pulse.html.Fragment (http=kw.get('http', True), status=500)
         admon = pulse.html.AdmonBox (pulse.html.AdmonBox.error,
                                      pulse.utils.gettext('Please enter your name'))
-        page.add_content (admon)
-        page.output(fd=kw.get('fd'))
+        response.set_contents (admon)
         return
     username = data.get ('username', '')
     if username == '':
-        page = pulse.html.Fragment (http=kw.get('http', True), status=500)
         admon = pulse.html.AdmonBox (pulse.html.AdmonBox.error,
                                      pulse.utils.gettext('Please enter a username'))
-        page.add_content (admon)
-        page.output(fd=kw.get('fd'))
+        response.set_contents (admon)
         return
     email = data.get ('email', '')
     if email == '':
-        page = pulse.html.Fragment (http=kw.get('http', True), status=500)
         admon = pulse.html.AdmonBox (pulse.html.AdmonBox.error,
                                      pulse.utils.gettext('Please enter a valid email address'))
-        page.add_content (admon)
-        page.output(fd=kw.get('fd'))
+        response.set_contents (admon)
         return
     password = data.get ('password', '')
     if password == '':
-        page = pulse.html.Fragment (http=kw.get('http', True), status=500)
         admon = pulse.html.AdmonBox (pulse.html.AdmonBox.error,
                                      pulse.utils.gettext('Please enter a password'))
-        page.add_content (admon)
-        page.output(fd=kw.get('fd'))
+        response.set_contents (admon)
         return
     try:
         ident = '/person/' + username
         if (db.Account.objects.filter (username=username).count() > 0 or
             db.Entity.objects.filter (ident=ident).count() > 0):
-            page = pulse.html.Fragment (http=kw.get('http', True), status=500)
             admon = pulse.html.AdmonBox (pulse.html.AdmonBox.error,
                                          pulse.utils.gettext('Username already in use'))
-            page.add_content (admon)
-            page.output(fd=kw.get('fd'))
+            response.set_contents (admon)
             return
         person = db.Entity.get_record (ident, 'Person')
         person.save ()
@@ -110,29 +100,26 @@ def output_account_create (**kw):
             '%saccount/auth/%s')
                    % (realname, pulse.config.web_root, token))
         mail.send_mail (subject, message, pulse.config.server_email, [email])
-        page = pulse.html.Fragment (http=kw.get('http', True))
         div = pulse.html.Div (pulse.utils.gettext (
             'Pulse has sent you a confirmation email.  Please visit the link' +
             ' in that email to complete your registration.'
             ))
-        page.add_content (div)
-        page.output (fd=kw.get('fd'))
+        response.set_contents (div)
     except:
         transaction.rollback ()
-        page = pulse.html.Fragment (http=kw.get('http', True), status=500)
         admon = pulse.html.AdmonBox (pulse.html.AdmonBox.error,
                                      pulse.utils.gettext('There was a problem processing the request'))
-        page.add_content (admon)
-        page.output(fd=kw.get('fd'))
+        response.set_contents (admon)
         return
     else:
         transaction.commit ()
 
 
-def output_account_new (**kw):
+def output_account_new (response, **kw):
     page = pulse.html.Page (http=kw.get('http', True),
                             url=(pulse.config.web_root + 'account/new'))
     page.set_title (pulse.utils.gettext ('Create New Account'))
+    response.set_contents (page)
 
     columns = pulse.html.ColumnBox (2)
     page.add_content (columns)
@@ -197,18 +184,16 @@ def output_account_new (**kw):
         ' already know about you, and we\'ll take care of the rest.'
         ))
 
-    page.output (fd=kw.get('fd'))
-
 
 @transaction.commit_manually
-def output_account_auth (token, **kw):
+def output_account_auth (response, token, **kw):
     try:
         account = db.Account.objects.get (check_hash=token, check_type='new')
     except:
         page = pulse.html.PageError (
             pulse.utils.gettext ('The authorization token %s was not found.') % token,
             **kw)
-        page.output (fd=kw.get('fd'))
+        response.set_contents (page)
         return
     try:
         ipaddress = os.getenv ('REMOTE_ADDR')
@@ -221,14 +206,12 @@ def output_account_auth (token, **kw):
         account.save ()
         token = pulse.utils.get_token ()
         login = db.Login.set_login (account, token, ipaddress)
-        page = pulse.html.HttpRedirect (pulse.config.web_root + 'home')
-        page.set_cookie ('pulse_auth', token)
-        page.output (fd=kw.get('fd'))
+        response.redirect (pulse.config.web_root + 'home')
+        response.set_cookie ('pulse_auth', token)
     except:
         transaction.rollback ()
         page = pulse.html.PageError (pulse.utils.gettext('There was a problem processing the request:'),
                                      **kw)
-        page.output(fd=kw.get('fd'))
-        return
+        response.set_contents (page)
     else:
         transaction.commit ()
