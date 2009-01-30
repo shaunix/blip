@@ -21,7 +21,7 @@
 import cgi
 import crypt
 import datetime
-import random
+import os
 
 from django.core import mail
 from django.db import transaction
@@ -91,14 +91,14 @@ def output_account_create (**kw):
             return
         person = db.Entity.get_record (ident, 'Person')
         person.save ()
-        token = '%x' % random.randint (16**32, 16**33 - 1)
+        token = pulse.utils.get_token ()
         user = db.Account (username=username,
                            password=crypt.crypt(password, 'pu'),
                            person=person,
                            realname=realname,
                            email=email,
                            check_time=datetime.datetime.now(),
-                           check_type="new",
+                           check_type='new',
                            check_hash=token,
                            data={})
         user.save ()
@@ -203,7 +203,7 @@ def output_account_new (**kw):
 @transaction.commit_manually
 def output_account_auth (token, **kw):
     try:
-        account = db.Account.objects.get (check_hash=token)
+        account = db.Account.objects.get (check_hash=token, check_type='new')
     except:
         page = pulse.html.PageError (
             pulse.utils.gettext ('The authorization token %s was not found.') % token,
@@ -211,10 +211,22 @@ def output_account_auth (token, **kw):
         page.output (fd=kw.get('fd'))
         return
     try:
-        pulse.html.HttpRedirect (pulse.config.web_root + 'home').output (fd=kw.get('fd'))
+        ipaddress = os.getenv ('REMOTE_ADDR')
+        ipaddress = '127.0.0.1'
+        if ipaddress == None:
+            raise
+        account.check_time = None
+        account.check_type = None
+        account.check_hash = None
+        account.save ()
+        token = pulse.utils.get_token ()
+        login = db.Login.set_login (account, token, ipaddress)
+        page = pulse.html.HttpRedirect (pulse.config.web_root + 'home')
+        page.set_cookie ('pulse_auth', token)
+        page.output (fd=kw.get('fd'))
     except:
         transaction.rollback ()
-        page = pulse.html.PageError (pulse.utils.gettext('There was a problem processing the request'),
+        page = pulse.html.PageError (pulse.utils.gettext('There was a problem processing the request:'),
                                      **kw)
         page.output(fd=kw.get('fd'))
         return

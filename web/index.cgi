@@ -1,12 +1,15 @@
 #!/usr/bin/env python
 
+import Cookie
 import getopt
 import os
 import sys
 import cgi
 
 import pulse.config
+import pulse.models as db
 import pulse.pages
+import pulse.response
 import pulse.utils
 
 def usage ():
@@ -35,14 +38,13 @@ def main ():
         pulse.config.DEBUG = False
 
     if len(args) > 0:
-        http = False
         pathInfo = args[0]
         if len(args) > 1:
             queryString = args[1]
         else:
             queryString = os.getenv ('QUERY_STRING')
     else:
-        http = True
+        pulse.output_http = True
         pathInfo = os.getenv ('PATH_INFO')
         queryString = os.getenv ('QUERY_STRING')
 
@@ -69,8 +71,18 @@ def main ():
     # to set pulse.config.DEBUG to False before that.
     import pulse.html as html
     retcode = 0
+
+    try:
+        ck = Cookie.SimpleCookie ()
+        ck.load (os.getenv ('HTTP_COOKIE') or '')
+        token = ck.get('pulse_auth')
+        token = token.value
+        pulse.response.user_account = db.Login.get_login (token, os.getenv ('REMOTE_ADDR')).account
+    except:
+        pass
+
     if len (path) == 0:
-        page = html.Page (http=http)
+        page = html.Page ()
         page.set_title (pulse.utils.gettext ('Pulse'))
         cont = html.PaddingBox ()
         page.add_content (cont)
@@ -89,24 +101,20 @@ def main ():
                     page.add_sidebar_content (box)
                 else:
                     cont.add_content (box)
-        page.output (fd=fd)
+        page.output ()
     else:
-        if not http:
+        try:
             mod = pulse.utils.import_ ('pulse.pages.' + path[0])
-            retcode = mod.main (path, query, http=http, fd=fd)
-        else:
-            try:
-                mod = pulse.utils.import_ ('pulse.pages.' + path[0])
-                retcode =  mod.main (path, query, http=http, fd=fd)
-            except:
-                kw = {'http': http}
-                kw['title'] = pulse.utils.gettext ('Bad Monkeys')
-                page = html.PageError (pulse.utils.gettext (
-                    'Pulse does not know how to construct this page.  This is' +
-                    ' probably because some naughty little monkeys didn\'t finish' +
-                    ' their programming assignment.'))
-                page.output(fd=fd)
-                retcode = 500
+            retcode =  mod.main (path, query)
+        except:
+            if not pulse.reponse.output_http:
+                raise
+            page = html.PageError (pulse.utils.gettext (
+                'Pulse does not know how to construct this page.  This is' +
+                ' probably because some naughty little monkeys didn\'t finish' +
+                ' their programming assignment.'))
+            page.output()
+            retcode = 500
     if getattr (pulse.config, 'debug_db', False):
         print ('%i SELECT statements in %.3f seconds' %
                (pulse.models.PulseDebugCursor.debug_select_count,

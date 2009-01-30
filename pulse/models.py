@@ -795,6 +795,37 @@ class Account (models.Model):
     check_hash = models.CharField (null=True, **maxlength200)
     data = PickleField ()
 
+
+class Login (models.Model):
+    __metaclass__ = PulseModelBase
+
+    account = models.ForeignKey (Account, related_name='logins')
+    token = models.CharField (**maxlength200)
+    datetime = models.DateTimeField ()
+    ipaddress = models.CharField (**maxlength20)
+
+    @classmethod
+    def set_login (cls, account, token, ipaddress):
+        login = cls (account=account, token=token, ipaddress=ipaddress,
+                     datetime=datetime.datetime.now())
+        login.save ()
+        return login
+
+    @classmethod
+    def get_login (cls, token, ipaddress):
+        try:
+            login = cls.objects.get (token=token, ipaddress=ipaddress)
+            now = datetime.datetime.now ()
+            if (now - login.datetime).days > 0:
+                login.delete ()
+                raise
+            login.datetime = now
+            login.save ()
+            return login
+        except:
+            return None
+
+
 class AccountWatch (models.Model):
     __metaclass__ = PulseModelBase
 

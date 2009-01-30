@@ -18,13 +18,17 @@
 # Suite 330, Boston, MA  0211-1307  USA.
 #
 
+import Cookie
+import os
+
 import pulse.config
 import pulse.html
 import pulse.models as db
+import pulse.response
 import pulse.utils
 
-def main (path, query, http=True, fd=None):
-    kw = {'path' : path, 'query' : query, 'http' : http, 'fd' : fd}
+def main (path, query):
+    kw = {'path' : path, 'query' : query}
 
     if query.get('ajax', None) == 'tab':
         return output_ajax_tab (**kw)
@@ -33,27 +37,31 @@ def main (path, query, http=True, fd=None):
 
 
 def output_home (**kw):
-    page = pulse.html.Page (http=kw.get('http', True),
-                            url=(pulse.config.web_root + 'home'))
+    page = pulse.html.Page (url=(pulse.config.web_root + 'home'))
     page.set_title (pulse.utils.gettext ('Home'))
+    if pulse.response.user_account != None:
+        page.set_title (pulse.response.user_account.realname)
 
     page.add_tab ('ticker', pulse.utils.gettext ('Ticker'))
     box = get_ticker_tab (**kw)
     page.add_to_tab ('ticker', box)
 
-    page.output (fd=kw.get('fd'))
+    page.output ()
 
 
 def output_ajax_tab (**kw):
     query = kw.get ('query', {})
-    page = pulse.html.Fragment (http=kw.get('http', True))
+    page = pulse.html.Fragment ()
     tab = query.get('tab', None)
     if tab == 'ticker':
         page.add_content (get_ticker_tab (**kw))
-    page.output(fd=kw.get('fd'))
+    page.output ()
     return 0
 
 
 def get_ticker_tab (**kw):
-    box = pulse.html.Div ('This is your ticker')
+    if pulse.response.user_account != None:
+        box = pulse.html.Div ('This is your ticker %s' % pulse.response.user_account.realname)
+    else:
+        box = pulse.html.Div ('foo')
     return box

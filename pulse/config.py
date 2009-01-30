@@ -76,7 +76,7 @@ web_l10n_dir = os.path.join (web_files_dir, 'l10n')
 # Pulse without mod_rewrite.
 
 # The root URL for all things Pulse
-web_root = 'http://localhost/'
+web_root = 'http://127.0.0.1/'
 
 # The root URL for Pulse's CSS, JavaScript, images, etc.
 data_root = web_root + 'data/'

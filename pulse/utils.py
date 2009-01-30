@@ -26,11 +26,16 @@ import HTMLParser
 import math
 import os
 import os.path
+import random
 import sys
 import tempfile
 import urllib
 
 import pulse.config
+
+
+def get_token ():
+    return '%x' % random.randint (16**32, 16**33 - 1)
 
 
 def utf8dec (s):
