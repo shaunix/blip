@@ -28,62 +28,53 @@ import pulse.utils
 
 import pulse.pages.mod
 
-def main (path, query, http=True, fd=None):
+def main (response, path, query):
     """Output information about applications"""
     if len(path) == 4:
         branchables = db.Branchable.objects.filter (ident=('/' + '/'.join(path)))
         try:
             branchable = branchables[0]
         except IndexError:
-            kw = {'http': http}
-            kw['title'] = pulse.utils.gettext ('Application Not Found')
-            # FIXME: this is not a good place to redirect
-            kw['pages'] = [('app', pulse.utils.gettext ('All Applications'))]
             page = pulse.html.PageNotFound (
                 pulse.utils.gettext ('Pulse could not find the application %s')
                 % path[3],
-                **kw)
-            page.output(fd=fd)
-            return 404
+                title=pulse.utils.gettext ('Application Not Found'))
+            response.set_contents (page)
+            return
 
         app = branchable.get_default ()
         if app == None:
-            kw = {'http': http}
-            kw['title'] = pulse.utils.gettext ('Default Branch Not Found')
-            # FIXME: this is not a good place to redirect
-            kw['pages'] = [('app', pulse.utils.gettext ('All Applications'))]
             page = pulse.html.PageNotFound (
                 pulse.utils.gettext ('Pulse could not find a default branch'
                                      ' for the application %s')
                 % path[3],
-                **kw)
-            page.output(fd=fd)
-            return 404
+                title=pulse.utils.gettext ('Default Branch Not Found'))
+            response.set_contents (page)
+            return
 
     elif len(path) == 5:
         apps = db.Branch.objects.filter (ident=('/' + '/'.join(path)))
         try:
             app = apps[0]
         except IndexError:
-            kw = {'http': http}
-            kw['title'] = pulse.utils.gettext ('Application Not Found')
             page = pulse.html.PageNotFound (
                 (pulse.utils.gettext ('Pulse could not find the branch %s'
                                       ' of the application %s')
                  % (path[4], path[3])),
-                **kw)
-            page.output(fd=fd)
-            return 404
+                title=pulse.utils.gettext ('Application Not Found'))
+            response.set_contents (page)
+            return
     else:
         # FIXME: redirect to /set or something
         pass
 
-    return output_app (app, path=path, query=query, http=http, fd=fd)
+    return output_app (response, app, path=path, query=query)
 
 
-def output_app (app, **kw):
+def output_app (response, app, **kw):
     """Output information about an application"""
-    page = pulse.html.Page (app, http=kw.get('http', True))
+    page = pulse.html.Page (app)
+    response.set_contents (page)
     checkout = pulse.scm.Checkout.from_record (app, checkout=False, update=False)
 
     branches = pulse.utils.attrsorted (list(app.branchable.branches.all()),
@@ -149,7 +140,3 @@ def output_app (app, **kw):
     else:
         box.add_content (pulse.html.AdmonBox (pulse.html.AdmonBox.warning,
                                               pulse.utils.gettext ('No documentation') ))
-
-    page.output(fd=kw.get('fd'))
-
-    return 0

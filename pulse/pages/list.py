@@ -28,11 +28,11 @@ import pulse.models as db
 import pulse.scm
 import pulse.utils
 
-def main (path, query, http=True, fd=None):
+def main (response, path, query):
     team = None
-    kw = {'path' : path, 'query' : query, 'http' : http, 'fd' : fd}
+    kw = {'path' : path, 'query' : query}
     if len(path) == 1:
-        return output_top (**kw)
+        return output_top (response, **kw)
     ident = '/' + '/'.join(path)
     mlist = db.Forum.objects.filter (ident=ident, type='List')
     try:
@@ -40,22 +40,20 @@ def main (path, query, http=True, fd=None):
     except IndexError:
         mlist = None
     if mlist == None:
-        kw = {'http': http}
-        kw['title'] = pulse.utils.gettext ('Mailing List Not Found')
         page = pulse.html.PageNotFound (
             pulse.utils.gettext ('Pulse could not find the mailing list %s') % '/'.join(path[1:]),
-            **kw)
-        page.output(fd=fd)
-        return 404
+            title=pulse.utils.gettext ('Mailing List Not Found'))
+        response.set_contents (page)
+        return
 
     if query.get('ajax', None) == 'tab':
-        return output_ajax_tab (mlist, **kw)
+        output_ajax_tab (response, mlist, **kw)
     elif query.get('ajax', None) == 'graphmap':
-        return output_ajax_graphmap (mlist, **kw)
+        output_ajax_graphmap (response, mlist, **kw)
     elif query.get('ajax', None) == 'posts':
-        return output_ajax_posts (mlist, **kw)
+        output_ajax_posts (response, mlist, **kw)
     else:
-        return output_list (mlist, **kw)
+        output_list (response, mlist, **kw)
 
 
 def synopsis ():
@@ -81,18 +79,19 @@ def synopsis ():
     return box
 
 
-def output_top (**kw):
-    page = pulse.html.Page (http=kw.get('http', True))
+def output_top (response, **kw):
+    page = pulse.html.Page ()
+    response.set_contents (page)
     page.set_title (pulse.utils.gettext ('Mailing Lists'))
     mlists = db.Forum.objects.filter (type='List').order_by ('-post_score')
     for mlist in mlists[:42]:
         lbox = pulse.html.LinkBox (mlist)
         page.add_content (lbox)
-    page.output (fd=kw.get('fd'))
 
 
-def output_list (mlist, **kw):
-    page = pulse.html.Page (mlist, http=kw.get('http', True))
+def output_list (response, mlist, **kw):
+    page = pulse.html.Page (mlist)
+    response.set_contents (page)
 
     columns = pulse.html.ColumnBox (2)
     page.add_content (columns)
@@ -107,25 +106,18 @@ def output_list (mlist, **kw):
 
     page.add_tab ('activity', pulse.utils.gettext ('Activity'))
 
-    page.output(fd=kw.get('fd'))
-    return 0
 
-
-def output_ajax_tab (mlist, **kw):
+def output_ajax_tab (response, mlist, **kw):
     query = kw.get ('query', {})
-    page = pulse.html.Fragment (http=kw.get('http', True))
     tab = query.get('tab', None)
     if tab == 'info':
-        page.add_content (get_info_tab (mlist, **kw))
+        response.set_contents (get_info_tab (mlist, **kw))
     elif tab == 'activity':
-        page.add_content (get_activity_tab (mlist, **kw))
-    page.output(fd=kw.get('fd'))
-    return 0
+        response.set_contents (get_activity_tab (mlist, **kw))
 
 
-def output_ajax_graphmap (mlist, **kw):
+def output_ajax_graphmap (response, mlist, **kw):
     query = kw.get ('query', {})
-    page = pulse.html.Fragment (http=kw.get('http', True))
     id = query.get('id')
     num = query.get('num')
     filename = query.get('filename')
@@ -136,17 +128,13 @@ def output_ajax_graphmap (mlist, **kw):
         graph = pulse.html.Graph.activity_graph (of, mlist.pulse_url, 'posts',
                                                  pulse.utils.gettext ('%i posts'),
                                                  count=int(id), num=int(num), map_only=True)
-        page.add_content (graph)
+        response.set_contents (graph)
     except IndexError:
         pass
-    
-    page.output(fd=kw.get('fd'))
-    return 0
 
 
-def output_ajax_posts (mlist, **kw):
+def output_ajax_posts (response, mlist, **kw):
     query = kw.get ('query', {})
-    page = pulse.html.Fragment (http=kw.get('http', True))
     weeknum = query.get('weeknum', None)
     if weeknum != None:
         weeknum = int(weeknum)
@@ -168,10 +156,7 @@ def output_ajax_posts (mlist, **kw):
         title = (pulse.utils.gettext('Showing %i posts from %i weeks ago:')
                  % (len(posts), ago))
 
-    div = get_posts_div (mlist, posts, title)
-    page.add_content (div)
-    page.output(fd=kw.get('fd'))
-    return 0
+    response.set_contents (get_posts_div (mlist, posts, title))
 
 
 def get_info_tab (mlist, **kw):

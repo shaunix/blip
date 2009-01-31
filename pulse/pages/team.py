@@ -28,11 +28,11 @@ import pulse.models as db
 import pulse.scm
 import pulse.utils
 
-def main (path, query, http=True, fd=None):
+def main (response, path, query):
     team = None
-    kw = {'path' : path, 'query' : query, 'http' : http, 'fd' : fd}
+    kw = {'path' : path, 'query' : query}
     if len(path) == 1:
-        return output_top (**kw)
+        return output_top (response, **kw)
     ident = '/' + '/'.join(path)
     team = db.Entity.objects.filter (ident=ident, type='Team')
     try:
@@ -44,18 +44,16 @@ def main (path, query, http=True, fd=None):
         except:
             team = None
     if team == None:
-        kw = {'http': http}
-        kw['title'] = pulse.utils.gettext ('Team Not Found')
         page = pulse.html.PageNotFound (
             pulse.utils.gettext ('Pulse could not find the team %s') % '/'.join(path[1:]),
-            **kw)
-        page.output(fd=fd)
-        return 404
+            title=pulse.utils.gettext ('Team Not Found'))
+        response.set_contents (page)
+        return
 
     if query.get('ajax', None) == 'tab':
-        return output_ajax_tab (team, **kw)
+        output_ajax_tab (response, team, **kw)
     else:
-        return output_team (team, **kw)
+        output_team (response, team, **kw)
 
 
 def synopsis ():
@@ -70,19 +68,20 @@ def synopsis ():
     return box
 
 
-def output_top (**kw):
-    page = pulse.html.Page (http=kw.get('http', True))
+def output_top (response, **kw):
+    page = pulse.html.Page ()
+    response.set_contents (page)
     page.set_title (pulse.utils.gettext ('Teams'))
     teams = db.Entity.objects.filter (type='Team', parent__isnull=True)
     teams = pulse.utils.attrsorted (list(teams), 'title')
     for team in teams:
         lbox = pulse.html.LinkBox (team)
         page.add_content (lbox)
-    page.output (fd=kw.get('fd'))
 
 
-def output_team (team, **kw):
-    page = pulse.html.Page (team, http=kw.get('http', True))
+def output_team (response, team, **kw):
+    page = pulse.html.Page (team)
+    response.set_contents (page)
 
     page.set_sublinks_divider (pulse.html.TRIANGLE)
     page.add_sublink (pulse.config.web_root + 'team', pulse.utils.gettext ('Teams'))
@@ -112,24 +111,18 @@ def output_team (team, **kw):
     if cnt > 0:
         page.add_tab ('documents', pulse.utils.gettext ('Documents (%i)') % cnt)
 
-    page.output(fd=kw.get('fd'))
-    return 0
 
-
-def output_ajax_tab (team, **kw):
+def output_ajax_tab (response, team, **kw):
     query = kw.get ('query', {})
-    page = pulse.html.Fragment (http=kw.get('http', True))
     tab = query.get('tab', None)
     if tab == 'info':
-        page.add_content (get_info_tab (team, **kw))
+        response.set_contents (get_info_tab (team, **kw))
     elif tab == 'subteams':
-        page.add_content (get_subteams_tab (team, **kw))
+        response.set_contents (get_subteams_tab (team, **kw))
     elif tab == 'modules':
-        page.add_content (get_mod_tab (team, **kw))
+        response.set_contents (get_mod_tab (team, **kw))
     elif tab == 'documents':
-        page.add_content (get_doc_tab (team, **kw))
-    page.output(fd=kw.get('fd'))
-    return 0
+        response.set_contents (get_doc_tab (team, **kw))
 
 
 def get_info_tab (team, **kw):

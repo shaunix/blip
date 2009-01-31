@@ -112,10 +112,18 @@ def main ():
         except:
             if not http:
                 raise
-            page = pulse.html.PageError (pulse.utils.gettext (
-                'Pulse does not know how to construct this page.  This is' +
-                ' probably because some naughty little monkeys didn\'t finish' +
-                ' their programming assignment.'))
+            if query.has_key ('ajax'):
+                page = pulse.html.AdmonBox (
+                    pulse.html.AdmonBox.error,
+                    pulse.utils.gettext (
+                    'Pulse does not know how to construct this page.  This is' +
+                    ' probably because some naughty little monkeys didn\'t finish' +
+                    ' their programming assignment.'))
+            else:
+                page = pulse.html.PageError (pulse.utils.gettext (
+                    'Pulse does not know how to construct this page.  This is' +
+                    ' probably because some naughty little monkeys didn\'t finish' +
+                    ' their programming assignment.'))
             response.set_contents (page)
 
     if getattr (config, 'debug_db', False):

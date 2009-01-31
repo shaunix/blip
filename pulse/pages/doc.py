@@ -31,72 +31,63 @@ import pulse.models as db
 import pulse.scm
 import pulse.utils
 
-def main (path, query, http=True, fd=None):
+def main (response, path, query):
     """Output information about documents"""
     if len(path) == 4:
         branchables = db.Branchable.objects.filter (ident=('/' + '/'.join(path)))
         try:
             branchable = branchables[0]
         except IndexError:
-            kw = {'http': http}
-            kw['title'] = pulse.utils.gettext ('Document Not Found')
-            # FIXME: this is not a good place to redirect
-            kw['pages'] = [('mod', pulse.utils.gettext ('All Modules'))]
             page = pulse.html.PageNotFound ( 
                pulse.utils.gettext ('Pulse could not find the document %s') % path[3],
-                **kw)
-            page.output(fd=fd)
-            return 404
+               title=pulse.utils.gettext ('Document Not Found'))
+            response.set_contents (page)
+            return
 
         doc = branchable.get_default ()
         if doc == None:
-            kw = {'http': http}
-            kw['title'] = pulse.utils.gettext ('Default Branch Not Found')
-            # FIXME: this is not a good place to redirect
-            kw['pages'] = [('mod', pulse.utils.gettext ('All Modules'))]
             page = pulse.html.PageNotFound (
                 pulse.utils.gettext ('Pulse could not find a default branch'
                                      ' for the document %s')
                 % path[3],
-                **kw)
-            page.output(fd=fd)
-            return 404
+                title=pulse.utils.gettext ('Default Branch Not Found'))
+            response.set_contents(page)
+            return
 
     elif len(path) == 5:
         docs = db.Branch.objects.filter (ident=('/' + '/'.join(path)))
         try:
             doc = docs[0]
         except IndexError:
-            kw = {'http': http}
-            kw['title'] = pulse.utils.gettext ('Document Not Found')
             page = pulse.html.PageNotFound (
                 pulse.utils.gettext ('Pulse could not find the branch %s of the document %s')
                 % (path[4], path[3]),
-                **kw)
-            page.output(fd=fd)
-            return 404
+                title=pulse.utils.gettext ('Document Not Found'))
+            response.set_contents (page)
+            return
     else:
         # FIXME: redirect to /set or something
         pass
 
-    kw = {'path' : path, 'query' : query, 'http' : http, 'fd' : fd}
+    kw = {'path' : path, 'query' : query}
     if query.get('ajax', None) == 'tab':
-        return output_ajax_tab (doc, **kw)
+        output_ajax_tab (response, doc, **kw)
     elif query.get('ajax', None) == 'commits':
-        return output_ajax_commits (doc, **kw)
+        output_ajax_commits (response, doc, **kw)
     elif query.get('ajax', None) == 'figures':
-        return output_ajax_figures (doc, **kw)
+        output_ajax_figures (response, doc, **kw)
     elif query.get('ajax', None) == 'graphmap':
-        return output_ajax_graphmap (doc, **kw)
+        output_ajax_graphmap (response, doc, **kw)
     elif query.get('ajax', None) == 'xmlfiles':
-        return output_ajax_xmlfiles (doc, **kw)
+        output_ajax_xmlfiles (response, doc, **kw)
     else:
-        return output_doc (doc, **kw)
+        output_doc (response, doc, **kw)
 
 
-def output_doc (doc, **kw):
+def output_doc (response, doc, **kw):
     """Output information about a document"""
-    page = pulse.html.Page (doc, http=kw.get('http', True))
+    page = pulse.html.Page (doc)
+    response.set_contents (page)
 
     branches = pulse.utils.attrsorted (list(doc.branchable.branches.all()),
                                        '-is_default', 'scm_branch')
@@ -171,21 +162,14 @@ def output_doc (doc, **kw):
     page.add_tab ('files', pulse.utils.gettext ('Files'))
     page.add_tab ('translations', pulse.utils.gettext ('Translations'))
 
-    page.output(fd=kw.get('fd'))
-    return 0
 
-
-def output_ajax_figures (doc, **kw):
-    page = pulse.html.Fragment (http=kw.get('http', True))
+def output_ajax_figures (response, doc, **kw):
     figures = doc.data.get('figures', {})
-    page.add_content (get_figures (doc, figures))
-    page.output(fd=kw.get('fd'))
-    return 0
+    response.set_contents (get_figures (doc, figures))
 
 
-def output_ajax_graphmap (doc, **kw):
+def output_ajax_graphmap (response, doc, **kw):
     query = kw.get ('query', {})
-    page = pulse.html.Fragment (http=kw.get('http', True))
     id = query.get('id')
     num = query.get('num')
     filename = query.get('filename')
@@ -196,40 +180,30 @@ def output_ajax_graphmap (doc, **kw):
         graph = pulse.html.Graph.activity_graph (of, doc.pulse_url, 'commits',
                                                  pulse.utils.gettext ('%i commits'),
                                                  count=int(id), num=int(num), map_only=True)
-        page.add_content (graph)
+        response.set_contents (graph)
     except IndexError:
         pass
-    
-    page.output(fd=kw.get('fd'))
-    return 0
 
 
-def output_ajax_xmlfiles (doc, **kw):
-    page = pulse.html.Fragment (http=kw.get('http', True))
+def output_ajax_xmlfiles (response, doc, **kw):
     xmlfiles = doc.data.get('xmlfiles', [])
-    page.add_content (get_xmlfiles (doc, xmlfiles))
-    page.output(fd=kw.get('fd'))
-    return 0
+    response.set_contents (get_xmlfiles (doc, xmlfiles))
 
 
-def output_ajax_tab (doc, **kw):
+def output_ajax_tab (response, doc, **kw):
     query = kw.get ('query', {})
-    page = pulse.html.Fragment (http=kw.get('http', True))
     tab = query.get('tab', None)
     if tab == 'info':
-        page.add_content (get_info_tab (doc, **kw))
+        response.set_contents (get_info_tab (doc, **kw))
     elif tab == 'activity':
-        page.add_content (get_activity_tab (doc, **kw))
+        response.set_contents (get_activity_tab (doc, **kw))
     elif tab == 'files':
-        page.add_content (get_files_tab (doc, **kw))
+        response.set_contents (get_files_tab (doc, **kw))
     elif tab == 'translations':
-        page.add_content (get_translations_tab (doc, **kw))
-    page.output(fd=kw.get('fd'))
-    return 0
+        response.set_contents (get_translations_tab (doc, **kw))
 
 
-def output_ajax_commits (doc, **kw):
-    page = pulse.html.Fragment (http=kw.get('http', True))
+def output_ajax_commits (response, doc, **kw):
     query = kw.get('query', {})
     weeknum = query.get('weeknum', None)
     files = [os.path.join (doc.scm_dir, f) for f in doc.data.get ('xmlfiles', [])]
@@ -256,10 +230,7 @@ def output_ajax_commits (doc, **kw):
     else:
         title = (pulse.utils.gettext('Showing %i of %i commits from %i weeks ago:')
                  % (len(revs), cnt, ago))
-    div = get_commits_div (doc, revs, title)
-    page.add_content (div)
-    page.output(fd=kw.get('fd'))
-    return 0
+    response.set_contents (get_commits_div (doc, revs, title))
 
 
 def get_info_tab (doc, **kw):

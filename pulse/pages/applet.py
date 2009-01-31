@@ -20,5 +20,5 @@
 
 import pulse.pages.app
 
-def main (path, query, http=True, fd=None):
-    return pulse.pages.app.main (path, query, http=http, fd=fd)
+def main (response, path, query):
+    return pulse.pages.app.main (response, path, query)

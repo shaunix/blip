@@ -31,9 +31,9 @@ def main (response, path, query):
     kw = {'path' : path, 'query' : query}
 
     if query.get('ajax', None) == 'tab':
-        return output_ajax_tab (response, **kw)
+        output_ajax_tab (response, **kw)
     else:
-        return output_home (response, **kw)
+        output_home (response, **kw)
 
 
 def output_home (response, **kw):

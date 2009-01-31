@@ -29,71 +29,54 @@ import pulse.html
 import pulse.scm
 import pulse.utils
 
-def main (path, query, http=True, fd=None):
+def main (response, path, query):
     if len(path) == 3:
         branchables = db.Branchable.objects.filter(ident=('/' + '/'.join(path)))
         try:
             branchable = branchables[0]
         except IndexError:
-            kw = {'http': http}
-            kw['title'] = pulse.utils.gettext ('Module Not Found')
-            # FIXME: this is not a good place to redirect
-            kw['pages'] = [('mod', pulse.utils.gettext ('All Modules'))]
             page = pulse.html.PageNotFound (
                 pulse.utils.gettext ('Pulse could not find the module %s') % path[2],
-                **kw)
-            page.output(fd=fd)
-            return 404
+                title=pulse.utils.gettext ('Module Not Found'))
+            response.set_contents (page)
+            return
 
         branch = branchable.get_default ()
         if branch == None:
-            kw = {'http': http}
-            kw['title'] = pulse.utils.gettext ('Default Branch Not Found')
-            # FIXME: this is not a good place to redirect
-            kw['pages'] = [('mod', pulse.utils.gettext ('All Modules'))]
             page = pulse.html.PageNotFound (
                 pulse.utils.gettext ('Pulse could not find a default branch for the module %s')
                 % path[2],
-                **kw)
-            page.output(fd=fd)
-            return 404
+                title=pulse.utils.gettext ('Default Branch Not Found'))
+            response.set_contents (page)
+            return
     elif len(path) == 4:
         branches = db.Branch.objects.filter (ident=('/' + '/'.join(path)))
         try:
             branch = branches[0]
         except IndexError:
-            kw = {'http': http}
-            kw['title'] = pulse.utils.gettext ('Branch Not Found')
-            modules = db.Branchable.objects.filter (ident=('/' + '/'.join(path[:-1])))
-            if modules.count() > 0:
-                module = modules[0]
-                # FIXME: i18n
-                kw['pages'] = [(module.ident, module.title)]
-            else:
-                kw['pages'] = []
             page = pulse.html.PageNotFound (
                 pulse.utils.gettext ('Pulse could not find the branch %s of the module %s')
                 % (path[3], path[2]),
-                **kw)
-            page.output(fd=fd)
-            return 404
+                title=pulse.utils.gettext ('Branch Not Found'))
+            response.set_contents (page)
+            return
     else:
         # FIXME: redirect to /set or something
         pass
 
-    kw = {'path' : path, 'query' : query, 'http' : http, 'fd' : fd}
+    kw = {'path' : path, 'query' : query}
     if query.get('ajax', None) == 'tab':
-        return output_ajax_tab (branch, **kw)
+        output_ajax_tab (response, branch, **kw)
     elif query.get('ajax', None) == 'commits':
-        return output_ajax_commits (branch, **kw)
+        output_ajax_commits (response, branch, **kw)
     elif query.get('ajax', None) == 'domain':
-        return output_ajax_domain (branch, **kw)
+        output_ajax_domain (response, branch, **kw)
     elif query.get('ajax', None) == 'graphmap':
-        return output_ajax_graphmap (branch, **kw)
+        output_ajax_graphmap (response, branch, **kw)
     elif query.get('ajax', None) == 'revfiles':
-        return output_ajax_revfiles (branch, **kw)
+        output_ajax_revfiles (response, branch, **kw)
     else:
-        return output_module (branch, **kw)
+        output_module (response, branch, **kw)
 
 synopsis_sort = -1
 def synopsis ():
@@ -139,10 +122,11 @@ def synopsis ():
     return box
 
 
-def output_module (module, **kw):
+def output_module (response, module, **kw):
     branchable = module.branchable
 
-    page = pulse.html.Page (module, http=kw.get('http', True))
+    page = pulse.html.Page (module)
+    response.set_contents (page)
 
     branches = pulse.utils.attrsorted (list(branchable.branches.all()),
                                        '-is_default', 'scm_branch')
@@ -190,30 +174,21 @@ def output_module (module, **kw):
                 d2.add_content (div)
 
 
-    page.output(fd=kw.get('fd'))
-
-    return 0
-
-
-def output_ajax_tab (module, **kw):
+def output_ajax_tab (response, module, **kw):
     query = kw.get ('query', {})
-    page = pulse.html.Fragment (http=kw.get('http', True))
     tab = query.get('tab', None)
     if tab == 'info':
-        page.add_content (get_info_tab (module, **kw))
+        response.set_contents (get_info_tab (module, **kw))
     elif tab == 'activity':
-        page.add_content (get_activity_tab (module, **kw))
+        response.set_contents (get_activity_tab (module, **kw))
     elif tab == 'components':
-        page.add_content (get_components_tab (module, **kw))
+        response.set_contents (get_components_tab (module, **kw))
     elif tab == 'translations':
-        page.add_content (get_translations_tab (module, **kw))
-    page.output(fd=kw.get('fd'))
-    return 0
+        response.set_contents (get_translations_tab (module, **kw))
 
 
-def output_ajax_domain (module, **kw):
+def output_ajax_domain (response, module, **kw):
     query = kw.get ('query', {})
-    page = pulse.html.Fragment (http=kw.get('http', True))
     ident = query.get('domain', None)
 
     domain = db.Branch.objects.get (ident=ident)
@@ -222,9 +197,9 @@ def output_ajax_domain (module, **kw):
                                                     type='Translation', parent=domain)
     translations = pulse.utils.attrsorted (list(translations), 'title')
     pagediv = pulse.html.Div ()
+    response.set_contents (pagediv)
     pad = pulse.html.PaddingBox ()
     pagediv.add_content (pad)
-    page.add_content (pagediv)
 
     if domain.scm_dir == 'po':
         potfile = domain.scm_module + '.pot'
@@ -291,13 +266,9 @@ def output_ajax_domain (module, **kw):
             elif percent >= 50:
                 grid.add_row_class (idx, 'po50')
 
-    page.output(fd=kw.get('fd'))
-    return 0
 
-
-def output_ajax_graphmap (module, **kw):
+def output_ajax_graphmap (response, module, **kw):
     query = kw.get ('query', {})
-    page = pulse.html.Fragment (http=kw.get('http', True))
     id = query.get('id')
     num = query.get('num')
     filename = query.get('filename')
@@ -308,17 +279,13 @@ def output_ajax_graphmap (module, **kw):
         graph = pulse.html.Graph.activity_graph (of, module.pulse_url, 'commits',
                                                  pulse.utils.gettext ('%i commits'),
                                                  count=int(id), num=int(num), map_only=True)
-        page.add_content (graph)
+        response.set_contents (graph)
     except IndexError:
         pass
-    
-    page.output(fd=kw.get('fd'))
-    return 0
 
 
-def output_ajax_commits (module, **kw):
+def output_ajax_commits (response, module, **kw):
     query = kw.get ('query', {})
-    page = pulse.html.Fragment (http=kw.get('http', True))
     weeknum = query.get('weeknum', None)
     if weeknum != None:
         weeknum = int(weeknum)
@@ -344,21 +311,16 @@ def output_ajax_commits (module, **kw):
         title = (pulse.utils.gettext('Showing %i of %i commits from %i weeks ago:')
                  % (len(revs), cnt, ago))
     div = get_commits_div (module, revs, title)
-    page.add_content (div)
-    page.output(fd=kw.get('fd'))
-    return 0
+    response.set_contents (div)
 
 
-def output_ajax_revfiles (module, **kw):
-    query = kw.get ('query', {})
-    page = pulse.html.Fragment (http=kw.get('http', True))
-
+def output_ajax_revfiles (response, module, **kw):
     if module.scm_server.endswith ('/svn/'):
         base = module.scm_server[:-4] + 'viewvc/'
         colon = base.find (':')
         if colon < 0:
-            page.output(fd=kw.get('fd'))
-            return 404
+            response.http_status = 404
+            return
         if base[:colon] != 'http':
             base = 'http' + base[colon:]
         if module.scm_path != None:
@@ -368,19 +330,17 @@ def output_ajax_revfiles (module, **kw):
         else:
             base += module.scm_module + '/branches/' + module.scm_branch + '/'
 
+    query = kw.get ('query', {})
     revid = query.get('revid', None)
     revision = db.Revision.objects.get(id=int(revid))
     files = db.RevisionFile.objects.filter (revision=revision)
 
     mlink = pulse.html.MenuLink (revision.revision, menu_only=True)
-    page.add_content (mlink)
+    response.add_content (mlink)
     for file in files:
         url = base + file.filename
         url += '?r1=%s&r2=%s' % (file.prevrev, file.filerev)
         mlink.add_link (url, file.filename)
-
-    page.output(fd=kw.get('fd'))
-    return 0
 
 
 def get_info_tab (module, **kw):

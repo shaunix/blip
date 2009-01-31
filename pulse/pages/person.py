@@ -28,11 +28,11 @@ import pulse.models as db
 import pulse.scm
 import pulse.utils
 
-def main (path, query, http=True, fd=None):
+def main (response, path, query):
     person = None
-    kw = {'path' : path, 'query' : query, 'http' : http, 'fd' : fd}
+    kw = {'path' : path, 'query' : query}
     if len(path) == 1:
-        return output_top (**kw)
+        return output_top (response, **kw)
     ident = '/' + '/'.join(path)
     person = db.Entity.objects.filter (ident=ident, type='Person')
     try:
@@ -44,22 +44,20 @@ def main (path, query, http=True, fd=None):
         except:
             person = None
     if person == None:
-        kw = {'http': http}
-        kw['title'] = pulse.utils.gettext ('Person Not Found')
         page = pulse.html.PageNotFound (
             pulse.utils.gettext ('Pulse could not find the person %s') % '/'.join(path[1:]),
-            **kw)
-        page.output(fd=fd)
-        return 404
+            title=pulse.utils.gettext ('Person Not Found'))
+        response.set_contents (page)
+        return
 
     if query.get('ajax', None) == 'tab':
-        return output_ajax_tab (person, **kw)
+        output_ajax_tab (response, person, **kw)
     elif query.get('ajax', None) == 'commits':
-        return output_ajax_commits (person, **kw)
+        output_ajax_commits (response, person, **kw)
     elif query.get('ajax', None) == 'graphmap':
-        return output_ajax_graphmap (person, **kw)
+        output_ajax_graphmap (response, person, **kw)
     else:
-        return output_person (person, **kw)
+        output_person (response, person, **kw)
 
 
 synopsis_sort = -1
@@ -90,8 +88,9 @@ def synopsis ():
     return box
 
 
-def output_top (**kw):
-    page = pulse.html.Page (http=kw.get('http', True))
+def output_top (response, **kw):
+    page = pulse.html.Page ()
+    response.set_contents (page)
     page.set_title (pulse.utils.gettext ('People'))
     people = db.Entity.objects.filter (type='Person').order_by ('-mod_score')
     page.add_content(pulse.html.Div(pulse.utils.gettext('42 most active people:')))
@@ -101,11 +100,11 @@ def output_top (**kw):
         lbox.add_graph (pulse.config.graphs_root
                         + '/'.join(person.ident.split('/')[1:] + ['commits-tight.png']))
         page.add_content (lbox)
-    page.output (fd=kw.get('fd'))
 
 
-def output_person (person, **kw):
-    page = pulse.html.Page (person, http=kw.get('http', True))
+def output_person (response, person, **kw):
+    page = pulse.html.Page (person)
+    response.set_contents (page)
 
     # Teams
     rels = db.TeamMember.get_related (pred=person)
@@ -143,27 +142,19 @@ def output_person (person, **kw):
     page.add_tab ('activity', pulse.utils.gettext ('Activity'))
     page.add_tab ('hacking', pulse.utils.gettext ('Hacking'))
 
-    page.output(fd=kw.get('fd'))
 
-    return 0
-
-
-def output_ajax_tab (person, **kw):
+def output_ajax_tab (response, person, **kw):
     query = kw.get ('query', {})
-    page = pulse.html.Fragment (http=kw.get('http', True))
     tab = query.get('tab', None)
     if tab == 'info':
-        page.add_content (get_info_tab (person, **kw))
+        response.set_contents (get_info_tab (person, **kw))
     elif tab == 'activity':
-        page.add_content (get_activity_tab (person, **kw))
+        response.set_contents (get_activity_tab (person, **kw))
     elif tab == 'hacking':
-        page.add_content (get_hacking_tab (person, **kw))
-    page.output(fd=kw.get('fd'))
-    return 0
+        response.set_contents (get_hacking_tab (person, **kw))
 
 
-def output_ajax_commits (person, **kw):
-    page = pulse.html.Fragment (http=kw.get('http', True))
+def output_ajax_commits (response, person, **kw):
     query = kw.get('query', {})
     weeknum = int(query.get('weeknum', 0))
     thisweek = pulse.utils.weeknum (datetime.datetime.now())
@@ -177,15 +168,11 @@ def output_ajax_commits (person, **kw):
         title = pulse.utils.gettext('Showing %i of %i commits from last week:') % (len(revs), cnt)
     else:
         title = pulse.utils.gettext('Showing %i of %i commits from %i weeks ago:') % (len(revs), cnt, ago)
-    div = get_commits_div (person, revs, title)
-    page.add_content (div)
-    page.output(fd=kw.get('fd'))
-    return 0
+    response.set_contents (get_commits_div (person, revs, title))
 
 
-def output_ajax_graphmap (person, **kw):
+def output_ajax_graphmap (response, person, **kw):
     query = kw.get ('query', {})
-    page = pulse.html.Fragment (http=kw.get('http', True))
     id = query.get('id')
     num = query.get('num')
     filename = query.get('filename')
@@ -196,12 +183,9 @@ def output_ajax_graphmap (person, **kw):
         graph = pulse.html.Graph.activity_graph (of, person.pulse_url, 'commits',
                                                  pulse.utils.gettext ('%i commits'),
                                                  count=int(id), num=int(num), map_only=True)
-        page.add_content (graph)
+        response.set_contents (graph)
     except IndexError:
         pass
-    
-    page.output(fd=kw.get('fd'))
-    return 0
 
 
 def get_info_tab (person, **kw):

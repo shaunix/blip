@@ -20,5 +20,5 @@
 
 import pulse.pages.doc
 
-def main (path, query, http=True, fd=None):
-    return pulse.pages.doc.main (path, query, http=http, fd=fd)
+def main (response, path, query):
+    return pulse.pages.doc.main (response, path, query)

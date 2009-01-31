@@ -32,7 +32,7 @@ import pulse.parsers
 import pulse.scm
 import pulse.utils
 
-def main (path, query, http=True, fd=None):
+def main (response, path, query):
     """Output information about translations"""
     ident = '/' + '/'.join(path)
     if len(path) == 7:
@@ -50,32 +50,29 @@ def main (path, query, http=True, fd=None):
         except IndexError:
             po = branchable = None
     else:
-        kw = {'http' : http}
-        kw['title'] = pulse.utils.gettext ('Invalid Identifier')
         page = pulse.html.PageError (
             pulse.utils.gettext ('The identifier %s is not valid') % ident,
-            **kw)
-        page.output (fd=fd)
-        return 500
+            title=pulse.utils.gettext ('Invalid Identifier'))
+        response.set_contents (page)
+        return
 
     if po == None:
-        kw = {'http' : http}
-        kw['title'] = pulse.utils.gettext ('Translation Not Found')
         page = pulse.html.PageNotFound (
-            pulse.tuils.gettext ('No document with the identifier %s could be found')
+            pulse.tuils.gettext ('No translation with the identifier %s could be found')
             % ident,
-            **kw)
+            title=pulse.utils.gettext ('Translation Not Found'))
         page.output (fd=fd)
-        return 404
+        return
         
-    kw = {'path' : path, 'query' : query, 'http' : http, 'fd' : fd}
-    return output_translation (po, branchable, **kw)
+    kw = {'path' : path, 'query' : query}
+    output_translation (response, po, branchable, **kw)
 
 
-def output_translation (po, branchable, **kw):
+def output_translation (response, po, branchable, **kw):
     """Output information about a translation"""
     lang = po.scm_file[:-3]
-    page = pulse.html.Page (po, http=kw.get('http', True))
+    page = pulse.html.Page (po)
+    response.set_contents (page)
     checkout = pulse.scm.Checkout.from_record (po, checkout=False, update=False)
 
     branches = pulse.utils.attrsorted (list(branchable.branches.all()),
@@ -177,7 +174,3 @@ def output_translation (po, branchable, **kw):
                 if comment != '':
                     dl.add_entry (pulse.html.EllipsizedLabel (comment, 80),
                                   classname='desc')
-
-    page.output(fd=kw.get('fd'))
-
-    return 0

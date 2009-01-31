@@ -25,30 +25,28 @@ import pulse.html
 import pulse.models as db
 import pulse.utils
 
-def main (path, query, http=True, fd=None):
+def main (response, path, query):
     """Output information about release sets"""
-    kw = {'path' : path, 'query' : query, 'http' : http, 'fd' : fd}
+    kw = {'path' : path, 'query' : query}
     if len(path) == 1:
-        return output_top (**kw)
+        output_top (response, **kw)
+        return
     
     ident = '/' + '/'.join(path[:2])
     sets = db.ReleaseSet.objects.filter (ident=ident)
     try:
         rset = sets[0]
     except IndexError:
-        kw = {'http': http}
-        kw['title'] = pulse.utils.gettext ('Set Not Found')
-        kw['pages'] = [('set', pulse.utils.gettext ('Sets'))]
         page = pulse.html.PageNotFound (
             pulse.utils.gettext ('Pulse could not find the Set %s') % path[1],
-            **kw)
-        page.output(fd=fd)
-        return 404
+            title = pulse.utils.gettext ('Set Not Found'))
+        response.set_contents (page)
+        return
 
     if query.get('ajax', None) == 'tab':
-        return output_ajax_tab (rset, **kw)
+        output_ajax_tab (response, rset, **kw)
     else:
-        return output_set (rset, **kw)
+        output_set (response, rset, **kw)
 
 
 def synopsis ():
@@ -63,10 +61,11 @@ def synopsis ():
     return box
 
 
-def output_top (**kw):
+def output_top (response, **kw):
     """Output a page showing all release sets"""
-    page = pulse.html.Page (http=kw.get('http', True))
+    page = pulse.html.Page ()
     page.set_title (pulse.utils.gettext ('Sets'))
+    response.set_contents (page)
     cont = pulse.html.ContainerBox ()
     cont.set_show_icons (False)
     cont.set_columns (2)
@@ -85,15 +84,12 @@ def output_top (**kw):
         else:
             add_set_info (rset, lbox)
 
-    page.output(fd=kw.get('fd'))
 
-    return 0
-
-
-def output_set (rset, **kw):
+def output_set (response, rset, **kw):
     """Output information about a release set"""
     path = kw.get('path', [])
-    page = pulse.html.Page (rset, http=kw.get('http', True))
+    page = pulse.html.Page (rset)
+    response.set_contents (page)
 
     page.set_sublinks_divider (pulse.html.TRIANGLE)
     page.add_sublink (pulse.config.web_root + 'set', pulse.utils.gettext ('Sets'))
@@ -163,29 +159,22 @@ def output_set (rset, **kw):
         if cnt > 0:
             page.add_tab ('libraries', pulse.utils.gettext ('Libraries (%i)') % cnt)
 
-    page.output(fd=kw.get('fd'))
 
-    return 0
-
-
-def output_ajax_tab (rset, **kw):
+def output_ajax_tab (response, rset, **kw):
     query = kw.get ('query', {})
-    page = pulse.html.Fragment (http=kw.get('http', True))
     tab = query.get('tab', None)
     if tab == 'subsets':
-        page.add_content (get_subsets_tab (rset, **kw))
+        response.set_contents (get_subsets_tab (rset, **kw))
     elif tab == 'modules':
-        page.add_content (get_modules_tab (rset, **kw))
+        response.set_contents (get_modules_tab (rset, **kw))
     elif tab == 'documents':
-        page.add_content (get_documents_tab (rset, **kw))
+        response.set_contents (get_documents_tab (rset, **kw))
     elif tab == 'domains':
-        page.add_content (get_domains_tab (rset, **kw))
+        response.set_contents (get_domains_tab (rset, **kw))
     elif tab == 'programs':
-        page.add_content (get_programs_tab (rset, **kw))
+        response.set_contents (get_programs_tab (rset, **kw))
     elif tab == 'libraries':
-        page.add_content (get_libraries_tab (rset, **kw))
-    page.output(fd=kw.get('fd'))
-    return 0
+        response.set_contents (get_libraries_tab (rset, **kw))
 
 
 def get_subsets_tab (rset, **kw):

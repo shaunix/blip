@@ -31,15 +31,15 @@ import pulse.html
 import pulse.models as db
 import pulse.utils
 
-def main (response, path, query, http=True, fd=None):
-    kw = {'path' : path, 'query' : query, 'http' : http, 'fd' : fd}
+def main (response, path, query):
+    kw = {'path' : path, 'query' : query}
 
     if query.get('action', None) == 'create':
-        return output_account_create (response, **kw)
+        output_account_create (response, **kw)
     elif path[1] == 'new':
-        return output_account_new (response, **kw)
+        output_account_new (response, **kw)
     elif path[1] == 'auth' and len(path) > 2:
-        return output_account_auth (response, path[2], **kw)
+        output_account_auth (response, path[2], **kw)
 
 
 @transaction.commit_manually
@@ -116,8 +116,7 @@ def output_account_create (response, **kw):
 
 
 def output_account_new (response, **kw):
-    page = pulse.html.Page (http=kw.get('http', True),
-                            url=(pulse.config.web_root + 'account/new'))
+    page = pulse.html.Page (url=(pulse.config.web_root + 'account/new'))
     page.set_title (pulse.utils.gettext ('Create New Account'))
     response.set_contents (page)
 
