@@ -30,6 +30,8 @@ import pulse.utils
 def main (response, path, query):
     kw = {'path' : path, 'query' : query}
 
+    # FIXME: verify response.http_account, else redirect to /account/login
+
     if query.get('ajax', None) == 'tab':
         output_ajax_tab (response, **kw)
     else:
@@ -39,11 +41,11 @@ def main (response, path, query):
 def output_home (response, **kw):
     page = pulse.html.Page (url=(pulse.config.web_root + 'home'))
     page.set_title (pulse.utils.gettext ('Home'))
-    if pulse.response.user_account != None:
-        page.set_title (pulse.response.user_account.realname)
+    if response.http_account != None:
+        page.set_title (response.http_account.realname)
 
     page.add_tab ('ticker', pulse.utils.gettext ('Ticker'))
-    box = get_ticker_tab (**kw)
+    box = get_ticker_tab (response.http_account, **kw)
     page.add_to_tab ('ticker', box)
 
     response.set_contents (page)
@@ -53,12 +55,9 @@ def output_ajax_tab (response, **kw):
     query = kw.get ('query', {})
     tab = query.get('tab', None)
     if tab == 'ticker':
-        response.set_contents (get_ticker_tab (**kw))
+        response.set_contents (get_ticker_tab (response.http_account, **kw))
 
 
-def get_ticker_tab (**kw):
-    if pulse.response.user_account != None:
-        box = pulse.html.Div ('This is your ticker %s' % pulse.response.user_account.realname)
-    else:
-        box = pulse.html.Div ('foo')
+def get_ticker_tab (account, **kw):
+    box = pulse.html.Div ('This is your ticker %s' % account.realname)
     return box

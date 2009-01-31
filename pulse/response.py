@@ -25,12 +25,24 @@ import sys
 
 import pulse.config
 
-class HttpResponse (object):
+
+class HttpWidget (object):
+    def __init__ (self, **kw):
+        super (HttpWidget, self).__init__ (**kw)
+        self.http_content_type = 'Content-type: text/html; charset=utf-8'
+        self.http_response = None
+        self.http_status = 200
+
+    def output (self, fd=None):
+        pass
+
+
+class HttpResponse (HttpWidget):
     def __init__ (self, **kw):
         super (HttpResponse, self).__init__ (**kw)
+        self.http_account = None
         self.http_content_type = 'Content-type: text/html; charset=utf-8'
         self.http_status = 200
-        self._account = None
         self._http = kw.get ('http', True)
         self._contents = None
         self._location = None
@@ -41,16 +53,11 @@ class HttpResponse (object):
         self._location = location
         self._contents = None
 
-    def get_account (self):
-        return self._account
-
-    def set_account (self, account):
-        self._acount = account
-
     def set_contents (self, contents):
         self._contents = contents
         self._status = contents.http_status or self._status
         self._content_type = contents.http_content_type or self._content_type
+        contents.http_response = self
 
     def set_cookie (self, cookie, value):
         self._cookies.append ((cookie, value))
@@ -80,16 +87,6 @@ class HttpResponse (object):
             p (fd, '')
         if self._contents != None:
             self._contents.output (fd=fd)
-
-
-class HttpWidget (object):
-    def __init__ (self, **kw):
-        super (HttpWidget, self).__init__ (**kw)
-        self.http_content_type = 'Content-type: text/html; charset=utf-8'
-        self.http_status = 200
-
-    def output (self, fd=None):
-        pass
 
 
 ################################################################################

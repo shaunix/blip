@@ -517,11 +517,18 @@ class Page (HtmlWidget, ContentComponent, SublinksComponent, FactsComponent):
         p (fd, '<td><a href="%s"><img src="%s" alt="Pulse"></a></td>',
            (pulse.config.web_root, pulse.config.data_root + 'pulse-logo.png'))
         p (fd, '<td class="headerlinks">')
-        p (fd, '<a href="%saccount/login">%s</a>',
-           (pulse.config.web_root, pulse.utils.gettext ('Log in')))
-        p (fd, ' | ')
-        p (fd, '<a href="%saccount/new">%s</a>',
-           (pulse.config.web_root, pulse.utils.gettext ('Register')))
+        if self.http_response.http_account == None:
+            p (fd, '<a href="%saccount/login">%s</a>',
+               (pulse.config.web_root, pulse.utils.gettext ('Log in')))
+            p (fd, ' | ')
+            p (fd, '<a href="%saccount/new">%s</a>',
+               (pulse.config.web_root, pulse.utils.gettext ('Register')))
+        else:
+            p (fd, '<a href="%shome">%s</a>',
+               (pulse.config.web_root, pulse.utils.gettext ('Home')))
+            p (fd, ' | ')
+            p (fd, '<a href="%saccount/logout">%s</a>',
+               (pulse.config.web_root, pulse.utils.gettext ('Log out')))
         p (fd, '</td></tr></table></div>')
 
         p (fd, '<div id="subheader"><h1>', None, False)
