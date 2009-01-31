@@ -40,6 +40,7 @@ class HttpWidget (object):
 class HttpResponse (HttpWidget):
     def __init__ (self, **kw):
         super (HttpResponse, self).__init__ (**kw)
+        self.http_login = None
         self.http_account = None
         self.http_content_type = 'Content-type: text/html; charset=utf-8'
         self.http_status = 200

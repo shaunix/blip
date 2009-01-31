@@ -40,6 +40,8 @@ def main (response, path, query):
         output_account_new (response, **kw)
     elif path[1] == 'auth' and len(path) > 2:
         output_account_auth (response, path[2], **kw)
+    elif path[1] == 'logout':
+        output_account_logout (response, **kw)
 
 
 @transaction.commit_manually
@@ -195,16 +197,12 @@ def output_account_auth (response, token, **kw):
         response.set_contents (page)
         return
     try:
-        ipaddress = os.getenv ('REMOTE_ADDR')
-        ipaddress = '127.0.0.1'
-        if ipaddress == None:
-            raise
         account.check_time = None
         account.check_type = None
         account.check_hash = None
         account.save ()
         token = pulse.utils.get_token ()
-        login = db.Login.set_login (account, token, ipaddress)
+        login = db.Login.set_login (account, token, os.getenv ('REMOTE_ADDR'))
         response.redirect (pulse.config.web_root + 'home')
         response.set_cookie ('pulse_auth', token)
     except:
@@ -214,3 +212,12 @@ def output_account_auth (response, token, **kw):
         response.set_contents (page)
     else:
         transaction.commit ()
+
+
+@transaction.commit_manually
+def output_account_logout (response, **kw):
+    login = response.http_login
+    if login:
+        login.delete ()
+    response.redirect (pulse.config.web_root)
+    response.set_cookie ('pulse_auth', '')

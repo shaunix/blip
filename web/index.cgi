@@ -79,7 +79,8 @@ def main ():
         ck.load (os.getenv ('HTTP_COOKIE') or '')
         token = ck.get('pulse_auth')
         token = token.value
-        response.http_account = db.Login.get_login (token, os.getenv ('REMOTE_ADDR')).account
+        response.http_login = db.Login.get_login (token, os.getenv ('REMOTE_ADDR'))
+        response.http_account = response.http_login.account
     except:
         pass
 
