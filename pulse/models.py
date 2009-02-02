@@ -806,8 +806,13 @@ class Login (models.Model):
 
     @classmethod
     def set_login (cls, account, token, ipaddress):
-        login = cls (account=account, token=token, ipaddress=ipaddress,
-                     datetime=datetime.datetime.now())
+        try:
+            login = cls.objects.get (account=account, ipaddress=ipaddress)
+            login.token = token
+            login.datetime = datetime.datetime.now()
+        except:
+            login = cls (account=account, token=token, ipaddress=ipaddress,
+                         datetime=datetime.datetime.now())
         login.save ()
         return login
 

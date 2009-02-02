@@ -40,6 +40,8 @@ def main (response, path, query):
         output_account_new (response, **kw)
     elif path[1] == 'auth' and len(path) > 2:
         output_account_auth (response, path[2], **kw)
+    elif path[1] == 'login':
+        output_account_login (response, **kw)
     elif path[1] == 'logout':
         output_account_logout (response, **kw)
 
@@ -212,6 +214,62 @@ def output_account_auth (response, token, **kw):
         response.set_contents (page)
     else:
         transaction.commit ()
+
+
+@transaction.commit_manually
+def output_account_login (response, **kw):
+    data = cgi.parse ()
+    for key in data.keys():
+        data[key] = data[key][0]
+    username = data.get ('username', '')
+    password = data.get ('password', '')
+    admon = None
+    if username != '' and password != '':
+        try:
+            account = db.Account.objects.get (username=username)
+            if account.check_type == 'new':
+                admon = pulse.html.AdmonBox (pulse.html.AdmonBox.error,
+                                             pulse.utils.gettext('You have not yet verified your email address'))
+                raise
+            if account.password != crypt.crypt (password, 'pu'):
+                raise
+            token = pulse.utils.get_token ()
+            login = db.Login.set_login (account, token, os.getenv ('REMOTE_ADDR'))
+            response.redirect (pulse.config.web_root + 'home')
+            response.set_cookie ('pulse_auth', token)
+        except:
+            transaction.rollback ()
+            if admon == None:
+                admon = pulse.html.AdmonBox (pulse.html.AdmonBox.error,
+                                             pulse.utils.gettext('Invalid username or password'))
+        else:
+            transaction.commit ()
+            return
+        
+    page = pulse.html.Page (url=(pulse.config.web_root + 'account/login'))
+    page.set_title (pulse.utils.gettext ('Log In'))
+    response.set_contents (page)
+
+    section = pulse.html.SectionBox (pulse.utils.gettext ('Log In'),
+                                     widget_id='loginform')
+    page.add_content (section)
+
+    if admon != None:
+        section.add_content (admon)
+
+    form = pulse.html.Form ('POST', pulse.config.web_root + 'account/login')
+    section.add_content (form)
+
+    table = pulse.html.Table ()
+    form.add_content (table)
+
+    table.add_row (
+        pulse.utils.gettext ('Username:'),
+        pulse.html.TextInput ('username') )
+    table.add_row (
+        pulse.utils.gettext ('Password:'),
+        pulse.html.TextInput ('password', password=True) )
+    table.add_row ('', pulse.html.SubmitButton ('login', 'Log In'))
 
 
 @transaction.commit_manually
