@@ -59,5 +59,10 @@ def output_ajax_tab (response, **kw):
 
 
 def get_ticker_tab (account, **kw):
-    box = pulse.html.Div ('This is your ticker %s' % account.realname)
+    box = pulse.html.Div ()
+    box.add_content (pulse.html.Div ('This is your ticker %s' % account.realname))
+    bl = pulse.html.BulletList ()
+    box.add_content (bl)
+    for watch in db.AccountWatch.objects.filter (account=account):
+        bl.add_item (watch.ident)
     return box

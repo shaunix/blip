@@ -166,6 +166,11 @@ def update_alias (entity, alias, **kw):
         rev.alias = aliasrec
         rev.save()
     rec.delete()
+    watches = db.Revision.objects.filter (ident=rec.ident)
+    for watch in watches:
+        needs_update = True
+        watch.ident = entity.ident
+        watch.save()
 
     return needs_update
 

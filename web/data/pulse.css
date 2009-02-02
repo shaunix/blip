@@ -37,6 +37,11 @@ h1 {
   background-color: #f7f7f5; color: #555753;
   margin: 0; padding: 0.2em 1.67em 0.2em 1.67em;
 }
+div.watch {
+  float: right;
+  padding: 0 2.4em 0 2.4em;
+}
+div.watch a { font-size: 0.83em; }
 h1 img { vertical-align: middle; }
 .sublinks {
   padding: 0 2.89em 0 2.89em;

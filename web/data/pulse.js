@@ -1124,3 +1124,17 @@ function createaccount () {
   });
 }
 
+function watch (ident) {
+  url = pulse_root + 'account?action=watch&ident=' + ident;
+  $.ajax ({
+    type: 'GET',
+    url: url,
+    complete: function (req, status) {
+      if (status == 'success') {
+        $('div.watch').fadeOut ();
+      } else {
+        $('div.watch').empty().append ($(req.responseText))
+      }
+    }
+  });
+}

@@ -56,8 +56,8 @@ class HttpResponse (HttpWidget):
 
     def set_contents (self, contents):
         self._contents = contents
-        self._status = contents.http_status or self._status
-        self._content_type = contents.http_content_type or self._content_type
+        self.http_status = contents.http_status or self._status
+        self.http_content_type = contents.http_content_type or self._content_type
         contents.http_response = self
 
     def set_cookie (self, cookie, value):

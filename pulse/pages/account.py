@@ -36,6 +36,8 @@ def main (response, path, query):
 
     if query.get('action', None) == 'create':
         output_account_create (response, **kw)
+    elif query.get('action', None) == 'watch':
+        output_account_watch (response, **kw)
     elif path[1] == 'new':
         output_account_new (response, **kw)
     elif path[1] == 'auth' and len(path) > 2:
@@ -279,3 +281,21 @@ def output_account_logout (response, **kw):
         login.delete ()
     response.redirect (pulse.config.web_root)
     response.set_cookie ('pulse_auth', '')
+
+
+@transaction.commit_manually
+def output_account_watch (response, **kw):
+    query = kw.get ('query', {})
+    ident = query.get('ident', None)
+    if response.http_account != None and ident != None:
+        try:
+            db.AccountWatch.add_watch (response.http_account, ident)
+        except:
+            transaction.rollback ()
+            admon = pulse.html.AdmonBox (pulse.html.AdmonBox.error,
+                                         pulse.utils.gettext('Could not add watch'))
+            response.set_contents (admon)
+        else:
+            transaction.commit ()
+            response.set_contents (pulse.html.Div ())
+            return

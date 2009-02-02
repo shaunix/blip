@@ -436,10 +436,13 @@ class Page (HtmlWidget, ContentComponent, SublinksComponent, FactsComponent):
 
     def __init__ (self, *args, **kw):
         super (Page, self).__init__ (**kw)
+        self._ident = None
         if len(args) > 0 and isinstance (args[0], db.PulseRecord):
             self._title = args[0].title
             self._icon = args[0].icon_url
             self._url = args[0].pulse_url
+            if args[0].watchable:
+                self._ident = args[0].ident
         else:
             self._title = kw.get ('title')
             self._icon = kw.get ('icon')
@@ -499,6 +502,7 @@ class Page (HtmlWidget, ContentComponent, SublinksComponent, FactsComponent):
         p (fd, '<meta http-equiv="Content-type" content="text/html; charset=utf-8">')
         p (fd, '<link rel="stylesheet" href="%spulse.css">', pulse.config.data_root)
         p (fd, '<script language="javascript" type="text/javascript">')
+        p (fd, 'pulse_root="%s"', pulse.config.web_root)
         p (fd, 'pulse_data="%s"', pulse.config.data_root)
         if self._url != None:
             p (fd, 'pulse_url="%s";', self._url)
@@ -531,7 +535,12 @@ class Page (HtmlWidget, ContentComponent, SublinksComponent, FactsComponent):
                (pulse.config.web_root, pulse.utils.gettext ('Log out')))
         p (fd, '</td></tr></table></div>')
 
-        p (fd, '<div id="subheader"><h1>', None, False)
+        p (fd, '<div id="subheader">', None, False)
+        if self.http_response.http_account != None and self._ident != None:
+            if not db.AccountWatch.has_watch (self.http_response.http_account, self._ident):
+                p (fd, '<div class="watch"><a href="javascript:watch(\'%s\')">%s</a></div>',
+                   (self._ident, pulse.utils.gettext ('Watch')), False)
+        p (fd, '<h1>', None, False)
         if self._icon != None:
             p (fd, '<img class="icon" src="%s" alt="%s"> ', (self._icon, self._title), False)
         p (fd, None, self._title)

@@ -311,6 +311,10 @@ class PulseRecord (object):
     # want to override this, possibly with a property.
     linkable = True
 
+    # Whether Pulse can watch this thing.  Subclasses will want
+    # to override this, possible with a property.
+    watchable = False
+
     # Convenience routine to get objects that might already exist
     @classmethod
     def get_record (cls, ident, type):
@@ -639,6 +643,10 @@ class Branch (PulseRecord, models.Model):
                                       ])
         return sel
 
+    def _is_watchable (self):
+        return self.type == 'Module'
+    watchable = property (_is_watchable)
+
 
 class Entity (PulseRecord, models.Model):
     __metaclass__ = PulseModelBase
@@ -709,6 +717,10 @@ class Entity (PulseRecord, models.Model):
     def _is_linkable (self):
         return self.type != 'Ghost'
     linkable = property (_is_linkable)
+
+    def _is_watchable (self):
+        return self.type in ('Person', 'Team')
+    watchable = property (_is_watchable)
 
 
 class Alias (PulseRecord, models.Model):
@@ -836,6 +848,16 @@ class AccountWatch (models.Model):
 
     account = models.ForeignKey (Account, related_name='account_watches')
     ident = models.CharField (**maxlength200)
+
+    @classmethod
+    def add_watch (cls, account, ident):
+        rec, cr = cls.objects.get_or_create (account=account, ident=ident)
+        return rec
+
+    @classmethod
+    def has_watch (cls, account, ident):
+        return cls.objects.filter (account=account, ident=ident).count() > 0
+
 
 class Message (models.Model):
     __metaclass__ = PulseModelBase
