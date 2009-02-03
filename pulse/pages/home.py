@@ -74,11 +74,10 @@ def get_ticker_tab (account, **kw):
         if weekday == None or mweekday != weekday:
             if weekiter > 6:
                 break
-            bl = pulse.html.BulletList ()
             if weekiter == 0:
-                bl.set_title (pulse.utils.gettext ('Today'))
+                title = pulse.utils.gettext ('Today')
             elif weekiter == 1:
-                bl.set_title (pulse.utils.gettext ('Yesterday'))
+                title = pulse.utils.gettext ('Yesterday')
             else:
                 title = [
                     pulse.utils.gettext ('Monday'),
@@ -88,13 +87,30 @@ def get_ticker_tab (account, **kw):
                     pulse.utils.gettext ('Friday'),
                     pulse.utils.gettext ('Saturday'),
                     pulse.utils.gettext ('Sunday')]
-                bl.set_title (title[mweekday])
-            box.add_content (bl)
+                title = title[mweekday]
+            ticker = pulse.html.TickerBox (title)
+            box.add_content (ticker)
             weekday = mweekday
             weekiter += 1
-        if message.type == 'commit' and message.pred == None:
-            span = pulse.html.Span ()
-            span.add_content (pulse.utils.gettext ('%i commits were made to ') % message.count)
-            span.add_content (pulse.html.Link (db.Branch.get_cached (message.subj)))
-            bl.add_item (span)
+        try:
+            if message.type == 'commit':
+                if message.subj == None:
+                    continue
+                elif message.pred == None:
+                    span = pulse.html.Span ()
+                    branch = db.Branch.get_cached (message.subj)
+                    span.add_content (pulse.html.Link (branch))
+                    span.add_content (pulse.utils.gettext ('had %i commits on %s.') %
+                                      (message.count, branch.scm_branch))
+                    ticker.add_event (span)
+                else:
+                    span = pulse.html.Span ()
+                    branch = db.Branch.get_cached (message.pred)
+                    span.add_content (pulse.html.Link (db.Entity.get_cached (message.subj)))
+                    span.add_content (pulse.utils.gettext (' made %i commits to ') % message.count)
+                    span.add_content (pulse.html.Link (branch))
+                    span.add_content (pulse.utils.gettext (' on %s.') % branch.scm_branch)
+                    ticker.add_event (span)
+        except:
+            pass
     return box

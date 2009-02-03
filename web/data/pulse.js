@@ -1131,7 +1131,7 @@ function watch (ident) {
     url: url,
     complete: function (req, status) {
       if (status == 'success') {
-        $('div.watch').fadeOut ();
+        $('div.watch').fadeOut ('fast', function () { $('div.watch').remove () });
       } else {
         $('div.watch').empty().append ($(req.responseText))
       }

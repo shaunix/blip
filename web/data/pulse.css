@@ -92,7 +92,7 @@ h1 img { vertical-align: middle; }
 /** Core Content **/
 
 a { color: #204a87; text-decoration: none; }
-a:visited { color: #5c3566; }
+a:visited { color: #3465a4; }
 a:hover { text-decoration: underline; }
 img { border: none; }
 a img { border: none; vertical-align: middle; }
@@ -251,6 +251,18 @@ div.sectiontitle {
   font-weight: bold;
   border-bottom: solid 1px #888a85;
   margin: 0 0 0.2em 0;
+}
+
+div.ticker {
+  margin-bottom: 1.2em;
+}
+div.tickertitle {
+  margin: 0 0 0.2em 0;
+  font-weight: bold;
+  color: #555753;
+}
+div.tickerevent {
+  margin: 0 0 0.2em 1em;
 }
 
 

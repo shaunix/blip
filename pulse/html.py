@@ -770,6 +770,25 @@ class ContainerBox (HtmlWidget, FilterableComponent, SortableComponent, ContentC
         p (fd, '</div>')
 
 
+class TickerBox (HtmlWidget):
+    def __init__ (self, title, **kw):
+        super (TickerBox, self).__init__ (**kw)
+        self._title = title
+        self._events = []
+
+    def add_event (self, event):
+        self._events.append (event)
+
+    def output (self, fd=None):
+        p (fd, '<div class="ticker">')
+        p (fd, '<div class="tickertitle">%s</div>', self._title)
+        for event in self._events:
+            p (fd, '<div class="tickerevent">', None, False)
+            p (fd, None, event, False)
+            p (fd, '</div>')
+        p (fd, '</div>')
+
+
 class Calendar (HtmlWidget):
     def __init__ (self, **kw):
         super (Calendar, self).__init__ (**kw)
