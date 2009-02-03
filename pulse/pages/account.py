@@ -169,13 +169,20 @@ def output_account_new (response, **kw):
     dl = pulse.html.DefinitionList ()
     section.add_content (dl)
     dl.add_bold_term (pulse.utils.gettext ('Mark your territory'))
-    dl.add_entry (pulse.utils.gettext (
+    txt = pulse.utils.gettext (
         'Every day, Pulse finds people identified only by their email addresses or' +
         ' usernames on various systems.  You can claim to be these unknown people,' +
         ' giving you the recognition you deserve and helping Pulse create more' +
-        ' meaningful statistics.  Claims are reviewed by an actual human being;' +
-        ' sorry, we can\'t all be Federico.'
-        ))
+        ' meaningful statistics.')
+    rockstar = db.Entity.objects.filter (type='Person').order_by ('-mod_score')
+    try:
+        rockstar = rockstar[0]
+        txt += pulse.utils.gettext (
+            ' Claims are reviewed by an actual human being;' +
+            ' sorry, we can\'t all be %s.') % rockstar.title
+    except:
+        pass
+    dl.add_entry (txt)
     dl.add_bold_term (pulse.utils.gettext ('Watch the ones you love'))
     dl.add_entry (pulse.utils.gettext (
         'As a registered user, you can watch people, projects, and anything else' +
@@ -252,15 +259,11 @@ def output_account_login (response, **kw):
     page.set_title (pulse.utils.gettext ('Log In'))
     response.set_contents (page)
 
-    section = pulse.html.SectionBox (pulse.utils.gettext ('Log In'),
-                                     widget_id='loginform')
-    page.add_content (section)
-
     if admon != None:
-        section.add_content (admon)
+        page.add_content (admon)
 
     form = pulse.html.Form ('POST', pulse.config.web_root + 'account/login')
-    section.add_content (form)
+    page.add_content (form)
 
     table = pulse.html.Table ()
     form.add_content (table)
@@ -271,7 +274,12 @@ def output_account_login (response, **kw):
     table.add_row (
         pulse.utils.gettext ('Password:'),
         pulse.html.TextInput ('password', password=True) )
-    table.add_row ('', pulse.html.SubmitButton ('login', 'Log In'))
+    span = pulse.html.Span ()
+    span.add_content (pulse.html.SubmitButton ('login', 'Log In'))
+    span.add_content (pulse.utils.gettext (' or '))
+    span.add_content (pulse.html.Link (pulse.config.web_root + 'account/new',
+                                      pulse.utils.gettext ('create an account')))
+    table.add_row ('', span)
 
 
 @transaction.commit_manually
