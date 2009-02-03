@@ -31,7 +31,9 @@ import pulse.utils
 def main (response, path, query):
     kw = {'path' : path, 'query' : query}
 
-    # FIXME: verify response.http_account, else redirect to /account/login
+    if response.http_account == None:
+        response.redirect (pulse.config.web_root + 'account/login')
+        return
 
     if query.get('ajax', None) == 'tab':
         output_ajax_tab (response, **kw)
