@@ -24,6 +24,8 @@ import pulse.utils
 synop = 'update information for queued objects'
 usage_extra = ''
 args = pulse.utils.odict()
+args['length'] = (None, 'print the length of the queue and exit')
+args['limit='] = ('num', 'process at most num entries from the queue')
 args['no-history'] = (None, 'do not check SCM history')
 args['no-timestamps'] = (None, 'do not check timestamps before processing files')
 args['no-update']  = (None, 'do not update SCM checkouts')
@@ -34,8 +36,19 @@ def help_extra (fd=None):
 
 
 def main (argv, options={}):
+    length = options.get ('--length', False)
+    if length:
+        print db.Queue.objects.count()
+        return
+    limit = options.get ('--limit', None)
+    if limit != None:
+        limit = int(limit)
+    iter = 0
     el = db.Queue.pop ()
     while el != None:
+        if iter >= limit:
+            return
+        iter += 1
         mod = pulse.utils.import_ ('pulse.pulsate.' + el['module'])
         if hasattr (mod, 'args'):
             mod.main ([el['ident']], options)
