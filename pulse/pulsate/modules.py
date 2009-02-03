@@ -226,18 +226,16 @@ def check_history (branch, checkout):
         else:
             pident = '/ghost/' + hist['author'][1]
             ptype = 'Ghost'
-        pers = db.Entity.get_record (pident, ptype)
+        person = db.Entity.get_record (pident, ptype)
         if ptype == 'Person':
             db.Queue.push ('people', pident)
         if hist['author'][1] != None:
-            if pers.name == None or pers.name == {}:
-                pers.update (name=hist['author'][1])
-                pers.save()
-        rev = db.Revision (branch=branch, person=pers,
-                           revision=hist['revision'],
-                           comment=hist['comment'],
-                           datetime=hist['date'])
-        rev.save()
+            if person.name == None or person.name == {}:
+                person.update (name=hist['author'][1])
+                person.save()
+        hist['branch'] = branch
+        hist['person'] = person
+        rev = db.Revision.make_revision (**hist)
         for filename, filerev, prevrev in hist['files']:
             rfile = db.RevisionFile (revision=rev, filename=filename,
                                      filerev=filerev, prevrev=prevrev)

@@ -76,10 +76,6 @@ if pulse.config.DATABASE_ENGINE == 'sqlite3':
 ################################################################################
 ## Debugging and Logging
 
-# This is a nasty hack that allows us to only log INSERTs below
-__was_insert = False
-
-
 class PulseDebugCursor (object):
     def __init__ (self, cursor, db):
         self.cursor = cursor
@@ -327,7 +323,10 @@ class PulseRecord (object):
     def get_cached (cls, record_id):
         cls.cached_records.setdefault (cls, {})
         if not cls.cached_records[cls].has_key (record_id):
-            cls.cached_records[cls][record_id] = cls.objects.get (id=record_id)
+            if isinstance (record_id, basestring):
+                cls.cached_records[cls][record_id] = cls.objects.get (ident=record_id)
+            else:
+                cls.cached_records[cls][record_id] = cls.objects.get (id=record_id)
         return cls.cached_records[cls][record_id]
 
     @classmethod
@@ -868,30 +867,40 @@ class Message (models.Model):
             self.weeknum = pulse.utils.weeknum (self.datetime)
 
     @classmethod
-    def make_message (cls, type, primary, secondary, datetime):
-        daystart = datetime.datetime (datetime.year, datetime.month, datetime.day)
+    def make_message (cls, type, subj, pred, dt):
+        daystart = datetime.datetime (dt.year, dt.month, dt.day)
+        dayend = daystart + datetime.timedelta (days=1)
         if (datetime.datetime.now() - daystart).days > 28:
             return None
-        oldmsg = cls.objects.filter (type=type,
-                                     primary=primary,
-                                     secondary=secondary,
-                                     datetime=daystart)
+        filterargs = {'type': type, 'datetime__gte': daystart, 'datetime__lt': dayend}
+        if subj != None:
+            filterargs['subj'] = subj
+        else:
+            filterargs['subj__isnull'] = True
+        if pred != None:
+            filterargs['pred'] = pred
+        else:
+            filterargs['pred__isnull'] = True
+        oldmsg = cls.objects.filter (**filterargs)
         try:
             oldmsg = oldmsg[0]
         except:
             oldmsg = None
         if oldmsg != None:
+            if oldmsg.count == None:
+                oldmsg.count = 1
             oldmsg.count = oldmsg.count + 1
+            oldmsg.datetime = max (oldmsg.datetime, dt)
             oldmsg.save ()
             return oldmsg
-        msg = cls (type=type, primary=primary, secondary=secondary,
-                   datetime=daystart, weeknum=pulse.utils.weeknum(daystart))
+        msg = cls (type=type, subj=subj, pred=pred, count=1,
+                   datetime=dt, weeknum=pulse.utils.weeknum(daystart))
         msg.save ()
         return msg
 
     type = models.CharField (null=True, **maxlength80)
-    primary = models.CharField (null=True, **maxlength200)
-    secondary = models.CharField (null=True, **maxlength200)
+    subj = models.CharField (null=True, **maxlength200)
+    pred = models.CharField (null=True, **maxlength200)
     count = models.IntegerField (null=True)
 
     datetime = models.DateTimeField (null=True)
@@ -929,6 +938,20 @@ class Revision (models.Model):
         for rfile in RevisionFile.objects.filter (revision=self):
             rfile.delete()
         models.Model.delete (self)
+
+    @classmethod
+    def make_revision (cls, **kw):
+        branch = kw.get ('branch')
+        person = kw.get ('person')
+        dt = kw.get ('datetime')
+        rev = cls (branch=branch, person=person,
+                   revision=kw.get ('revision'),
+                   comment=kw.get ('comment'),
+                   datetime=dt)
+        rev.save()
+        Message.make_message ('commit', branch.ident, None, dt)
+        Message.make_message ('commit', person.ident, branch.ident, dt)
+        return rev
 
     @classmethod
     def get_last_revision (cls, **kw):

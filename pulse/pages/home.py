@@ -19,6 +19,7 @@
 #
 
 import Cookie
+import datetime
 import os
 
 import pulse.config
@@ -60,9 +61,40 @@ def output_ajax_tab (response, **kw):
 
 def get_ticker_tab (account, **kw):
     box = pulse.html.Div ()
-    box.add_content (pulse.html.Div ('This is your ticker %s' % account.realname))
-    bl = pulse.html.BulletList ()
-    box.add_content (bl)
-    for watch in db.AccountWatch.objects.filter (account=account):
-        bl.add_item (watch.ident)
+    watches = [watch.ident for watch in db.AccountWatch.objects.filter (account=account)]
+    now = datetime.datetime.now ()
+    messages = db.Message.objects.filter (subj__in=watches,
+                                          datetime__gte=(now - datetime.timedelta (days=8)))
+    messages = messages.order_by ('-datetime')
+    weeknow = now.weekday ()
+    weekday = None
+    weekiter = 0
+    for message in messages[:100]:
+        mweekday = message.datetime.weekday()
+        if weekday == None or mweekday != weekday:
+            if weekiter > 6:
+                break
+            bl = pulse.html.BulletList ()
+            if weekiter == 0:
+                bl.set_title (pulse.utils.gettext ('Today'))
+            elif weekiter == 1:
+                bl.set_title (pulse.utils.gettext ('Yesterday'))
+            else:
+                title = [
+                    pulse.utils.gettext ('Monday'),
+                    pulse.utils.gettext ('Tuesday'),
+                    pulse.utils.gettext ('Wednesday'),
+                    pulse.utils.gettext ('Thursday'),
+                    pulse.utils.gettext ('Friday'),
+                    pulse.utils.gettext ('Saturday'),
+                    pulse.utils.gettext ('Sunday')]
+                bl.set_title (title[mweekday])
+            box.add_content (bl)
+            weekday = mweekday
+            weekiter += 1
+        if message.type == 'commit' and message.pred == None:
+            span = pulse.html.Span ()
+            span.add_content (pulse.utils.gettext ('%i commits were made to ') % message.count)
+            span.add_content (pulse.html.Link (db.Branch.get_cached (message.subj)))
+            bl.add_item (span)
     return box

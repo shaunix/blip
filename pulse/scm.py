@@ -352,7 +352,7 @@ class Checkout (object):
                 while True:
                     if not line or line == sep:
                         if revnumber != since:
-                            yield {'revision' : revnumber, 'date' : revdate,
+                            yield {'revision' : revnumber, 'datetime' : revdate,
                                    'author' : revauthor, 'comment' : comment,
                                    'files' : revfiles }
                         break
@@ -440,7 +440,7 @@ class Checkout (object):
                             line = fd.readline()
                     if line:
                         line = fd.readline()
-                yield {'revision' : revnumber, 'date' : revdate,
+                yield {'revision' : revnumber, 'datetime' : revdate,
                        'author' : revauthor, 'comment' : comment,
                        'files' : revfiles }
         except:
@@ -509,7 +509,7 @@ class Checkout (object):
                     comment += line
                     line = fd.readline()
                 if revnumber != since:
-                    yield {'revision' : revnumber, 'date' : revdate,
+                    yield {'revision' : revnumber, 'datetime' : revdate,
                            'author' : revauthor, 'comment' : comment,
                            'files' : revfiles }
             else:
