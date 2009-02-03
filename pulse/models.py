@@ -727,6 +727,88 @@ class Alias (PulseRecord, models.Model):
 
     entity = models.ForeignKey (Entity)
 
+    @classmethod
+    def update_alias (cls, entity, ident):
+        updated = False
+        try:
+            alias = cls.objects.get (ident=ident)
+        except IndexError:
+            updated = True
+            alias = Alias (ident=alias)
+        alias.entity = entity
+        alias.save()
+        try:
+            old = Entity.objects.filter (ident=ident)
+            old = old[0]
+        except IndexError:
+            old = None
+        if old == None:
+            return updated
+
+        pulse.utils.log ('Copying %s to %s' % (ident, entity.ident))
+        pdata = {}
+        for pkey, pval in old.data.items():
+            pdata[pkey] = pval
+        pdata['name'] = old.name
+        pdata['desc'] = old.desc
+        pdata['icon_dir'] = old.icon_dir
+        pdata['icon_name'] = old.icon_name
+        pdata['email'] = old.email
+        pdata['web'] = old.web
+        pdata['nick'] = old.nick
+        pdata['mod_score'] = old.mod_score
+        # FIXME: set default for entity
+
+        # Revision and ForumPost record historical data, so we record the
+        # alias of the entity they pointed to.
+        revs = Revision.objects.filter (person=old)
+        for rev in revs:
+            updated = True
+            rev.person = entity
+            rev.alias = alias
+            rev.save()
+        posts = ForumPost.objects.filter (author=old)
+        for post in posts:
+            updated = True
+            post.author = entity
+            post.alias = alias
+            post.save()
+
+        # The rest of these don't need the historical alias to be recorded.
+        rels = DocumentEntity.objects.filter (pred=old)
+        for rel in rels:
+            updated = True
+            rel.pred = entity
+            rel.save()
+        rels = ModuleEntity.objects.filter (pred=old)
+        for rel in rels:
+            updated = True
+            rel.pred = entity
+            rel.save()
+        rels = TeamMember.objects.filter (subj=old)
+        for rel in rels:
+            updated = True
+            rel.subj = entity
+            rel.save()
+        rels = TeamMember.objects.filter (pred=old)
+        for rel in rels:
+            updated = True
+            rel.pred = entity
+            rel.save()
+        branches = Branch.objects.filter (mod_person=old)
+        for branch in branches:
+            updated = True
+            branch.mod_person = entity
+            branch.save()
+        watches = Revision.objects.filter (ident=old.ident)
+        for watch in watches:
+            updated = True
+            watch.ident = entity.ident
+            watch.save()
+        old.delete()
+
+        return updated
+
 
 class Forum (PulseRecord, models.Model):
     __metaclass__ = PulseModelBase
@@ -744,6 +826,7 @@ class ForumPost (PulseRecord, models.Model):
 
     forum = models.ForeignKey (Forum, related_name='forum_posts')
     author = models.ForeignKey (Entity, related_name='forum_posts', null=True)
+    alias = models.ForeignKey (Alias, null=True)
     parent = models.ForeignKey ('ForumPost', related_name='children', null=True)
     datetime = models.DateTimeField (null=True)
     weeknum = models.IntegerField (null=True)
