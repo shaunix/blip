@@ -235,6 +235,53 @@ td.col-first { padding: 0; }
 
 .status { display: none; }
 
+div.iconbox {
+  border: solid 1px #eeeeec;
+  padding: 1px;
+}
+div.iconboxtitle {
+  background-color: #f7f7f5;
+  font-weight: bold;
+  font-size: 0.83em;
+  color: #555753;
+  padding: 0 0.83em 2px 0.83em;
+  line-height: 1.2em;
+}
+div.iconboxcont {
+  padding: 0.5em;
+}
+div.iconboxclear {
+  clear: both;
+}
+a.iconboxentry {
+  display: block;
+  float: left;
+  width: 96px;
+  text-align: center;
+  vertical-align: bottom;
+  margin: 0 1.2em 1em 0;
+}
+a.iconboxentry:hover {
+  text-decoration: none;
+}
+div.iconboxicon {
+  width: 52px;
+  height: 52px;
+  margin: 0 0 0 20px;
+  line-height: 52px;
+  border: solid 1px #eeeeec;
+  padding: 1px;
+}
+div.iconboxicon img { vertical-align: middle; }
+a.iconboxentry:hover div.iconboxicon { border-color: #729fcf; }
+div.iconboxname {
+  font-size: 0.83em;
+  line-height: 1.2em;
+  height: 2.5em;
+  overflow: hidden;
+}
+a.iconboxentry:hover div.iconboxname { overflow: visible; }
+
 table.lbox { margin: 0.2em 0 0.2em 0; width: 100%;}
 td.lboxicon { width: 24px; text-align: center; }
 td.lboxtext { padding: 0 0.5em 0 0.5em; }

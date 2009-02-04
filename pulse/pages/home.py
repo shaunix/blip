@@ -51,6 +51,8 @@ def output_home (response, **kw):
     box = get_ticker_tab (response.http_account, **kw)
     page.add_to_tab ('ticker', box)
 
+    page.add_tab ('watches', pulse.utils.gettext ('Watches'))
+
     response.set_contents (page)
 
 
@@ -59,6 +61,8 @@ def output_ajax_tab (response, **kw):
     tab = query.get('tab', None)
     if tab == 'ticker':
         response.set_contents (get_ticker_tab (response.http_account, **kw))
+    elif tab == 'watches':
+        response.set_contents (get_watches_tab (response.http_account, **kw))
 
 
 def get_ticker_tab (account, **kw):
@@ -116,3 +120,28 @@ def get_ticker_tab (account, **kw):
         except:
             pass
     return box
+
+
+def get_watches_tab (account, **kw):
+    cont = pulse.html.PaddingBox ()
+    box = pulse.html.IconBox ()
+    cont.add_content (box)
+    box.set_title (pulse.utils.gettext ('What You Watch'))
+    watches = [db.get_by_ident (watch.ident) for watch in db.AccountWatch.objects.filter (account=account)]
+    watches = pulse.utils.attrsorted (watches, 'title')
+    for record in watches:
+        box.add_link (record)
+
+    box = pulse.html.IconBox ()
+    cont.add_content (box)
+    box.set_title (pulse.utils.gettext ('Who Watches You'))
+    watches = list(db.AccountWatch.objects.filter (ident=account.person.ident))
+    watches = pulse.utils.attrsorted ([db.Entity.get_cached (watch.ident) for watch in watches], 'title')
+    if len(watches) == 0:
+        box.add_content (pulse.utils.gettext ('Nobody is watching you'))
+    else:
+        for record in watches:
+            box.add_link (record)
+
+    return cont
+

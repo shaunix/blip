@@ -857,7 +857,7 @@ class LinkBox (HtmlWidget, FactsComponent, ContentComponent):
             self._url = args[0]
             self._title = args[1]
         else:
-            self._href = self._text = args[0]
+            self._url = self._text = args[0]
         self._badges = []
         self._classes = []
         self._graphs = []
@@ -939,7 +939,43 @@ class LinkBox (HtmlWidget, FactsComponent, ContentComponent):
                 pulse.html.Graph (graph[0], width=graph[1], height=graph[2]).output(fd=fd)
             p (fd, '</td>')
         p (fd, '</tr></table>')
-        
+
+
+class IconBox (HtmlWidget, ContentComponent):
+    def __init__ (self, **kw):
+        super (IconBox, self).__init__ (**kw)
+        self._title = None
+        self._icons = []
+
+    def set_title (self, title, **kw):
+        self._title = title
+
+    def add_link (self, *args):
+        if isinstance (args[0], db.PulseRecord):
+            if args[0].linkable:
+                url = args[0].pulse_url
+            title = args[0].title
+            icon = args[0].icon_url
+            self._icons.append ((url, title, icon))
+
+    def output (self, fd=None):
+        """Output the HTML."""
+        p (fd, '<div class="iconbox">')
+        if self._title != None:
+            p (fd, '<div class="iconboxtitle">%s</div>', self._title)
+        p (fd, '<div class="iconboxcont">')
+        ContentComponent.output (self, fd=fd)
+        for url, title, icon in self._icons:
+            p (fd, '<a href="%s" class="iconboxentry">', url, False)
+            if icon != None:
+                p (fd, '<div class="iconboxicon"><img src="%s"></div>', icon, None)
+            else:
+                p (fd, '<div class="iconboxicon"></div>')
+            p (fd, '<div class="iconboxname">%s</div>', title, None)
+            p (fd, '</a>')
+        p (fd, '<div class="iconboxclear"></div>')
+        p (fd, '</div></div>')
+
 
 class ColumnBox (HtmlWidget):
     def __init__ (self, num, **kw):

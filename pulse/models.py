@@ -213,6 +213,27 @@ class PickleField (models.fields.Field):
 
 
 ################################################################################
+##
+
+def get_by_ident (ident):
+    first = ident.split('/')[1]
+    try:
+        if first == 'set':
+            cls = ReleaseSet
+        elif first in ('mod', 'doc', 'ref', 'app', 'applet', 'lib', 'ext', 'i18n', 'l10n'):
+            cls = Branch
+        elif first in ('person', 'team', 'ghost'):
+            cls = Entity
+        elif first == 'list':
+            cls = Forum
+        record = cls.objects.get (ident=ident)
+        cls.set_cached (ident, record)
+        return record
+    except:
+        return None
+
+
+################################################################################
 ## Base Class
 
 class PulseModelBase (ModelBase):
