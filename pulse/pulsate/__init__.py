@@ -44,7 +44,7 @@ def update_graphs (obj, select, max, **kw):
         stillrev = False
     while stillrev or i < 2:
         topweek = thisweek - (i * numweeks)
-        revstot = db.Revision.objects.filter (**select).count ()
+        revstot = db.Revision.select_revisions (**select).count ()
         revs = db.Revision.select_revisions (weeknum__gt=(topweek - numweeks),
                                              weeknum__lte=topweek,
                                              **select)
