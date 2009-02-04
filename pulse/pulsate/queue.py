@@ -46,7 +46,7 @@ def main (argv, options={}):
     iter = 0
     el = db.Queue.pop ()
     while el != None:
-        if iter >= limit:
+        if limit != None and iter >= limit:
             return
         iter += 1
         mod = pulse.utils.import_ ('pulse.pulsate.' + el['module'])
