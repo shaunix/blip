@@ -44,6 +44,7 @@ def update_graphs (obj, select, max, **kw):
         stillrev = False
     while stillrev or i < 2:
         topweek = thisweek - (i * numweeks)
+        revstot = db.Revision.objects.filter (**select).count ()
         revs = db.Revision.select_revisions (weeknum__gt=(topweek - numweeks),
                                              weeknum__lte=topweek,
                                              **select)
@@ -57,16 +58,11 @@ def update_graphs (obj, select, max, **kw):
                 of = None
             if i == 0 and of != None:
                 if kw.get('timestamps', True):
-                    lastrev = of.data.get ('lastrev', None)
+                    revcount = of.data.get ('revcount', 0)
                     weeknum = of.data.get ('weeknum', None)
                     if weeknum == thisweek:
                         rev = None
-                        if lastrev != None:
-                            try:
-                                rev = revs[0].id
-                            except IndexError:
-                                pass
-                        if lastrev == rev:
+                        if revcount == revstot:
                             pulse.utils.log ('Skipping commit graph for %s' % obj.ident)
                             return
             elif of == None:
@@ -109,7 +105,7 @@ def update_graphs (obj, select, max, **kw):
         if of != None:
             of.data['coords'] = zip (graph.get_coords(), stats, range(topweek - numweeks + 1, topweek + 1))
             if len(revs) > 0:
-                of.data['lastrev'] = revs[0].id
+                of.data['revcount'] = revstot
             of.data['weeknum'] = topweek
             of.save()
 
