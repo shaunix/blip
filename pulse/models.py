@@ -226,9 +226,7 @@ def get_by_ident (ident):
             cls = Entity
         elif first == 'list':
             cls = Forum
-        record = cls.objects.get (ident=ident)
-        cls.set_cached (ident, record)
-        return record
+        return cls.get_cached (ident)
     except:
         return None
 

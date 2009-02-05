@@ -69,6 +69,8 @@ def get_ticker_tab (account, **kw):
     box = pulse.html.Div ()
     watches = [watch.ident for watch in db.AccountWatch.objects.filter (account=account)]
     now = datetime.datetime.now ()
+
+    populate_caches (watches)
     messages = db.Message.objects.filter (subj__in=watches,
                                           datetime__gte=(now - datetime.timedelta (days=8)))
     messages = messages.order_by ('-datetime')
@@ -127,7 +129,11 @@ def get_watches_tab (account, **kw):
     box = pulse.html.IconBox ()
     cont.add_content (box)
     box.set_title (pulse.utils.gettext ('What You Watch'))
-    watches = [db.get_by_ident (watch.ident) for watch in db.AccountWatch.objects.filter (account=account)]
+
+    watches = [watch.ident for watch in db.AccountWatch.objects.filter (account=account)]
+    populate_caches (watches)
+    watches = [db.get_by_ident (watch) for watch in watches]
+
     watches = pulse.utils.attrsorted (watches, 'title')
     for record in watches:
         box.add_link (record)
@@ -144,4 +150,18 @@ def get_watches_tab (account, **kw):
             box.add_link (record)
 
     return cont
+
+
+def populate_caches (idents):
+    people = [ident for ident in idents if ident.startswith('/person/')]
+    if len(people) > 0:
+        people = db.Entity.objects.filter (ident__in=people)
+        for person in list(people):
+            db.Entity.set_cached (person.ident, person)
+
+    branches = [ident for ident in idents if ident.startswith('/mod/')]
+    if len(branches) > 0:
+        branches = db.Branch.objects.filter (ident__in=branches)
+        for branch in list(branches):
+            db.Branch.set_cached (branch.ident, branch)
 
