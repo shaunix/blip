@@ -268,14 +268,12 @@ div.iconboxicon {
   width: 52px;
   height: 52px;
   margin: 0 0 0 20px;
-  line-height: 52px;
-  font-size: 24px;
   color: #d3d7cf;
   font-style: italic;
   border: solid 1px #eeeeec;
   padding: 1px;
 }
-div.iconboxicon img { vertical-align: middle; }
+div.iconboxicon img.img24 { margin-top: 10px; }
 a.iconboxentry:hover div.iconboxicon {
   border-color: #729fcf;
 }

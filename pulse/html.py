@@ -973,9 +973,9 @@ class IconBox (HtmlWidget, ContentComponent):
         for url, title, icon in self._icons:
             p (fd, '<a href="%s" class="iconboxentry">', url, False)
             if icon != None:
-                p (fd, '<div class="iconboxicon"><img src="%s"></div>', icon, None)
+                p (fd, '<div class="iconboxicon"><img class="img24" src="%s"></div>', icon, None)
             else:
-                p (fd, '<div class="iconboxicon">?</div>')
+                p (fd, '<div class="iconboxicon"></div>')
             p (fd, '<div class="iconboxname">%s</div>', title, None)
             p (fd, '</a>')
         p (fd, '<div class="iconboxclear"></div>')
