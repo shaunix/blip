@@ -63,7 +63,7 @@ def weeknum (dt=None):
     Return the number of weeks since the epoch for a given date
     """
     if dt == None:
-        dt = datetime.now()
+        dt = datetime.utcnow()
     return ((dt - epoch_week).days // 7) + 1
 
 

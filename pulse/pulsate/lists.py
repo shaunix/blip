@@ -162,6 +162,7 @@ def update_list (mlist, **kw):
                 person.update (name=msgfrom[0])
                 person.save ()
             postdata['author'] = person
+            db.Queue.push ('people', person.ident)
 
             msgdate = emailutils.parsedate_tz (msgdate)
             try:
@@ -190,8 +191,8 @@ def update_list (mlist, **kw):
 
 
 def update_graphs (mlist, max, **kw):
-    now = datetime.datetime.now()
-    thisweek = pulse.utils.weeknum (datetime.datetime.utcnow())
+    now = datetime.datetime.now ()
+    thisweek = pulse.utils.weeknum ()
     numweeks = 104
     i = 0
     finalpost = db.ForumPost.objects.filter (forum=mlist, datetime__isnull=False, weeknum__gt=0).order_by ('datetime')

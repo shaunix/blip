@@ -972,7 +972,7 @@ class Message (models.Model):
     def make_message (cls, type, subj, pred, dt):
         daystart = datetime.datetime (dt.year, dt.month, dt.day)
         dayend = daystart + datetime.timedelta (days=1)
-        if (datetime.datetime.now() - daystart).days > 28:
+        if (datetime.datetime.utcnow() - daystart).days > 14:
             return None
         filterargs = {'type': type, 'datetime__gte': daystart, 'datetime__lt': dayend}
         if subj != None:

@@ -30,8 +30,8 @@ import pulse.models as db
 import pulse.utils
 
 def update_graphs (obj, select, max, **kw):
-    now = datetime.datetime.now()
-    thisweek = pulse.utils.weeknum (datetime.datetime.utcnow())
+    now = datetime.datetime.now ()
+    thisweek = pulse.utils.weeknum ()
     numweeks = kw.get('numweeks', 104)
     i = 0
     finalrev = db.Revision.select_revisions (**select).order_by ('datetime')
