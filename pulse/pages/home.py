@@ -110,15 +110,16 @@ def get_ticker_tab (account, **kw):
                     span.add_content (pulse.html.Link (branch))
                     span.add_content (pulse.utils.gettext ('had %i commits on %s.') %
                                       (message.count, branch.scm_branch))
-                    ticker.add_event (span)
+                    ticker.add_event (span, icon=branch.get_icon_url())
                 else:
                     span = pulse.html.Span ()
+                    person = db.Entity.get_cached (message.subj)
                     branch = db.Branch.get_cached (message.pred)
-                    span.add_content (pulse.html.Link (db.Entity.get_cached (message.subj)))
+                    span.add_content (pulse.html.Link (person))
                     span.add_content (pulse.utils.gettext (' made %i commits to ') % message.count)
                     span.add_content (pulse.html.Link (branch))
                     span.add_content (pulse.utils.gettext (' on %s.') % branch.scm_branch)
-                    ticker.add_event (span)
+                    ticker.add_event (span, icon=person.get_icon_url())
         except:
             pass
     return box
