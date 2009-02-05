@@ -22,6 +22,8 @@ import cgi
 import crypt
 import datetime
 import os
+import random
+import re
 
 from django.core import mail
 from django.db import transaction
@@ -56,25 +58,32 @@ def output_account_create (response, **kw):
     realname = data.get ('realname', '')
     if realname == '':
         admon = pulse.html.AdmonBox (pulse.html.AdmonBox.error,
-                                     pulse.utils.gettext('Please enter your name'))
+                                     pulse.utils.gettext('Please enter your name.'))
         response.set_contents (admon)
         return
     username = data.get ('username', '')
-    if username == '':
+    if not re.match ('[a-zA-Z0-9_-]{4,20}$', username):
         admon = pulse.html.AdmonBox (pulse.html.AdmonBox.error,
-                                     pulse.utils.gettext('Please enter a username'))
+                                     pulse.utils.gettext(
+            'Please enter a valid username. Usernames must be at least four characters' +
+            ' long, and may only contain alphanumeric characters (a-z, A-Z, 0-9), underscores' +
+            ' (_), and hyphens (-).'
+            ))
         response.set_contents (admon)
         return
     email = data.get ('email', '')
-    if email == '':
+    # Regular expression more or less from bugzilla
+    if not re.match ('[\w.+=-]+@[\w.-]+\.[\w-]+', email):
         admon = pulse.html.AdmonBox (pulse.html.AdmonBox.error,
-                                     pulse.utils.gettext('Please enter a valid email address'))
+                                     pulse.utils.gettext('Please enter a valid email address.'))
         response.set_contents (admon)
         return
     password = data.get ('password', '')
-    if password == '':
+    if len(password) < 8:
         admon = pulse.html.AdmonBox (pulse.html.AdmonBox.error,
-                                     pulse.utils.gettext('Please enter a password'))
+                                     pulse.utils.gettext(
+            'Please enter a valid password. Passwords must be at least eight characters long.'
+            ))
         response.set_contents (admon)
         return
     try:
@@ -82,7 +91,8 @@ def output_account_create (response, **kw):
         if (db.Account.objects.filter (username=username).count() > 0 or
             db.Entity.objects.filter (ident=ident).count() > 0):
             admon = pulse.html.AdmonBox (pulse.html.AdmonBox.error,
-                                         pulse.utils.gettext('Username already in use'))
+                                         pulse.utils.gettext(
+                'Username already in use.  Please choose another username.'))
             response.set_contents (admon)
             return
         person = db.Entity.get_record (ident, 'Person')
@@ -114,7 +124,7 @@ def output_account_create (response, **kw):
     except:
         transaction.rollback ()
         admon = pulse.html.AdmonBox (pulse.html.AdmonBox.error,
-                                     pulse.utils.gettext('There was a problem processing the request'))
+                                     pulse.utils.gettext('There was a problem processing the request.'))
         response.set_contents (admon)
         return
     else:
@@ -176,7 +186,8 @@ def output_account_new (response, **kw):
         ' meaningful statistics.')
     rockstar = db.Entity.objects.filter (type='Person').order_by ('-mod_score')
     try:
-        rockstar = rockstar[0]
+        i = random.randint (0, 41)
+        rockstar = rockstar[i]
         txt += pulse.utils.gettext (
             ' Claims are reviewed by an actual human being;' +
             ' sorry, we can\'t all be %s.') % rockstar.title
@@ -187,7 +198,7 @@ def output_account_new (response, **kw):
     dl.add_entry (pulse.utils.gettext (
         'As a registered user, you can watch people, projects, and anything else' +
         ' with a pulse.  Updates to things you watch will show up in the Ticker' +
-        ' on your personal start page.'
+        ' on your personal home page.'
         ))
     dl.add_bold_term (pulse.utils.gettext ('Make Pulse smarter'))
     dl.add_entry (pulse.utils.gettext (
@@ -285,8 +296,13 @@ def output_account_login (response, **kw):
 @transaction.commit_manually
 def output_account_logout (response, **kw):
     login = response.http_login
-    if login:
-        login.delete ()
+    try:
+        if login:
+            login.delete ()
+    except:
+        transaction.rollback ()
+    else:
+        transaction.commit ()
     response.redirect (pulse.config.web_root)
     response.set_cookie ('pulse_auth', '')
 

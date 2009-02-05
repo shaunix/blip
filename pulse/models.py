@@ -898,8 +898,8 @@ class TeamMember (PulseRelation, models.Model):
 class Account (models.Model):
     __metaclass__ = PulseModelBase
 
-    username = models.CharField (**maxlength200)
-    password = models.CharField (**maxlength200)
+    username = models.CharField (**maxlength20)
+    password = models.CharField (**maxlength80)
     person = models.ForeignKey (Entity, related_name='account')
     realname = models.TextField ()
     email = models.EmailField ()
