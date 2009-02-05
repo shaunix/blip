@@ -269,11 +269,16 @@ div.iconboxicon {
   height: 52px;
   margin: 0 0 0 20px;
   line-height: 52px;
+  font-size: 24px;
+  color: #d3d7cf;
+  font-style: italic;
   border: solid 1px #eeeeec;
   padding: 1px;
 }
 div.iconboxicon img { vertical-align: middle; }
-a.iconboxentry:hover div.iconboxicon { border-color: #729fcf; }
+a.iconboxentry:hover div.iconboxicon {
+  border-color: #729fcf;
+}
 div.iconboxname {
   font-size: 0.83em;
   line-height: 1.2em;
@@ -309,7 +314,14 @@ div.tickertitle {
   color: #555753;
 }
 div.tickerevent {
-  margin: 0 0 0.2em 1em;
+  margin: 0 0 0.83em 1em;
+  clear: left;
+}
+div.tickericon {
+  float: left;
+}
+div.tickertext {
+  margin-left: 36px;
 }
 
 

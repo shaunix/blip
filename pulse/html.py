@@ -776,16 +776,21 @@ class TickerBox (HtmlWidget):
         self._title = title
         self._events = []
 
-    def add_event (self, event):
-        self._events.append (event)
+    def add_event (self, event, icon=None):
+        self._events.append ((event, icon))
 
     def output (self, fd=None):
         p (fd, '<div class="ticker">')
         p (fd, '<div class="tickertitle">%s</div>', self._title)
-        for event in self._events:
+        for event, icon in self._events:
             p (fd, '<div class="tickerevent">', None, False)
+            if icon != None:
+                p (fd, '<div class="tickericon">', None, False)
+                p (fd, '<img src="%s">', icon, False)
+                p (fd, '</div>', None, False)
+            p (fd, '<div class="tickertext">', None, False)
             p (fd, None, event, False)
-            p (fd, '</div>')
+            p (fd, '</div></div>')
         p (fd, '</div>')
 
 
@@ -970,7 +975,7 @@ class IconBox (HtmlWidget, ContentComponent):
             if icon != None:
                 p (fd, '<div class="iconboxicon"><img src="%s"></div>', icon, None)
             else:
-                p (fd, '<div class="iconboxicon"></div>')
+                p (fd, '<div class="iconboxicon">?</div>')
             p (fd, '<div class="iconboxname">%s</div>', title, None)
             p (fd, '</a>')
         p (fd, '<div class="iconboxclear"></div>')
