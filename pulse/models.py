@@ -751,9 +751,9 @@ class Alias (PulseRecord, models.Model):
         updated = False
         try:
             alias = cls.objects.get (ident=ident)
-        except IndexError:
+        except:
             updated = True
-            alias = Alias (ident=alias)
+            alias = Alias (ident=ident)
         alias.entity = entity
         alias.save()
         try:
@@ -819,7 +819,7 @@ class Alias (PulseRecord, models.Model):
             updated = True
             branch.mod_person = entity
             branch.save()
-        watches = Revision.objects.filter (ident=old.ident)
+        watches = AccountWatch.objects.filter (ident=old.ident)
         for watch in watches:
             updated = True
             watch.ident = entity.ident
