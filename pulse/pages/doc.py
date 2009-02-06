@@ -209,7 +209,7 @@ def output_ajax_commits (response, doc, **kw):
     files = [os.path.join (doc.scm_dir, f) for f in doc.data.get ('xmlfiles', [])]
     if weeknum != None:
         weeknum = int(weeknum)
-        thisweek = pulse.utils.weeknum (datetime.datetime.now())
+        thisweek = pulse.utils.weeknum ()
         ago = thisweek - weeknum
         revs = db.Revision.select_revisions (branch=doc.parent, files=files, weeknum=weeknum)
         cnt = revs.count()

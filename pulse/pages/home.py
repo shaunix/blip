@@ -68,7 +68,7 @@ def output_ajax_tab (response, **kw):
 def get_ticker_tab (account, **kw):
     box = pulse.html.Div ()
     watches = [watch.ident for watch in db.AccountWatch.objects.filter (account=account)]
-    now = datetime.datetime.now ()
+    now = datetime.datetime.utcnow ()
 
     populate_caches (watches)
     messages = db.Message.objects.filter (subj__in=watches,

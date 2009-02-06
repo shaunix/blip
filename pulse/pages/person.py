@@ -157,7 +157,7 @@ def output_ajax_tab (response, person, **kw):
 def output_ajax_commits (response, person, **kw):
     query = kw.get('query', {})
     weeknum = int(query.get('weeknum', 0))
-    thisweek = pulse.utils.weeknum (datetime.datetime.now())
+    thisweek = pulse.utils.weeknum ()
     ago = thisweek - weeknum
     revs = db.Revision.select_revisions (person=person, weeknum=weeknum)
     cnt = revs.count()

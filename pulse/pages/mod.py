@@ -289,7 +289,7 @@ def output_ajax_commits (response, module, **kw):
     weeknum = query.get('weeknum', None)
     if weeknum != None:
         weeknum = int(weeknum)
-        thisweek = pulse.utils.weeknum (datetime.datetime.now())
+        thisweek = pulse.utils.weeknum ()
         ago = thisweek - weeknum
         revs = db.Revision.select_revisions (branch=module, weeknum=weeknum)
         cnt = revs.count()
