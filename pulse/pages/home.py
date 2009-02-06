@@ -133,7 +133,7 @@ def get_watches_tab (account, **kw):
 
     watches = [watch.ident for watch in db.AccountWatch.objects.filter (account=account)]
     populate_caches (watches)
-    watches = [db.get_by_ident (watch) for watch in watches]
+    watches = filter (lambda x: x != None, [db.get_by_ident (watch) for watch in watches])
 
     watches = pulse.utils.attrsorted (watches, 'title')
     for record in watches:
