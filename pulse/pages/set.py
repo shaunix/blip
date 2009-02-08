@@ -209,8 +209,9 @@ def get_modules_tab (rset, **kw):
         if mod.mod_datetime != None:
             span = pulse.html.Span (divider=pulse.html.SPACE)
             # FIXME: i18n, word order, but we want to link person
-            span.add_content (pulse.html.Span(mod.mod_datetime.strftime('%Y-%m-%d %T')))
-            span.add_class ('mtime')
+            mtime = pulse.html.Span(mod.mod_datetime.strftime('%Y-%m-%d %T'))
+            mtime.add_class ('mtime')
+            span.add_content (mtime)
             if mod.mod_person_id != None:
                 span.add_content (pulse.utils.gettext ('by'))
                 person = db.Entity.get_cached (mod.mod_person_id)
@@ -255,8 +256,9 @@ def get_documents_tab (rset, **kw):
         if doc.mod_datetime != None:
             span = pulse.html.Span (divider=pulse.html.SPACE)
             # FIXME: i18n, word order, but we want to link person
-            span.add_content (pulse.html.Span(doc.mod_datetime.strftime('%Y-%m-%d %T')))
-            span.add_class ('mtime')
+            mtime = pulse.html.Span(doc.mod_datetime.strftime('%Y-%m-%d %T'))
+            mtime.add_class ('mtime')
+            span.add_content (mtime)
             if doc.mod_person_id != None:
                 span.add_content (pulse.utils.gettext ('by'))
                 person = db.Entity.get_cached (doc.mod_person_id)
