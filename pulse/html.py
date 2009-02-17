@@ -35,7 +35,7 @@ import re
 import sys
 
 import pulse.config
-import pulse.models as db
+import pulse.db
 from pulse.response import *
 import pulse.utils
 
@@ -219,7 +219,7 @@ class FactsComponent (Component):
                 def factout (val):
                     if isinstance (val, (basestring, HtmlWidget, Component)):
                         p (fd, None, val, False)
-                    elif isinstance (val, db.PulseRecord):
+                    elif isinstance (val, pulse.db.PulseRecord):
                         p (fd, Link(val))
                     elif hasattr (val, '__getitem__'):
                         for subval in val:
@@ -437,7 +437,7 @@ class Page (HtmlWidget, ContentComponent, SublinksComponent, FactsComponent):
     def __init__ (self, *args, **kw):
         super (Page, self).__init__ (**kw)
         self._ident = None
-        if len(args) > 0 and isinstance (args[0], db.PulseRecord):
+        if len(args) > 0 and isinstance (args[0], pulse.db.PulseRecord):
             self._title = args[0].title
             self._icon = args[0].icon_url
             self._url = args[0].pulse_url
@@ -483,6 +483,7 @@ class Page (HtmlWidget, ContentComponent, SublinksComponent, FactsComponent):
         try:
             # FIXME: i18n
             screen = screenshot['C']
+            # FIXME STORM
             of = db.OutputFile.objects.get (id=screen)
             self._screenshot_file = of
         except:
@@ -537,6 +538,7 @@ class Page (HtmlWidget, ContentComponent, SublinksComponent, FactsComponent):
 
         p (fd, '<div id="subheader">', None, False)
         if self.http_response.http_account != None and self._ident != None:
+            # FIXME STORM
             if not db.AccountWatch.has_watch (self.http_response.http_account, self._ident):
                 p (fd, '<div class="watch"><a href="javascript:watch(\'%s\')">%s</a></div>',
                    (self._ident, pulse.utils.gettext ('Watch')), False)
@@ -850,13 +852,13 @@ class LinkBox (HtmlWidget, FactsComponent, ContentComponent):
         self._show_icon = True
         self._heading = False
         self._icon_size = None
-        if isinstance (args[0], db.PulseRecord):
+        if isinstance (args[0], pulse.db.PulseRecord):
             if args[0].linkable:
                 self._url = args[0].pulse_url
             self._title = args[0].title
             self._desc = args[0].localized_desc
             self._icon = args[0].icon_url
-            if isinstance (args[0], db.Entity):
+            if isinstance (args[0], pulse.db.Entity):
                 self._icon_size = 36
         elif len(args) > 1:
             self._url = args[0]
@@ -956,7 +958,7 @@ class IconBox (HtmlWidget, ContentComponent):
         self._title = title
 
     def add_link (self, *args):
-        if isinstance (args[0], db.PulseRecord):
+        if isinstance (args[0], pulse.db.PulseRecord):
             if args[0].linkable:
                 url = args[0].pulse_url
             title = args[0].title
@@ -1804,7 +1806,7 @@ class Link (HtmlWidget):
     def __init__ (self, *args, **kw):
         super (Link, self).__init__ (**kw)
         self._href = self._text = None
-        if isinstance (args[0], db.PulseRecord):
+        if isinstance (args[0], pulse.db.PulseRecord):
             if args[0].linkable:
                 self._href = args[0].pulse_url
             self._text = args[0].title

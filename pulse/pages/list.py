@@ -56,7 +56,8 @@ def main (response, path, query):
         output_list (response, mlist, **kw)
 
 
-def synopsis ():
+# FIXME STORM
+def FIXMEsynopsis ():
     """Construct an info box for the front page"""
     box = pulse.html.SectionBox (pulse.utils.gettext ('Mailing Lists'))
     txt = (pulse.utils.gettext ('Pulse is watching %i mailing lists.  ') %

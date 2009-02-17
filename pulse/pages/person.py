@@ -61,7 +61,8 @@ def main (response, path, query):
 
 
 synopsis_sort = -1
-def synopsis ():
+# FIXME STORM
+def FIXMEsynopsis ():
     """Construct an info box for the front page"""
     box = pulse.html.SectionBox (pulse.utils.gettext ('People'))
     txt = (pulse.utils.gettext ('Pulse is watching %i people.') %

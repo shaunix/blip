@@ -23,9 +23,7 @@ import os.path
 import sys
 
 import pulse.config
-import pulse.models
-
-import django.core.management
+import pulse.db
 
 synop = 'initialize the Pulse database'
 
@@ -34,7 +32,7 @@ def main (argv, options={}):
         os.makedirs (pulse.config.scratch_dir)
     if not os.path.exists (pulse.config.web_files_dir):
         os.makedirs (pulse.config.web_files_dir)
-    try:
-        django.core.management.syncdb (0, False)
-    except:
-        django.core.management.call_command ('syncdb')
+
+    pulse.db.create_tables ()
+
+    return 0

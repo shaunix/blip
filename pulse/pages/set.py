@@ -21,8 +21,8 @@
 """Output information about release sets"""
 
 import pulse.config
+import pulse.db
 import pulse.html
-import pulse.models as db
 import pulse.utils
 
 def main (response, path, query):
@@ -54,7 +54,7 @@ def synopsis ():
     box = pulse.html.SidebarBox (pulse.utils.gettext ('Sets'))
     bl = pulse.html.BulletList ()
     box.add_content (bl)
-    sets = db.ReleaseSet.objects.filter (parent__isnull=True)
+    sets = pulse.db.ReleaseSet.find (pulse.db.ReleaseSet.parent_ident == None)
     sets = pulse.utils.attrsorted (list(sets), 'title')
     for rset in sets:
         bl.add_link (rset)

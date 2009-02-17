@@ -25,6 +25,7 @@ import sys
 from getopt import getopt
 
 import pulse.config
+import pulse.db
 import pulse.pulsate
 import pulse.utils
 
@@ -116,13 +117,23 @@ if __name__ == "__main__":
     if options.get ('--debug-db', False):
         pulse.config.debug_db = True
 
-    mod = pulse.utils.import_ ('pulse.pulsate.' + argv[0])
-    if hasattr (mod, 'args'):
-        mod_opts, mod_argv = getopt (argv[1:], '', mod.args)
-        mod_options = get_options (mod_opts, mod.args)
-        retcode = mod.main (mod_argv, mod_options)
+    retcode = 1
+    try:
+        mod = pulse.utils.import_ ('pulse.pulsate.' + argv[0])
+        if hasattr (mod, 'args'):
+            mod_opts, mod_argv = getopt (argv[1:], '', mod.args)
+            mod_options = get_options (mod_opts, mod.args)
+            retcode = mod.main (mod_argv, mod_options)
+        else:
+            retcode = mod.main (argv[1:])
+        if retcode != 0:
+            raise
+    except:
+        pulse.db.rollback ()
+        raise
     else:
-        retcode = mod.main (argv[1:])
+        pulse.db.flush ()
+        pulse.db.commit ()
 
     if getattr (pulse.config, 'debug_db', False):
         print ('%i SELECT statements in %.3f seconds' %

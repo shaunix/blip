@@ -56,7 +56,8 @@ def main (response, path, query):
         output_team (response, team, **kw)
 
 
-def synopsis ():
+# FIXME STORM
+def FIXMEsynopsis ():
     """Construct an info box for the front page"""
     box = pulse.html.SidebarBox (title=pulse.utils.gettext ('Teams'))
     teams = db.Entity.objects.filter (type='Team', parent__isnull=True)

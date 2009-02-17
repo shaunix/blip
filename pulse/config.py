@@ -105,6 +105,12 @@ l10n_root = files_root + 'l10n/'
 
 
 ################################################################################
+## Database settings
+
+database = 'sqlite:/shaunm/Projects/pulse/storm/storm.db'
+
+
+################################################################################
 ## Django settings
 # These settings are used by Django to connect to the Pulse database.
 # This file is imported by Django as a settings file.  You may need

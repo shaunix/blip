@@ -30,6 +30,7 @@ import pulse.models as db
 import pulse.utils
 
 def update_graphs (obj, select, max, **kw):
+    #FIXME STORM
     now = datetime.datetime.now ()
     thisweek = pulse.utils.weeknum ()
     numweeks = kw.get('numweeks', 104)
@@ -112,13 +113,13 @@ def update_graphs (obj, select, max, **kw):
         i += 1
 
 
-def update_links (obj, sources, **kw):
+def update_links (record, sources, **kw):
     links = []
     for source in sources:
-        obj.data.setdefault ('linksources', {})
-        obj.data['linksources'].setdefault (source, {})
-        etag = obj.data['linksources'][source].get ('etag')
-        modified = obj.data['linksources'][source].get ('modified')
+        linksources = record.data.get ('linksources', {})
+        linksources.setdefault (source, {})
+        etag = linksources[source].get ('etag')
+        modified = linksources[source].get ('modified')
         feed = pulse.feedparser.parse (source, etag=etag, modified=modified)
         if feed.status == 200:
             pulse.utils.log ('Processing links at %s' % source)
@@ -134,19 +135,20 @@ def update_links (obj, sources, **kw):
                                entry.get ('description'),
                                updated,
                                source))
-            obj.data['linksources'][source]['etag'] = feed.get('etag')
-            obj.data['linksources'][source]['modified'] = feed.get('modified')
+            linksources[source]['etag'] = feed.get('etag')
+            linksources[source]['modified'] = feed.get('modified')
         else:
             # Not at all optimal, but not causing significant slowdowns
             # with any data we're actually seeing
             for link in obj.data.get ('links', []):
                 if link[4] == source:
                     links.append (link)
-    obj.data['links'] = sorted (links, cmp=lambda x, y: cmp (x[3], y[3]))
-    obj.save ()
+    record.update(data={'linksources': linksources,
+                        'links': sorted (links, cmp=lambda x, y: cmp (x[3], y[3]))
+                        })
 
 
-def update_schedule (obj, url, **kw):
+def update_schedule (record, url, **kw):
     pulse.utils.log ('Processing schedule at %s' % url)
     cal = vobject.readOne (urllib.urlopen (url))
     schedule = []
@@ -155,7 +157,6 @@ def update_schedule (obj, url, **kw):
             continue
         schedule.append ((event.dtstart.value, event.dtend.value,
                           event.summary.value, event.description.value))
-    obj.data['schedule'] = sorted (schedule, cmp=lambda x, y: cmp (x[0], y[0]))
-    obj.save ()
+    record.update(data={'schedule': sorted (schedule, cmp=lambda x, y: cmp (x[0], y[0]))})
 
 __all__ = ['docs','i18n','icons','init','modules','people','queue','sets']

@@ -23,7 +23,7 @@ import sys
 
 import xml.dom.minidom
 
-import pulse.models as db
+import pulse.db
 import pulse.scm
 import pulse.xmldata
 
@@ -148,11 +148,10 @@ def update_branch (moduleset, key, update=True):
     servername = pulse.scm.server_name (pkg_data['scm_type'], pkg_data['scm_server'])
     if servername == None:
         return None
-    ident = '/'.join (['/mod', servername, pkg_data['scm_module'], pkg_data['scm_branch']])
+    ident = u'/'.join (['/mod', servername, pkg_data['scm_module'], pkg_data['scm_branch']])
 
-    record = db.Branch.get_record (ident, 'Module')
+    record = pulse.db.Branch.get_or_create (ident, u'Module')
     record.update (data)
-    record.save()
     pkg_data['__record__'] = record
     records.setdefault (record.ident, {'record' : record, 'pkgdatas' : []})
     # Records could have package information defined in multiple modulesets,
@@ -160,10 +159,12 @@ def update_branch (moduleset, key, update=True):
     records[record.ident]['pkgdatas'].append ((moduleset, key))
     return record
 
+
 def update_set (data, update=True, parent=None):
-    ident = '/set/' + data['id']
-    record = db.ReleaseSet.get_record (ident, 'Set')
-    record.parent = parent
+    ident = u'/set/' + data['id']
+    record = pulse.db.ReleaseSet.get_or_create (ident, u'Set')
+    if parent:
+        record.parent = parent
 
     if data.has_key ('name'):
         record.update (name=data['name'])
@@ -193,14 +194,11 @@ def update_set (data, update=True, parent=None):
                 mod_data['scm_branch'] = pulse.scm.default_branches.get (mod_data['scm_type'])
             if mod_data.get ('scm_branch', '') == '':
                 continue
-            ident = '/'.join (['/mod', servername, mod_data['scm_module'], mod_data['scm_branch']])
-            branch = db.Branch.get_record (ident, 'Module')
-            if branch == None:
-                continue
+            ident = u'/'.join (['/mod', servername, mod_data['scm_module'], mod_data['scm_branch']])
+            branch = pulse.db.Branch.get_or_create (ident, u'Module')
             branch.update (mod_data)
-            rels.append (db.SetModule.set_related (record, branch))
-            branch.save()
-        record.set_relations (db.SetModule, rels)
+            rels.append (pulse.db.SetModule.set_related (record, branch))
+        record.set_relations (pulse.db.SetModule, rels)
     elif (data.has_key ('jhbuild_scm_type')   and
           data.has_key ('jhbuild_scm_server') and
           data.has_key ('jhbuild_scm_module') and
@@ -244,11 +242,11 @@ def update_set (data, update=True, parent=None):
         for pkg in packages:
             branch = update_branch (moduleset, pkg, update=update)
             if branch != None:
-                rels.append (db.SetModule.set_related (record, branch))
-        record.set_relations (db.SetModule, rels)
+                rels.append (pulse.db.SetModule.set_related (record, branch))
+        record.set_relations (pulse.db.SetModule, rels)
 
-    record.save()
     return record
+
 
 def update_deps ():
     for ident, recdata in records.items():
@@ -275,13 +273,12 @@ def update_deps ():
             depdata = moduleset.get_package (dep)
             if not depdata.has_key ('__record__'): continue
             deprec = depdata['__record__']
-            rel = db.ModuleDependency.set_related (rec, deprec)
+            rel = pulse.db.ModuleDependency.set_related (rec, deprec)
             pkgrels.append (rel)
             direct = (dep in pkgdata['deps'])
             if rel.direct != direct:
                 rel.direct = direct
-                rel.save()
-        rec.set_relations (db.ModuleDependency, pkgrels)
+        rec.set_relations (pulse.db.ModuleDependency, pkgrels)
 
 known_deps = {}
 def get_deps (moduleset, pkg, seen=[]):
@@ -303,6 +300,7 @@ def get_deps (moduleset, pkg, seen=[]):
     known_deps[depskey] = deps
     return deps
 
+
 def main (argv, options={}):
     update = not options.get ('--no-update', False)
 
@@ -314,3 +312,5 @@ def main (argv, options={}):
 
     if not options.get ('--no-deps', False):
         update_deps ()
+
+    return 0

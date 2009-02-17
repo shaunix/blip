@@ -6,7 +6,11 @@ import os
 import sys
 import cgi
 
-import pulse.config as config
+import pulse.config
+import pulse.db
+import pulse.html
+import pulse.pages
+import pulse.response
 import pulse.utils
 
 def usage ():
@@ -23,16 +27,16 @@ def main ():
         if opt in ('-o', '--output'):
             fd = file (arg, 'w')
         elif opt == '--debug-db':
-            config.debug_db = True
+            pulse.config.debug_db = True
         elif opt == '--webroot':
-            config.web_root = arg
+            pulse.config.web_root = arg
 
     # If we're not using the debugging, just turn off Django's DEBUG
     # setting.  This is set to True in pulse.config, because logging
     # in Pulse piggybacks off Django's debug system.  But that's just
     # wasted CPU cycles when we're making pages for the outside world.
-    if not getattr (config, 'debug_db', False):
-        config.DEBUG = False
+    if not getattr (pulse.config, 'debug_db', False):
+        pulse.config.DEBUG = False
 
     if len(args) > 0:
         http = False
@@ -64,12 +68,6 @@ def main ():
     else:
         query = {}
 
-    # It's important that we don't do this at the top, because this
-    # will cause pulse.models to be imported, and we have to be able
-    # to set config.DEBUG to False before that.
-    import pulse.models as db
-    import pulse.pages
-    import pulse.response
     retcode = 0
 
     response = pulse.response.HttpResponse (http=http)
@@ -79,13 +77,12 @@ def main ():
         ck.load (os.getenv ('HTTP_COOKIE') or '')
         token = ck.get('pulse_auth')
         token = token.value
-        response.http_login = db.Login.get_login (token, os.getenv ('REMOTE_ADDR'))
+        response.http_login = pulse.db.Login.get_login (token, os.getenv ('REMOTE_ADDR'))
         response.http_account = response.http_login.account
     except:
         pass
 
     if len (path) == 0:
-        import pulse.html
         page = pulse.html.Page ()
         page.set_title (pulse.utils.gettext ('Pulse'))
         cont = pulse.html.PaddingBox ()
@@ -127,7 +124,7 @@ def main ():
                     ' their programming assignment.'))
             response.set_contents (page)
 
-    if getattr (config, 'debug_db', False):
+    if getattr (pulse.config, 'debug_db', False):
         print ('%i SELECT statements in %.3f seconds' %
                (pulse.models.PulseDebugCursor.debug_select_count,
                 pulse.models.PulseDebugCursor.debug_select_time))
