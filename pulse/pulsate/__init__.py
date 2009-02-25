@@ -24,18 +24,17 @@ import urllib
 
 import vobject
 
+import pulse.db
 import pulse.feedparser
 import pulse.graphs
-import pulse.models as db
 import pulse.utils
 
-def update_graphs (obj, select, max, **kw):
-    #FIXME STORM
-    now = datetime.datetime.now ()
+def update_graphs (record, select, max, **kw):
+    now = datetime.datetime.utcnow ()
     thisweek = pulse.utils.weeknum ()
     numweeks = kw.get('numweeks', 104)
     i = 0
-    finalrev = db.Revision.select_revisions (**select).order_by ('datetime')
+    finalrev = pulse.db.Revision.select_revisions (**select).order_by ('datetime')
     outpath = None
     try:
         finalrev = finalrev[0].id
@@ -45,14 +44,13 @@ def update_graphs (obj, select, max, **kw):
         stillrev = False
     while stillrev or i < 2:
         topweek = thisweek - (i * numweeks)
-        revstot = db.Revision.select_revisions (**select).count ()
-        revs = db.Revision.select_revisions (weeknum__gt=(topweek - numweeks),
-                                             weeknum__lte=topweek,
-                                             **select)
+        revstot = pulse.db.Revision.select_revisions (**select).count ()
+        revs = pulse.db.Revision.select_revisions (week_range = ((topweek - numweeks + 1), topweek),
+                                                   **select)
 
         if stillrev:
-            fname = 'commits-' + str(i) + '.png'
-            of = db.OutputFile.objects.filter (type='graphs', ident=obj.ident, filename=fname)
+            fname = u'commits-' + str(i) + '.png'
+            of = pulse.db.OutputFile.select (type=u'graphs', ident=record.ident, filename=fname)
             try:
                 of = of[0]
             except IndexError:
@@ -64,16 +62,17 @@ def update_graphs (obj, select, max, **kw):
                     if weeknum == thisweek:
                         rev = None
                         if revcount == revstot:
-                            pulse.utils.log ('Skipping commit graph for %s' % obj.ident)
+                            pulse.utils.log ('Skipping commit graph for %s' % record.ident)
                             return
             elif of == None:
-                of = db.OutputFile (type='graphs', ident=obj.ident, filename=fname, datetime=now)
+                of = pulse.db.OutputFile (type=u'graphs', ident=record.ident,
+                                          filename=fname, datetime=now)
             outpath = of.get_file_path()
         else:
             of = None
 
         if i == 0:
-            pulse.utils.log ('Creating commit graphs for %s' % obj.ident)
+            pulse.utils.log ('Creating commit graphs for %s' % record.ident)
 
         stats = [0] * numweeks
         revs = list(revs)
@@ -86,12 +85,12 @@ def update_graphs (obj, select, max, **kw):
         if i == 0:
             scorestats = stats[numweeks - 26:]
             score = pulse.utils.score (scorestats)
-            obj.mod_score = score
+            record.mod_score = score
             scorestats = scorestats[:-3]
             avg = int(round(sum(scorestats) / (len(scorestats) * 1.0)))
             scorestats = scorestats + [avg, avg, avg]
             old = pulse.utils.score (scorestats)
-            obj.mod_score_diff = score - old
+            record.mod_score_diff = score - old
 
         if of != None:
             graph = pulse.graphs.BarGraph (stats, max, height=40)
@@ -108,7 +107,6 @@ def update_graphs (obj, select, max, **kw):
             if len(revs) > 0:
                 of.data['revcount'] = revstot
             of.data['weeknum'] = topweek
-            of.save()
 
         i += 1
 
@@ -140,7 +138,7 @@ def update_links (record, sources, **kw):
         else:
             # Not at all optimal, but not causing significant slowdowns
             # with any data we're actually seeing
-            for link in obj.data.get ('links', []):
+            for link in record.data.get ('links', []):
                 if link[4] == source:
                     links.append (link)
     record.update(data={'linksources': linksources,
