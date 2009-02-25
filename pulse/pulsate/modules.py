@@ -30,8 +30,8 @@ import sys
 
 import xml.dom.minidom
 
+import pulse.db
 import pulse.graphs
-import pulse.models as db
 import pulse.scm
 import pulse.parsers
 import pulse.pulsate
@@ -56,11 +56,10 @@ def update_branch (branch, **kw):
     checkout = pulse.scm.Checkout.from_record (branch, update=kw.get('update', True))
 
     if checkout.error != None:
-        branch.error = checkout.error
-        branch.save()
+        branch.update(error=checkout.error)
         return
     else:
-        branch.error = None
+        branch.update(error=None)
 
     if kw.get('history', True):
         check_history (branch, checkout)
@@ -117,7 +116,7 @@ def update_branch (branch, **kw):
         domain = process_podir (branch, checkout, podir, **kw)
         if domain != None:
             domains.append (domain)
-    branch.set_children ('Domain', domains)
+    branch.set_children (u'Domain', domains)
 
     documents = []
     for docdir, makefile in gdu_docs:
@@ -128,7 +127,7 @@ def update_branch (branch, **kw):
         document = process_gtk_docdir (branch, checkout, docdir, makefile, **kw)
         if document != None:
             documents.append (document)
-    branch.set_children ('Document', documents)
+    branch.set_children (u'Document', documents)
     if kw.get('do_docs', True):
         for doc in documents:
             pulse.pulsate.docs.update_document (doc, checkout=checkout, **kw)
@@ -140,7 +139,7 @@ def update_branch (branch, **kw):
         lib = process_pkgconfig (branch, checkout, pkgconfig, **kw)
         if lib != None:
             libraries.append (lib)
-    branch.set_children ('Library', libraries)
+    branch.set_children (u'Library', libraries)
 
     applications = []
     capplets = []
@@ -159,16 +158,16 @@ def update_branch (branch, **kw):
                 applications.append (app)
             elif app.type == 'Capplet':
                 capplets.append (app)
-    branch.set_children ('Application', applications)
-    branch.set_children ('Capplet', capplets)
+    branch.set_children (u'Application', applications)
+    branch.set_children (u'Capplet', capplets)
 
     applets = []
     for oafserver in oafservers:
         applets += process_oafserver (branch, checkout, oafserver, images=images, **kw)
-    branch.set_children ('Applet', applets)
+    branch.set_children (u'Applet', applets)
 
     for obj in (applications + capplets + applets):
-        rels = db.Documentation.get_related (subj=obj)
+        rels = pulse.db.Documentation.get_related (subj=obj)
         if len(rels) == 0: continue
         doc = rels[0].pred
         if doc.data.has_key ('screenshot'):
@@ -203,12 +202,10 @@ def update_branch (branch, **kw):
         branch.icon_dir = None
         branch.icon_name = None
         branch.data.pop ('screenshot', None)
-
-    branch.save()
     
 
 def check_history (branch, checkout):
-    since = db.Revision.get_last_revision (branch=branch)
+    since = pulse.db.Revision.get_last_revision (branch=branch)
     if since != None:
         since = since.revision
         current = checkout.get_revision()
@@ -216,36 +213,35 @@ def check_history (branch, checkout):
             pulse.utils.log ('Skipping history for %s' % branch.ident)
             return
     pulse.utils.log ('Checking history for %s' % branch.ident)
-    serverid = '.'.join (pulse.scm.server_name (checkout.scm_type, checkout.scm_server).split('.')[-2:])
+    serverid = u'.'.join (pulse.scm.server_name (checkout.scm_type, checkout.scm_server).split('.')[-2:])
     for hist in checkout.read_history (since=since):
-        ptype = 'Person'
+        ptype = u'Person'
         if hist['author'][0] != None:
-            pident = '/person/' + serverid + '/' + hist['author'][0]
+            pident = u'/person/%s@%s' % (hist['author'][0], serverid)
         elif hist['author'][2] != None:
-            pident = '/person/' + hist['author'][2]
+            pident = u'/person/%s' % hist['author'][2]
         else:
-            pident = '/ghost/' + hist['author'][1]
-            ptype = 'Ghost'
-        person = db.Entity.get_record (pident, ptype)
-        if ptype == 'Person':
-            db.Queue.push ('people', pident)
+            pident = u'/ghost/%' % hist['author'][1]
+            ptype = u'Ghost'
+        person = pulse.db.Entity.get_or_create (pident, ptype)
+        if ptype == u'Person':
+            pulse.db.Queue.push (u'people', pident)
         if hist['author'][1] != None:
-            if person.name == None or person.name == {}:
-                person.update (name=hist['author'][1])
-                person.save()
-        hist['branch'] = branch
-        hist['person'] = person
-        rev = db.Revision.make_revision (**hist)
+            person.extend (name=hist['author'][1])
+        rev = {'branch': branch, 'person': person,
+               'revision': hist['revision'],
+               'datetime': hist['datetime'],
+               'comment': hist['comment'] }
+        if person.ident != pident:
+            rev['alias_ident'] = pident
+        rev = pulse.db.Revision (**rev)
         for filename, filerev, prevrev in hist['files']:
-            rfile = db.RevisionFile (revision=rev, filename=filename,
-                                     filerev=filerev, prevrev=prevrev)
-            rfile.save()
+            rev.add_file (filename, filerev, prevrev)
 
-    revision = db.Revision.get_last_revision (branch=branch)
+    revision = pulse.db.Revision.get_last_revision (branch=branch)
     if revision != None:
         branch.mod_datetime = revision.datetime
         branch.mod_person = revision.person
-        branch.save()
 
 
 def process_maintainers (branch, checkout, **kw):
@@ -257,7 +253,7 @@ def process_maintainers (branch, checkout, **kw):
     mtime = os.stat(maintfile).st_mtime
 
     if kw.get('timestamps', True):
-        stamp = db.Timestamp.get_timestamp (rel_scm)
+        stamp = pulse.db.Timestamp.get_timestamp (rel_scm)
         mtime = os.stat(maintfile).st_mtime
         if mtime <= stamp:
             pulse.utils.log ('Skipping file %s' % rel_scm)
@@ -273,7 +269,7 @@ def process_maintainers (branch, checkout, **kw):
         if name != None and userid != None:
             maints.append ((name, userid, email))
     for l in open (maintfile):
-        line = l.rstrip()
+        line = pulse.utils.utf8dec (l.rstrip())
         if line.startswith ('#'):
             continue
         if line == "":
@@ -293,17 +289,16 @@ def process_maintainers (branch, checkout, **kw):
     serverid = '.'.join (pulse.scm.server_name (branch.scm_type, branch.scm_server).split('.')[-2:])
     rels = []
     for name, userid, email in maints:
-        ident = '/person/' + serverid + '/' + userid
-        person = db.Entity.get_record (ident, 'Person')
+        ident = u'/person/%s@%s' % (userid, serverid)
+        person = pulse.db.Entity.get_or_create (ident, u'Person')
         person.update (name=name)
         if email != None:
             person.email = email
-        person.save()
-        rel = db.ModuleEntity.set_related (branch, person, maintainer=True)
+        rel = pulse.db.ModuleEntity.set_related (branch, person, maintainer=True)
         rels.append (rel)
-    branch.set_relations (db.ModuleEntity, rels)
+    branch.set_relations (pulse.db.ModuleEntity, rels)
 
-    db.Timestamp.set_timestamp (rel_scm, mtime)
+    pulse.db.Timestamp.set_timestamp (rel_scm, mtime)
 
 
 def process_configure (branch, checkout, **kw):
@@ -317,7 +312,7 @@ def process_configure (branch, checkout, **kw):
     mtime = os.stat(filename).st_mtime
 
     if kw.get('timestamps', True):
-        stamp = db.Timestamp.get_timestamp (rel_scm)
+        stamp = pulse.db.Timestamp.get_timestamp (rel_scm)
         if mtime <= stamp:
             pulse.utils.log ('Skipping file %s' % rel_scm)
             return
@@ -420,30 +415,25 @@ def process_configure (branch, checkout, **kw):
         pass
     series = '.'.join (series)
 
-    data = {
-        'PACKAGE_NAME' : vars.get ('PACKAGE_NAME', '').strip(),
-        'tarname' : tarname,
-        'tarversion' : tarversion,
-        'series' : series
-        }
+    branch.data['PACKAGE_NAME'] = vars.get ('PACKAGE_NAME', '').strip(),
+    branch.data['tarname'] = tarname,
+    branch.data['tarversion'] = tarversion,
+    branch.data['series'] = series
 
-    branch.update (data)
-    branch.save()
-
-    db.Timestamp.set_timestamp (rel_scm, mtime)
+    pulse.db.Timestamp.set_timestamp (rel_scm, mtime)
 
 
 def process_podir (branch, checkout, podir, **kw):
     bserver, bmodule, bbranch = branch.ident.split('/')[2:]
-    ident = '/'.join(['/i18n', bserver, bmodule, os.path.basename (podir), bbranch])
-    domain = db.Branch.get_record (ident, 'Domain')
+    ident = u'/'.join(['/i18n', bserver, bmodule, os.path.basename (podir), bbranch])
+    domain = pulse.db.Branch.get_or_create (ident, u'Domain')
     domain.parent = branch
 
-    data = {}
+    scmdata = {}
     for key in ('scm_type', 'scm_server', 'scm_module', 'scm_branch', 'scm_path'):
-        data[key] = getattr(branch, key)
-    data['scm_dir'] = pulse.utils.relative_path (podir, checkout.directory)
-    domain.update (data)
+        scmdata[key] = getattr(branch, key)
+    scmdata['scm_dir'] = pulse.utils.relative_path (podir, checkout.directory)
+    domain.update (scmdata)
 
     linguas = os.path.join (podir, 'LINGUAS')
     if not os.path.isfile (linguas):
@@ -455,7 +445,7 @@ def process_podir (branch, checkout, podir, **kw):
     translations = []
 
     if kw.get('timestamps', True):
-        stamp = db.Timestamp.get_timestamp (rel_scm)
+        stamp = pulse.db.Timestamp.get_timestamp (rel_scm)
         if mtime <= stamp:
             pulse.utils.log ('Skipping file %s' % rel_scm)
             return domain
@@ -468,25 +458,23 @@ def process_podir (branch, checkout, podir, **kw):
         for l in line.split():
             langs.append (l)
     for lang in langs:
-        lident = '/l10n/' + lang + domain.ident
-        translation = db.Branch.get_record (lident, 'Translation')
+        lident = u'/l10n/' + lang + domain.ident
+        translation = pulse.db.Branch.get_or_create (lident, u'Translation')
         translations.append (translation)
         ldata = {}
         for key in ('scm_type', 'scm_server', 'scm_module', 'scm_branch', 'scm_path'):
-            ldata[key] = data[key]
+            ldata[key] = scmdata[key]
         ldata['subtype'] = 'intltool'
-        ldata['scm_dir'] = data['scm_dir']
+        ldata['scm_dir'] = scmdata['scm_dir']
         ldata['scm_file'] = lang + '.po'
         translation.update (ldata)
-        translation.save()
-    domain.set_children ('Translation', translations)
-    domain.save()
+    domain.set_children (u'Translation', translations)
 
     if kw.get('do_i18n', True):
         for po in translations:
             pulse.pulsate.i18n.update_translation (po, checkout=checkout, **kw)
 
-    db.Timestamp.set_timestamp (rel_scm, mtime)
+    pulse.db.Timestamp.set_timestamp (rel_scm, mtime)
 
     return domain
 
@@ -496,8 +484,8 @@ def process_gdu_docdir (branch, checkout, docdir, makefile, **kw):
     doc_module = makefile['DOC_MODULE']
     if doc_module == '@PACKAGE_NAME@':
         doc_module = branch.data.get ('PACKAGE_NAME', '@PACKAGE_NAME@')
-    ident = '/'.join(['/doc', bserver, bmodule, doc_module, bbranch])
-    document = db.Branch.get_record (ident, 'Document')
+    ident = u'/'.join(['/doc', bserver, bmodule, doc_module, bbranch])
+    document = pulse.db.Branch.get_or_create (ident, u'Document')
     document.parent = branch
 
     relpath = pulse.utils.relative_path (docdir, checkout.directory)
@@ -505,7 +493,7 @@ def process_gdu_docdir (branch, checkout, docdir, makefile, **kw):
     data = {}
     for key in ('scm_type', 'scm_server', 'scm_module', 'scm_branch', 'scm_path'):
         data[key] = getattr(branch, key)
-    data['subtype'] = 'gdu-docbook'
+    data['subtype'] = u'gdu-docbook'
     data['scm_dir'] = os.path.join (relpath, 'C')
     data['scm_file'] = doc_module + '.xml'
     document.update (data)
@@ -513,20 +501,17 @@ def process_gdu_docdir (branch, checkout, docdir, makefile, **kw):
     translations = []
     if makefile.has_key ('DOC_LINGUAS'):
         for lang in makefile['DOC_LINGUAS'].split():
-            lident = '/l10n/' + lang + document.ident
-            translation = db.Branch.get_record (lident, 'Translation')
+            lident = u'/l10n/' + lang + document.ident
+            translation = pulse.db.Branch.get_or_create (lident, u'Translation')
             translations.append (translation)
             ldata = {}
             for key in ('scm_type', 'scm_server', 'scm_module', 'scm_branch', 'scm_path'):
                 ldata[key] = data[key]
-            ldata['subtype'] = 'xml2po'
+            ldata['subtype'] = u'xml2po'
             ldata['scm_dir'] = os.path.join (pulse.utils.relative_path (docdir, checkout.directory), lang)
             ldata['scm_file'] = lang + '.po'
             translation.update (ldata)
-            translation.save()
-        document.set_children ('Translation', translations)
-
-    document.save()
+        document.set_children (u'Translation', translations)
 
     if kw.get('do_i18n', True):
         for po in translations:
@@ -538,14 +523,14 @@ def process_gdu_docdir (branch, checkout, docdir, makefile, **kw):
 def process_gtk_docdir (branch, checkout, docdir, makefile, **kw):
     bserver, bmodule, bbranch = branch.ident.split('/')[2:]
     doc_module = makefile['DOC_MODULE']
-    ident = '/'.join(['/ref', bserver, bmodule, doc_module, bbranch])
-    document = db.Branch.get_record (ident, 'Document')
+    ident = u'/'.join(['/ref', bserver, bmodule, doc_module, bbranch])
+    document = pulse.db.Branch.get_or_create (ident, u'Document')
     relpath = pulse.utils.relative_path (docdir, checkout.directory)
 
     data = {}
     for key in ('scm_type', 'scm_server', 'scm_module', 'scm_branch', 'scm_path'):
         data[key] = getattr(branch, key)
-    data['subtype'] = 'gtk-doc'
+    data['subtype'] = u'gtk-doc'
     data['scm_dir'] = relpath
     scm_file = makefile['DOC_MAIN_SGML_FILE']
     if '$(DOC_MODULE)' in scm_file:
@@ -553,7 +538,6 @@ def process_gtk_docdir (branch, checkout, docdir, makefile, **kw):
     data['scm_file'] = scm_file
 
     document.update (data)
-    document.save()
 
     return document
 
@@ -568,15 +552,15 @@ def process_pkgconfig (branch, checkout, filename, **kw):
         return None
 
     if kw.get('timestamps', True):
-        stamp = db.Timestamp.get_timestamp (rel_scm)
+        stamp = pulse.db.Timestamp.get_timestamp (rel_scm)
         if mtime <= stamp:
             pulse.utils.log ('Skipping file %s' % rel_scm)
             data = {'parent' : branch}
             data['scm_dir'], data['scm_file'] = os.path.split (rel_ch)
-            libs = db.Branch.objects.filter (type='Library', **data)
+            libs = pulse.db.Branch.select (type=u'Library', **data)
             try:
-                return libs[0]
-            except IndexError:
+                return libs.one ()
+            except:
                 return None
     pulse.utils.log ('Processing file %s' % rel_scm)
 
@@ -591,31 +575,24 @@ def process_pkgconfig (branch, checkout, filename, **kw):
         return None
 
     bserver, bmodule, bbranch = branch.ident.split('/')[2:]
-    ident = '/'.join(['/lib', bserver, bmodule, basename, bbranch])
-    lib = db.Branch.get_record (ident, 'Library')
+    ident = u'/'.join(['/lib', bserver, bmodule, basename, bbranch])
+    lib = pulse.db.Branch.get_or_create (ident, u'Library')
 
     if libname == '@PACKAGE_NAME@':
         libname = branch.data.get ('PACKAGE_NAME', '@PACKAGE_NAME@')
 
     lib.update (name=libname, desc=libdesc)
 
-    docident = '/'.join(['/ref', bserver, bmodule, basename, bbranch])
-    doc = db.Branch.objects.filter (ident=docident, type='Document')
-    try:
-        doc = doc[0]
-    except IndexError:
-        doc = None
+    docident = u'/'.join(['/ref', bserver, bmodule, basename, bbranch])
+    doc = pulse.db.Branch.get (docident)
+    if doc == None:
         match = re.match ('(.+)-\\d+(\\d\\d+)?', basename)
         if match:
-            docident = '/'.join(['/ref', bserver, bmodule, match.group(1), bbranch])
-            doc = db.Branch.objects.filter (ident=docident, type='Document')
-            try:
-                doc = doc[0]
-            except IndexError:
-                doc = None
+            docident = u'/'.join(['/ref', bserver, bmodule, match.group(1), bbranch])
+            doc = pulse.db.Branch.get (docident)
     if doc != None:
-        rel = db.Documentation.set_related (lib, doc)
-        lib.set_relations (db.Documentation, [rel])
+        rel = pulse.db.Documentation.set_related (lib, doc)
+        lib.set_relations (pulse.db.Documentation, [rel])
 
     data = {}
     for key in ('scm_type', 'scm_server', 'scm_module', 'scm_branch', 'scm_path'):
@@ -623,9 +600,8 @@ def process_pkgconfig (branch, checkout, filename, **kw):
     data['scm_dir'], data['scm_file'] = os.path.split (rel_ch)
 
     lib.update (data)
-    lib.save()
 
-    db.Timestamp.set_timestamp (rel_scm, mtime)
+    pulse.db.Timestamp.set_timestamp (rel_scm, mtime)
 
     return lib
 
@@ -636,15 +612,15 @@ def process_keyfile (branch, checkout, filename, **kw):
     mtime = os.stat(filename).st_mtime
 
     if kw.get('timestamps', True):
-        stamp = db.Timestamp.get_timestamp (rel_scm)
+        stamp = pulse.db.Timestamp.get_timestamp (rel_scm)
         if mtime <= stamp:
             pulse.utils.log ('Skipping file %s' % rel_scm)
             data = {'parent' : branch}
             data['scm_dir'], data['scm_file'] = os.path.split (rel_ch)
-            apps = db.Branch.objects.filter (type='Application', **data)
+            apps = pulse.db.Branch.select (type=u'Application', **data)
             try:
-                return apps[0]
-            except IndexError:
+                return apps.one ()
+            except:
                 return None
     pulse.utils.log ('Processing file %s' % rel_scm)
                      
@@ -669,7 +645,7 @@ def process_keyfile (branch, checkout, filename, **kw):
         return None
 
     bserver, bmodule, bbranch = branch.ident.split('/')[2:]
-    ident = '/'.join(['/app', bserver, bmodule, basename, bbranch])
+    ident = u'/'.join(['/app', bserver, bmodule, basename, bbranch])
 
     name = keyfile.get_value ('Desktop Entry', 'Name')
     if isinstance (name, basestring):
@@ -682,16 +658,16 @@ def process_keyfile (branch, checkout, filename, **kw):
     else:
         desc = None
 
-    type = 'Application'
+    type = u'Application'
     if keyfile.has_key ('Desktop Entry', 'Categories'):
         cats = keyfile.get_value ('Desktop Entry', 'Categories')
         if 'Settings' in cats.split(';'):
-            ident = '/'.join(['/capplet', bserver, bmodule, basename, bbranch])
-            type = 'Capplet'
+            ident = u'/'.join(['/capplet', bserver, bmodule, basename, bbranch])
+            type = u'Capplet'
 
-    app = db.Branch.get_record (ident, type)
+    app = pulse.db.Branch.get_or_create (ident, type)
 
-    data = {}
+    data = {'data': {}}
     for key in ('scm_type', 'scm_server', 'scm_module', 'scm_branch', 'scm_path'):
         data[key] = getattr(branch, key)
     data['scm_dir'], data['scm_file'] = os.path.split (rel_ch)
@@ -706,9 +682,9 @@ def process_keyfile (branch, checkout, filename, **kw):
         locate_icon (app, iconname, kw.get ('images', []))
 
     if keyfile.has_key ('Desktop Entry', 'Exec'):
-        data['exec'] = keyfile.get_value ('Desktop Entry', 'Exec')
-        if data['exec'] == '@PACKAGE_NAME@':
-            data['exec'] = branch.data.get ('PACKAGE_NAME', '@PACKAGE_NAME@')
+        data['data']['exec'] = keyfile.get_value ('Desktop Entry', 'Exec')
+        if data['data']['exec'] == '@PACKAGE_NAME@':
+            data['data']['exec'] = branch.data.get ('PACKAGE_NAME', '@PACKAGE_NAME@')
 
     app.update (data)
 
@@ -719,18 +695,14 @@ def process_keyfile (branch, checkout, filename, **kw):
         docid = basename
 
     if docid != '':
-        docident = '/'.join(['/doc', bserver, bmodule, docid, bbranch])
-        doc = db.Branch.objects.filter (ident=docident, type='Document')
-        try:
-            doc = doc[0]
-            rel = db.Documentation.set_related (app, doc)
-            app.set_relations (db.Documentation, [rel])
-        except IndexError:
-            pass
+        docident = u'/'.join(['/doc', bserver, bmodule, docid, bbranch])
+        doc = pulse.db.Branch.get (docident)
+        if doc != None:
+            rel = pulse.db.Documentation.set_related (app, doc)
+            app.set_relations (pulse.db.Documentation, [rel])
 
-    db.Timestamp.set_timestamp (rel_scm, mtime)
+    pulse.db.Timestamp.set_timestamp (rel_scm, mtime)
 
-    app.save()
     return app
 
 
@@ -742,12 +714,12 @@ def process_oafserver (branch, checkout, filename, **kw):
     mtime = os.stat(filename).st_mtime
 
     if kw.get('timestamps', True):
-        stamp = db.Timestamp.get_timestamp (rel_scm)
+        stamp = pulse.db.Timestamp.get_timestamp (rel_scm)
         if mtime <= stamp:
             pulse.utils.log ('Skipping file %s' % rel_scm)
             data = {'parent' : branch}
             data['scm_dir'], data['scm_file'] = os.path.split (rel_ch)
-            applets = db.Branch.objects.filter (type='Applet', **data)
+            applets = pulse.db.Branch.select (type=u'Applet', **data)
             return list(applets)
     pulse.utils.log ('Processing file %s' % rel_scm)
 
@@ -806,7 +778,7 @@ def process_oafserver (branch, checkout, filename, **kw):
         if not is_applet or applet_icon == None:
             continue
         ident = '/'.join(['/applet', bserver, bmodule, applet_iid, bbranch])
-        applet = db.Branch.get_record (ident, 'Applet')
+        applet = pulse.db.Branch.get_or_create (ident, u'Applet')
         applet.update (name=applet_name, desc=applet_desc)
         if applet_icon != None:
             locate_icon (applet, applet_icon, kw.get ('images', []))
@@ -816,10 +788,9 @@ def process_oafserver (branch, checkout, filename, **kw):
             data[key] = getattr(branch, key)
         data['scm_dir'], data['scm_file'] = os.path.split (rel_ch)
         applet.update (data)
-        applet.save()
         applets.append (applet)
 
-    db.Timestamp.set_timestamp (rel_scm, mtime)
+    pulse.db.Timestamp.set_timestamp (rel_scm, mtime)
 
     return applets
 
@@ -874,7 +845,7 @@ def locate_icon (record, icon, images):
         im.save (os.path.join (icondir, os.path.basename (imgbig)), 'PNG')
         record.update ({'icon_dir' : 'apps', 'icon_name' : os.path.basename (imgbig[:-4])})
     elif record.icon_name == None or record.icon_name != icon:
-        record.update ({'icon_dir' : '__icon__:apps', 'icon_name' : icon})
+        record.update (icon_dir='__icon__:apps', icon_name=icon)
 
 
 def main (argv, options={}):
@@ -884,20 +855,30 @@ def main (argv, options={}):
     do_docs = not options.get ('--no-docs', False)
     do_i18n = not options.get ('--no-i18n', False)
     if len(argv) == 0:
-        prefix = None
+        ident = None
     else:
-        prefix = argv[0]
+        ident = pulse.utils.utf8dec (argv[0])
 
-    if prefix != None:
-        if prefix[:5] == '/set/':
-            branches = db.Branch.objects.filter (type='Module',
-                                                 set_module_subjs__subj__ident__startswith=prefix)
+    if ident != None:
+        if ident[:5] == u'/set/':
+            branches = pulse.db.Branch.find (pulse.db.Branch.type == u'Module',
+                                             pulse.db.Branch.ident == pulse.db.SetModule.pred_ident,
+                                             pulse.db.SetModule.subj_ident.like (ident))
         else:
-            branches = db.Branch.objects.filter (type='Module',
-                                                 ident__startswith=prefix)
+            branches = pulse.db.Branch.find (pulse.db.Branch.type == u'Module',
+                                             pulse.db.Branch.ident.like (ident))
     else:
-        branches = db.Branch.objects.filter (type='Module')
+        branches = pulse.db.Branch.find (pulse.db.Branch.type == u'Module')
 
     for branch in list(branches):
-        update_branch (branch, update=update, timestamps=timestamps, history=history,
-                       do_docs=do_docs, do_i18n=do_i18n)
+        try:
+            update_branch (branch, update=update, timestamps=timestamps, history=history,
+                           do_docs=do_docs, do_i18n=do_i18n)
+            pulse.db.flush ()
+        except:
+            pulse.db.rollback ()
+            raise
+        else:
+            pulse.db.commit ()
+
+    return 0

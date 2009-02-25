@@ -127,7 +127,7 @@ if __name__ == "__main__":
         else:
             retcode = mod.main (argv[1:])
         if retcode != 0:
-            raise
+            raise 'Return code not 0'
     except:
         pulse.db.rollback ()
         raise

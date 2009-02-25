@@ -53,7 +53,7 @@ class PulseModel (Storm):
 
     def __init__ (self, **kw):
         self.update (**kw)
-        pulse.utils.log ('Creating %s' % self)
+        self.log_create ()
         store.add (self)
 
     def __repr__ (self):
@@ -61,6 +61,9 @@ class PulseModel (Storm):
             return '%s %s' % (self.__class__.__name__, self.id)
         else:
             return self.__class__.__name__
+
+    def log_create (self):
+        pulse.utils.log ('Creating %s' % self)
 
     @ classmethod
     def find (cls, *args, **kw):
@@ -214,10 +217,17 @@ class PulseRecord (PulseModel):
         return cls (ident, type, **kw)
 
     @classmethod
+    def get (cls, ident):
+        try:
+            return cls.select (ident=ident).one ()
+        except:
+            return None
+
+    @classmethod
     def get_cached (cls, ident):
         if cls._record_cache.has_key (ident):
             return cls._record_cache[ident]
-        record = cls.find (ident=ident).one ()
+        record = cls.get (ident)
         if record != None:
             cls.set_cached (ident, record)
         return record
@@ -257,7 +267,7 @@ class PulseRelation (PulseModel):
         return rel
 
     @classmethod
-    def get_related (cls, subj, pred):
+    def get_related (cls, subj=None, pred=None):
         if subj != None and pred != None:
             rel = store.find (cls, subj_ident=subj.ident, pred_ident=pred.ident)
             return rel or False
@@ -331,7 +341,6 @@ class Branch (PulseRecord):
             child.parent = self
         for old in olddict.values():
             old.delete ()
-        raise
 
     def delete (self):
         for record in Branch.select (parent=self):
@@ -350,6 +359,18 @@ class Entity (PulseRecord):
 
     def delete (self):
         raise WillNotDelete ('Pulse will not delete entities')
+
+    @classmethod
+    def get (cls, ident):
+        try:
+            ent = cls.select (ident=ident).one ()
+        except:
+            ent = None
+        if ent == None:
+            ent = Alias.get (ident)
+            if ent != None:
+                ent = ent.entity
+        return ent
 
 
 class Alias (PulseRecord):
@@ -467,6 +488,9 @@ class Revision (PulseModel):
         kw['weeknum'] = pulse.utils.weeknum (self.datetime)
         PulseModel.__init__ (self, **kw)
 
+    def log_create (self):
+        pass
+
     def add_file (self, filename, filerev, prevrev):
         rfile = RevisionFile (revision=self,
                               filename=filename,
@@ -515,6 +539,9 @@ class RevisionFile (PulseModel):
     filerev = Unicode ()
     prevrev = Unicode ()
 
+    def log_create (self):
+        pass
+
 
 class OutputFile (PulseModel):
     id = Int (primary=True)
@@ -527,6 +554,9 @@ class OutputFile (PulseModel):
     datetime = DateTime ()
     statistic = Int ()
     data = Pickle (default_factory=dict)
+
+    def log_create (self):
+        pass
 
     def get_pulse_url (self, subsub=None):
         lst = [self.ident[1:]]
@@ -562,6 +592,9 @@ class Timestamp (PulseModel):
     sourcefunc = Unicode ()
     stamp = Int ()
 
+    def log_create (self):
+        pass
+
     @classmethod
     def set_timestamp (cls, filename, stamp):
         sfunc = inspect.stack()[1]
@@ -576,7 +609,7 @@ class Timestamp (PulseModel):
     @classmethod
     def get_timestamp (cls, filename):
         sfunc = inspect.stack()[1]
-        sfunc = os.path.basename (sfunc[1]) + '#' + sfunc[3]
+        sfunc = unicode (os.path.basename (sfunc[1]) + '#' + sfunc[3])
         obj = cls.select (filename=filename, sourcefunc=sfunc)
         try:
             return obj[0].stamp
@@ -588,6 +621,9 @@ class Queue (PulseModel):
     __storm_primary__ = 'module', 'ident'
     module = Unicode ()
     ident = Unicode ()
+
+    def log_create (self):
+        pass
 
     @classmethod
     def push (cls, module, ident):
