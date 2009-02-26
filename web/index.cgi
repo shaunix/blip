@@ -27,16 +27,9 @@ def main ():
         if opt in ('-o', '--output'):
             fd = file (arg, 'w')
         elif opt == '--debug-db':
-            pulse.config.debug_db = True
+            pulse.db.debug ()
         elif opt == '--webroot':
             pulse.config.web_root = arg
-
-    # If we're not using the debugging, just turn off Django's DEBUG
-    # setting.  This is set to True in pulse.config, because logging
-    # in Pulse piggybacks off Django's debug system.  But that's just
-    # wasted CPU cycles when we're making pages for the outside world.
-    if not getattr (pulse.config, 'debug_db', False):
-        pulse.config.DEBUG = False
 
     if len(args) > 0:
         http = False
@@ -51,7 +44,7 @@ def main ():
         queryString = os.getenv ('QUERY_STRING')
 
     if pathInfo != None:
-        path = pathInfo.split ('/')
+        path = pulse.utils.utf8dec (pathInfo).split ('/')
         i = 0
         while (i < len (path)):
             if path[i] == '':
@@ -64,7 +57,7 @@ def main ():
     if queryString != None:
         query = cgi.parse_qs (queryString, True)
         for key in query.keys():
-            query[key] = query[key][0]
+            query[key] = pulse.utils.utf8dec (query[key][0])
     else:
         query = {}
 
@@ -124,13 +117,14 @@ def main ():
                     ' their programming assignment.'))
             response.set_contents (page)
 
-    if getattr (pulse.config, 'debug_db', False):
-        print ('%i SELECT statements in %.3f seconds' %
-               (pulse.models.PulseDebugCursor.debug_select_count,
-                pulse.models.PulseDebugCursor.debug_select_time))
+    #if getattr (pulse.config, 'debug_db', False):
+    #    print ('%i SELECT statements in %.3f seconds' %
+    #           (pulse.models.PulseDebugCursor.debug_select_count,
+    #            pulse.models.PulseDebugCursor.debug_select_time))
 
     status = response.http_status
     response.output (fd=fd)
+    pulse.db.rollback ()
     if status == 200:
         return 0
     else:

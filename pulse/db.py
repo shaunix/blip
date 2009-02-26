@@ -1,16 +1,16 @@
+import datetime
 import inspect
 import os
 import sys
 
 from storm.locals import *
+from storm.info import ClassAlias
+from storm.store import EmptyResultSet
 import storm.properties
 import storm.references
-import storm.tracer
 
 import pulse.config
 import pulse.utils
-
-#storm.tracer.debug (True, stream=sys.stdout)
 
 database = create_database (pulse.config.database)
 store = Store (database)
@@ -23,6 +23,66 @@ def commit ():
 
 def rollback ():
     store.rollback ()
+
+################################################################################
+## Debugging
+
+class PulseTracer (object):
+    def __init__ (self, stream=None):
+        self._stream = stream or sys.stderr
+        self._last_time = None
+        self._select_count = 0
+        self._select_total = 0
+
+    def connection_raw_execute (self, connection, raw_cursor, statement, params):
+        self._last_time = datetime.datetime.now()
+
+    def connection_raw_execute_error (self, connection, raw_cursor,
+                                      statement, params, error):
+        self._stream.write ('ERROR: %s\n', error)
+
+    def connection_raw_execute_success (self, connection, raw_cursor,
+                                        statement, params):
+        diff = datetime.datetime.now() - self._last_time
+        sec = diff.seconds + (diff.microseconds / 1000000.)
+        milli = 1000 * sec
+        micro = 1000 * (milli - int(milli))
+        timing = '%03i.%03i' % (int(milli), int(micro))
+        outtxt = []
+        if statement.startswith ('SELECT '):
+            self._select_count += 1
+            self._select_total += sec
+            pos = statement.find (' FROM ')
+            outfirst = statement[:pos]
+            outrest = statement[pos+1:]
+            if outfirst.startswith ('SELECT COUNT'):
+                outtxt.append (outfirst)
+            else:
+                outtxt.append ('SELECT ...')
+            pos = outrest.find (' WHERE ')
+            if pos < 0:
+                outtxt.append (outrest)
+            else:
+                outtxt.append (outrest[:pos])
+                for txt in outrest[pos+1:].split (' AND '):
+                    if txt.startswith ('WHERE '):
+                        outtxt.append (txt)
+                    else:
+                        outtxt.append ('AND ' + txt)
+        elif statement.startswith ('UPDATE '):
+            outtxt.append (statement)
+        elif statement.startswith ('INSERT '):
+            outtxt.append (statement)
+        else:
+            outtxt.append (statement)
+        
+        self._stream.write ('[%s]  %s\n' % (timing, outtxt[0]))
+        for txt in outtxt[1:]:
+            self._stream.write ('           %s\n' % txt)
+
+def debug ():
+    import storm.tracer
+    storm.tracer.install_tracer (PulseTracer ())
 
 
 ################################################################################
@@ -206,7 +266,7 @@ class PulseRecord (PulseModel):
     @property
     def title (self):
         if self.name == {}:
-            return self.title_default ()
+            return self.title_default
         return self.localized_name
 
     @classmethod
@@ -267,18 +327,31 @@ class PulseRelation (PulseModel):
         return rel
 
     @classmethod
-    def get_related (cls, subj=None, pred=None):
+    def select_related (cls, subj=None, pred=None):
         if subj != None and pred != None:
             rel = store.find (cls, subj_ident=subj.ident, pred_ident=pred.ident)
-            return rel or False
+            return rel
         elif subj != None:
             # FIXME STORM: django has select_related
-            return list(store.find (cls, subj_ident=subj.ident))
+            return store.find (cls, subj_ident=subj.ident)
         elif pred != None:
             # FIXME STORM
-            return list(store.find (cls, pred_ident=pred.ident))
+            return store.find (cls, pred_ident=pred.ident)
         else:
+            return EmptyResultSet ()
+
+    @classmethod
+    def get_related (cls, subj=None, pred=None):
+        sel = cls.select_related (subj=subj, pred=pred)
+        try:
+            return sel.one ()
+        except:
             return None
+
+    @classmethod
+    def count_related (cls, subj=None, pred=None):
+        sel = cls.select_related (subj=subj, pred=pred)
+        return sel.count ()
 
 
 ################################################################################
@@ -289,10 +362,17 @@ class ReleaseSet (PulseRecord):
     parent_ident = Unicode ()
     parent = Reference (parent_ident, 'ReleaseSet.ident')
 
+    subsets = ReferenceSet ('ReleaseSet.ident', parent_ident)
+
     def delete (self):
         for record in ReleaseSet.select (parent=self):
             record.delete ()
         PulseRecord.delete (self)
+
+    @property
+    def subsets (self):
+        return ReleaseSet.select (parent=self)
+
 
 class Branch (PulseRecord):
     subtype = Unicode ()
@@ -330,6 +410,23 @@ class Branch (PulseRecord):
             else:
                 return pulse.utils.gettext ('%s (%s)') % (self.scm_module, id)
         return id
+
+    @property
+    def branch_module (self):
+        return pulse.utils.gettext ('%s (%s)') % (self.scm_module, self.scm_branch)
+
+    @property
+    def branch_title (self):
+        return pulse.utils.gettext ('%s (%s)') % (self.title, self.scm_branch)
+
+    @classmethod
+    def select (cls, *args, **kw):
+        args = list (args)
+        rset = kw.pop ('parent_in_set', None)
+        if rset != None:
+            args.append (cls.parent_ident == SetModule.pred_ident)
+            args.append (SetModule.subj_ident == rset.ident)
+        return store.find (cls, *args, **kw)
 
     def set_children (self, type, children):
         old = list(Branch.select (type=type, parent=self))
@@ -513,10 +610,10 @@ class Revision (PulseModel):
             return None
 
     @classmethod
-    def select_revisions (cls, **kw):
+    def select_revisions (cls, *args, **kw):
+        args = list (args)
         files = kw.pop ('files', None)
         range = kw.pop ('week_range', None)
-        args = []
         if files != None:
             args.append (Select (Count('*') > 0,
                                  where=And (RevisionFile.revision_id == Revision.id,

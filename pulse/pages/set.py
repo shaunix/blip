@@ -33,10 +33,8 @@ def main (response, path, query):
         return
     
     ident = '/' + '/'.join(path[:2])
-    sets = db.ReleaseSet.objects.filter (ident=ident)
-    try:
-        rset = sets[0]
-    except IndexError:
+    rset = pulse.db.ReleaseSet.get (ident)
+    if rset == None:
         page = pulse.html.PageNotFound (
             pulse.utils.gettext ('Pulse could not find the Set %s') % path[1],
             title = pulse.utils.gettext ('Set Not Found'))
@@ -71,11 +69,11 @@ def output_top (response, **kw):
     cont.set_columns (2)
     page.add_content (cont)
 
-    sets = db.ReleaseSet.objects.filter (parent__isnull=True)
+    sets = pulse.db.ReleaseSet.select (parent=None)
     sets = pulse.utils.attrsorted (list(sets), 'title')
     for rset in sets:
         lbox = cont.add_link_box (rset)
-        subsets = pulse.utils.attrsorted (rset.subsets.all(), ['title'])
+        subsets = pulse.utils.attrsorted (list(rset.subsets), ['title'])
         if len(subsets) > 0:
             bl = pulse.html.BulletList ()
             lbox.add_content (bl)
@@ -127,34 +125,32 @@ def output_set (response, rset, **kw):
         page.add_tab ('subsets', pulse.utils.gettext ('Subsets (%i)') % setcnt)
 
     # Modules
-    modcnt = db.SetModule.count_related (subj=rset)
+    modcnt = pulse.db.SetModule.count_related (subj=rset)
     if modcnt > 0:
         page.add_tab ('modules', pulse.utils.gettext ('Modules (%i)') % modcnt)
 
         # Documents
-        objs = db.Branch.objects.filter (type='Document',
-                                         parent__set_module_subjs__subj=rset)
+        objs = pulse.db.Branch.select (type=u'Document', parent_in_set=rset)
         cnt = objs.count()
         if cnt > 0:
             page.add_tab ('documents', pulse.utils.gettext ('Documents (%i)') % cnt)
 
         # Domains
-        objs = db.Branch.objects.filter (type='Domain',
-                                         parent__set_module_subjs__subj=rset)
+        objs = pulse.db.Branch.select (type=u'Domain', parent_in_set=rset)
         cnt = objs.count()
         if cnt > 0:
             page.add_tab ('domains', pulse.utils.gettext ('Domains (%i)') % cnt)
 
         # Programs
-        objs = db.Branch.objects.filter (type__in=('Application', 'Capplet', 'Applet'),
-                                         parent__set_module_subjs__subj=rset)
+        objs = pulse.db.Branch.select (
+            pulse.db.Branch.type.is_in ((u'Application', u'Capplet', u'Applet')),
+            parent_in_set=rset)
         cnt = objs.count()
         if cnt > 0:
             page.add_tab ('programs', pulse.utils.gettext ('Programs (%i)') % cnt)
 
         # Libraries
-        objs = db.Branch.objects.filter (type='Library',
-                                         parent__set_module_subjs__subj=rset)
+        objs = pulse.db.Branch.select (type=u'Library', parent_in_set=rset)
         cnt = objs.count()
         if cnt > 0:
             page.add_tab ('libraries', pulse.utils.gettext ('Libraries (%i)') % cnt)
@@ -178,7 +174,7 @@ def output_ajax_tab (response, rset, **kw):
 
 
 def get_subsets_tab (rset, **kw):
-    subsets = pulse.utils.attrsorted (rset.subsets.all(), ['title'])
+    subsets = pulse.utils.attrsorted (list(rset.subsets), ['title'])
     cont = pulse.html.ContainerBox ()
     cont.set_show_icons (False)
     cont.set_columns (2)
@@ -189,7 +185,7 @@ def get_subsets_tab (rset, **kw):
 
 
 def get_modules_tab (rset, **kw):
-    mods = [mod.pred for mod in db.SetModule.get_related (subj=rset)]
+    mods = [mod.pred for mod in pulse.db.SetModule.select_related (subj=rset)]
     mods = pulse.utils.attrsorted (mods, 'title')
     modcnt = len(mods)
     cont = pulse.html.ContainerBox (widget_id='c-modules')
@@ -211,9 +207,9 @@ def get_modules_tab (rset, **kw):
             # FIXME: i18n, word order, but we want to link person
             span.add_content (pulse.html.Span(mod.mod_datetime.strftime('%Y-%m-%d %T')))
             span.add_class ('mtime')
-            if mod.mod_person_id != None:
+            if mod.mod_person_ident != None:
                 span.add_content (pulse.utils.gettext ('by'))
-                person = db.Entity.get_cached (mod.mod_person_id)
+                person = pulse.db.Entity.get_cached (mod.mod_person_ident)
                 span.add_content (pulse.html.Link (person))
             lbox.add_fact (pulse.utils.gettext ('modified'), span)
         if mod.mod_score != None:
@@ -231,7 +227,7 @@ def get_documents_tab (rset, **kw):
          'cnt' : 0, 'err' : False }
         )
 
-    docs = db.Branch.objects.filter (type='Document', parent__set_module_subjs__subj=rset)
+    docs = pulse.db.Branch.select (type=u'Document', parent_in_set=rset)
     docs = pulse.utils.attrsorted (list(docs), 'title')
     for doc in docs:
         boxid = doc.subtype == 'gtk-doc' and 1 or 0
@@ -257,9 +253,9 @@ def get_documents_tab (rset, **kw):
             # FIXME: i18n, word order, but we want to link person
             span.add_content (pulse.html.Span(doc.mod_datetime.strftime('%Y-%m-%d %T')))
             span.add_class ('mtime')
-            if doc.mod_person_id != None:
+            if doc.mod_person_ident != None:
                 span.add_content (pulse.utils.gettext ('by'))
-                person = db.Entity.get_cached (doc.mod_person_id)
+                person = pulse.db.Entity.get_cached (doc.mod_person_ident)
                 span.add_content (pulse.html.Link (person))
             lbox.add_fact (pulse.utils.gettext ('modified'), span)
         if doc.mod_score != None:
@@ -289,8 +285,7 @@ def get_documents_tab (rset, **kw):
 
 
 def get_domains_tab (rset, **kw):
-    objs = db.Branch.objects.filter (type='Domain',
-                                     parent__set_module_subjs__subj=rset)
+    objs = pulse.db.Branch.select (type=u'Domain', parent_in_set=rset)
     objs = pulse.utils.attrsorted (list(objs), 'title')
     cont = pulse.html.ContainerBox (widget_id='c-domains')
     cont.set_columns (2)
@@ -315,9 +310,9 @@ def get_domains_tab (rset, **kw):
             potfile = obj.scm_module + '.pot'
         else:
             potfile = obj.scm_dir + '.pot'
-        of = db.OutputFile.objects.filter (type='l10n',
-                                           ident=obj.ident,
-                                           filename=potfile)
+        of = pulse.db.OutputFile.select (type=u'l10n',
+                                         ident=obj.ident,
+                                         filename=potfile)
         try:
             of = of[0]
             span = pulse.html.Span (str(of.statistic))
@@ -338,11 +333,10 @@ def get_domains_tab (rset, **kw):
 def get_programs_tab (rset, **kw):
     pad = pulse.html.PaddingBox()
     for widget_id, type, title in (
-        ('c-applications', 'Application', pulse.utils.gettext ('Applications (%i)')),
-        ('c-capplets', 'Capplet', pulse.utils.gettext ('Control Panels (%i)')),
-        ('c-applets','Applet', pulse.utils.gettext ('Panel Applets (%i)')) ):
-        objs = db.Branch.objects.filter (type=type,
-                                         parent__set_module_subjs__subj=rset)
+        ('c-applications', u'Application', pulse.utils.gettext ('Applications (%i)')),
+        ('c-capplets', u'Capplet', pulse.utils.gettext ('Control Panels (%i)')),
+        ('c-applets',u'Applet', pulse.utils.gettext ('Panel Applets (%i)')) ):
+        objs = pulse.db.Branch.select (type=type, parent_in_set=rset)
         objs = pulse.utils.attrsorted (list(objs), 'title')
         if len(objs) == 0:
             continue
@@ -366,7 +360,7 @@ def get_programs_tab (rset, **kw):
             url = '/'.join(['mod'] + url[2:4] + [url[5]])
             url = pulse.config.web_root + url
             lbox.add_fact (pulse.utils.gettext ('module'), pulse.html.Link (url, span))
-            docs = db.Documentation.get_related (subj=obj)
+            docs = pulse.db.Documentation.select_related (subj=obj)
             for doc in docs:
                 # FIXME: multiple docs look bad and sort poorly
                 doc = doc.pred
@@ -386,8 +380,7 @@ def get_programs_tab (rset, **kw):
 
 
 def get_libraries_tab (rset, **kw):
-    objs = db.Branch.objects.filter (type='Library',
-                                     parent__set_module_subjs__subj=rset)
+    objs = pulse.db.Branch.select (type=u'Library', parent_in_set=rset)
     objs = pulse.utils.attrsorted (list(objs), 'title')
     cont = pulse.html.ContainerBox (widget_id='c-libraries')
     cont.set_columns (2)
@@ -408,7 +401,7 @@ def get_libraries_tab (rset, **kw):
         url = '/'.join(['mod'] + url[2:4] + [url[5]])
         url = pulse.config.web_root + url
         lbox.add_fact (pulse.utils.gettext ('module'), pulse.html.Link (url, span))
-        docs = db.Documentation.get_related (subj=obj)
+        docs = pulse.db.Documentation.select_related (subj=obj)
         for doc in docs:
             # FIXME: multiple docs look bad and sort poorly
             doc = doc.pred
@@ -427,7 +420,7 @@ def get_libraries_tab (rset, **kw):
 
 
 def add_set_info (rset, lbox):
-    cnt = db.SetModule.count_related (subj=rset)
+    cnt = pulse.db.SetModule.count_related (subj=rset)
     if cnt > 0:
         bl = pulse.html.BulletList ()
         lbox.add_content (bl)
@@ -437,29 +430,30 @@ def add_set_info (rset, lbox):
         return
 
     # Documents
-    cnt = db.Branch.objects.filter (type='Document', parent__set_module_subjs__subj=rset)
+    cnt = pulse.db.Branch.select (type=u'Document', parent_in_set=rset)
     cnt = cnt.count()
     if cnt > 0:
         bl.add_link (rset.pulse_url + '#documents',
                      pulse.utils.gettext ('%i documents') % cnt)
 
     # Domains
-    cnt = db.Branch.objects.filter (type='Domain', parent__set_module_subjs__subj=rset)
+    cnt = pulse.db.Branch.select (type=u'Domain', parent_in_set=rset)
     cnt = cnt.count()
     if cnt > 0:
         bl.add_link (rset.pulse_url + '#domains',
                      pulse.utils.gettext ('%i domains') % cnt)
 
     # Programs
-    objs = db.Branch.objects.filter (type__in=('Application', 'Capplet', 'Applet'),
-                                     parent__set_module_subjs__subj=rset)
+    objs = pulse.db.Branch.select (
+        pulse.db.Branch.type.is_in ((u'Application', u'Capplet', u'Applet')),
+        parent_in_set=rset)
     cnt = objs.count()
     if cnt > 0:
         bl.add_link (rset.pulse_url + '#programs',
                      pulse.utils.gettext ('%i programs') % cnt)
 
     # Libraries
-    cnt = db.Branch.objects.filter (type='Library', parent__set_module_subjs__subj=rset)
+    cnt = pulse.db.Branch.select (type=u'Library', parent_in_set=rset)
     cnt = cnt.count()
     if cnt > 0:
         bl.add_link (rset.pulse_url + '#libraries',
