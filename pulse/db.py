@@ -599,7 +599,7 @@ class Revision (PulseModel):
     comment = Unicode ()
 
     def __init__ (self, **kw):
-        kw['weeknum'] = pulse.utils.weeknum (self.datetime)
+        kw['weeknum'] = pulse.utils.weeknum (kw['datetime'])
         PulseModel.__init__ (self, **kw)
 
     def log_create (self):
