@@ -230,7 +230,9 @@ class Checkout (object):
             os.chdir (topdir)
             (status, output) = commands.getstatusoutput (self._co)
             if status != 0:
-                pulse.utils.warn ('Failed to check out %s from %s' % (self._name, self._server_dir))
+                pulse.utils.warn (
+                    'Failed to check out %s from %s with command\n                      %s'
+                    % (self._name, self._server_dir, self._co))
                 self.error = output.split('\n')[-1]
         finally:
             os.chdir (owd)
