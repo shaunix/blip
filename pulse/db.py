@@ -4,6 +4,7 @@ import os
 import sys
 
 from storm.locals import *
+from storm.expr import Variable
 from storm.info import ClassAlias
 from storm.store import EmptyResultSet
 import storm.properties
@@ -37,48 +38,66 @@ class PulseTracer (object):
     def connection_raw_execute (self, connection, raw_cursor, statement, params):
         self._last_time = datetime.datetime.now()
 
-    def connection_raw_execute_error (self, connection, raw_cursor,
-                                      statement, params, error):
-        self._stream.write ('ERROR: %s\n', error)
-
-    def connection_raw_execute_success (self, connection, raw_cursor,
-                                        statement, params):
+    def print_command (self, statement, params):
         diff = datetime.datetime.now() - self._last_time
         sec = diff.seconds + (diff.microseconds / 1000000.)
         milli = 1000 * sec
         micro = 1000 * (milli - int(milli))
         timing = '%03i.%03i' % (int(milli), int(micro))
         outtxt = []
-        if statement.startswith ('SELECT '):
+        raw_params = []
+        for param in params:
+            if isinstance (param, Variable):
+                raw_params.append (param.get ())
+            elif isinstance (param, basestring):
+                raw_params.append (param)
+            else:
+                raw_params.append (str(param))
+        raw_params = tuple (raw_params)
+        cmd = statement.replace ('?', '%s') % raw_params
+        if cmd.startswith ('SELECT '):
             self._select_count += 1
             self._select_total += sec
-            pos = statement.find (' FROM ')
-            outfirst = statement[:pos]
-            outrest = statement[pos+1:]
+            pos = cmd.find (' FROM ')
+            outfirst = cmd[:pos]
+            outrest = cmd[pos:]
             if outfirst.startswith ('SELECT COUNT'):
                 outtxt.append (outfirst)
             else:
                 outtxt.append ('SELECT ...')
             pos = outrest.find (' WHERE ')
             if pos < 0:
-                outtxt.append (outrest)
+                outtxt[0] = outtxt[0] + outrest
             else:
-                outtxt.append (outrest[:pos])
-                for txt in outrest[pos+1:].split (' AND '):
-                    if txt.startswith ('WHERE '):
-                        outtxt.append (txt)
-                    else:
-                        outtxt.append ('AND ' + txt)
-        elif statement.startswith ('UPDATE '):
-            outtxt.append (statement)
-        elif statement.startswith ('INSERT '):
-            outtxt.append (statement)
+                outtxt[0] = outtxt[0] + outrest[:pos]
+                outrest = outrest[pos+1:]
+                if outrest.find ('(OID=') >= 0:
+                    outtxt[0] = outtxt[0] + ' ' + outrest
+                else:
+                    for txt in outrest.split (' AND '):
+                        if txt.startswith ('WHERE '):
+                            outtxt.append (txt)
+                        else:
+                            outtxt.append ('AND ' + txt)
+        elif cmd.startswith ('UPDATE '):
+            outtxt.append (cmd)
+        elif cmd.startswith ('INSERT '):
+            outtxt.append (cmd)
         else:
-            outtxt.append (statement)
-        
-        self._stream.write ('[%s]  %s\n' % (timing, outtxt[0]))
+            outtxt.append (cmd)
+
+        self._stream.write ((u'(%s)  %s\n' % (timing, outtxt[0])).encode ('utf8'))
         for txt in outtxt[1:]:
-            self._stream.write ('           %s\n' % txt)
+            self._stream.write ((u'           %s\n' % txt).encode ('utf8'))
+
+    def connection_raw_execute_error (self, connection, raw_cursor,
+                                      statement, params, error):
+        self.print_command (statement, params)
+        self._stream.write ('ERROR: %s\n' % error)
+
+    def connection_raw_execute_success (self, connection, raw_cursor,
+                                        statement, params):
+        self.print_command (statement, params)
 
 def debug ():
     import storm.tracer
@@ -115,6 +134,7 @@ class PulseModel (Storm):
         self.update (**kw)
         self.log_create ()
         store.add (self)
+        store.flush ()
 
     def __repr__ (self):
         if hasattr (self, 'id'):
@@ -343,10 +363,7 @@ class PulseRelation (PulseModel):
     @classmethod
     def get_related (cls, subj=None, pred=None):
         sel = cls.select_related (subj=subj, pred=pred)
-        try:
-            return sel.one ()
-        except:
-            return None
+        return list(sel)
 
     @classmethod
     def count_related (cls, subj=None, pred=None):
@@ -724,7 +741,7 @@ class Queue (PulseModel):
 
     @classmethod
     def push (cls, module, ident):
-        if cls.select (module=module, ident=ident).count () == 0:
+        if cls.select (cls.module == module, cls.ident == ident).count () == 0:
             cls (module=module, ident=ident)
 
     @classmethod

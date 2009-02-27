@@ -115,7 +115,7 @@ if __name__ == "__main__":
     options = get_options (opts, args)
 
     if options.get ('--debug-db', False):
-        pulse.config.debug_db = True
+        pulse.db.debug ()
 
     retcode = 1
     try:
@@ -135,9 +135,9 @@ if __name__ == "__main__":
         pulse.db.flush ()
         pulse.db.commit ()
 
-    if getattr (pulse.config, 'debug_db', False):
-        print ('%i SELECT statements in %.3f seconds' %
-               (pulse.models.PulseDebugCursor.debug_select_count,
-                pulse.models.PulseDebugCursor.debug_select_time))
+    #if getattr (pulse.config, 'debug_db', False):
+    #    print ('%i SELECT statements in %.3f seconds' %
+    #           (pulse.models.PulseDebugCursor.debug_select_count,
+    #            pulse.models.PulseDebugCursor.debug_select_time))
 
     sys.exit (retcode)

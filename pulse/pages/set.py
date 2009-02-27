@@ -185,7 +185,7 @@ def get_subsets_tab (rset, **kw):
 
 
 def get_modules_tab (rset, **kw):
-    mods = [mod.pred for mod in pulse.db.SetModule.select_related (subj=rset)]
+    mods = [mod.pred for mod in pulse.db.SetModule.get_related (subj=rset)]
     mods = pulse.utils.attrsorted (mods, 'title')
     modcnt = len(mods)
     cont = pulse.html.ContainerBox (widget_id='c-modules')
@@ -360,7 +360,7 @@ def get_programs_tab (rset, **kw):
             url = '/'.join(['mod'] + url[2:4] + [url[5]])
             url = pulse.config.web_root + url
             lbox.add_fact (pulse.utils.gettext ('module'), pulse.html.Link (url, span))
-            docs = pulse.db.Documentation.select_related (subj=obj)
+            docs = pulse.db.Documentation.get_related (subj=obj)
             for doc in docs:
                 # FIXME: multiple docs look bad and sort poorly
                 doc = doc.pred
@@ -401,7 +401,7 @@ def get_libraries_tab (rset, **kw):
         url = '/'.join(['mod'] + url[2:4] + [url[5]])
         url = pulse.config.web_root + url
         lbox.add_fact (pulse.utils.gettext ('module'), pulse.html.Link (url, span))
-        docs = pulse.db.Documentation.select_related (subj=obj)
+        docs = pulse.db.Documentation.get_related (subj=obj)
         for doc in docs:
             # FIXME: multiple docs look bad and sort poorly
             doc = doc.pred

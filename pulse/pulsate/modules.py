@@ -861,14 +861,14 @@ def main (argv, options={}):
 
     if ident != None:
         if ident[:5] == u'/set/':
-            branches = pulse.db.Branch.find (pulse.db.Branch.type == u'Module',
-                                             pulse.db.Branch.ident == pulse.db.SetModule.pred_ident,
-                                             pulse.db.SetModule.subj_ident.like (ident))
+            branches = pulse.db.Branch.select (pulse.db.Branch.type == u'Module',
+                                               pulse.db.Branch.ident == pulse.db.SetModule.pred_ident,
+                                               pulse.db.SetModule.subj_ident.like (ident))
         else:
-            branches = pulse.db.Branch.find (pulse.db.Branch.type == u'Module',
-                                             pulse.db.Branch.ident.like (ident))
+            branches = pulse.db.Branch.select (pulse.db.Branch.type == u'Module',
+                                               pulse.db.Branch.ident.like (ident))
     else:
-        branches = pulse.db.Branch.find (pulse.db.Branch.type == u'Module')
+        branches = pulse.db.Branch.select (pulse.db.Branch.type == u'Module')
 
     for branch in list(branches):
         try:
