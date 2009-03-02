@@ -18,8 +18,10 @@ def usage ():
 
 def main ():
     fd = None
+    pulse.utils.set_log_level (None)
     try:
-        (opts, args) = getopt.gnu_getopt (sys.argv[1:], 'o:', ['output=', 'debug-db', 'webroot='])
+        (opts, args) = getopt.gnu_getopt (sys.argv[1:], 'o:',
+                                          ['output=', 'debug-db', 'log-level=', 'webroot='])
     except getopt.GetoptError:
         usage ()
         sys.exit (1)
@@ -28,6 +30,8 @@ def main ():
             fd = file (arg, 'w')
         elif opt == '--debug-db':
             pulse.db.debug ()
+        elif opt == '--log-level':
+            pulse.utils.set_log_level (arg)
         elif opt == '--webroot':
             pulse.config.web_root = arg
 

@@ -32,6 +32,7 @@ import pulse.utils
 args = pulse.utils.odict()
 args['log-file=']  = ('FILE', 'log updates to the file FILE')
 args['debug-db'] = (None, 'print database queries')
+args['log-level='] = ('LEVEL', 'minimum level of log messages')
 
 def print_args (args, fd=sys.stderr):
     d = 0
@@ -116,6 +117,8 @@ if __name__ == "__main__":
 
     if options.get ('--debug-db', False):
         pulse.db.debug ()
+
+    pulse.utils.set_log_level (options.get ('--log-level', 'log'))
 
     retcode = 1
     try:

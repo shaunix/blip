@@ -20,9 +20,11 @@ def flush ():
     store.flush()
 
 def commit ():
+    pulse.utils.log ('Committing changes')
     store.commit ()
 
 def rollback ():
+    pulse.utils.log ('Rolling back changes')
     store.rollback ()
 
 ################################################################################

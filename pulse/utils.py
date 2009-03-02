@@ -286,13 +286,33 @@ class PulseException (Exception):
         Exception.__init__ (self, msg)
 
 
+class Logger (object):
+    def __init__ (self):
+        self.log_level = 'log'
+
+    def set_log_level (self, level):
+        self.log_level = level
+
+    def log (self, msg, fd=sys.stdout):
+        """Write a log message"""
+        if self.log_level == 'log':
+            print >> fd, '[%s] %s' % (datetime.now().strftime ('%Y-%m-%d %H:%M:%S'), msg)
+
+    def warn (self, msg, fd=sys.stderr):
+        """Write a warning message"""
+        if self.log_level in ('warn', 'log'):
+            print >> fd, '[%s] %s' % (datetime.now().strftime ('%Y-%m-%d %H:%M:%S'), msg)
+
+logger = Logger ()
+
+def set_log_level (level):
+    logger.set_log_level (level)
+
 def log (msg, fd=sys.stdout):
-    """Write a log message"""
-    print >> fd, '[%s] %s' % (datetime.now().strftime ('%Y-%m-%d %H:%M:%S'), msg)
+    logger.log (msg, fd=fd)
 
 def warn (msg, fd=sys.stderr):
-    """Write a warning message"""
-    print >> fd, '[%s] %s' % (datetime.now().strftime ('%Y-%m-%d %H:%M:%S'), msg)
+    logger.log (msg, fd=fd)
 
 
 def import_ (name):
