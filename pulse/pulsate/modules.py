@@ -415,9 +415,9 @@ def process_configure (branch, checkout, **kw):
         pass
     series = '.'.join (series)
 
-    branch.data['PACKAGE_NAME'] = vars.get ('PACKAGE_NAME', '').strip(),
-    branch.data['tarname'] = tarname,
-    branch.data['tarversion'] = tarversion,
+    branch.data['PACKAGE_NAME'] = vars.get ('PACKAGE_NAME', '').strip()
+    branch.data['tarname'] = tarname
+    branch.data['tarversion'] = tarversion
     branch.data['series'] = series
 
     pulse.db.Timestamp.set_timestamp (rel_scm, mtime)
