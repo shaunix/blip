@@ -30,8 +30,8 @@ import StringIO
 import time
 import urllib
 
+import pulse.db
 import pulse.graphs
-import pulse.models as db
 import pulse.scm
 import pulse.parsers
 import pulse.utils
@@ -68,9 +68,9 @@ def update_gdu_docbook (doc, **kw):
         checkout = get_checkout (doc, update=kw.get('update', True))
 
     # FIXME: we want to add "audience" for docs.  use that here
-    cnt = db.Branch.objects.filter (type='Document',
-                                    subtype__startswith='gdu-',
-                                    parent=doc.parent)
+    cnt = pulse.db.Branch.select (pulse.db.Branch.type == u'Document',
+                                  pulse.db.Branch.subtype.like (u'gdu-%'),
+                                  pulse.db.Branch.parent_ident == doc.parent_ident)
     if cnt.count() == 1:
         doc.icon_name = doc.parent.icon_name
         doc.icon_dir = doc.parent.icon_dir
@@ -78,7 +78,12 @@ def update_gdu_docbook (doc, **kw):
     docfile = os.path.join (checkout.directory, doc.scm_dir, doc.scm_file)
     process_docbook_docfile (docfile, doc, **kw)
 
-    translations = db.Branch.objects.filter (type='Translation', parent=doc)
+    # Coercing into a list, because otherwise this result set stays open,
+    # which causes locking issues with subsequent UPDATE commands under
+    # SQLite.  Probably not a problem with other databases.  Upper bound
+    # on this result set is the number of languages GNOME is translated
+    # into.  Be mindful when doing this for larger result sets.
+    translations = list(pulse.db.Branch.select (type=u'Translation', parent=doc))
     for translation in translations:
         pofile = os.path.join (checkout.directory, translation.scm_dir, translation.scm_file)
         process_docbook_pofile (pofile, doc, **kw)
@@ -101,7 +106,7 @@ def update_gdu_docbook (doc, **kw):
     doc.data['xmlfiles'] = sorted (xmlfiles)
 
     files = [os.path.join (doc.scm_dir, f) for f in xmlfiles]
-    revision = db.Revision.get_last_revision (branch=doc.parent, files=files)
+    revision = pulse.db.Revision.get_last_revision (branch=doc.parent, files=files)
     if revision != None:
         doc.mod_datetime = revision.datetime
         doc.mod_person = revision.person
@@ -114,61 +119,6 @@ def update_gdu_docbook (doc, **kw):
                                      {'branch' : doc.parent, 'files' : files},
                                      10,
                                      **kw)
-    doc.save()
-
-
-def update_graph (doc, **kw):
-    now = datetime.datetime.now ()
-    thisweek = pulse.utils.weeknum ()
-    of = db.OutputFile.objects.filter (type='graphs', ident=doc.ident, filename='commits.png')
-    try:
-        of = of[0]
-    except IndexError:
-        of = None
-
-    files = [os.path.join (doc.scm_dir, f) for f in doc.data.get ('xmlfiles', [])]
-    if len(files) == 0: return
-
-    numweeks = 104
-    revs = db.Revision.select_revisions (branch=doc.parent, files=files,
-                                         weeknum__gt=(thisweek - numweeks))
-    if of != None:
-        if kw.get('timestamps', True):
-            lastrev = of.data.get ('lastrev', None)
-            weeknum = of.data.get ('weeknum', None)
-            if weeknum == thisweek:
-                rev = None
-                if lastrev != None:
-                    try:
-                        rev = revs[0].id
-                    except IndexError:
-                        pass
-                if lastrev == rev:
-                    pulse.utils.log ('Skipping commit graph for %s' % doc.ident)
-                    return
-    else:
-        of = db.OutputFile (type='graphs', ident=doc.ident, filename='commits.png', datetime=now)
-
-    pulse.utils.log ('Creating commit graph for %s' % doc.ident)
-    stats = [0] * numweeks
-    revs = list(revs)
-    for rev in revs:
-        idx = rev.weeknum - thisweek + numweeks - 1
-        stats[idx] += 1
-    score = pulse.utils.score (stats[numweeks - 26:])
-    doc.mod_score = score
-
-    graph = pulse.graphs.BarGraph (stats, 20, height=40)
-    graph.save (of.get_file_path())
-
-    graph_t = pulse.graphs.BarGraph (stats, 20, height=40, tight=True)
-    graph_t.save (os.path.join (os.path.dirname (of.get_file_path()), 'commits-tight.png'))
-
-    of.data['coords'] = zip (graph.get_coords(), stats, range(thisweek - numweeks + 1, thisweek + 1))
-    if len(revs) > 0:
-        of.data['lastrev'] = revs[0].id
-    of.data['weeknum'] = thisweek
-    of.save()
 
 
 def update_gtk_doc (doc, **kw):
@@ -183,8 +133,6 @@ def update_gtk_doc (doc, **kw):
     process_credits (doc, **kw)
     process_figures (doc, checkout, **kw)
 
-    doc.save()
-
 
 def process_docbook_docfile (docfile, doc, **kw):
     rel_scm = pulse.utils.relative_path (docfile, pulse.config.scm_dir)
@@ -193,7 +141,7 @@ def process_docbook_docfile (docfile, doc, **kw):
         return
     mtime = os.stat(docfile).st_mtime
     if kw.get('timestamps', True):
-        stamp = db.Timestamp.get_timestamp (rel_scm)
+        stamp = pulse.db.Timestamp.get_timestamp (rel_scm)
         if mtime <= stamp:
             pulse.utils.log ('Skipping file %s' % rel_scm)
             return
@@ -210,7 +158,6 @@ def process_docbook_docfile (docfile, doc, **kw):
     except Exception, e:
         pulse.utils.warn ('Failed to load file %s' % rel_scm)
         doc.error = str(e)
-        doc.save()
         return
     doc.error = None
     seen = 0
@@ -324,7 +271,7 @@ def process_docbook_docfile (docfile, doc, **kw):
 
         doc.data['figures'][fileref] = {'comment': comment}
 
-    db.Timestamp.set_timestamp (rel_scm, mtime)
+    pulse.db.Timestamp.set_timestamp (rel_scm, mtime)
 
 
 def process_docbook_pofile (pofile, doc, **kw):
@@ -343,7 +290,7 @@ def process_docbook_pofile (pofile, doc, **kw):
         return
     mtime = os.stat(pofile).st_mtime
     if kw.get('timestamps', True):
-        stamp = db.Timestamp.get_timestamp (rel_scm)
+        stamp = pulse.db.Timestamp.get_timestamp (rel_scm)
         if mtime <= stamp:
             pulse.utils.log ('Skipping file %s' % rel_scm)
             return
@@ -355,7 +302,7 @@ def process_docbook_pofile (pofile, doc, **kw):
     if doc.desc.has_key('C') and po.has_message (doc.desc['C']):
         doc.update (desc={lang : po.get_translations (doc.desc['C'])[0]})
 
-    db.Timestamp.set_timestamp (rel_scm, mtime)
+    pulse.db.Timestamp.set_timestamp (rel_scm, mtime)
 
 
 def process_credits (doc, **kw):
@@ -365,21 +312,15 @@ def process_credits (doc, **kw):
     for cr_name, cr_email, cr_type, cr_maint in doc.credits:
         ent = None
         if cr_email != None:
-            # FIXME: look for /person/shaunm@example.com ident, could be Alias
-            ent = db.Entity.objects.filter (email=cr_email)
-            try:
-                ent = ent[0]
-            except IndexError:
-                ent = None
+            ent = pulse.db.Entity.get_or_create (u'/person/' + cr_email, u'Person')
         if ent == None:
-            ident = '/ghost/' + urllib.quote (cr_name)
-            ent = db.Entity.get_record (ident, 'Ghost')
+            ident = u'/ghost/' + urllib.quote (cr_name)
+            ent = pulse.db.Entity.get_or_create (ident, u'Ghost')
             if ent.ident == ident:
                 ent.update (name=cr_name)
             if cr_email != None:
                 ent.email = cr_email
-            ent.save()
-        rel = db.DocumentEntity.set_related (doc, ent)
+        rel = pulse.db.DocumentEntity.set_related (doc, ent)
         if cr_type in ('author', 'corpauthor'):
             rel.author = True
         elif cr_type == 'editor':
@@ -388,16 +329,15 @@ def process_credits (doc, **kw):
             rel.publisher = True
         if cr_maint:
             rel.maintainer = True
-        rel.save()
         rels.append (rel)
-    doc.set_relations (db.DocumentEntity, rels)
+    doc.set_relations (pulse.db.DocumentEntity, rels)
 
 
 def process_figures (doc, checkout, **kw):
     figures = doc.data.get ('figures', {}).keys()
     figures_by_lang = getattr (doc, 'figures_by_lang', {})
     figures_by_lang['C'] = figures
-    ofs = list(db.OutputFile.objects.filter (type='figures', ident=doc.ident))
+    ofs = list(pulse.db.OutputFile.select (type=u'figures', ident=doc.ident))
     ofs_by_lang = {}
     for of in ofs:
         ofs_by_lang.setdefault (of.subdir, [])
@@ -424,9 +364,9 @@ def process_images_lang (doc, checkout, lang, figs, ofs, **kw):
         of = ofs_by_source.pop (ref, None)
         if of == None:
             infile = os.path.join (indir, ref)
-            of = db.OutputFile (type='figures', ident=doc.ident, subdir=lang,
-                                filename=os.path.basename (ref), source=ref,
-                                datetime=datetime.datetime.now())
+            of = pulse.db.OutputFile (type=u'figures', ident=doc.ident, subdir=lang,
+                                      filename=os.path.basename (ref), source=ref,
+                                      datetime=datetime.datetime.utcnow())
             copy_image (infile, of)
         else:
             infile = os.path.join (indir, of.source)
@@ -484,7 +424,6 @@ def copy_image (infile, of):
     of.data['height'] = h
     of.data['thumb_width'] = tw
     of.data['thumb_height'] = th
-    of.save()
 
 
 ################################################################################
@@ -527,21 +466,31 @@ def main (argv, options={}):
     update = not options.get ('--no-update', False)
     timestamps = not options.get ('--no-timestamps', False)
     if len(argv) == 0:
-        prefix = None
+        ident = None
     else:
-        prefix = argv[0]
+        ident = pulse.utils.utf8dec (argv[0])
 
-    if prefix == None:
-        docs = db.Branch.objects.filter (type='Document')
-    elif prefix.startswith ('/mod/'):
-        docs = db.Branch.objects.filter (type='Document',
-                                         parent__ident__startswith=prefix)
-    elif prefix.startswith ('/set'):
-        docs = db.Branch.objects.filter (type='Document',
-                                         parent__set_module_subjs__subj__ident__startswith=prefix)
+    if ident == None:
+        docs = pulse.db.Branch.select (type=u'Document')
+    elif ident.startswith ('/mod/'):
+        docs = pulse.db.Branch.select (pulse.db.Branch.type == u'Document',
+                                       pulse.db.Branch.parent_ident.like (ident))
+    elif ident.startswith ('/set'):
+        docs = pulse.db.Branch.select (pulse.db.Branch.type == u'Document',
+                                       pulse.db.Branch.parent_ident == pulse.db.SetModule.pred_ident,
+                                       pulse.db.SetModule.subj_ident.like (ident))
     else:
-        docs = db.Branch.objects.filter (type='Document',
-                                         ident__startswith=prefix)
+        docs = pulse.db.Branch.select (pulse.db.Branch.type == u'Document',
+                                       pulse.db.Branch.ident.like (ident))
 
     for doc in list(docs):
-        update_document (doc, update=update, timestamps=timestamps)
+        try:
+            update_document (doc, update=update, timestamps=timestamps)
+            pulse.db.flush ()
+        except:
+            pulse.db.rollback ()
+            raise
+        else:
+            pulse.db.commit ()
+
+    return 0

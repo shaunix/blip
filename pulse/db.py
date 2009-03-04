@@ -25,7 +25,10 @@ def commit ():
 
 def rollback ():
     pulse.utils.log ('Rolling back changes')
-    store.rollback ()
+    try:
+        store.rollback ()
+    except:
+        pulse.utils.warn ('Could not roll back changes')
 
 ################################################################################
 ## Debugging

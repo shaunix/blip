@@ -172,7 +172,6 @@ def update_branch (branch, **kw):
         doc = rels[0].pred
         if doc.data.has_key ('screenshot'):
             obj.data['screenshot'] = doc.data['screenshot']
-            obj.save()
 
     if default_child == None:
         if len(applications) == 1 and len(applets) == 0:

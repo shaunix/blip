@@ -43,6 +43,7 @@ class Automake (object):
         fd = open (filename)
         line = fd.readline ()
         while line:
+            line = pulse.utils.utf8dec (line)
             if '#' in line:
                 line = line[line.index('#')]
             match = regexp.match (line)
