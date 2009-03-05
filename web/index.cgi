@@ -25,10 +25,12 @@ def main ():
     except getopt.GetoptError:
         usage ()
         sys.exit (1)
+    debug = False
     for (opt, arg) in opts:
         if opt in ('-o', '--output'):
             fd = file (arg, 'w')
         elif opt == '--debug-db':
+            debug = True
             pulse.db.debug ()
         elif opt == '--log-level':
             pulse.utils.set_log_level (arg)
@@ -121,10 +123,8 @@ def main ():
                     ' their programming assignment.'))
             response.set_contents (page)
 
-    #if getattr (pulse.config, 'debug_db', False):
-    #    print ('%i SELECT statements in %.3f seconds' %
-    #           (pulse.models.PulseDebugCursor.debug_select_count,
-    #            pulse.models.PulseDebugCursor.debug_select_time))
+    if debug:
+        pulse.db.debug_summary ()
 
     status = response.http_status
     response.output (fd=fd)

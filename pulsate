@@ -115,7 +115,8 @@ if __name__ == "__main__":
         sys.exit (1)
     options = get_options (opts, args)
 
-    if options.get ('--debug-db', False):
+    debug = options.get ('--debug-db', False)
+    if debug:
         pulse.db.debug ()
 
     pulse.utils.set_log_level (options.get ('--log-level', 'log'))
@@ -138,9 +139,7 @@ if __name__ == "__main__":
         pulse.db.flush ()
         pulse.db.commit ()
 
-    #if getattr (pulse.config, 'debug_db', False):
-    #    print ('%i SELECT statements in %.3f seconds' %
-    #           (pulse.models.PulseDebugCursor.debug_select_count,
-    #            pulse.models.PulseDebugCursor.debug_select_time))
+    if debug:
+        pulse.db.debug_summary ()
 
     sys.exit (retcode)

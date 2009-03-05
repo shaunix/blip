@@ -30,15 +30,30 @@ def rollback ():
     except:
         pulse.utils.warn ('Could not roll back changes')
 
+
 ################################################################################
 ## Debugging
 
 class PulseTracer (object):
+    select_count = 0
+    select_total = 0
+    insert_count = 0
+    insert_total = 0
+    update_count = 0
+    update_total = 0
+    other_count = 0
+    other_total = 0
+    
     def __init__ (self, stream=None):
         self._stream = stream or sys.stderr
         self._last_time = None
-        self._select_count = 0
-        self._select_total = 0
+
+    @staticmethod
+    def timing_string (seconds):
+        milli = 1000 * seconds
+        micro = 1000 * (milli - int(milli))
+        timing = '%03i.%03i' % (int(milli), int(micro))
+        return timing
 
     def connection_raw_execute (self, connection, raw_cursor, statement, params):
         self._last_time = datetime.datetime.now()
@@ -46,9 +61,7 @@ class PulseTracer (object):
     def print_command (self, statement, params):
         diff = datetime.datetime.now() - self._last_time
         sec = diff.seconds + (diff.microseconds / 1000000.)
-        milli = 1000 * sec
-        micro = 1000 * (milli - int(milli))
-        timing = '%03i.%03i' % (int(milli), int(micro))
+        timing = PulseTracer.timing_string (sec)
         outtxt = []
         raw_params = []
         for param in params:
@@ -61,8 +74,8 @@ class PulseTracer (object):
         raw_params = tuple (raw_params)
         cmd = statement.replace ('?', '%s') % raw_params
         if cmd.startswith ('SELECT '):
-            self._select_count += 1
-            self._select_total += sec
+            self.__class__.select_count += 1
+            self.__class__.select_total += sec
             pos = cmd.find (' FROM ')
             outfirst = cmd[:pos]
             outrest = cmd[pos:]
@@ -84,14 +97,22 @@ class PulseTracer (object):
                             outtxt.append (txt)
                         else:
                             outtxt.append ('AND ' + txt)
-        elif cmd.startswith ('UPDATE '):
-            outtxt.append (cmd)
         elif cmd.startswith ('INSERT '):
+            self.__class__.insert_count += 1
+            self.__class__.insert_total += sec
+            outtxt.append (cmd)
+        elif cmd.startswith ('UPDATE '):
+            self.__class__.update_count += 1
+            self.__class__.update_total += sec
+            outtxt.append (cmd)
+        elif cmd.startswith ('COMMIT') or cmd.startswith ('ROLLBACK'):
             outtxt.append (cmd)
         else:
+            self.__class__.other_count += 1
+            self.__class__.other_total += sec
             outtxt.append (cmd)
 
-        self._stream.write ((u'(%s)  %s\n' % (timing, outtxt[0])).encode ('utf8'))
+        self._stream.write ((u'%sms  %s\n' % (timing, outtxt[0])).encode ('utf8'))
         for txt in outtxt[1:]:
             self._stream.write ((u'           %s\n' % txt).encode ('utf8'))
 
@@ -107,6 +128,21 @@ class PulseTracer (object):
 def debug ():
     import storm.tracer
     storm.tracer.install_tracer (PulseTracer ())
+
+def debug_summary ():
+    print '---------'
+    timing = PulseTracer.timing_string (PulseTracer.select_total)
+    print '%i SELECT statements in %sms' % (PulseTracer.select_count, timing)
+    if PulseTracer.insert_total > 0:
+        timing = PulseTracer.timing_string (PulseTracer.insert_total)
+        print '%i INSERT statements in %sms' % (PulseTracer.insert_count, timing)
+    if PulseTracer.update_total > 0:
+        timing = PulseTracer.timing_string (PulseTracer.update_total)
+        print '%i UPDATE statements in %sms' % (PulseTracer.update_count, timing)
+    if PulseTracer.other_total > 0:
+        timing = PulseTracer.timing_string (PulseTracer.other_total)
+        print '%i other statements in %sms' % (PulseTracer.other_count, timing)
+    
 
 
 ################################################################################
