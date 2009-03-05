@@ -23,9 +23,9 @@ import Image
 import os
 import urllib
 
+import pulse.db
 import pulse.feedparser
 import pulse.graphs
-import pulse.models as db
 import pulse.pulsate
 import pulse.xmldata
 
@@ -38,7 +38,7 @@ def help_extra (fd=None):
 
 
 def update_person (person, **kw):
-    of = db.OutputFile.objects.filter (type='graphs', ident=person.ident, filename='commits.png')
+    of = pulse.db.OutputFile.select (type=u'graphs', ident=person.ident, filename=u'commits.png')
     try:
         of = of[0]
     except IndexError:
@@ -59,8 +59,8 @@ def update_person (person, **kw):
             for entry in feed['entries']:
                 postid = entry.get ('id', entry.link)
                 eident = bident + '/' + postid
-                if db.ForumPost.objects.filter (ident=eident, type='BlogPost').count () == 0:
-                    post = db.ForumPost (ident=eident, type='BlogPost')
+                if pulse.db.ForumPost.select (ident=eident, type=u'BlogPost').count () == 0:
+                    post = pulse.db.ForumPost (ident=eident, type=u'BlogPost')
                     postdata = {
                         'forum' : forum,
                         'author' : person,
@@ -70,15 +70,12 @@ def update_person (person, **kw):
                     if entry.has_key ('date_parsed'):
                         postdata['datetime'] = datetime.datetime (*entry.date_parsed[:6])
                     post.update (postdata)
-                    post.save ()
             forum.data['etag'] = feed.get('etag')
             forum.data['modified'] = feed.get('modified')
-            forum.save()
         else:
             pulse.utils.log ('Skipping blog %s' % bident)
 
-    db.Queue.remove ('people', person.ident)
-    person.save()
+    pulse.db.Queue.remove ('people', person.ident)
 
 
 ################################################################################
@@ -87,13 +84,24 @@ def update_person (person, **kw):
 def main (argv, options={}):
     timestamps = not options.get ('--no-timestamps', False)
     if len(argv) == 0:
-        prefix = None
+        ident = None
     else:
-        prefix = argv[0]
+        ident = pulse.utils.utf8dec (argv[0])
 
-    if prefix == None:
-        people = db.Entity.objects.filter (type='Person')
+    if ident == None:
+        people = pulse.db.Entity.select (type=u'Person')
     else:
-        people = db.Entity.objects.filter (type='Person', ident__startswith=prefix)
+        people = pulse.db.Entity.select (pulse.db.Entity.type == u'Person',
+                                         pulse.db.Entity.ident.like (ident))
+
     for person in people:
-        update_person (person, timestamps=timestamps)
+        try:
+            update_person (person, timestamps=timestamps)
+            pulse.db.flush ()
+        except:
+            pulse.db.rollback ()
+            raise
+        else:
+            pulse.db.commit ()
+
+    return 0

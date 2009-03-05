@@ -21,10 +21,12 @@
 import datetime
 import os
 
+from storm.expr import *
+
 import pulse.config
+import pulse.db
 import pulse.graphs
 import pulse.html
-import pulse.models as db
 import pulse.scm
 import pulse.utils
 
@@ -33,16 +35,8 @@ def main (response, path, query):
     kw = {'path' : path, 'query' : query}
     if len(path) == 1:
         return output_top (response, **kw)
-    ident = '/' + '/'.join(path)
-    person = db.Entity.objects.filter (ident=ident, type='Person')
-    try:
-        person = person[0]
-    except IndexError:
-        alias = db.Alias.objects.filter (ident=ident)
-        try:
-            person = alias[0].entity
-        except:
-            person = None
+    ident = u'/' + u'/'.join(path)
+    person = pulse.db.Entity.get (ident)
     if person == None:
         page = pulse.html.PageNotFound (
             pulse.utils.gettext ('Pulse could not find the person %s') % '/'.join(path[1:]),
@@ -61,25 +55,24 @@ def main (response, path, query):
 
 
 synopsis_sort = -1
-# FIXME STORM
-def FIXMEsynopsis ():
+def synopsis ():
     """Construct an info box for the front page"""
     box = pulse.html.SectionBox (pulse.utils.gettext ('People'))
     txt = (pulse.utils.gettext ('Pulse is watching %i people.') %
-           db.Entity.objects.filter(type='Person').count() )
+           pulse.db.Entity.select (type=u'Person').count() )
     box.add_content (pulse.html.Div (txt))
 
     columns = pulse.html.ColumnBox (2)
     box.add_content (columns)
 
-    people = db.Entity.objects.filter (type='Person').order_by ('-mod_score')
+    people = pulse.db.Entity.select (type=u'Person').order_by (Desc (pulse.db.Entity.mod_score))
     bl = pulse.html.BulletList ()
     bl.set_title (pulse.utils.gettext ('These people deserve a beer:'))
     columns.add_to_column (0, bl)
     for person in people[:6]:
         bl.add_link (person)
 
-    people = db.Entity.objects.filter (type='Person').order_by ('-mod_score_diff')
+    people = pulse.db.Entity.select (type=u'Person').order_by (Desc (pulse.db.Entity.mod_score_diff))
     bl = pulse.html.BulletList ()
     bl.set_title (pulse.utils.gettext ('Up-and-coming rock stars:'))
     columns.add_to_column (1, bl)
@@ -93,7 +86,7 @@ def output_top (response, **kw):
     page = pulse.html.Page ()
     response.set_contents (page)
     page.set_title (pulse.utils.gettext ('People'))
-    people = db.Entity.objects.filter (type='Person').order_by ('-mod_score')
+    people = pulse.db.Entity.objects.filter (type=u'Person').order_by (Desc (pulse.db.Entity.mod_score))
     page.add_content(pulse.html.Div(pulse.utils.gettext('42 most active people:')))
     for person in people[:42]:
         lbox = pulse.html.LinkBox (person)
@@ -108,7 +101,7 @@ def output_person (response, person, **kw):
     response.set_contents (page)
 
     # Teams
-    rels = db.TeamMember.get_related (pred=person)
+    rels = pulse.db.TeamMember.get_related (pred=person)
     rels = pulse.utils.attrsorted (list(rels), ('subj', 'title'))
     if len(rels) > 0:
         box = pulse.html.SidebarBox (pulse.utils.gettext ('Teams'))
@@ -119,8 +112,8 @@ def output_person (response, person, **kw):
                 lbox.add_badge ('coordinator')
 
     # Blog
-    bident = '/blog' + person.ident
-    blog = db.Forum.objects.filter (ident=bident)
+    bident = u'/blog' + person.ident
+    blog = pulse.db.Forum.select (ident=bident)
     try:
         blog = blog[0]
         box = pulse.html.SidebarBox (pulse.utils.gettext ('Blog'))
@@ -160,9 +153,9 @@ def output_ajax_commits (response, person, **kw):
     weeknum = int(query.get('weeknum', 0))
     thisweek = pulse.utils.weeknum ()
     ago = thisweek - weeknum
-    revs = db.Revision.select_revisions (person=person, weeknum=weeknum)
+    revs = pulse.db.Revision.select_revisions (person=person, weeknum=weeknum)
     cnt = revs.count()
-    revs = revs[:20]
+    revs = list(revs[:20])
     if ago == 0:
         title = pulse.utils.gettext('Showing %i of %i commits from this week:') % (len(revs), cnt)
     elif ago == 1:
@@ -178,7 +171,7 @@ def output_ajax_graphmap (response, person, **kw):
     num = query.get('num')
     filename = query.get('filename')
     
-    of = db.OutputFile.objects.filter (type='graphs', ident=person.ident, filename=filename)
+    of = pulse.db.OutputFile.select (type=u'graphs', ident=person.ident, filename=filename)
     try:
         of = of[0]
         graph = pulse.html.Graph.activity_graph (of, person.pulse_url, 'commits',
@@ -207,7 +200,7 @@ def get_info_tab (person, **kw):
 
 def get_activity_tab (person, **kw):
     box = pulse.html.Div ()
-    of = db.OutputFile.objects.filter (type='graphs', ident=person.ident, filename='commits-0.png')
+    of = pulse.db.OutputFile.select (type=u'graphs', ident=person.ident, filename=u'commits-0.png')
     try:
         of = of[0]
         graph = pulse.html.Graph.activity_graph (of, person.pulse_url, 'commits',
@@ -216,9 +209,9 @@ def get_activity_tab (person, **kw):
     except IndexError:
         pass
 
-    revs = db.Revision.select_revisions (person=person)
+    revs = pulse.db.Revision.select_revisions (person=person)
     cnt = revs.count()
-    revs = revs[:10]
+    revs = list(revs[:10])
     div = get_commits_div (person, revs,
                            pulse.utils.gettext('Showing %i of %i commits:') % (len(revs), cnt))
     box.add_content (div)
@@ -229,8 +222,9 @@ def get_hacking_tab (person, **kw):
     columns = pulse.html.ColumnBox (2)
 
     # Modules
-    rels = db.ModuleEntity.get_related (pred=person)
-    rels = pulse.utils.attrsorted (list(rels), ('subj', 'title'),
+    rels = pulse.db.ModuleEntity.get_related (pred=person)
+    rels = pulse.utils.attrsorted (list(rels),
+                                   ('subj', 'title'),
                                    ('-', 'subj', 'is_default'),
                                    ('-', 'subj', 'scm_branch'))
     if len(rels) > 0:
@@ -239,9 +233,9 @@ def get_hacking_tab (person, **kw):
         bmaint = 0
         for rel in rels:
             mod = rel.subj
-            if mod.branchable_id in brs:
+            if mod.branchable in brs:
                 continue
-            brs.append (mod.branchable_id)
+            brs.append (mod.branchable)
             mods[mod] = rel
         box = pulse.html.InfoBox (pulse.utils.gettext ('Modules'))
         box.set_id ('modules')
@@ -255,8 +249,9 @@ def get_hacking_tab (person, **kw):
             box.add_badge_filter ('maintainer')
 
     # Documents
-    rels = db.DocumentEntity.get_related (pred=person)
-    rels = pulse.utils.attrsorted (list(rels), ('subj', 'title'),
+    rels = pulse.db.DocumentEntity.get_related (pred=person)
+    rels = pulse.utils.attrsorted (list(rels),
+                                   ('subj', 'title'),
                                    ('-', 'subj', 'is_default'),
                                    ('-', 'subj', 'scm_branch'))
     if len(rels) > 0:
@@ -265,9 +260,9 @@ def get_hacking_tab (person, **kw):
         bmaint = bauth = bedit = bpub = 0
         for rel in rels:
             doc = rel.subj
-            if doc.branchable_id in brs:
+            if doc.branchable in brs:
                 continue
-            brs.append (doc.branchable_id)
+            brs.append (doc.branchable)
             docs[doc] = rel
         box = pulse.html.InfoBox (pulse.utils.gettext ('Documents'))
         box.set_id ('documents')
@@ -310,9 +305,9 @@ def get_commits_div (person, revs, title):
         if curweek != None and curweek != rev.weeknum:
             dl.add_divider ()
         curweek = rev.weeknum
-        if not branches.has_key (rev.branch_id):
-            branches[rev.branch_id] = rev.branch
-        branch = branches[rev.branch_id]
+        if not branches.has_key (rev.branch_ident):
+            branches[rev.branch_ident] = rev.branch
+        branch = branches[rev.branch_ident]
         # FIXME: i18n word order
         span = pulse.html.Span (divider=pulse.html.SPACE)
         span.add_content (pulse.html.Link (branch.pulse_url, branch.branch_module))
