@@ -34,22 +34,23 @@ import pulse.utils
 def main (response, path, query):
     ident = u'/' + u'/'.join(path)
     if len(path) == 3:
-        branches = pulse.db.Branch.select (branchable=ident)
-        if branches.count () == 0:
+        branches = list(pulse.db.Branch.select (branchable=ident))
+        if len(branches) == 0:
             page = pulse.html.PageNotFound (
                 pulse.utils.gettext ('Pulse could not find the module %s') % path[2],
                 title=pulse.utils.gettext ('Module Not Found'))
             response.set_contents (page)
             return
-        # FIXME STORM
-        branch = branchable.get_default ()
-        if branch == None:
+
+        branch = [branch for branch in branches if branch.is_default]
+        if len(branch) == 0:
             page = pulse.html.PageNotFound (
                 pulse.utils.gettext ('Pulse could not find a default branch for the module %s')
                 % path[2],
                 title=pulse.utils.gettext ('Default Branch Not Found'))
             response.set_contents (page)
             return
+        branch = branch[0]
     elif len(path) == 4:
         branch = pulse.db.Branch.get (ident)
         if branch == None:

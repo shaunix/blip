@@ -21,8 +21,8 @@
 """Output information about applications"""
 
 import pulse.config
+import pulse.db
 import pulse.html
-import pulse.models as db
 import pulse.scm
 import pulse.utils
 
@@ -30,11 +30,10 @@ import pulse.pages.mod
 
 def main (response, path, query):
     """Output information about applications"""
+    ident = u'/' + u'/'.join(path)
     if len(path) == 4:
-        branchables = db.Branchable.objects.filter (ident=('/' + '/'.join(path)))
-        try:
-            branchable = branchables[0]
-        except IndexError:
+        branches = list(pulse.db.Branch.select (branchable=ident))
+        if len(branches) == 0:
             page = pulse.html.PageNotFound (
                 pulse.utils.gettext ('Pulse could not find the application %s')
                 % path[3],
@@ -42,8 +41,8 @@ def main (response, path, query):
             response.set_contents (page)
             return
 
-        app = branchable.get_default ()
-        if app == None:
+        app = [branch for branch in branches if branch.is_default]
+        if len(app) == 0:
             page = pulse.html.PageNotFound (
                 pulse.utils.gettext ('Pulse could not find a default branch'
                                      ' for the application %s')
@@ -51,12 +50,11 @@ def main (response, path, query):
                 title=pulse.utils.gettext ('Default Branch Not Found'))
             response.set_contents (page)
             return
+        app = app[0]
 
     elif len(path) == 5:
-        apps = db.Branch.objects.filter (ident=('/' + '/'.join(path)))
-        try:
-            app = apps[0]
-        except IndexError:
+        app = pulse.db.Branch.get (ident)
+        if app == None:
             page = pulse.html.PageNotFound (
                 (pulse.utils.gettext ('Pulse could not find the branch %s'
                                       ' of the application %s')
@@ -77,7 +75,7 @@ def output_app (response, app, **kw):
     response.set_contents (page)
     checkout = pulse.scm.Checkout.from_record (app, checkout=False, update=False)
 
-    branches = pulse.utils.attrsorted (list(app.branchable.branches.all()),
+    branches = pulse.utils.attrsorted (list(pulse.db.Branch.select (branchable=app.branchable)),
                                        '-is_default', 'scm_branch')
     if len(branches) > 1:
         for branch in branches:
@@ -97,7 +95,7 @@ def output_app (response, app, **kw):
     except:
         pass
 
-    rels = db.SetModule.get_related (pred=app.parent)
+    rels = pulse.db.SetModule.get_related (pred=app.parent)
     if len(rels) > 0:
         sets = pulse.utils.attrsorted ([rel.subj for rel in rels], 'title')
         span = [pulse.html.Link(obj.pulse_url + '#programs', obj.title) for obj in sets]
@@ -128,14 +126,14 @@ def output_app (response, app, **kw):
     page.add_sidebar_content (box)
 
     # Documentation
-    rels = db.Documentation.get_related (subj=app)
+    rels = pulse.db.Documentation.get_related (subj=app)
     box = pulse.html.InfoBox (pulse.utils.gettext ('Documentation'))
     page.add_content (box)
     if len(rels) > 0:
         docs = pulse.utils.attrsorted ([rel.pred for rel in rels], 'title')
         for doc in docs:
             lbox = box.add_link_box (doc)
-            res = doc.select_children ('Translation')
+            res = doc.select_children (u'Translation')
             lbox.add_fact (None, pulse.utils.gettext ('%i translations') % res.count())
     else:
         box.add_content (pulse.html.AdmonBox (pulse.html.AdmonBox.warning,
