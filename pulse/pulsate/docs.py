@@ -475,7 +475,7 @@ def main (argv, options={}):
     elif ident.startswith ('/mod/'):
         docs = pulse.db.Branch.select (pulse.db.Branch.type == u'Document',
                                        pulse.db.Branch.parent_ident.like (ident))
-    elif ident.startswith ('/set'):
+    elif ident.startswith ('/set/'):
         docs = pulse.db.Branch.select (pulse.db.Branch.type == u'Document',
                                        pulse.db.Branch.parent_ident == pulse.db.SetModule.pred_ident,
                                        pulse.db.SetModule.subj_ident.like (ident))

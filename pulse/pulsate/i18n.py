@@ -25,8 +25,10 @@ import os
 import os.path
 import shutil
 
+import storm.info
+
 import pulse.config
-import pulse.models as db
+import pulse.db
 import pulse.scm
 import pulse.parsers
 import pulse.utils
@@ -72,7 +74,7 @@ def update_translation (po, **kw):
     mtime = os.stat(filepath).st_mtime
 
     if kw.get('timestamps', True):
-        stamp = db.Timestamp.get_timestamp (rel_scm)
+        stamp = pulse.db.Timestamp.get_timestamp (rel_scm)
         if mtime <= stamp:
             pomd5 = po.data.get('md5', None)
             potmd5 = potfile.data.get('md5', None)
@@ -85,12 +87,12 @@ def update_translation (po, **kw):
     elif po.subtype == 'xml2po':
         update_xml2po (po, checkout, potfile, rel_scm, **kw)
 
-    of = db.OutputFile.objects.filter (type='l10n', ident=po.parent.ident, filename=po.scm_file)
+    of = pulse.db.OutputFile.select (type=u'l10n', ident=po.parent.ident, filename=po.scm_file)
     try:
         of = of[0]
     except IndexError:
-        of = db.OutputFile (type='l10n', ident=po.parent.ident, filename=po.scm_file,
-                            datetime=datetime.datetime.now())
+        of = pulse.db.OutputFile (type=u'l10n', ident=po.parent.ident, filename=po.scm_file,
+                                  datetime=datetime.datetime.now())
     outfile_abs = of.get_file_path()
     outfile_rel = pulse.utils.relative_path (outfile_abs, pulse.config.web_l10n_dir)
     outdir = os.path.dirname (outfile_abs)
@@ -101,17 +103,15 @@ def update_translation (po, **kw):
                      os.path.join (outdir, po.scm_file))
     of.datetime = datetime.datetime.now()
     of.data['revision'] = checkout.get_revision()
-    of.save()
 
     files = [os.path.join (po.scm_dir, po.scm_file)]
-    revision = db.Revision.get_last_revision (branch=po.parent.parent, files=files)
+    revision = pulse.db.Revision.get_last_revision (branch=po.parent.parent, files=files)
     if revision != None:
         po.mod_datetime = revision.datetime
         po.mod_person = revision.person
 
     po.data['md5'] = potfile.data.get('md5', None)
-    po.save()
-    db.Timestamp.set_timestamp (rel_scm, mtime)
+    pulse.db.Timestamp.set_timestamp (rel_scm, mtime)
 
 
 def update_intltool (po, checkout, potfile, rel_scm, **kw):
@@ -124,8 +124,8 @@ def update_intltool (po, checkout, potfile, rel_scm, **kw):
         popo = pulse.parsers.Po (os.popen (cmd))
         stats = popo.get_stats()
         total = stats[0] + stats[1] + stats[2]
-        db.Statistic.set_statistic (po, pulse.utils.daynum(), 'Messages',
-                                    stats[0], stats[1], total)
+        pulse.db.Statistic.set_statistic (po, pulse.utils.daynum(), u'Messages',
+                                          stats[0], stats[1], total)
     finally:
         os.chdir (owd)
     # FIXME: things like .desktop files might not be reprocessed because
@@ -149,12 +149,12 @@ def update_xml2po (po, checkout, potfile, rel_scm, **kw):
         popo = pulse.parsers.Po (os.popen (cmd))
         stats = popo.get_stats()
         total = stats[0] + stats[1] + stats[2]
-        db.Statistic.set_statistic (po, pulse.utils.daynum(), 'Messages',
-                                    stats[0], stats[1], total)
+        pulse.db.Statistic.set_statistic (po, pulse.utils.daynum(), u'Messages',
+                                          stats[0], stats[1], total)
         stats = popo.get_image_stats()
         total = stats[0] + stats[1] + stats[2]
-        db.Statistic.set_statistic (po, pulse.utils.daynum(), 'ImageMessages',
-                                    stats[0], stats[1], total)
+        pulse.db.Statistic.set_statistic (po, pulse.utils.daynum(), u'ImageMessages',
+                                          stats[0], stats[1], total)
     finally:
         os.chdir (owd)
 
@@ -180,12 +180,12 @@ def get_intltool_potfile (domain, checkout, **kw):
     else:
         potname = domain.scm_dir
     potfile = potname + '.pot'
-    of = db.OutputFile.objects.filter (type='l10n', ident=domain.ident, filename=potfile)
+    of = pulse.db.OutputFile.select (type=u'l10n', ident=domain.ident, filename=potfile)
     try:
         of = of[0]
     except IndexError:
-        of = db.OutputFile (type='l10n', ident=domain.ident, filename=potfile,
-                            datetime=datetime.datetime.now())
+        of = pulse.db.OutputFile (type=u'l10n', ident=domain.ident, filename=potfile,
+                                  datetime=datetime.datetime.now())
 
     potfile_abs = of.get_file_path()
     potfile_rel = pulse.utils.relative_path (potfile_abs, pulse.config.web_l10n_dir)
@@ -231,7 +231,6 @@ def get_intltool_potfile (domain, checkout, **kw):
         of.data['missing'] = missing
         of.statistic = num
         of.data['md5'] = m.hexdigest ()
-        of.save()
         intltool_potfiles[indir] = of
         return of
     else:
@@ -251,12 +250,12 @@ def get_xml2po_potfile (doc, checkout, **kw):
                 for fname in ([makefile['DOC_MODULE']+'.xml'] + makefile.get('DOC_INCLUDES', '').split())]
     potname = makefile['DOC_MODULE']
     potfile = potname + '.pot'
-    of = db.OutputFile.objects.filter (type='l10n', ident=doc.ident, filename=potfile)
+    of = pulse.db.OutputFile.select (type=u'l10n', ident=doc.ident, filename=potfile)
     try:
         of = of[0]
     except IndexError:
-        of = db.OutputFile (type='l10n', ident=doc.ident, filename=potfile,
-                            datetime=datetime.datetime.now())
+        of = pulse.db.OutputFile (type=u'l10n', ident=doc.ident, filename=potfile,
+                                  datetime=datetime.datetime.now())
 
     potfile_abs = of.get_file_path()
     potfile_rel = pulse.utils.relative_path (potfile_abs, pulse.config.web_l10n_dir)
@@ -296,7 +295,6 @@ def get_xml2po_potfile (doc, checkout, **kw):
         of.data['mod_datetime'] = doc.parent.mod_datetime
         of.statistic = num
         of.data['md5'] = m.hexdigest ()
-        of.save()
         xml2po_potfiles[indir] = of
         return of
     else:
@@ -312,27 +310,38 @@ def main (argv, options={}):
     update = not options.get ('--no-update', False)
     timestamps = not options.get ('--no-timestamps', False)
     if len(argv) == 0:
-        prefix = None
+        ident = None
     else:
-        prefix = argv[0]
+        ident = pulse.utils.utf8dec (argv[0])
 
-    if prefix == None:
-        pos = db.Branch.objects.filter (type='Translation')
-    elif prefix.startswith ('/set/'):
-        pos = db.Branch.objects.filter (type='Translation',
-                                        parent__parent__set_module_subjs__subj__ident__startswith=prefix)
-    elif prefix.startswith ('/i18n/'):
-        pos = db.Branch.objects.filter (type='Translation',
-                                        parent__ident__startswith=prefix)
-    elif prefix.startswith ('/doc/') or prefix.startswith ('/ref/'):
-        pos = db.Branch.objects.filter (type='Translation',
-                                        parent__ident__startswith=prefix)
-    elif prefix.startswith ('/mod'):
-        pos = db.Branch.objects.filter (type='Translation',
-                                        parent__parent__ident__startswith=prefix)
+    if ident == None:
+        pos = pulse.db.Branch.select (type=u'Translation')
+    elif ident.startswith ('/set/'):
+        Domain = storm.info.ClassAlias (pulse.db.Branch)
+        pos = pulse.db.Branch.select (
+            pulse.db.Branch.type == u'Translation',
+            pulse.db.Branch.parent_ident == Domain.ident,
+            Domain.parent_ident == pulse.db.SetModule.pred_ident,
+            pulse.db.SetModule.subj_ident.like (ident))
+    elif (ident.startswith ('/i18n/') or
+          ident.startswith ('/doc/')  or
+          ident.startswith ('/ref/')  ):
+        pos = pulse.db.Branch.select (
+            pulse.db.Branch.type == u'Translation',
+            pulse.db.Branch.parent_ident.like (ident))
+    elif ident.startswith ('/mod/'):
+        Domain = storm.info.ClassAlias (pulse.db.Branch)
+        pos = pulse.db.Branch.select (
+            pulse.db.Branch.type == u'Translation',
+            pulse.db.Branch.parent_ident == Domain.ident,
+            Domain.parent_ident.like (ident))
     else:
-        pos = db.Branch.objects.filter (type='Translation',
-                                        ident__startswith=prefix)
+        pos = pulse.db.Branch.select (
+            pulse.db.Branch.type == u'Translation',
+            pulse.db.Branch.ident.like (ident))
 
     for po in list(pos):
         update_translation (po, update=update, timestamps=timestamps)
+
+    return 0
+

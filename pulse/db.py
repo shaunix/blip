@@ -662,6 +662,39 @@ class RevisionFile (PulseModel):
         pass
 
 
+class Statistic (PulseModel):
+    __storm_primary__ = 'branch_ident', 'daynum', 'type'
+
+    branch_ident = Unicode ()
+    branch = Reference (branch_ident, Branch.ident)
+    daynum = Int ()
+    type = Unicode ()
+    stat1 = Int ()
+    stat2 = Int ()
+    total = Int ()
+
+    def log_create (self):
+        pass
+
+    @classmethod
+    def select_statistic (cls, branch, type):
+        stat = cls.select (branch=branch, type=type)
+        return stat.order_by (Desc (Statistic.daynum))
+
+    @classmethod
+    def set_statistic (cls, branch, daynum, type, stat1, stat2, total):
+        res = cls.select (branch=branch, daynum=daynum, type=type)
+        try:
+            res = res[0]
+            res.stat1 = stat1
+            res.stat2 = stat2
+            res.total = total
+            return res
+        except IndexError:
+            return cls (branch=branch, daynum=daynum, type=type,
+                        stat1=stat1, stat2=stat2, total=total)
+
+
 class OutputFile (PulseModel):
     id = Int (primary=True)
 
@@ -814,4 +847,4 @@ def create_tables ():
                     txt += ' AUTOINCREMENT'
             fields.append (txt)
         cmd = 'CREATE TABLE IF NOT EXISTS %s (%s)' % (cls.__name__, ','.join(fields))
-        store.execute (cmd)
+        store.execute (cmd, noresult=True)
