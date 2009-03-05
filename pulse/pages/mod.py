@@ -1,4 +1,4 @@
-# Copyright (c) 2006  Shaun McCance  <shaunm@gnome.org>
+# Copyright (c) 2006-2008  Shaun McCance  <shaunm@gnome.org>
 #
 # This file is part of Pulse, a program for displaying various statistics
 # of questionable relevance about software and the people who make it.
@@ -22,25 +22,26 @@ import datetime
 import math
 import urllib
 
+from storm.expr import *
+
 import pulse.config
+import pulse.db
 import pulse.graphs
-import pulse.models as db
 import pulse.html
 import pulse.scm
 import pulse.utils
 
 def main (response, path, query):
+    ident = u'/' + u'/'.join(path)
     if len(path) == 3:
-        branchables = db.Branchable.objects.filter(ident=('/' + '/'.join(path)))
-        try:
-            branchable = branchables[0]
-        except IndexError:
+        branches = pulse.db.Branch.select (branchable=ident)
+        if branches.count () == 0:
             page = pulse.html.PageNotFound (
                 pulse.utils.gettext ('Pulse could not find the module %s') % path[2],
                 title=pulse.utils.gettext ('Module Not Found'))
             response.set_contents (page)
             return
-
+        # FIXME STORM
         branch = branchable.get_default ()
         if branch == None:
             page = pulse.html.PageNotFound (
@@ -50,10 +51,8 @@ def main (response, path, query):
             response.set_contents (page)
             return
     elif len(path) == 4:
-        branches = db.Branch.objects.filter (ident=('/' + '/'.join(path)))
-        try:
-            branch = branches[0]
-        except IndexError:
+        branch = pulse.db.Branch.get (ident)
+        if branch == None:
             page = pulse.html.PageNotFound (
                 pulse.utils.gettext ('Pulse could not find the branch %s of the module %s')
                 % (path[3], path[2]),
@@ -79,19 +78,19 @@ def main (response, path, query):
         output_module (response, branch, **kw)
 
 synopsis_sort = -1
-# FIXME STORM
-def FIXMEsynopsis ():
+def synopsis ():
     """Construct an info box for the front page"""
     box = pulse.html.SectionBox (pulse.utils.gettext ('Modules'))
     txt = (pulse.utils.gettext ('Pulse is watching %i branches in %i modules.') %
-           (db.Branch.objects.filter(type='Module').count(),
-            db.Branchable.objects.filter(type='Module').count() ))
+           (pulse.db.Branch.select (type=u'Module').count(),
+            pulse.db.Branch.count_branchables (u'Module') ))
     box.add_content (pulse.html.Div (txt))
 
     columns = pulse.html.ColumnBox (2)
     box.add_content (columns)
 
-    modules = db.Branch.objects.filter (type='Module').order_by ('-mod_score')
+    # FIXME STORM
+    modules = pulse.db.Branch.select (type=u'Module').order_by (Desc (pulse.db.Branch.mod_score))
     bl = pulse.html.BulletList ()
     bl.set_title (pulse.utils.gettext ('Kicking ass and taking names:'))
     columns.add_to_column (0, bl)
@@ -106,7 +105,7 @@ def FIXMEsynopsis ():
         else:
             bl.add_link (module)
 
-    modules = db.Branch.objects.filter (type='Module').order_by ('-mod_score_diff')
+    modules = pulse.db.Branch.select (type=u'Module').order_by (Desc (pulse.db.Branch.mod_score_diff))
     bl = pulse.html.BulletList ()
     bl.set_title (pulse.utils.gettext ('Recently rocking:'))
     columns.add_to_column (1, bl)
@@ -129,7 +128,7 @@ def output_module (response, module, **kw):
     page = pulse.html.Page (module)
     response.set_contents (page)
 
-    branches = pulse.utils.attrsorted (list(branchable.branches.all()),
+    branches = pulse.utils.attrsorted (list(pulse.db.Branch.select (branchable=module.branchable)),
                                        '-is_default', 'scm_branch')
     if len(branches) > 1:
         for branch in branches:
@@ -151,11 +150,11 @@ def output_module (response, module, **kw):
 
     page.add_tab ('activity', pulse.utils.gettext ('Activity'))
     page.add_tab ('components', pulse.utils.gettext ('Components'))
-    if module.select_children ('Domain').count() > 0:
+    if module.select_children (u'Domain').count() > 0:
         page.add_tab ('translations', pulse.utils.gettext ('Translations'))
 
     # Dependencies
-    deps = db.ModuleDependency.get_related (subj=module)
+    deps = pulse.db.ModuleDependency.get_related (subj=module)
     deps = pulse.utils.attrsorted (list(deps), ['pred', 'scm_module'])
     if len(deps) > 0:
         box = pulse.html.SidebarBox (pulse.utils.gettext ('Dependencies'))
@@ -192,11 +191,12 @@ def output_ajax_domain (response, module, **kw):
     query = kw.get ('query', {})
     ident = query.get('domain', None)
 
-    domain = db.Branch.objects.get (ident=ident)
+    domain = pulse.db.Branch.get (ident)
     domainid = domain.ident.split('/')[-2].replace('-', '_')
-    translations = db.Branch.select_with_statistic ('Messages',
-                                                    type='Translation', parent=domain)
-    translations = pulse.utils.attrsorted (list(translations), 'title')
+    translations = pulse.db.Branch.select_with_statistic (u'Messages',
+                                                          type=u'Translation',
+                                                          parent=domain)
+    translations = pulse.utils.attrsorted (list(translations), (0, 'title'))
     pagediv = pulse.html.Div ()
     response.set_contents (pagediv)
     pad = pulse.html.PaddingBox ()
@@ -206,7 +206,7 @@ def output_ajax_domain (response, module, **kw):
         potfile = domain.scm_module + '.pot'
     else:
         potfile = domain.scm_dir + '.pot'
-    of = db.OutputFile.objects.filter (type='l10n', ident=domain.ident, filename=potfile)
+    of = pulse.db.OutputFile.select (type=u'l10n', ident=domain.ident, filename=potfile)
     try:
         of = of[0]
         div = pulse.html.Div()
@@ -242,15 +242,15 @@ def output_ajax_domain (response, module, **kw):
     else:
         grid = pulse.html.GridBox ()
         pad.add_content (grid)
-        for translation in translations:
+        for translation, statistic in translations:
             span = pulse.html.Span (translation.scm_file[:-3])
             span.add_class ('title')
             link = pulse.html.Link (translation.pulse_url, span)
             row = [link]
             percent = 0
-            stat1 = translation.Messages_stat1
-            stat2 = translation.Messages_stat2
-            total = translation.Messages_total
+            stat1 = statistic.stat1
+            stat2 = statistic.stat2
+            total = statistic.total
             untranslated = total - stat1 - stat2
             percent = total and math.floor (100 * (float(stat1) / total)) or 0
             span = pulse.html.Span ('%i%%' % percent)
@@ -274,7 +274,7 @@ def output_ajax_graphmap (response, module, **kw):
     num = query.get('num')
     filename = query.get('filename')
     
-    of = db.OutputFile.objects.filter (type='graphs', ident=module.ident, filename=filename)
+    of = pulse.db.OutputFile.select (type=u'graphs', ident=module.ident, filename=filename)
     try:
         of = of[0]
         graph = pulse.html.Graph.activity_graph (of, module.pulse_url, 'commits',
@@ -292,13 +292,13 @@ def output_ajax_commits (response, module, **kw):
         weeknum = int(weeknum)
         thisweek = pulse.utils.weeknum ()
         ago = thisweek - weeknum
-        revs = db.Revision.select_revisions (branch=module, weeknum=weeknum)
+        revs = pulse.db.Revision.select_revisions (branch=module, weeknum=weeknum)
         cnt = revs.count()
-        revs = revs[:20]
+        revs = list(revs[:20])
     else:
-        revs = db.Revision.select_revisions (branch=module)
+        revs = pulse.db.Revision.select_revisions (branch=module)
         cnt = revs.count()
-        revs = revs[:10]
+        revs = list(revs[:10])
     if weeknum == None:
         title = (pulse.utils.gettext('Showing %i of %i commits:')
                  % (len(revs), cnt))
@@ -333,11 +333,11 @@ def output_ajax_revfiles (response, module, **kw):
 
     query = kw.get ('query', {})
     revid = query.get('revid', None)
-    revision = db.Revision.objects.get(id=int(revid))
-    files = db.RevisionFile.objects.filter (revision=revision)
+    revision = pulse.db.Revision.select (id=int(revid)).one ()
+    files = pulse.db.RevisionFile.select (revision=revision)
 
     mlink = pulse.html.MenuLink (revision.revision, menu_only=True)
-    response.add_content (mlink)
+    response.set_contents (mlink)
     for file in files:
         url = base + file.filename
         url += '?r1=%s&r2=%s' % (file.prevrev, file.filerev)
@@ -356,12 +356,12 @@ def get_info_tab (module, **kw):
     sep = False
     try:
         facts.add_fact (pulse.utils.gettext ('Description'),
-                       module.localized_desc)
+                        module.localized_desc)
         sep = True
     except:
         pass
 
-    rels = db.SetModule.get_related (pred=module)
+    rels = pulse.db.SetModule.get_related (pred=module)
     if len(rels) > 0:
         sets = pulse.utils.attrsorted ([rel.subj for rel in rels], 'title')
         span = pulse.html.Span (*[pulse.html.Link(rset) for rset in sets])
@@ -379,9 +379,9 @@ def get_info_tab (module, **kw):
         span = pulse.html.Span(divider=pulse.html.SPACE)
         # FIXME: i18n, word order, but we want to link person
         span.add_content (module.mod_datetime.strftime('%Y-%m-%d %T'))
-        if module.mod_person != None:
+        if module.mod_person_ident != None:
             span.add_content (' by ')
-            person = db.Entity.set_cached (module.mod_person.id, module.mod_person)
+            person = pulse.db.Entity.get_cached (module.mod_person_ident)
             span.add_content (pulse.html.Link (person))
         facts.add_fact (pulse.utils.gettext ('Last Modified'), span)
 
@@ -401,7 +401,7 @@ def get_info_tab (module, **kw):
 
 def get_activity_tab (module, **kw):
     box = pulse.html.Div ()
-    of = db.OutputFile.objects.filter (type='graphs', ident=module.ident, filename='commits-0.png')
+    of = pulse.db.OutputFile.select (type=u'graphs', ident=module.ident, filename=u'commits-0.png')
     try:
         of = of[0]
         graph = pulse.html.Graph.activity_graph (of, module.pulse_url, 'commits',
@@ -410,9 +410,9 @@ def get_activity_tab (module, **kw):
     except IndexError:
         pass
 
-    revs = db.Revision.select_revisions (branch=module)
+    revs = pulse.db.Revision.select_revisions (branch=module)
     cnt = revs.count()
-    revs = revs[:10]
+    revs = list(revs[:10])
     title = (pulse.utils.gettext('Showing %i of %i commits:') % (len(revs), cnt))
     div = get_commits_div (module, revs, title)
     box.add_content (div)
@@ -425,10 +425,10 @@ def get_components_tab (module, **kw):
 
     # Programs and Libraries
     for branchtype, title in (
-        ('Application', pulse.utils.gettext ('Applications')),
-        ('Capplet', pulse.utils.gettext ('Capplets')),
-        ('Applet', pulse.utils.gettext ('Applets')),
-        ('Library', pulse.utils.gettext ('Libraries')) ):
+        (u'Application', pulse.utils.gettext ('Applications')),
+        (u'Capplet', pulse.utils.gettext ('Capplets')),
+        (u'Applet', pulse.utils.gettext ('Applets')),
+        (u'Library', pulse.utils.gettext ('Libraries')) ):
 
         box = get_component_info_box (module, branchtype, title)
         if box != None:
@@ -437,7 +437,7 @@ def get_components_tab (module, **kw):
     # Documents
     box = pulse.html.InfoBox (pulse.utils.gettext ('Documents'))
     columns.add_to_column (1, box)
-    docs = module.select_children ('Document')
+    docs = module.select_children (u'Document')
     docs = pulse.utils.attrsorted (list(docs), 'title')
     if len(docs) > 0:
         if len(docs) > 1:
@@ -448,7 +448,7 @@ def get_components_tab (module, **kw):
             lbox = box.add_link_box (doc)
             lbox.add_fact (pulse.utils.gettext ('status'),
                            pulse.html.StatusSpan (doc.data.get('status')))
-            res = doc.select_children ('Translation')
+            res = doc.select_children (u'Translation')
             span = pulse.html.Span (str(res.count()))
             span.add_class ('translations')
             lbox.add_fact (pulse.utils.gettext ('translations'), span)
@@ -461,12 +461,12 @@ def get_components_tab (module, **kw):
 
 def get_translations_tab (module, **kw):
     box = pulse.html.PaddingBox ()
-    domains = module.select_children ('Domain')
+    domains = module.select_children (u'Domain')
     domains = pulse.utils.attrsorted (list(domains), 'title')
     if len(domains) > 0:
         for domain in domains:
             domainid = domain.ident.split('/')[-2].replace('-', '_')
-            translations = db.Branch.objects.filter (type='Translation', parent=domain)
+            translations = pulse.db.Branch.select (type=u'Translation', parent=domain)
             cont = pulse.html.ContainerBox ()
             cont.set_id ('po_' + domainid)
             if len(domains) > 1:
@@ -488,12 +488,12 @@ def get_translations_tab (module, **kw):
 
 def get_developers_box (module):
     box = pulse.html.SidebarBox (title=pulse.utils.gettext ('Developers'))
-    rels = db.ModuleEntity.get_related (subj=module)
+    rels = pulse.db.ModuleEntity.get_related (subj=module)
     if len(rels) > 0:
         people = {}
         for rel in rels:
             people[rel.pred] = rel
-            db.Entity.set_cached (rel.pred.id, rel.pred)
+            pulse.db.Entity.get_cached (rel.pred_ident)
         for person in pulse.utils.attrsorted (people.keys(), 'title'):
             lbox = box.add_link_box (person)
             rel = people[person]
@@ -512,7 +512,7 @@ def get_component_info_box (module, branchtype, title):
         box = pulse.html.InfoBox (title)
         for obj in objs:
             lbox = box.add_link_box (obj)
-            doc = db.Documentation.get_related (subj=obj)
+            doc = pulse.db.Documentation.get_related (subj=obj)
             try:
                 doc = doc[0]
                 lbox.add_fact (pulse.utils.gettext ('docs'), doc.pred)
@@ -538,7 +538,7 @@ def get_commits_div (module, revs, title):
         span.add_content ('on')
         span.add_content (rev.datetime.strftime('%Y-%m-%d %T'))
         span.add_content ('by')
-        person = db.Entity.get_cached (rev.person_id)
+        person = pulse.db.Entity.get_cached (rev.person_ident)
         span.add_content (pulse.html.Link (person))
         dl.add_term (span)
         dl.add_entry (pulse.html.PopupLink.from_revision (rev, branch=module))

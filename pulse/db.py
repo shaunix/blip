@@ -320,6 +320,7 @@ class PulseRecord (PulseModel):
     @classmethod
     def set_cached (cls, ident, record):
         cls._record_cache[ident] = record
+        return record
 
     def set_relations (self, cls, rels):
         old = list (store.find (cls, subj_ident=self.ident))
@@ -441,6 +442,14 @@ class Branch (PulseRecord):
     def branch_title (self):
         return pulse.utils.gettext ('%s (%s)') % (self.title, self.scm_branch)
 
+    @property
+    def is_default (self):
+        return self.scm_branch == pulse.scm.default_branches.get (self.scm_type)
+
+    @classmethod
+    def count_branchables (cls, type):
+        return store.find (cls, type=type).count (cls.branchable, distinct=True)
+
     @classmethod
     def select (cls, *args, **kw):
         args = list (args)
@@ -449,6 +458,29 @@ class Branch (PulseRecord):
             args.append (cls.parent_ident == SetModule.pred_ident)
             args.append (SetModule.subj_ident == rset.ident)
         return store.find (cls, *args, **kw)
+
+    @classmethod
+    def select_with_statistic (cls, stattype, *args, **kw):
+        if isinstance (stattype, basestring):
+            stattype = [stattype]
+        args = [arg for arg in args]
+        for key in kw.keys ():
+            args.append (getattr (cls, key) == kw[key])
+        tables = [cls]
+        for stype in stattype:
+            stat = ClassAlias (Statistic)
+            tables.append (stat)
+            args.append (stat.branch_ident == cls.ident)
+            args.append (stat.type == stype)
+            args.append (stat.daynum == Select (Max (stat.daynum),
+                                                where=And (stat.branch_ident == cls.ident,
+                                                           stat.type == stype),
+                                                tables=stat))
+        sel = store.find (tuple(tables), *args)
+        return sel
+
+    def select_children (self, type):
+        return self.__class__.select (type=type, parent=self)
 
     def set_children (self, type, children):
         old = list(Branch.select (type=type, parent=self))
