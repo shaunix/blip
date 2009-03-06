@@ -21,8 +21,8 @@
 import datetime
 import os
 
+import pulse.db
 import pulse.graphs
-import pulse.models as db
 import pulse.pulsate
 import pulse.pulsate.people
 import pulse.xmldata
@@ -39,37 +39,34 @@ def update_teams (**kw):
             continue
         if not data[key].has_key ('id'):
             continue
-        type = 'Team'
-        ident = '/team/' + data[key]['id']
-        team = db.Entity.get_record (ident, type)
+        ident = u'/team/' + data[key]['id']
+        team = pulse.db.Entity.get_or_create (ident, u'Team')
 
         parent = data[key].get ('parent', None)
         if parent != None:
-            team.parent = db.Entity.get_record (parent, 'Team')
+            team.parent = pulse.db.Entity.get_or_create (parent, u'Team')
 
         aliases = data[key].get ('alias', [])
 
         for alias in aliases:
-            db.Alias.update_alias (team, alias)
+            pulse.db.Alias.update_alias (team, alias)
 
         coords = data[key].get ('coordinators', [])
         if isinstance (coords, list) and len(coords) > 0:
             rels = []
             for coord in coords:
-                entity = db.Entity.get_record (coord, 'Person')
-                rel = db.TeamMember.set_related (team, entity, coordinator=True)
+                entity = pulse.db.Entity.get_or_create (coord, u'Person')
+                rel = pulse.db.TeamMember.set_related (team, entity, coordinator=True)
                 rels.append (rel)
-            team.set_relations (db.TeamMember, rels)
+            team.set_relations (pulse.db.TeamMember, rels)
         else:
-            team.set_relations (db.TeamMember, [])
+            team.set_relations (pulse.db.TeamMember, [])
 
         for k in ('name', 'web', 'blog'):
             if data[key].has_key (k):
                 team.update(**{k : data[key][k]})
         if data[key].has_key ('icon'):
-            pulse.pulsate.people.update_icon (team, data[key]['icon'], 'teams')
-
-        team.save()
+            update_icon (team, data[key]['icon'], 'teams')
 
 
 def update_icon (team, href, icondir, **kw):
@@ -95,3 +92,6 @@ def main (argv, options={}):
     timestamps = not options.get ('--no-timestamps', False)
 
     update_teams (timestamps=timestamps)
+
+    return 0
+

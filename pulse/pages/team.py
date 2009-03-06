@@ -22,9 +22,9 @@ import datetime
 import os
 
 import pulse.config
+import pulse.db
 import pulse.graphs
 import pulse.html
-import pulse.models as db
 import pulse.scm
 import pulse.utils
 
@@ -34,15 +34,7 @@ def main (response, path, query):
     if len(path) == 1:
         return output_top (response, **kw)
     ident = '/' + '/'.join(path)
-    team = db.Entity.objects.filter (ident=ident, type='Team')
-    try:
-        team = team[0]
-    except IndexError:
-        alias = db.Alias.objects.filter (ident=ident)
-        try:
-            team = alias[0].entity
-        except:
-            team = None
+    team = pulse.db.Entity.get (ident)
     if team == None:
         page = pulse.html.PageNotFound (
             pulse.utils.gettext ('Pulse could not find the team %s') % '/'.join(path[1:]),
@@ -56,11 +48,10 @@ def main (response, path, query):
         output_team (response, team, **kw)
 
 
-# FIXME STORM
-def FIXMEsynopsis ():
+def synopsis ():
     """Construct an info box for the front page"""
     box = pulse.html.SidebarBox (title=pulse.utils.gettext ('Teams'))
-    teams = db.Entity.objects.filter (type='Team', parent__isnull=True)
+    teams = pulse.db.Entity.select (type=u'Team', parent_ident=None)
     teams = pulse.utils.attrsorted (list(teams), 'title')
     bl = pulse.html.BulletList ()
     box.add_content (bl)
@@ -73,7 +64,7 @@ def output_top (response, **kw):
     page = pulse.html.Page ()
     response.set_contents (page)
     page.set_title (pulse.utils.gettext ('Teams'))
-    teams = db.Entity.objects.filter (type='Team', parent__isnull=True)
+    teams = pulse.db.Entity.select (type=u'Team', parent=None)
     teams = pulse.utils.attrsorted (list(teams), 'title')
     for team in teams:
         lbox = pulse.html.LinkBox (team)
@@ -100,15 +91,21 @@ def output_team (response, team, **kw):
     box = get_info_tab (team, **kw)
     page.add_to_tab ('info', box)
 
-    cnt = team.children.count()
+    cnt = team.select_children().count()
     if cnt > 0:
         page.add_tab ('subteams', pulse.utils.gettext ('Subteams (%i)') % cnt)
 
-    cnt = db.Branch.objects.filter (type='Module', document_entity_preds__pred=team).count()
+    cnt = pulse.db.Branch.select (pulse.db.Branch.type == u'Module',
+                                  pulse.db.Branch.ident == pulse.db.ModuleEntity.subj_ident,
+                                  pulse.db.ModuleEntity.pred_ident == team.ident)
+    cnt = cnt.count ()
     if cnt > 0:
         page.add_tab ('modules', pulse.utils.gettext ('Modules (%i)') % cnt)
 
-    cnt = db.Branch.objects.filter (type='Document', document_entity_preds__pred=team).count()
+    cnt = pulse.db.Branch.select (pulse.db.Branch.type == u'Document',
+                                  pulse.db.Branch.ident == pulse.db.DocumentEntity.subj_ident,
+                                  pulse.db.DocumentEntity.pred_ident == team.ident)
+    cnt = cnt.count ()
     if cnt > 0:
         page.add_tab ('documents', pulse.utils.gettext ('Documents (%i)') % cnt)
 
@@ -144,23 +141,24 @@ def get_info_tab (team, **kw):
 
 def get_subteams_tab (team, **kw):
     bl = pulse.html.BulletList ()
-    for subteam in pulse.utils.attrsorted (list(team.children.all()), 'title'):
+    for subteam in pulse.utils.attrsorted (list(team.select_children()), 'title'):
         bl.add_link (subteam)
     return bl
 
 
 def get_mod_tab (team, **kw):
     box = pulse.html.ContainerBox ()
-    rels = db.ModuleEntity.get_related (pred=team)
+    rels = pulse.db.ModuleEntity.get_related (pred=team)
     brs = []
     mods = pulse.utils.odict()
-    for rel in pulse.utils.attrsorted (list(rels), ('subj', 'title'),
+    for rel in pulse.utils.attrsorted (list(rels),
+                                       ('subj', 'title'),
                                        ('-', 'subj', 'is_default'),
                                        ('-', 'subj', 'scm_branch')):
         mod = rel.subj
-        if mod.branchable_id in brs:
+        if mod.branchable in brs:
             continue
-        brs.append (mod.branchable_id)
+        brs.append (mod.branchable)
         mods[mod] = rel
     for mod in mods.keys():
         lbox = box.add_link_box (mod)
@@ -173,7 +171,7 @@ def get_mod_tab (team, **kw):
 def get_doc_tab (team, **kw):
     box = pulse.html.ContainerBox ()
     box.set_id ('docs')
-    rels = db.DocumentEntity.get_related (pred=team)
+    rels = pulse.db.DocumentEntity.get_related (pred=team)
     brs = []
     docs = pulse.utils.odict()
     bmaint = bauth = bedit = bpub = 0
@@ -182,9 +180,9 @@ def get_doc_tab (team, **kw):
                                        ('-', 'subj', 'is_default'),
                                        ('-', 'subj', 'scm_branch')):
         doc = rel.subj
-        if doc.branchable_id in brs:
+        if doc.branchable in brs:
             continue
-        brs.append (doc.branchable_id)
+        brs.append (doc.branchable)
         docs[doc] = rel
     for doc in docs.keys():
         lbox = box.add_link_box (doc)
@@ -214,7 +212,7 @@ def get_doc_tab (team, **kw):
 
 def get_members_box (team):
     box = pulse.html.SidebarBox (pulse.utils.gettext ('Members'))
-    rels = db.TeamMember.get_related (subj=team)
+    rels = pulse.db.TeamMember.get_related (subj=team)
     if len(rels) > 0:
         people = {}
         for rel in rels:

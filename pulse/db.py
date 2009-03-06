@@ -423,11 +423,6 @@ class ReleaseSet (PulseRecord):
 
     subsets = ReferenceSet ('ReleaseSet.ident', parent_ident)
 
-    def delete (self):
-        for record in ReleaseSet.select (parent=self):
-            record.delete ()
-        PulseRecord.delete (self)
-
     @property
     def subsets (self):
         return ReleaseSet.select (parent=self)
@@ -529,11 +524,6 @@ class Branch (PulseRecord):
         for old in olddict.values():
             old.delete ()
 
-    def delete (self):
-        for record in Branch.select (parent=self):
-            record.delete ()
-        PulseRecord.delete (self)
-
 
 class Entity (PulseRecord):
     parent_ident = Unicode ()
@@ -544,20 +534,20 @@ class Entity (PulseRecord):
     post_score = Int ()
     post_score_diff = Int ()
 
-    def delete (self):
-        raise WillNotDelete ('Pulse will not delete entities')
-
     @classmethod
-    def get (cls, ident):
+    def get (cls, ident, alias=True):
         try:
             ent = cls.select (ident=ident).one ()
         except:
             ent = None
-        if ent == None:
+        if ent == None and alias:
             ent = Alias.get (ident)
             if ent != None:
                 ent = ent.entity
         return ent
+
+    def select_children (self):
+        return self.__class__.select (parent=self)
 
 
 class Alias (PulseRecord):
@@ -566,6 +556,82 @@ class Alias (PulseRecord):
 
     def delete (self):
         raise WillNotDelete ('Pulse will not delete aliases')
+
+    @classmethod
+    def update_alias (cls, entity, ident):
+        updated = False
+
+        alias = cls.get (ident)
+        if alias == None:
+            updated = True
+            alias = Alias (ident, u'Alias')
+        alias.entity = entity
+
+        old = Entity.get (ident, alias=False)
+        if old == None:
+            return updated
+
+        pulse.utils.log ('Copying %s to %s' % (ident, entity.ident))
+        pdata = {}
+        for pkey, pval in old.data.items():
+            pdata[pkey] = pval
+        pdata['name'] = old.name
+        pdata['desc'] = old.desc
+        pdata['icon_dir'] = old.icon_dir
+        pdata['icon_name'] = old.icon_name
+        pdata['email'] = old.email
+        pdata['web'] = old.web
+        pdata['nick'] = old.nick
+        pdata['mod_score'] = old.mod_score
+        entity.extend (pdata)
+
+        # Revision and ForumPost record historical data, so we record the
+        # alias of the entity they pointed to.
+        revs = Revision.select (person=old)
+        if not updated and revs.count() > 0:
+            updated = True
+        revs.set (person=entity, alias=alias)
+
+        posts = ForumPost.select (author=old)
+        if not updated and posts.count() > 0:
+            updated = True
+        posts.set (author=entity, alias=alias)
+
+        # The rest of these don't need the historical alias to be recorded.
+        rels = DocumentEntity.select (pred=old)
+        if not updated and rels.count() > 0:
+            updated = True
+        rels.set (pred=entity)
+
+        rels = ModuleEntity.select (pred=old)
+        if not updated and rels.count() > 0:
+            updated = True
+        rels.set (pred=entity)
+
+        rels = TeamMember.select (subj=old)
+        if not updated and rels.count() > 0:
+            updated = True
+        rels.set (subj=entity)
+
+        rels = TeamMember.select (pred=old)
+        if not updated and rels.count() > 0:
+            updated = True
+        rels.set (pred=entity)
+
+        branches = Branch.select (mod_person=old)
+        if not updated and branches.count() > 0:
+            updated = True
+        branches.set (mod_person=entity)
+
+        watches = AccountWatch.select (ident=old.ident)
+        if not updated and watches.count() > 0:
+            updated = True
+        watches.set (ident=entity.ident)
+
+        # FIXME STORM: we disallowed Entity.delete
+        old.delete()
+
+        return updated
 
 
 class Forum (PulseRecord):

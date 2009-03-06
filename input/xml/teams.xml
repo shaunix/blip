@@ -9,15 +9,15 @@
 <team id="develdocs">
   <name>Developer Documentation Team</name>
   <coordinators>
-    <item>/person/gnome.org/shaunm</item>
+    <item>/person/shaunm@gnome.org</item>
   </coordinators>
 </team>
 
 <team id="i18n">
   <name>Translation Team</name>
   <coordinators>
-    <item>/person/gnome.org/danilo</item>
-    <item>/person/gnome.org/menthos</item>
+    <item>/person/danilo@gnome.org</item>
+    <item>/person/menthos@gnome.org</item>
   </coordinators>
 </team>
 
@@ -33,7 +33,7 @@
     <item>/ghost/GNOME%20Documentation%20Project</item>
   </alias>
   <coordinators>
-    <item>/person/gnome.org/shaunm</item>
+    <item>/person/shaunm@gnome.org</item>
   </coordinators>
 </team>
 
