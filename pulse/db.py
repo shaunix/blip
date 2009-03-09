@@ -15,13 +15,17 @@ import pulse.utils
 
 database = create_database (pulse.config.database)
 store = Store (database)
+store_options = {'rollback' : False}
 
 def flush ():
     store.flush()
 
 def commit ():
-    pulse.utils.log ('Committing changes')
-    store.commit ()
+    if store_options.get ('rollback', False):
+        pulse.utils.log ('Not committing changes')
+    else:
+        pulse.utils.log ('Committing changes')
+        store.commit ()
 
 def rollback ():
     pulse.utils.log ('Rolling back changes')
@@ -29,6 +33,9 @@ def rollback ():
         store.rollback ()
     except:
         pulse.utils.warn ('Could not roll back changes')
+
+def rollback_all ():
+    store_options['rollback'] = True
 
 
 ################################################################################
