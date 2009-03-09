@@ -983,8 +983,9 @@ def create_tables ():
             if fieldtype == None:
                 continue
             txt = '%s %s' % (key, fieldtype)
-            indexes.append ('CREATE INDEX IF NOT EXISTS %s__%s ON %s (%s);'
-                            % (cls.__name__, key, cls.__name__, key))
+            if field[1].__name__ != 'Pickle':
+                indexes.append ('CREATE INDEX IF NOT EXISTS %s__%s ON %s (%s);'
+                                % (cls.__name__, key, cls.__name__, key))
             if field[0].primary:
                 txt += ' PRIMARY KEY'
                 if field[1].__name__ == 'Int':
