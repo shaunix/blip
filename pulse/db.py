@@ -975,6 +975,7 @@ def create_tables ():
         }
     for cls in get_tables ():
         fields = []
+        indexes = []
         for key, field in cls.get_fields ().items ():
             if not isinstance (field[0], storm.properties.PropertyColumn):
                 continue
@@ -982,6 +983,8 @@ def create_tables ():
             if fieldtype == None:
                 continue
             txt = '%s %s' % (key, fieldtype)
+            indexes.append ('CREATE INDEX IF NOT EXISTS %s__%s ON %s (%s);'
+                            % (cls.__name__, key, cls.__name__, key))
             if field[0].primary:
                 txt += ' PRIMARY KEY'
                 if field[1].__name__ == 'Int':
@@ -989,3 +992,5 @@ def create_tables ():
             fields.append (txt)
         cmd = 'CREATE TABLE IF NOT EXISTS %s (%s)' % (cls.__name__, ','.join(fields))
         store.execute (cmd, noresult=True)
+        for index in indexes:
+            store.execute (cmd, noresult=True)
