@@ -37,6 +37,9 @@ def rollback ():
 def rollback_all ():
     store_options['rollback'] = True
 
+def block_implicit_flushes ():
+    store.block_implicit_flushes ()
+
 
 ################################################################################
 ## Debugging
@@ -994,4 +997,4 @@ def create_tables ():
         cmd = 'CREATE TABLE IF NOT EXISTS %s (%s)' % (cls.__name__, ','.join(fields))
         store.execute (cmd, noresult=True)
         for index in indexes:
-            store.execute (cmd, noresult=True)
+            store.execute (index, noresult=True)
