@@ -44,7 +44,7 @@ def update_graphs (record, select, max, **kw):
         stillrev = False
     while stillrev or i < 2:
         topweek = thisweek - (i * numweeks)
-        revstot = pulse.db.Revision.select_revisions (**select).count ()
+        revstot = pulse.db.Revision.count_revisions (**select)
         revs = pulse.db.Revision.select_revisions (week_range = ((topweek - numweeks + 1), topweek),
                                                    **select)
 
