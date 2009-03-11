@@ -86,27 +86,12 @@ class PulseTracer (object):
         if cmd.startswith ('SELECT '):
             self.__class__.select_count += 1
             self.__class__.select_total += sec
-            pos = cmd.find (' FROM ')
-            outfirst = cmd[:pos]
-            outrest = cmd[pos:]
-            if outfirst.startswith ('SELECT COUNT'):
-                outtxt.append (outfirst)
-            else:
-                outtxt.append ('SELECT ...')
-            pos = outrest.find (' WHERE ')
-            if pos < 0:
-                outtxt[0] = outtxt[0] + outrest
-            else:
-                outtxt[0] = outtxt[0] + outrest[:pos]
-                outrest = outrest[pos+1:]
-                if outrest.find ('(OID=') >= 0:
-                    outtxt[0] = outtxt[0] + ' ' + outrest
-                else:
-                    for txt in outrest.split (' AND '):
-                        if txt.startswith ('WHERE '):
-                            outtxt.append (txt)
-                        else:
-                            outtxt.append ('AND ' + txt)
+            import re
+            outtxt = re.split (' (?=WHERE|AND|GROUP BY|ORDER BY|LIMIT)', cmd)
+            sel, frm = outtxt[0].split (' FROM ')
+            if not sel.startswith ('SELECT COUNT'):
+                sel = 'SELECT ...'
+            outtxt[0] = sel + ' FROM ' + frm
         elif cmd.startswith ('INSERT '):
             self.__class__.insert_count += 1
             self.__class__.insert_total += sec
@@ -781,15 +766,16 @@ class Revision (PulseModel):
         files = kw.pop ('files', None)
         range = kw.pop ('week_range', None)
         if files != None:
-            args.append (Select (Count('*') > 0,
-                                 where=And (RevisionFile.revision_id == Revision.id,
-                                            RevisionFile.filename.is_in (files)),
-                                 tables=RevisionFile ))
+            args.append (Revision.id == RevisionFile.revision_id)
+            if len(files) == 1:
+                args.append (RevisionFile.filename == files[0])
+            else:
+                args.append (RevisionFile.filename.is_in (files))
         if range != None:
             args.append (And (Revision.weeknum >= range[0],
                               Revision.weeknum <= range[1]))
-        sel = cls.select (*args, **kw)
-        return sel.order_by (Desc (Revision.datetime))
+        sel = store.find (cls, *args, **kw)
+        return sel.group_by (Revision.id).order_by (Desc (Revision.datetime))
 
 
 class RevisionFile (PulseModel):
