@@ -469,6 +469,10 @@ class Branch (PulseRecord):
         return pulse.utils.gettext ('%s (%s)') % (self.title, self.scm_branch)
 
     @property
+    def watchable (self):
+        return self.type == 'Module'
+
+    @property
     def is_default (self):
         return self.scm_branch == pulse.scm.default_branches.get (self.scm_type)
 
@@ -543,6 +547,14 @@ class Entity (PulseRecord):
 
     def select_children (self):
         return self.__class__.select (parent=self)
+
+    @property
+    def linkable (self):
+        return self.type != 'Ghost'
+
+    @property
+    def watchable (self):
+        return self.type == 'Module'
 
 
 class Alias (PulseRecord):
