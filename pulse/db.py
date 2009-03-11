@@ -775,7 +775,26 @@ class Revision (PulseModel):
             args.append (And (Revision.weeknum >= range[0],
                               Revision.weeknum <= range[1]))
         sel = store.find (cls, *args, **kw)
-        return sel.group_by (Revision.id).order_by (Desc (Revision.datetime))
+        if files != None:
+            sel = sel.group_by (Revision.id)
+        return sel.order_by (Desc (Revision.datetime))
+
+    @classmethod
+    def count_revisions (cls, *args, **kw):
+        args = list (args)
+        files = kw.pop ('files', None)
+        range = kw.pop ('week_range', None)
+        if files != None:
+            args.append (Revision.id == RevisionFile.revision_id)
+            if len(files) == 1:
+                args.append (RevisionFile.filename == files[0])
+            else:
+                args.append (RevisionFile.filename.is_in (files))
+        if range != None:
+            args.append (And (Revision.weeknum >= range[0],
+                              Revision.weeknum <= range[1]))
+        sel = store.find (cls, *args, **kw)
+        return sel.count (Revision.id, distinct=True)
 
 
 class RevisionFile (PulseModel):
