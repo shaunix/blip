@@ -25,27 +25,26 @@ import math
 import os
 
 import pulse.config
+import pulse.db
 import pulse.graphs
 import pulse.html
-import pulse.models as db
 import pulse.scm
 import pulse.utils
 
 def main (response, path, query):
     """Output information about documents"""
+    ident = u'/' + u'/'.join(path)
     if len(path) == 4:
-        branchables = db.Branchable.objects.filter (ident=('/' + '/'.join(path)))
-        try:
-            branchable = branchables[0]
-        except IndexError:
+        branches = list(pulse.db.Branch.select (branchable=ident))
+        if len(branches) == 0:
             page = pulse.html.PageNotFound ( 
                pulse.utils.gettext ('Pulse could not find the document %s') % path[3],
                title=pulse.utils.gettext ('Document Not Found'))
             response.set_contents (page)
             return
 
-        doc = branchable.get_default ()
-        if doc == None:
+        doc = [branch for branch in branches if branch.is_default]
+        if len(doc) == 0:
             page = pulse.html.PageNotFound (
                 pulse.utils.gettext ('Pulse could not find a default branch'
                                      ' for the document %s')
@@ -53,12 +52,10 @@ def main (response, path, query):
                 title=pulse.utils.gettext ('Default Branch Not Found'))
             response.set_contents(page)
             return
-
+        doc = doc[0]
     elif len(path) == 5:
-        docs = db.Branch.objects.filter (ident=('/' + '/'.join(path)))
-        try:
-            doc = docs[0]
-        except IndexError:
+        doc = pulse.db.Branch.get (ident)
+        if doc == None:
             page = pulse.html.PageNotFound (
                 pulse.utils.gettext ('Pulse could not find the branch %s of the document %s')
                 % (path[4], path[3]),
@@ -89,7 +86,7 @@ def output_doc (response, doc, **kw):
     page = pulse.html.Page (doc)
     response.set_contents (page)
 
-    branches = pulse.utils.attrsorted (list(doc.branchable.branches.all()),
+    branches = pulse.utils.attrsorted (list(pulse.db.Branch.select (branchable=doc.branchable)),
                                        '-is_default', 'scm_branch')
     if len(branches) > 1:
         for branch in branches:
@@ -100,11 +97,6 @@ def output_doc (response, doc, **kw):
 
     if doc.data.has_key ('screenshot'):
         page.add_screenshot (doc.data['screenshot'])
-
-    if doc.error != None:
-        page.add_fact (pulse.utils.gettext ('Error'),
-                       pulse.html.AdmonBox (pulse.html.AdmonBox.error, doc.error))
-        page.add_fact_divider ()
 
     page.add_tab ('info', pulse.utils.gettext ('Info'))
     box = get_info_tab (doc, **kw)
@@ -137,12 +129,12 @@ def output_doc (response, doc, **kw):
     # Developers
     box = pulse.html.SidebarBox (pulse.utils.gettext ('Developers'))
     page.add_sidebar_content (box)
-    rels = db.DocumentEntity.get_related (subj=doc)
+    rels = pulse.db.DocumentEntity.get_related (subj=doc)
     if len(rels) > 0:
         people = {}
         for rel in rels:
             people[rel.pred] = rel
-            db.Entity.set_cached (rel.pred.id, rel.pred)
+            pulse.db.Entity.set_cached (rel.pred_ident, rel.pred)
         for person in pulse.utils.attrsorted (people.keys(), 'title'):
             lbox = box.add_link_box (person)
             rel = people[person]
@@ -174,7 +166,7 @@ def output_ajax_graphmap (response, doc, **kw):
     num = query.get('num')
     filename = query.get('filename')
     
-    of = db.OutputFile.objects.filter (type='graphs', ident=doc.ident, filename=filename)
+    of = pulse.db.OutputFile.select (type=u'graphs', ident=doc.ident, filename=filename)
     try:
         of = of[0]
         graph = pulse.html.Graph.activity_graph (of, doc.pulse_url, 'commits',
@@ -211,13 +203,13 @@ def output_ajax_commits (response, doc, **kw):
         weeknum = int(weeknum)
         thisweek = pulse.utils.weeknum ()
         ago = thisweek - weeknum
-        revs = db.Revision.select_revisions (branch=doc.parent, files=files, weeknum=weeknum)
-        cnt = revs.count()
-        revs = revs[:20]
+        cnt = pulse.db.Revision.count_revisions (branch=doc.parent, files=files, weeknum=weeknum)
+        revs = pulse.db.Revision.select_revisions (branch=doc.parent, files=files, weeknum=weeknum)
+        revs = list(revs[:20])
     else:
-        revs = db.Revision.select_revisions (branch=doc.parent, files=files)
-        cnt = revs.count()
-        revs = revs[:10]
+        cnt = pulse.db.Revision.count_revisions (branch=doc.parent, files=files)
+        revs = pulse.db.Revision.select_revisions (branch=doc.parent, files=files)
+        revs = list(revs[:10])
     if weeknum == None:
         title = (pulse.utils.gettext('Showing %i of %i commits:')
                  % (len(revs), cnt))
@@ -235,6 +227,12 @@ def output_ajax_commits (response, doc, **kw):
 
 def get_info_tab (doc, **kw):
     facts = pulse.html.FactsTable()
+
+    if doc.error != None:
+        facts.add_fact (pulse.utils.gettext ('Error'),
+                        pulse.html.AdmonBox (pulse.html.AdmonBox.error, doc.error))
+        facts.add_fact_divider ()
+
     sep = False
     try:
         desc = doc.localized_desc
@@ -243,7 +241,7 @@ def get_info_tab (doc, **kw):
     except:
         pass
 
-    rels = db.SetModule.get_related (pred=doc.parent)
+    rels = pulse.db.SetModule.get_related (pred=doc.parent)
     if len(rels) > 0:
         sets = pulse.utils.attrsorted ([rel.subj for rel in rels], 'title')
         span = pulse.html.Span (*[pulse.html.Link(rset.pulse_url + '#documents', rset.title)
@@ -254,7 +252,7 @@ def get_info_tab (doc, **kw):
 
     facts.add_fact (pulse.utils.gettext ('Module'), pulse.html.Link (doc.parent))
 
-    rels = db.Documentation.get_related (pred=doc)
+    rels = pulse.db.Documentation.get_related (pred=doc)
     if len(rels) > 0:
         objs = pulse.utils.attrsorted ([rel.subj for rel in rels], 'title')
         span = pulse.html.Span (*[pulse.html.Link(obj) for obj in objs])
@@ -286,7 +284,7 @@ def get_info_tab (doc, **kw):
 
 def get_activity_tab (doc, **kw):
     box = pulse.html.Div ()
-    of = db.OutputFile.objects.filter (type='graphs', ident=doc.ident, filename='commits-0.png')
+    of = pulse.db.OutputFile.select (type=u'graphs', ident=doc.ident, filename=u'commits-0.png')
     try:
         of = of[0]
         graph = pulse.html.Graph.activity_graph (of, doc.pulse_url, 'commits',
@@ -296,9 +294,9 @@ def get_activity_tab (doc, **kw):
         pass
 
     files = [os.path.join (doc.scm_dir, f) for f in doc.data.get ('xmlfiles', [])]
-    revs = db.Revision.select_revisions (branch=doc.parent, files=files)
-    cnt = revs.count()
-    revs = revs[:10]
+    cnt = pulse.db.Revision.count_revisions (branch=doc.parent, files=files)
+    revs = pulse.db.Revision.select_revisions (branch=doc.parent, files=files)
+    revs = list(revs[:10])
     title = (pulse.utils.gettext('Showing %i of %i commits:') % (len(revs), cnt))
     div = get_commits_div (doc, revs, title)
     box.add_content (div)
@@ -339,8 +337,8 @@ def get_translations_tab (doc, **kw):
     pad = pulse.html.PaddingBox ()
     cont.add_content (pad)
 
-    of = db.OutputFile.objects.filter (type='l10n', ident=doc.ident,
-                                       filename=(doc.ident.split('/')[-2] + '.pot'))
+    of = pulse.db.OutputFile.select (type=u'l10n', ident=doc.ident,
+                                     filename=(doc.ident.split('/')[-2] + u'.pot'))
     try:
         of = of[0]
         linkspan = pulse.html.Span (divider=pulse.html.SPACE)
@@ -355,9 +353,10 @@ def get_translations_tab (doc, **kw):
         pad.add_content (pulse.html.AdmonBox (pulse.html.AdmonBox.warning,
                                                pulse.utils.gettext ('No POT file') ))
 
-    translations = db.Branch.select_with_statistic (['Messages', 'ImageMessages'],
-                                                    type='Translation', parent=doc)
-    translations = pulse.utils.attrsorted (list(translations), 'title')
+    translations = pulse.db.Branch.select_with_statistic ([u'Messages', u'ImageMessages'],
+                                                          type=u'Translation', parent=doc)
+    # FIXME STORM
+    translations = pulse.utils.attrsorted (list(translations), (0, 'title'))
     if len(translations) == 0:
         pad.add_content (pulse.html.AdmonBox (pulse.html.AdmonBox.warning,
                                                pulse.utils.gettext ('No translations') ))
@@ -369,25 +368,28 @@ def get_translations_tab (doc, **kw):
         cont.add_sort_link ('img', pulse.utils.gettext ('images'))
         grid = pulse.html.GridBox ()
         pad.add_content (grid)
-        for translation in translations:
+        for translation, mstat, istat in translations:
             span = pulse.html.Span (translation.scm_file[:-3])
             span.add_class ('title')
             link = pulse.html.Link (translation.pulse_url, span)
             row = [link]
             percent = 0
-            stat1 = translation.Messages_stat1
-            stat2 = translation.Messages_stat2
-            total = translation.Messages_total
+            stat1 = mstat.stat1
+            stat2 = mstat.stat2
+            total = mstat.total
             untranslated = total - stat1 - stat2
-            percent = math.floor (100 * (float(stat1) / total))
+            try:
+                percent = math.floor (100 * (float(stat1) / total))
+            except:
+                percent = 0
             span = pulse.html.Span ('%i%%' % percent)
             span.add_class ('percent')
             row.append (span)
 
             row.append (pulse.utils.gettext ('%i.%i.%i') %
                         (stat1, stat2, untranslated))
-            istat1 = translation.ImageMessages_stat1
-            itotal = translation.ImageMessages_total
+            istat1 = istat.stat1
+            itotal = istat.total
             span = pulse.html.Span(str(istat1))
             span.add_class ('img')
             fspan = pulse.html.Span (span, '/', str(itotal), divider=pulse.html.SPACE)
@@ -416,7 +418,7 @@ def get_xmlfiles (doc, xmlfiles):
         span.add_class ('title')
         dl.add_term (span, classname='xmlfiles')
         files = [os.path.join (doc.scm_dir, xmlfile)]
-        commit = db.Revision.get_last_revision (branch=doc.parent, files=files)
+        commit = pulse.db.Revision.get_last_revision (branch=doc.parent, files=files)
         if commit != None:
             span = pulse.html.Span(divider=pulse.html.SPACE)
             # FIXME: i18n, word order, but we want to link person
@@ -425,7 +427,7 @@ def get_xmlfiles (doc, xmlfiles):
             mspan.add_class ('mtime')
             span.add_content (mspan)
             span.add_content (' by ')
-            person = db.Entity.get_cached (commit.person_id)
+            person = pulse.db.Entity.get_cached (commit.person_ident)
             span.add_content (pulse.html.Link (person))
             dl.add_entry (span)
     return cont
@@ -438,7 +440,7 @@ def get_figures (doc, figures):
     cont.set_sortable_class ('figures')
     cont.add_sort_link ('title', pulse.utils.gettext ('name'), 1)
     cont.add_sort_link ('mtime', pulse.utils.gettext ('modified'))
-    ofs = db.OutputFile.objects.filter (type='figures', ident=doc.ident, subdir='C')
+    ofs = pulse.db.OutputFile.select (type=u'figures', ident=doc.ident, subdir=u'C')
     ofs_by_source = {}
     for of in ofs:
         ofs_by_source[of.source] = of
@@ -451,7 +453,7 @@ def get_figures (doc, figures):
             span.add_class ('title')
             dl.add_term (span, classname='figures')
             files = [os.path.join (doc.scm_dir, of.source)]
-            commit = db.Revision.get_last_revision (branch=doc.parent, files=files)
+            commit = pulse.db.Revision.get_last_revision (branch=doc.parent, files=files)
             if commit != None:
                 span = pulse.html.Span(divider=pulse.html.SPACE)
                 # FIXME: i18n, word order, but we want to link person
@@ -460,7 +462,7 @@ def get_figures (doc, figures):
                 mspan.add_class ('mtime')
                 span.add_content (mspan)
                 span.add_content (' by ')
-                person = db.Entity.get_cached (commit.person_id)
+                person = pulse.db.Entity.get_cached (commit.person_ident)
                 span.add_content (pulse.html.Link (person))
                 dl.add_entry (span)
             if figures[figure].get('comment', '') != '':
@@ -486,7 +488,7 @@ def get_commits_div (doc, revs, title):
         span.add_content ('on')
         span.add_content (rev.datetime.strftime('%Y-%m-%d %T'))
         span.add_content ('by')
-        person = db.Entity.get_cached (rev.person_id)
+        person = pulse.db.Entity.get_cached (rev.person_ident)
         span.add_content (pulse.html.Link (person))
         dl.add_term (span)
         dl.add_entry (pulse.html.PopupLink.from_revision (rev, branch=doc.parent))
