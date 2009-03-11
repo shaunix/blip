@@ -18,6 +18,7 @@ def usage ():
 
 def main ():
     fd = None
+    pulse.db.block_implicit_flushes ()
     pulse.utils.set_log_level (None)
     try:
         (opts, args) = getopt.gnu_getopt (sys.argv[1:], 'o:',

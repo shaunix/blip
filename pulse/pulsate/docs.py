@@ -360,6 +360,7 @@ def process_images_lang (doc, checkout, lang, figs, ofs, **kw):
     for of in ofs:
         ofs_by_source[of.source] = of
     screen = doc.data.get('screens', {}).get(None, None)
+    missing = []
     for ref in figs:
         of = ofs_by_source.pop (ref, None)
         if of == None:
@@ -371,14 +372,19 @@ def process_images_lang (doc, checkout, lang, figs, ofs, **kw):
         else:
             infile = os.path.join (indir, of.source)
             if kw.get('timestamps', True):
-                mtime = os.stat(infile).st_mtime
-                if mtime > time.mktime(of.datetime.timetuple()):
-                    copy_image (infile, of)
+                try:
+                    mtime = os.stat(infile).st_mtime
+                    if mtime > time.mktime(of.datetime.timetuple()):
+                        copy_image (infile, of)
+                except:
+                    missing.append (ref)
             else:
                 copy_image (infile, of)
         if ref == screen:
             doc.data.setdefault ('screenshot', {})
             doc.data['screenshot'][lang] = of.id
+    if len(missing) > 0:
+        doc.error = u'Missing figures: ' + u', '.join (missing)
     for of in ofs_by_source.values():
         pulse.utils.log ('Deleting figure %s/%s' % (of.subdir, of.filename))
         try:
