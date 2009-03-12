@@ -327,17 +327,14 @@ class PulseRecord (PulseModel):
 
     @classmethod
     def get_or_create (cls, ident, type, **kw):
-        record = cls.get_cached (ident)
+        record = cls.get (ident)
         if record != None:
             return record
         return cls (ident, type, **kw)
 
     @classmethod
     def get (cls, ident):
-        try:
-            return cls.select (ident=ident).one ()
-        except:
-            return None
+        return store.get (cls, ident)
 
     @classmethod
     def get_cached (cls, ident):
@@ -535,10 +532,7 @@ class Entity (PulseRecord):
 
     @classmethod
     def get (cls, ident, alias=True):
-        try:
-            ent = cls.select (ident=ident).one ()
-        except:
-            ent = None
+        ent = store.get (cls, ident)
         if ent == None and alias:
             ent = Alias.get (ident)
             if ent != None:

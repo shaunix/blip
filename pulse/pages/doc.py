@@ -134,7 +134,6 @@ def output_doc (response, doc, **kw):
         people = {}
         for rel in rels:
             people[rel.pred] = rel
-            pulse.db.Entity.set_cached (rel.pred_ident, rel.pred)
         for person in pulse.utils.attrsorted (people.keys(), 'title'):
             lbox = box.add_link_box (person)
             rel = people[person]
@@ -427,8 +426,7 @@ def get_xmlfiles (doc, xmlfiles):
             mspan.add_class ('mtime')
             span.add_content (mspan)
             span.add_content (' by ')
-            person = pulse.db.Entity.get_cached (commit.person_ident)
-            span.add_content (pulse.html.Link (person))
+            span.add_content (pulse.html.Link (commit.person))
             dl.add_entry (span)
     return cont
 
@@ -462,8 +460,7 @@ def get_figures (doc, figures):
                 mspan.add_class ('mtime')
                 span.add_content (mspan)
                 span.add_content (' by ')
-                person = pulse.db.Entity.get_cached (commit.person_ident)
-                span.add_content (pulse.html.Link (person))
+                span.add_content (pulse.html.Link (commit.person))
                 dl.add_entry (span)
             if figures[figure].get('comment', '') != '':
                 dl.add_entry (pulse.html.EllipsizedLabel (figures[figure]['comment'], 80),
@@ -488,8 +485,7 @@ def get_commits_div (doc, revs, title):
         span.add_content ('on')
         span.add_content (rev.datetime.strftime('%Y-%m-%d %T'))
         span.add_content ('by')
-        person = pulse.db.Entity.get_cached (rev.person_ident)
-        span.add_content (pulse.html.Link (person))
+        span.add_content (pulse.html.Link (rev.person))
         dl.add_term (span)
         dl.add_entry (pulse.html.PopupLink.from_revision (rev, branch=doc.parent))
     return div

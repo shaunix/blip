@@ -382,8 +382,7 @@ def get_info_tab (module, **kw):
         span.add_content (module.mod_datetime.strftime('%Y-%m-%d %T'))
         if module.mod_person_ident != None:
             span.add_content (' by ')
-            person = pulse.db.Entity.get_cached (module.mod_person_ident)
-            span.add_content (pulse.html.Link (person))
+            span.add_content (pulse.html.Link (module.mod_person))
         facts.add_fact (pulse.utils.gettext ('Last Modified'), span)
 
     if module.data.has_key ('tarname'):
@@ -494,7 +493,6 @@ def get_developers_box (module):
         people = {}
         for rel in rels:
             people[rel.pred] = rel
-            pulse.db.Entity.get_cached (rel.pred_ident)
         for person in pulse.utils.attrsorted (people.keys(), 'title'):
             lbox = box.add_link_box (person)
             rel = people[person]
@@ -539,8 +537,7 @@ def get_commits_div (module, revs, title):
         span.add_content ('on')
         span.add_content (rev.datetime.strftime('%Y-%m-%d %T'))
         span.add_content ('by')
-        person = pulse.db.Entity.get_cached (rev.person_ident)
-        span.add_content (pulse.html.Link (person))
+        span.add_content (pulse.html.Link (rev.person))
         dl.add_term (span)
         dl.add_entry (pulse.html.PopupLink.from_revision (rev, branch=module))
     return div

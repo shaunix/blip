@@ -209,8 +209,7 @@ def get_modules_tab (rset, **kw):
             span.add_class ('mtime')
             if mod.mod_person_ident != None:
                 span.add_content (pulse.utils.gettext ('by'))
-                person = pulse.db.Entity.get_cached (mod.mod_person_ident)
-                span.add_content (pulse.html.Link (person))
+                span.add_content (pulse.html.Link (mod.mod_person))
             lbox.add_fact (pulse.utils.gettext ('modified'), span)
         if mod.mod_score != None:
             span = pulse.html.Span(str(mod.mod_score))
@@ -255,8 +254,7 @@ def get_documents_tab (rset, **kw):
             span.add_class ('mtime')
             if doc.mod_person_ident != None:
                 span.add_content (pulse.utils.gettext ('by'))
-                person = pulse.db.Entity.get_cached (doc.mod_person_ident)
-                span.add_content (pulse.html.Link (person))
+                span.add_content (pulse.html.Link (doc.mod_person))
             lbox.add_fact (pulse.utils.gettext ('modified'), span)
         if doc.mod_score != None:
             span = pulse.html.Span(str(doc.mod_score))
