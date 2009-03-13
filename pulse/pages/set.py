@@ -185,8 +185,12 @@ def get_subsets_tab (rset, **kw):
 
 
 def get_modules_tab (rset, **kw):
-    mods = [mod.pred for mod in pulse.db.SetModule.get_related (subj=rset)]
-    mods = pulse.utils.attrsorted (mods, 'title')
+    mods = pulse.db.Branch.select_with_mod_person (
+        pulse.db.Branch.type == u'Module',
+        pulse.db.SetModule.pred_ident == pulse.db.Branch.ident,
+        pulse.db.SetModule.subj == rset,
+        using=pulse.db.SetModule)
+    mods = pulse.utils.attrsorted (mods, (0, 'title'))
     modcnt = len(mods)
     cont = pulse.html.ContainerBox (widget_id='c-modules')
     cont.add_sort_link ('title', pulse.utils.gettext ('title'), 1)
@@ -194,7 +198,7 @@ def get_modules_tab (rset, **kw):
     cont.add_sort_link ('mtime', pulse.utils.gettext ('modified'))
     cont.add_sort_link ('score', pulse.utils.gettext ('score'))
     for i in range(modcnt):
-        mod = mods[i]
+        mod = mods[i][0]
         lbox = cont.add_link_box (mod)
         lbox.add_graph (pulse.config.graphs_root +
                         '/'.join(mod.ident.split('/')[1:] + ['commits-tight.png']),
@@ -226,9 +230,11 @@ def get_documents_tab (rset, **kw):
          'cnt' : 0, 'err' : False }
         )
 
-    docs = pulse.db.Branch.select (type=u'Document', parent_in_set=rset)
-    docs = pulse.utils.attrsorted (list(docs), 'title')
-    for doc in docs:
+    docs = pulse.db.Branch.select_with_mod_person (type=u'Document',
+                                                   parent_in_set=rset,
+                                                   using=pulse.db.SetModule)
+    docs = pulse.utils.attrsorted (list(docs), (0, 'title'))
+    for doc, person in docs:
         boxid = doc.subtype == 'gtk-doc' and 1 or 0
         lbox = boxes[boxid]['box'].add_link_box (doc)
         boxes[boxid]['cnt'] += 1

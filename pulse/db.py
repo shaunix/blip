@@ -4,11 +4,11 @@ import os
 import sys
 
 from storm.locals import *
-from storm.expr import Variable
+from storm.expr import Variable, LeftJoin
 from storm.info import ClassAlias
-from storm.store import EmptyResultSet
 import storm.properties
 import storm.references
+import storm.store
 
 import pulse.config
 import pulse.utils
@@ -67,6 +67,7 @@ class PulseTracer (object):
 
     def connection_raw_execute (self, connection, raw_cursor, statement, params):
         self._last_time = datetime.datetime.now()
+        self.print_command (statement, params)
 
     def print_command (self, statement, params):
         diff = datetime.datetime.now() - self._last_time
@@ -392,7 +393,7 @@ class PulseRelation (PulseModel):
             # FIXME STORM
             return store.find (cls, pred_ident=pred.ident)
         else:
-            return EmptyResultSet ()
+            return storm.store.EmptyResultSet ()
 
     @classmethod
     def get_related (cls, subj=None, pred=None):
@@ -478,13 +479,36 @@ class Branch (PulseRecord):
         return store.find (cls, type=type).count (cls.branchable, distinct=True)
 
     @classmethod
-    def select (cls, *args, **kw):
+    def _select_args (cls, *args, **kw):
         args = list (args)
         rset = kw.pop ('parent_in_set', None)
         if rset != None:
             args.append (cls.parent_ident == SetModule.pred_ident)
             args.append (SetModule.subj_ident == rset.ident)
+        return (args, kw)
+
+    @classmethod
+    def select (cls, *args, **kw):
+        args, kw = cls._select_args (*args, **kw)
         return store.find (cls, *args, **kw)
+
+    @ classmethod
+    def select_with_mod_person (cls, *args, **kw):
+        join = LeftJoin (cls, Entity, cls.mod_person_ident == Entity.ident)
+        using = kw.pop ('using', None)
+        if using is not None:
+            if isinstance (using, list):
+                using = tuple (using)
+            elif isinstance (using, tuple):
+                pass
+            else:
+                using = (using,)
+            join = (join,) + using
+        args, kw = cls._select_args (*args, **kw)
+        kwarg = storm.store.get_where_for_args ([], kw, cls)
+        if kwarg != storm.store.Undef:
+            args.append (kwarg)
+        return store.using (join).find((cls, Entity), *args)
 
     @classmethod
     def select_with_statistic (cls, stattype, *args, **kw):
@@ -503,6 +527,7 @@ class Branch (PulseRecord):
                                                 where=And (stat.branch_ident == cls.ident,
                                                            stat.type == stype),
                                                 tables=stat))
+        # FIXME: left join
         sel = store.find (tuple(tables), *args)
         return sel
 
