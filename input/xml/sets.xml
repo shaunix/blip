@@ -232,7 +232,7 @@
     <module id="damned-lies"/>
     <module id="library-web"/>
     <module id="release-notes">
-      <scm_branch>gnome-2-24</scm_branch>
+      <scm_branch>gnome-2-26</scm_branch>
     </module>
     <module id="pulse">
       <scm_type>git</scm_type>
