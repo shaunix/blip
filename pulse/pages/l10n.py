@@ -25,30 +25,25 @@ import math
 import os
 
 import pulse.config
+import pulse.db
 import pulse.graphs
 import pulse.html
-import pulse.models as db
 import pulse.parsers
 import pulse.scm
 import pulse.utils
 
 def main (response, path, query):
     """Output information about translations"""
-    ident = '/' + '/'.join(path)
+    ident = u'/' + '/'.join(path)
     if len(path) == 7:
-        po = db.Branch.objects.filter (ident=ident)
-        try:
-            po = po[0]
-            branchable = po.branchable
-        except IndexError:
-            po = branchable = None
+        po = pulse.db.Branch.get (ident)
     elif len(path) == 6:
-        branchable = db.Branchable.objects.filter (ident=ident)
-        try:
-            branchable = branchable[0]
-            po = branchable.get_default ()
-        except IndexError:
-            po = branchable = None
+        branchable = pulse.db.Branch.select (branchable=ident)
+        po = [branch for branch in branches if branch.is_default]
+        if len(po) > 0:
+            po = po[0]
+        else:
+            po = None
     else:
         page = pulse.html.PageError (
             pulse.utils.gettext ('The identifier %s is not valid') % ident,
@@ -58,24 +53,24 @@ def main (response, path, query):
 
     if po == None:
         page = pulse.html.PageNotFound (
-            pulse.tuils.gettext ('No translation with the identifier %s could be found')
+            pulse.utils.gettext ('No translation with the identifier %s could be found')
             % ident,
             title=pulse.utils.gettext ('Translation Not Found'))
-        page.output (fd=fd)
+        response.set_contents (page)
         return
         
     kw = {'path' : path, 'query' : query}
-    output_translation (response, po, branchable, **kw)
+    output_translation (response, po, **kw)
 
 
-def output_translation (response, po, branchable, **kw):
+def output_translation (response, po, **kw):
     """Output information about a translation"""
     lang = po.scm_file[:-3]
     page = pulse.html.Page (po)
     response.set_contents (page)
     checkout = pulse.scm.Checkout.from_record (po, checkout=False, update=False)
 
-    branches = pulse.utils.attrsorted (list(branchable.branches.all()),
+    branches = pulse.utils.attrsorted (list(pulse.db.Branch.select (branchable=po.branchable)),
                                        '-is_default', 'scm_branch')
     if len(branches) > 1:
         for branch in branches:
@@ -106,7 +101,8 @@ def output_translation (response, po, branchable, **kw):
         page.add_fact (pulse.utils.gettext ('Last Modified'), span)
 
     try:
-        of = db.OutputFile.objects.get (type='l10n', ident=po.parent.ident, filename=po.scm_file)
+        of = pulse.db.OutputFile.select (type=u'l10n', ident=po.parent.ident, filename=po.scm_file)
+        of = of[0]
         pofile = pulse.parsers.Po (of.get_file_path ())
         form = pulse.html.TranslationForm()
         page.add_content (form)
@@ -122,9 +118,9 @@ def output_translation (response, po, branchable, **kw):
     if parent.type == 'Document':
         figures = sorted (parent.data.get('figures', []))
         if len(figures) > 0:
-            page.add_fact ('foo', 'bar')
-            ofs = db.OutputFile.objects.filter (type='figures', ident=parent.ident,
-                                                subdir__in=['C', lang])
+            ofs = pulse.db.OutputFile.select (pulse.db.OutputFile.type == u'figures',
+                                              pulse.db.OutputFile.ident == parent.ident,
+                                              pulse.db.OutputFile.subdir.is_in ((u'C', lang)))
             ofs_by_source_C = {}
             ofs_by_source_lc = {}
             for of in ofs:
@@ -154,7 +150,7 @@ def output_translation (response, po, branchable, **kw):
                 if of:
                     dl.add_entry (pulse.html.Link (of.pulse_url, entry, classname='zoom'))
                     files = [os.path.join (po.scm_dir, of.source)]
-                    commit = db.Revision.get_last_revision (branch=module, files=files)
+                    commit = pulse.db.Revision.get_last_revision (branch=module, files=files)
                     if commit != None:
                         span = pulse.html.Span(divider=pulse.html.SPACE)
                         # FIXME: i18n, word order, but we want to link person
@@ -163,8 +159,7 @@ def output_translation (response, po, branchable, **kw):
                         mspan.add_class ('mtime')
                         span.add_content (mspan)
                         span.add_content (' by ')
-                        person = db.Entity.get_cached (commit.person_id)
-                        span.add_content (pulse.html.Link (person))
+                        span.add_content (pulse.html.Link (commit.person))
                         dl.add_entry (span)
                 else:
                     dl.add_entry (entry)
