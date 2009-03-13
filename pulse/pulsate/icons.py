@@ -24,7 +24,7 @@ import shutil
 import sys
 import xml.dom.minidom
 
-import pulse.models as db
+import pulse.db
 import pulse.scm
 import pulse.xmldata
 
@@ -92,10 +92,11 @@ def update_uninstalled_icons (icons, links):
     icondir = os.path.join (pulse.config.web_icons_dir, 'apps')
     if not os.path.exists (icondir):
         os.makedirs (icondir)
-    for table in inspect.getmembers (db):
+    for table in inspect.getmembers (pulse.db):
         cls = table[1]
-        if inspect.isclass (cls) and issubclass (cls, db.models.Model) and hasattr (cls, 'icon_dir'):
-            recs = cls.objects.filter (icon_dir='__icon__:apps')
+        if (inspect.isclass (cls) and issubclass (cls, pulse.db.PulseModel)
+            and hasattr (cls, '__storm_table__') and hasattr (cls, 'icon_dir')):
+            recs = cls.select (icon_dir=u'__icon__:apps')
             for rec in recs:
                 if rec.icon_name == None:
                     continue
@@ -109,8 +110,7 @@ def update_uninstalled_icons (icons, links):
                     continue
                 shutil.copyfile (icons[iconsrc],
                                  os.path.join (icondir, rec.icon_name + '.png'))
-                rec.icon_dir = 'apps'
-                rec.save()
+                rec.icon_dir = u'apps'
 
 def main (argv, options={}):
     update = not options.get ('--no-update', False)
@@ -125,5 +125,14 @@ def main (argv, options={}):
         elif data[key]['__type__'] == 'naming':
             get_naming_links (data[key], links, update=update)
 
-    update_installed_icons (icons, links)
-    update_uninstalled_icons (icons, links)
+    try:
+        update_installed_icons (icons, links)
+        update_uninstalled_icons (icons, links)
+        pulse.db.flush ()
+    except:
+        pulse.db.rollback ()
+        raise
+    else:
+        pulse.db.commit ()
+
+    return 0
