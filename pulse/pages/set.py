@@ -289,13 +289,17 @@ def get_documents_tab (rset, **kw):
 
 
 def get_domains_tab (rset, **kw):
-    objs = pulse.db.Branch.select (type=u'Domain', parent_in_set=rset)
-    objs = pulse.utils.attrsorted (list(objs), 'title')
+    objs = pulse.db.Branch.select_with_output_file (pulse.db.Branch.type == u'Domain',
+                                                    parent_in_set=rset,
+                                                    on=pulse.db.And(pulse.db.OutputFile.type == u'l10n',
+                                                                    pulse.db.OutputFile.filename.like (u'%.pot')),
+                                                    using=pulse.db.SetModule)
+    objs = pulse.utils.attrsorted (list(objs), (0, 'title'))
     cont = pulse.html.ContainerBox (widget_id='c-domains')
     cont.set_columns (2)
     slink_error = False
 
-    for obj in objs:
+    for obj, of in objs:
         lbox = cont.add_link_box (obj)
         if obj.error != None:
             slink_error = True
@@ -314,17 +318,12 @@ def get_domains_tab (rset, **kw):
             potfile = obj.scm_module + '.pot'
         else:
             potfile = obj.scm_dir + '.pot'
-        of = pulse.db.OutputFile.select (type=u'l10n',
-                                         ident=obj.ident,
-                                         filename=potfile)
-        try:
-            of = of[0]
+
+        if of != None:
             span = pulse.html.Span (str(of.statistic))
             span.add_class ('messages')
             lbox.add_fact (pulse.utils.gettext ('messages'), span)
             slink_messages = True
-        except IndexError:
-            pass
 
     cont.add_sort_link ('title', pulse.utils.gettext ('title'), 1)
     if slink_error:

@@ -67,7 +67,6 @@ class PulseTracer (object):
 
     def connection_raw_execute (self, connection, raw_cursor, statement, params):
         self._last_time = datetime.datetime.now()
-        self.print_command (statement, params)
 
     def print_command (self, statement, params):
         diff = datetime.datetime.now() - self._last_time
@@ -509,6 +508,28 @@ class Branch (PulseRecord):
         if kwarg != storm.store.Undef:
             args.append (kwarg)
         return store.using (join).find((cls, Entity), *args)
+
+    @classmethod
+    def select_with_output_file (cls, *args, **kw):
+        joinon = (cls.ident == OutputFile.ident)
+        on = kw.pop ('on', None)
+        if on != None:
+            joinon = And (joinon, on)
+        join = LeftJoin (cls, OutputFile, joinon)
+        using = kw.pop ('using', None)
+        if using is not None:
+            if isinstance (using, list):
+                using = tuple (using)
+            elif isinstance (using, tuple):
+                pass
+            else:
+                using = (using,)
+            join = (join,) + using
+        args, kw = cls._select_args (*args, **kw)
+        kwarg = storm.store.get_where_for_args ([], kw, cls)
+        if kwarg != storm.store.Undef:
+            args.append (kwarg)
+        return store.using (join).find((cls, OutputFile), *args)
 
     @classmethod
     def select_with_statistic (cls, stattype, *args, **kw):
