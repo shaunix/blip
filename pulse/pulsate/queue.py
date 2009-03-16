@@ -18,7 +18,7 @@
 # Suite 330, Boston, MA  0211-1307  USA.
 #
 
-import pulse.models as db
+import pulse.db
 import pulse.utils
 
 synop = 'update information for queued objects'
@@ -38,20 +38,23 @@ def help_extra (fd=None):
 def main (argv, options={}):
     length = options.get ('--length', False)
     if length:
-        print db.Queue.objects.count()
-        return
+        print pulse.db.Queue.select().count()
+        return 0
     limit = options.get ('--limit', None)
     if limit != None:
         limit = int(limit)
     iter = 0
-    el = db.Queue.pop ()
+    el = pulse.db.Queue.pop ()
     while el != None:
         if limit != None and iter >= limit:
-            return
+            return 0
         iter += 1
         mod = pulse.utils.import_ ('pulse.pulsate.' + el['module'])
         if hasattr (mod, 'args'):
-            mod.main ([el['ident']], options)
+            ret = mod.main ([el['ident']], options)
         else:
-            mod.main ([el['ident']])
-        el = db.Queue.pop ()
+            ret = mod.main ([el['ident']])
+        if ret != 0:
+            return ret
+        el = pulse.db.Queue.pop ()
+    return 0
