@@ -1,4 +1,4 @@
-# Copyright (c) 2006  Shaun McCance  <shaunm@gnome.org>
+# Copyright (c) 2006-2008  Shaun McCance  <shaunm@gnome.org>
 #
 # This file is part of Pulse, a program for displaying various statistics
 # of questionable relevance about software and the people who make it.
@@ -22,9 +22,9 @@ import datetime
 import os
 
 import pulse.config
+import pulse.db
 import pulse.graphs
 import pulse.html
-import pulse.models as db
 import pulse.scm
 import pulse.utils
 
@@ -33,12 +33,8 @@ def main (response, path, query):
     kw = {'path' : path, 'query' : query}
     if len(path) == 1:
         return output_top (response, **kw)
-    ident = '/' + '/'.join(path)
-    mlist = db.Forum.objects.filter (ident=ident, type='List')
-    try:
-        mlist = mlist[0]
-    except IndexError:
-        mlist = None
+    ident = u'/' + u'/'.join(path)
+    mlist = pulse.db.Forum.get (ident=ident)
     if mlist == None:
         page = pulse.html.PageNotFound (
             pulse.utils.gettext ('Pulse could not find the mailing list %s') % '/'.join(path[1:]),
@@ -56,17 +52,17 @@ def main (response, path, query):
         output_list (response, mlist, **kw)
 
 
-# FIXME STORM
-def FIXMEsynopsis ():
+def synopsis ():
     """Construct an info box for the front page"""
     box = pulse.html.SectionBox (pulse.utils.gettext ('Mailing Lists'))
     txt = (pulse.utils.gettext ('Pulse is watching %i mailing lists.  ') %
-           db.Forum.objects.filter(type='List').count() )
+           pulse.db.Forum.select(type=u'List').count() )
     div = pulse.html.Div (txt)
     div.add_content ('Here are the 12 most active:')
     box.add_content (div);
 
-    mlists = db.Forum.objects.filter (type='List').order_by ('-post_score')
+    mlists = pulse.db.Forum.select (type=u'List')
+    mlists = mlists.order_by (pulse.db.Desc (pulse.db.Forum.post_score))
     cols = pulse.html.ColumnBox (2)
     bl = (pulse.html.BulletList (), pulse.html.BulletList ())
     cols.add_to_column (0, bl[0])
@@ -84,7 +80,8 @@ def output_top (response, **kw):
     page = pulse.html.Page ()
     response.set_contents (page)
     page.set_title (pulse.utils.gettext ('Mailing Lists'))
-    mlists = db.Forum.objects.filter (type='List').order_by ('-post_score')
+    mlists = pulse.db.Forum.select (type=u'List')
+    mlists = mlists.order_by (pulse.db.Desc (pulse.db.Forum.post_score))
     for mlist in mlists[:42]:
         lbox = pulse.html.LinkBox (mlist)
         page.add_content (lbox)
@@ -123,7 +120,7 @@ def output_ajax_graphmap (response, mlist, **kw):
     num = query.get('num')
     filename = query.get('filename')
     
-    of = db.OutputFile.objects.filter (type='graphs', ident=mlist.ident, filename=filename)
+    of = pulse.db.OutputFile.select (type=u'graphs', ident=mlist.ident, filename=filename)
     try:
         of = of[0]
         graph = pulse.html.Graph.activity_graph (of, mlist.pulse_url, 'posts',
@@ -143,9 +140,9 @@ def output_ajax_posts (response, mlist, **kw):
         weeknum = pulse.utils.weeknum ()
     thisweek = pulse.utils.weeknum ()
     ago = thisweek - weeknum
-    posts = db.ForumPost.objects.filter (forum=mlist,
-                                         weeknum=weeknum,
-                                         datetime__isnull=False)
+    posts = pulse.db.ForumPost.select (pulse.db.ForumPost.forum == mlist,
+                                       pulse.db.ForumPost.weeknum == weeknum,
+                                       pulse.db.ForumPost.datetime != None)
     posts = list(posts)
     if ago == 0:
         title = (pulse.utils.gettext('Showing %i posts from this week:')
@@ -183,7 +180,7 @@ def get_info_tab (mlist, **kw):
 
 def get_activity_tab (mlist, **kw):
     box = pulse.html.Div ()
-    of = db.OutputFile.objects.filter (type='graphs', ident=mlist.ident, filename='posts-0.png')
+    of = pulse.db.OutputFile.select (type=u'graphs', ident=mlist.ident, filename=u'posts-0.png')
     try:
         of = of[0]
         graph = pulse.html.Graph.activity_graph (of, mlist.pulse_url, 'posts',
@@ -193,9 +190,9 @@ def get_activity_tab (mlist, **kw):
         pass
 
     weeknum = pulse.utils.weeknum()
-    posts = db.ForumPost.objects.filter (forum=mlist,
-                                         weeknum=weeknum,
-                                         datetime__isnull=False)
+    posts = pulse.db.ForumPost.select (pulse.db.ForumPost.forum == mlist,
+                                       pulse.db.ForumPost.weeknum == weeknum,
+                                       pulse.db.ForumPost.datetime != None)
     posts = list(posts)
     title = pulse.utils.gettext ('Showing %i posts from this week') % len(posts)
     box.add_content (get_posts_div (mlist, posts, title))
@@ -211,13 +208,12 @@ def get_posts_div (mlist, posts, title):
 
     byid = pulse.utils.odict ()
     for post in posts:
-        byid.setdefault (post.id, {'post': None, 'children': []})
-        byid[post.id]['post'] = post
-        if post.parent_id != None:
-            byid.setdefault (post.parent_id, {'post': None, 'children': []})
-            byid[post.parent_id]['children'].append (post.id)
+        byid.setdefault (post.ident, {'post': None, 'children': []})
+        byid[post.ident]['post'] = post
+        if post.parent_ident != None:
+            byid.setdefault (post.parent_ident, {'post': None, 'children': []})
+            byid[post.parent_ident]['children'].append (post.ident)
     def add_row (key, post, depth):
-        author = db.Entity.get_cached (post.author_id)
         depth = min (depth, 8)
         # FIXME: would be better to do this with colspan so that line wraps
         # don't look funky.  But we'll have to change html.Table for that.
@@ -228,7 +224,7 @@ def get_posts_div (mlist, posts, title):
         title = pulse.html.Span (prefix, title)
         table.add_row (title,
                        post.datetime.strftime('%Y-%m-%d'),
-                       pulse.html.Link (author))
+                       pulse.html.Link (post.author))
         for child in byid[key]['children']:
             childpost = byid[child]['post']
             if childpost == None:
@@ -238,8 +234,8 @@ def get_posts_div (mlist, posts, title):
         post = byid[key]['post']
         if post == None:
             continue
-        if post.parent_id != None:
-            if byid.get (post.parent_id, {'post': None})['post'] != None:
+        if post.parent_ident != None:
+            if byid.get (post.parent_ident, {'post': None})['post'] != None:
                 continue
         add_row (key, post, 0)
 
