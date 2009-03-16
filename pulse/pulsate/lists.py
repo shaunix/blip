@@ -193,7 +193,7 @@ def update_graphs (mlist, max, **kw):
     finalpost = finalpost.order_by ('datetime')
     outpath = None
     try:
-        finalpost = finalpost[0].id
+        finalpost = finalpost[0].ident
         stillpost = True
     except:
         finalpost = None
@@ -232,7 +232,7 @@ def update_graphs (mlist, max, **kw):
         stats = [0] * numweeks
         posts = list (posts)
         for post in posts:
-            if post.id == finalpost:
+            if post.ident == finalpost:
                 stillpost = False
             idx = post.weeknum - topweek + numweeks - 1
             stats[idx] += 1
