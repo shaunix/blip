@@ -425,7 +425,7 @@ def copy_image (infile, of):
         im.thumbnail((120, 120), Image.ANTIALIAS)
         tw, th = im.size
         im.save (tfile, 'PNG')
-    of.datetime = datetime.datetime.now()
+    of.datetime = datetime.datetime.utcnow()
     of.data['width'] = w
     of.data['height'] = h
     of.data['thumb_width'] = tw

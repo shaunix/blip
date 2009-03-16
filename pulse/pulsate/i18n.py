@@ -92,7 +92,7 @@ def update_translation (po, **kw):
         of = of[0]
     except IndexError:
         of = pulse.db.OutputFile (type=u'l10n', ident=po.parent.ident, filename=po.scm_file,
-                                  datetime=datetime.datetime.now())
+                                  datetime=datetime.datetime.utcnow())
     outfile_abs = of.get_file_path()
     outfile_rel = pulse.utils.relative_path (outfile_abs, pulse.config.web_l10n_dir)
     outdir = os.path.dirname (outfile_abs)
@@ -101,7 +101,7 @@ def update_translation (po, **kw):
     pulse.utils.log ('Copying PO file %s' % outfile_rel)
     shutil.copyfile (os.path.join (checkout.directory, po.scm_dir, po.scm_file),
                      os.path.join (outdir, po.scm_file))
-    of.datetime = datetime.datetime.now()
+    of.datetime = datetime.datetime.utcnow()
     of.data['revision'] = checkout.get_revision()
 
     files = [os.path.join (po.scm_dir, po.scm_file)]
@@ -185,7 +185,7 @@ def get_intltool_potfile (domain, checkout, **kw):
         of = of[0]
     except IndexError:
         of = pulse.db.OutputFile (type=u'l10n', ident=domain.ident, filename=potfile,
-                                  datetime=datetime.datetime.now())
+                                  datetime=datetime.datetime.utcnow())
 
     potfile_abs = of.get_file_path()
     potfile_rel = pulse.utils.relative_path (potfile_abs, pulse.config.web_l10n_dir)
@@ -226,7 +226,7 @@ def get_intltool_potfile (domain, checkout, **kw):
             popo.feed (line)
         popo.finish ()
         num = popo.get_num_messages ()
-        of.datetime = datetime.datetime.now()
+        of.datetime = datetime.datetime.utcnow()
         of.data['mod_datetime'] = domain.parent.mod_datetime
         of.data['missing'] = missing
         of.statistic = num
@@ -255,7 +255,7 @@ def get_xml2po_potfile (doc, checkout, **kw):
         of = of[0]
     except IndexError:
         of = pulse.db.OutputFile (type=u'l10n', ident=doc.ident, filename=potfile,
-                                  datetime=datetime.datetime.now())
+                                  datetime=datetime.datetime.utcnow())
 
     potfile_abs = of.get_file_path()
     potfile_rel = pulse.utils.relative_path (potfile_abs, pulse.config.web_l10n_dir)
@@ -291,7 +291,7 @@ def get_xml2po_potfile (doc, checkout, **kw):
             popo.feed (line)
         popo.finish ()
         num = popo.get_num_messages ()
-        of.datetime = datetime.datetime.now()
+        of.datetime = datetime.datetime.utcnow()
         of.data['mod_datetime'] = doc.parent.mod_datetime
         of.statistic = num
         of.data['md5'] = m.hexdigest ()
