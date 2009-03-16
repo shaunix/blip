@@ -33,7 +33,7 @@ import urllib
 import urlparse
 import StringIO
 
-import pulse.models as db
+import pulse.db
 import pulse.utils
 import pulse.xmldata
 
@@ -51,13 +51,14 @@ def update_lists (**kw):
             continue
         if not (data[key].has_key ('id') and data[key].has_key ('ident')):
             continue
-        mlist = db.Forum.get_record (data[key]['ident'], 'List')
+        mlist = pulse.db.Forum.get_or_create (data[key]['ident'], u'List')
 
-        for k in ('name', 'email', 'list_id', 'list_info', 'list_archive'):
+        for k in ('name', 'email'):
             if data[key].has_key (k):
                 mlist.update(**{k : data[key][k]})
-
-        mlist.save()
+        for k in ('list_id', 'list_info', 'list_archive'):
+            if data[key].has_key (k):
+                mlist.update(data={k : data[key][k]})
 
     return queue
 
@@ -136,33 +137,25 @@ def update_list (mlist, **kw):
             if msgid == None:
                 continue
             msgid = pulse.utils.utf8dec (emailutils.parseaddr (msgid)[1])
-            ident = mlist.ident + '/' + msgid
-            post = db.ForumPost.objects.filter (ident=ident)
-            try:
-                post = post[0]
-            except:
-                post = db.ForumPost (ident=ident, type='ListPost')
+            ident = mlist.ident + u'/' + msgid
+            post = pulse.db.ForumPost.get_or_create (ident, u'ListPost')
             postdata = {'forum': mlist, 'name': msgsubject}
 
             if msgparent != None:
                 msgparent = pulse.utils.utf8dec (emailutils.parseaddr (msgparent)[1])
                 pident = mlist.ident + '/' + msgparent
-                parent = db.ForumPost.objects.filter (ident=pident)
-                try:
-                    parent = parent[0]
-                except:
-                    parent = db.ForumPost (ident=pident, type='ListPost')
+                parent = pulse.db.ForumPost.get_or_create (pident, u'ListPost')
                 parent.forum = mlist
-                parent.save ()
-                postdata['parent'] = parent
+                postdata['parent_ident'] = parent.ident
 
             msgfrom = emailutils.parseaddr (msgfrom)
-            person = db.Entity.get_by_email (pulse.utils.utf8dec (msgfrom[1]))
-            if person.name.get('C') == None:
-                person.update (name=msgfrom[0])
-                person.save ()
-            postdata['author'] = person
-            db.Queue.push ('people', person.ident)
+            personident = u'/person/' + pulse.utils.utf8dec (msgfrom[1])
+            person = pulse.db.Entity.get_or_create (personident, u'Person')
+            person.extend (name=msgfrom[0])
+            postdata['author_ident'] = person.ident
+            if person.ident != personident:
+                postdata['alias_ident'] = personident
+            pulse.db.Queue.push (u'people', person.ident)
 
             msgdate = emailutils.parsedate_tz (msgdate)
             try:
@@ -172,11 +165,11 @@ def update_list (mlist, **kw):
             except:
                 dt = None
             postdata['datetime'] = dt
+            postdata['weeknum'] = pulse.utils.weeknum (dt)
 
             postdata['web'] = urlbase + 'msg%05i.html' % i
 
             post.update (postdata)
-            post.save ()
 
         try:
             os.remove (tmp)
@@ -187,15 +180,17 @@ def update_list (mlist, **kw):
         mlist.data['archives'][url]['etag'] = res.getheader ('Etag')
 
     update_graphs (mlist, 100, **kw)
-    mlist.save()
 
 
 def update_graphs (mlist, max, **kw):
-    now = datetime.datetime.now ()
+    now = datetime.datetime.utcnow ()
     thisweek = pulse.utils.weeknum ()
     numweeks = 104
     i = 0
-    finalpost = db.ForumPost.objects.filter (forum=mlist, datetime__isnull=False, weeknum__gt=0).order_by ('datetime')
+    finalpost = pulse.db.ForumPost.select (pulse.db.ForumPost.forum == mlist,
+                                           pulse.db.ForumPost.datetime != None,
+                                           pulse.db.ForumPost.weeknum > 0)
+    finalpost = finalpost.order_by ('datetime')
     outpath = None
     try:
         finalpost = finalpost[0].id
@@ -207,13 +202,13 @@ def update_graphs (mlist, max, **kw):
         topweek = thisweek - (i * numweeks)
         if topweek < 0:
             break
-        posts = db.ForumPost.objects.filter (forum=mlist,
-                                             weeknum__gt=(topweek - numweeks),
-                                             weeknum__lte=topweek)
+        posts = pulse.db.ForumPost.select (pulse.db.ForumPost.forum == mlist,
+                                           pulse.db.ForumPost.weeknum > (topweek - numweeks),
+                                           pulse.db.ForumPost.weeknum <= topweek)
         postcount = posts.count()
         if stillpost:
-            fname = 'posts-' + str(i) + '.png'
-            of = db.OutputFile.objects.filter (type='graphs', ident=mlist.ident, filename=fname)
+            fname = u'posts-' + unicode(i) + u'.png'
+            of = pulse.db.OutputFile.select (type=u'graphs', ident=mlist.ident, filename=fname)
             try:
                 of = of[0]
             except IndexError:
@@ -226,7 +221,7 @@ def update_graphs (mlist, max, **kw):
                         pulse.utils.log ('Skipping activity graph for %s' % mlist.ident)
                         return
             elif of == None:
-                of = db.OutputFile (type='graphs', ident=mlist.ident, filename=fname, datetime=now)
+                of = pulse.db.OutputFile (type=u'graphs', ident=mlist.ident, filename=fname, datetime=now)
             outpath = of.get_file_path()
         else:
             of = None
@@ -260,7 +255,6 @@ def update_graphs (mlist, max, **kw):
             of.data['coords'] = zip (graph.get_coords(), stats, range(topweek - numweeks + 1, topweek + 1))
             of.data['count'] = postcount
             of.data['weeknum'] = topweek
-            of.save()
 
         i += 1
 
@@ -269,21 +263,24 @@ def main (argv, options={}):
     shallow = options.get ('--shallow', False)
     timestamps = not options.get ('--no-timestamps', False)
     if len(argv) == 0:
-        prefix = None
+        ident = None
     else:
-        prefix = argv[0]
+        ident = pulse.utils.utf8dec (argv[0])
 
     queue = update_lists (timestamps=timestamps, shallow=shallow)
 
     if not shallow:
         for mlist in queue:
             update_list (mlist, timestamps=timestamps, shallow=shallow)
-        if prefix == None:
-            mlists = db.Forum.objects.filter (type='List')
+        if ident == None:
+            mlists = pulse.db.Forum.select (type=u'List')
         else:
-            mlists = db.Forum.objects.filter (type='List', ident__startswith=prefix)
+            mlists = pulse.db.Forum.select (pulse.db.Forum.type == u'List',
+                                            pulse.db.Forum.ident.like (ident))
         for mlist in mlists:
             update_list (mlist, timestamps=timestamps, shallow=shallow)
     else:
         for mlist in queue:
-            db.Queue.push ('lists', mlist.ident)
+            pulse.db.Queue.push ('lists', mlist.ident)
+
+    return 0
