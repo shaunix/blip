@@ -705,13 +705,13 @@ class ForumPost (PulseRecord):
     datetime = DateTime ()
     weeknum = Int ()
 
-    def __init__ (self, ident, type, forum, author, parent, datetime, **kw):
-        kw['forum'] = forum
-        kw['author'] = author
-        kw['parent'] = parent
-        kw['datetime'] = datetime
-        kw['weeknum'] = pulse.utils.weeknum (datetime)
+    def __init__ (self, ident, type, **kw):
+        if kw.has_key ('datetime'):
+            kw['weeknum'] = pulse.utils.weeknum (kw['datetime'])
         PulseRecord.__init__ (self, ident, type, **kw)
+
+    def log_create (self):
+        pass
 
     def delete (self):
         raise WillNotDelete ('Pulse will not delete forum posts')
