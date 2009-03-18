@@ -102,7 +102,7 @@ def synopsis ():
         scm_mods[module.scm_module] += 1
     for module in modules:
         if scm_mods[module.scm_module] > 1:
-            bl.add_link (module.get_pulse_url(), module.get_branch_title())
+            bl.add_link (module.pulse_url, module.branch_title)
         else:
             bl.add_link (module)
 
@@ -117,7 +117,7 @@ def synopsis ():
         scm_mods[module.scm_module] += 1
     for module in modules:
         if scm_mods[module.scm_module] > 1:
-            bl.add_link (module.get_pulse_url(), module.get_branch_title())
+            bl.add_link (module.pulse_url, module.branch_title)
         else:
             bl.add_link (module)
     return box
