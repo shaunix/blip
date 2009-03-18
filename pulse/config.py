@@ -111,38 +111,17 @@ database = 'sqlite:/shaunm/Projects/pulse/storm/storm.db'
 
 
 ################################################################################
-## Django settings
-# These settings are used by Django to connect to the Pulse database.
-# This file is imported by Django as a settings file.  You may need
-# to change the DATABASE settings below.
-
-DATABASE_ENGINE = 'sqlite3'
-DATABASE_NAME = os.path.join (scratch_dir, 'pulse.db')
-
-# If you want to use MySQL, use lines like these:
-# DATABASE_ENGINE = 'mysql'
-# DATABASE_HOST = '/var/run/mysql'
-# DATABASE_NAME = 'Pulse'
-# DATABASE_USER = ''
-# DATABASE_PASSWORD = ''
-
-# Do not change this.  It makes Django recognize Pulse.
-INSTALLED_APPS = 'pulse'
-
-# Do not change this.  We hook into Django's debugging stuff to do logging.
-DEBUG = True
-
-
-################################################################################
 ## Other Stuff
 
-# Django email settings
-EMAIL_HOST = 'localhost'
-EMAIL_USER = ''
-EMAIL_PASSWORD = ''
+mail_host = 'localhost'
+
+# Username and password for hosts that require authentication.
+# Set mail_username to None if no authentication is required.
+mail_username = None
+mail_password = None
 
 # The email address from which Pulse sends email
-server_email = 'gnomeweb@gnome.org'
+mail_from = 'gnomeweb@gnome.org'
 
 
 ################################################################################

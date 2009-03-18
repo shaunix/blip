@@ -25,12 +25,9 @@ import os
 import random
 import re
 
-from django.core import mail
-from django.db import transaction
-
 import pulse.config
+import pulse.db
 import pulse.html
-import pulse.models as db
 import pulse.utils
 
 def main (response, path, query):
@@ -50,11 +47,10 @@ def main (response, path, query):
         output_account_logout (response, **kw)
 
 
-@transaction.commit_manually
 def output_account_create (response, **kw):
     data = cgi.parse ()
     for key in data.keys():
-        data[key] = data[key][0]
+        data[key] = pulse.utils.utf8dec (data[key][0])
     realname = data.get ('realname', '')
     if realname == '':
         admon = pulse.html.AdmonBox (pulse.html.AdmonBox.error,
@@ -87,48 +83,49 @@ def output_account_create (response, **kw):
         response.set_contents (admon)
         return
     try:
-        ident = '/person/' + username
-        if (db.Account.objects.filter (username=username).count() > 0 or
-            db.Entity.objects.filter (ident=ident).count() > 0):
+        ident = u'/person/' + username
+        if (pulse.db.Account.select (username=username).count() > 0 or
+            pulse.db.Entity.select (ident=ident).count() > 0):
             admon = pulse.html.AdmonBox (pulse.html.AdmonBox.error,
                                          pulse.utils.gettext(
                 'Username already in use.  Please choose another username.'))
             response.set_contents (admon)
             return
-        person = db.Entity.get_record (ident, 'Person')
-        person.save ()
+        person = pulse.db.Entity (ident, u'Person',
+                                  __pulse_store__=pulse.db.Account)
         token = pulse.utils.get_token ()
-        user = db.Account (username=username,
-                           password=crypt.crypt(password, 'pu'),
-                           person=person,
-                           realname=realname,
-                           email=email,
-                           check_time=datetime.datetime.now(),
-                           check_type='new',
-                           check_hash=token,
-                           data={})
-        user.save ()
-        subject = pulse.utils.gettext ('Confirm New Pulse Account')
-        message = ((
-            'Hello %s\n\n' +
+        pulse.db.rollback ()
+        user = pulse.db.Account (username=username,
+                                 password=crypt.crypt(password, 'pu'),
+                                 person_ident=person.ident,
+                                 email=email,
+                                 check_time=datetime.datetime.utcnow(),
+                                 check_type='new',
+                                 check_hash=token)
+        user.data['realname'] = realname
+        from pulse.mail import Mail
+        mail = Mail (pulse.utils.gettext ('Confirm New Pulse Account'))
+        mail.add_recipient (email)
+        mail.add_content (pulse.utils.gettext ('Hello %s') % realname)
+        mail.add_content (pulse.utils.gettext (
             'You have registered a Pulse account. To complete your account registration,\n' +
-            'you need to verify your email address. Please visit the URL below.\n\n' +
-            '%saccount/auth/%s')
-                   % (realname, pulse.config.web_root, token))
-        mail.send_mail (subject, message, pulse.config.server_email, [email])
+            'you need to verify your email address. Please visit the URL below.'))
+        mail.add_content ('%saccount/auth/%s' % (pulse.config.web_root, token))
+        mail.send ()
         div = pulse.html.Div (pulse.utils.gettext (
             'Pulse has sent you a confirmation email.  Please visit the link' +
             ' in that email to complete your registration.'
             ))
         response.set_contents (div)
-    except:
-        transaction.rollback ()
+    except Exception, e:
+        pulse.db.rollback (pulse.db.Account)
         admon = pulse.html.AdmonBox (pulse.html.AdmonBox.error,
                                      pulse.utils.gettext('There was a problem processing the request.'))
         response.set_contents (admon)
         return
     else:
-        transaction.commit ()
+        pulse.db.flush (pulse.db.Account)
+        pulse.db.commit (pulse.db.Account)
 
 
 def output_account_new (response, **kw):
@@ -184,7 +181,8 @@ def output_account_new (response, **kw):
         ' usernames on various systems.  You can claim to be these unknown people,' +
         ' giving you the recognition you deserve and helping Pulse create more' +
         ' meaningful statistics.')
-    rockstar = db.Entity.objects.filter (type='Person').order_by ('-mod_score')
+    rockstar = pulse.db.Entity.select (type=u'Person')
+    rockstar.order_by (pulse.db.Desc (pulse.db.Entity.mod_score))
     try:
         i = random.randint (0, 41)
         rockstar = rockstar[i]
@@ -208,10 +206,11 @@ def output_account_new (response, **kw):
         ))
 
 
-@transaction.commit_manually
 def output_account_auth (response, token, **kw):
+    token = pulse.utils.utf8dec (token)
     try:
-        account = db.Account.objects.get (check_hash=token, check_type='new')
+        account = pulse.db.Account.select (check_hash=token, check_type=u'new')
+        account = account[0]
     except:
         page = pulse.html.PageError (
             pulse.utils.gettext ('The authorization token %s was not found.') % token,
@@ -222,48 +221,50 @@ def output_account_auth (response, token, **kw):
         account.check_time = None
         account.check_type = None
         account.check_hash = None
-        account.save ()
         token = pulse.utils.get_token ()
-        login = db.Login.set_login (account, token, os.getenv ('REMOTE_ADDR'))
+        login = pulse.db.Login.set_login (account, token, os.getenv ('REMOTE_ADDR'))
         response.redirect (pulse.config.web_root + 'home')
         response.set_cookie ('pulse_auth', token)
-    except:
-        transaction.rollback ()
-        page = pulse.html.PageError (pulse.utils.gettext('There was a problem processing the request:'),
+    except Exception, e:
+        pulse.db.rollback (pulse.db.Account)
+        page = pulse.html.PageError (pulse.utils.gettext('There was a problem processing the request %s.') % e,
                                      **kw)
         response.set_contents (page)
     else:
-        transaction.commit ()
+        pulse.db.flush (pulse.db.Account)
+        pulse.db.commit (pulse.db.Account)
 
 
-@transaction.commit_manually
 def output_account_login (response, **kw):
     data = cgi.parse ()
     for key in data.keys():
-        data[key] = data[key][0]
-    username = data.get ('username', '')
-    password = data.get ('password', '')
+        data[key] = pulse.utils.utf8dec (data[key][0])
+    username = data.get ('username', u'')
+    password = data.get ('password', u'')
     admon = None
-    if username != '' and password != '':
+    if username != u'' and password != u'':
+        account = pulse.db.Account.get (username)
         try:
-            account = db.Account.objects.get (username=username)
+            if account is None:
+                raise pulse.utils.PulseException()
             if account.check_type == 'new':
                 admon = pulse.html.AdmonBox (pulse.html.AdmonBox.error,
                                              pulse.utils.gettext('You have not yet verified your email address'))
-                raise
+                raise pulse.utils.PulseException()
             if account.password != crypt.crypt (password, 'pu'):
-                raise
+                raise pulse.utils.PulseException()
             token = pulse.utils.get_token ()
-            login = db.Login.set_login (account, token, os.getenv ('REMOTE_ADDR'))
+            login = pulse.db.Login.set_login (account, token, os.getenv ('REMOTE_ADDR'))
             response.redirect (pulse.config.web_root + 'home')
             response.set_cookie ('pulse_auth', token)
         except:
-            transaction.rollback ()
+            pulse.db.rollback (pulse.db.Account)
             if admon == None:
                 admon = pulse.html.AdmonBox (pulse.html.AdmonBox.error,
                                              pulse.utils.gettext('Invalid username or password'))
         else:
-            transaction.commit ()
+            pulse.db.flush (pulse.db.Account)
+            pulse.db.commit (pulse.db.Account)
             return
         
     page = pulse.html.Page (url=(pulse.config.web_root + 'account/login'))
@@ -293,33 +294,33 @@ def output_account_login (response, **kw):
     table.add_row ('', span)
 
 
-@transaction.commit_manually
 def output_account_logout (response, **kw):
     login = response.http_login
     try:
         if login:
             login.delete ()
     except:
-        transaction.rollback ()
+        pulse.db.rollback (pulse.db.Account)
     else:
-        transaction.commit ()
+        pulse.db.flush (pulse.db.Account)
+        pulse.db.commit (pulse.db.Account)
     response.redirect (pulse.config.web_root)
     response.set_cookie ('pulse_auth', '')
 
 
-@transaction.commit_manually
 def output_account_watch (response, **kw):
     query = kw.get ('query', {})
     ident = query.get('ident', None)
-    if response.http_account != None and ident != None:
+    if response.http_account is not None and ident is not None:
         try:
-            db.AccountWatch.add_watch (response.http_account, ident)
+            pulse.db.AccountWatch.add_watch (response.http_account, ident)
         except:
-            transaction.rollback ()
+            pulse.db.rollback (pulse.db.Account)
             admon = pulse.html.AdmonBox (pulse.html.AdmonBox.error,
                                          pulse.utils.gettext('Could not add watch'))
             response.set_contents (admon)
         else:
-            transaction.commit ()
+            pulse.db.flush (pulse.db.Account)
+            pulse.db.commit (pulse.db.Account)
             response.set_contents (pulse.html.Div ())
             return

@@ -35,7 +35,7 @@ import pulse.config
 
 
 def get_token ():
-    return '%x' % random.randint (16**32, 16**33 - 1)
+    return u'%x' % random.randint (16**32, 16**33 - 1)
 
 
 def utf8dec (s):

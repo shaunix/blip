@@ -1,3 +1,23 @@
+# Copyright (c) 2007-2009  Shaun McCance  <shaunm@gnome.org>
+#
+# This file is part of Pulse, a program for displaying various statistics
+# of questionable relevance about software and the people who make it.
+#
+# Pulse is free software; you can redistribute it and/or modify it under the
+# terms of the GNU General Public License as published by the Free Software
+# Foundation; either version 2 of the License, or (at your option) any later
+# version.
+#
+# Pulse is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with Pulse; if not, write to the Free Software Foundation, 59 Temple Place,
+# Suite 330, Boston, MA  0211-1307  USA.
+#
+
 import datetime
 import inspect
 import os
@@ -14,20 +34,31 @@ import pulse.config
 import pulse.utils
 
 database = create_database (pulse.config.database)
-store = Store (database)
+stores = {}
+def get_store (store):
+    if isinstance (store, Store):
+        return store
+    if hasattr (store, '__pulse_store__'):
+        return store.__pulse_store__
+    if not stores.has_key (store):
+        stores[store] = Store (database)
+    return stores[store]
 store_options = {'rollback' : False}
 
-def flush ():
+def flush (store='default'):
+    store = get_store (store)
     store.flush()
 
-def commit ():
+def commit (store='default'):
+    store = get_store (store)
     if store_options.get ('rollback', False):
         pulse.utils.log ('Not committing changes')
     else:
         pulse.utils.log ('Committing changes')
         store.commit ()
 
-def rollback ():
+def rollback (store='default'):
+    store = get_store (store)
     pulse.utils.log ('Rolling back changes')
     try:
         store.rollback ()
@@ -37,7 +68,8 @@ def rollback ():
 def rollback_all ():
     store_options['rollback'] = True
 
-def block_implicit_flushes ():
+def block_implicit_flushes (store='default'):
+    store = get_store (store)
     store.block_implicit_flushes ()
 
 
@@ -165,8 +197,10 @@ class PulseModelType (storm.properties.PropertyPublisherMeta):
 class PulseModel (Storm):
     __abstract__ = True
     __metaclass__ = PulseModelType
+    __pulse_store__ = get_store ('default')
 
     def __init__ (self, **kw):
+        store = get_store (kw.pop ('__pulse_store__', self.__class__.__pulse_store__))
         self.update (**kw)
         self.log_create ()
         store.add (self)
@@ -184,10 +218,16 @@ class PulseModel (Storm):
     @ classmethod
     def find (cls, *args, **kw):
         # let's remove this in favor of select
-        return store.find (cls, *args, **kw)
+        return cls.select (*args, **kw)
+
+    @classmethod
+    def get (cls, key, **kw):
+        store = get_store (kw.pop ('__pulse_store__', cls.__pulse_store__))
+        return store.get (cls, key)
 
     @ classmethod
     def select (cls, *args, **kw):
+        store = get_store (kw.pop ('__pulse_store__', cls.__pulse_store__))
         return store.find (cls, *args, **kw)
 
     @classmethod
@@ -253,7 +293,7 @@ class PulseModel (Storm):
                 for rec in sel:
                     rec.delete ()
         pulse.utils.log ('Deleting %s' % self)
-        store.remove (self)
+        self.__pulse_store__.remove (self)
 
 
 class PulseRecord (PulseModel):
@@ -333,10 +373,6 @@ class PulseRecord (PulseModel):
         return cls (ident, type, **kw)
 
     @classmethod
-    def get (cls, ident):
-        return store.get (cls, ident)
-
-    @classmethod
     def get_cached (cls, ident):
         if cls._record_cache.has_key (ident):
             return cls._record_cache[ident]
@@ -351,14 +387,14 @@ class PulseRecord (PulseModel):
         return record
 
     def set_relations (self, cls, rels):
-        old = list (store.find (cls, subj_ident=self.ident))
+        old = list (self.__pulse_store__.find (cls, subj_ident=self.ident))
         olddict = {}
         for rel in old:
             olddict[rel.pred_ident] = rel
         for rel in rels:
             olddict.pop (rel.pred_ident, None)
         oldids = [old.id for old in olddict.values()]
-        store.find (cls, cls.id.is_in (oldids)).remove ()
+        self.__pulse_store__.find (cls, cls.id.is_in (oldids)).remove ()
 
 
 class PulseRelation (PulseModel):
@@ -372,9 +408,10 @@ class PulseRelation (PulseModel):
 
     @classmethod
     def set_related (cls, subj, pred, **kw):
+        store = get_store (kw.pop ('__pulse_store__', cls.__pulse_store__))
         rel = store.find (cls, subj_ident=subj.ident, pred_ident=pred.ident).one ()
         if rel == None:
-            rel = cls (subj=subj, pred=pred)
+            rel = cls (subj=subj, pred=pred, __pulse_store__=store)
         if len(kw) > 0:
             for k, v in kw.items():
                 setattr (rel, k, v)
@@ -382,6 +419,7 @@ class PulseRelation (PulseModel):
 
     @classmethod
     def select_related (cls, subj=None, pred=None):
+        store = get_store (kw.pop ('__pulse_store__', cls.__pulse_store__))
         if subj != None and pred != None:
             rel = store.find (cls, subj_ident=subj.ident, pred_ident=pred.ident)
             return rel
@@ -475,7 +513,7 @@ class Branch (PulseRecord):
 
     @classmethod
     def count_branchables (cls, type):
-        return store.find (cls, type=type).count (cls.branchable, distinct=True)
+        return cls.__pulse_store__.find (cls, type=type).count (cls.branchable, distinct=True)
 
     @classmethod
     def _select_args (cls, *args, **kw):
@@ -486,13 +524,9 @@ class Branch (PulseRecord):
             args.append (SetModule.subj_ident == rset.ident)
         return (args, kw)
 
-    @classmethod
-    def select (cls, *args, **kw):
-        args, kw = cls._select_args (*args, **kw)
-        return store.find (cls, *args, **kw)
-
     @ classmethod
     def select_with_mod_person (cls, *args, **kw):
+        store = get_store (kw.pop ('__pulse_store__', cls.__pulse_store__))
         join = LeftJoin (cls, Entity, cls.mod_person_ident == Entity.ident)
         using = kw.pop ('using', None)
         if using is not None:
@@ -511,6 +545,7 @@ class Branch (PulseRecord):
 
     @classmethod
     def select_with_output_file (cls, *args, **kw):
+        store = get_store (kw.pop ('__pulse_store__', cls.__pulse_store__))
         joinon = (cls.ident == OutputFile.ident)
         on = kw.pop ('on', None)
         if on != None:
@@ -533,6 +568,7 @@ class Branch (PulseRecord):
 
     @classmethod
     def select_with_statistic (cls, stattype, *args, **kw):
+        store = get_store (kw.pop ('__pulse_store__', cls.__pulse_store__))
         if isinstance (stattype, basestring):
             stattype = [stattype]
         args = [arg for arg in args]
@@ -577,10 +613,11 @@ class Entity (PulseRecord):
     post_score_diff = Int ()
 
     @classmethod
-    def get (cls, ident, alias=True):
+    def get (cls, ident, alias=True, **kw):
+        store = get_store (kw.pop ('__pulse_store__', cls.__pulse_store__))
         ent = store.get (cls, ident)
         if ent == None and alias:
-            ent = Alias.get (ident)
+            ent = Alias.get (ident, __pulse_store__=store)
             if ent != None:
                 ent = ent.entity
         return ent
@@ -765,6 +802,132 @@ class TeamMember (PulseRelation):
 
 
 ################################################################################
+## User Accounts
+
+class Account (PulseModel):
+    __pulse_store__ = get_store ('account')
+
+    username = Unicode (primary=True)
+    password = Unicode ()
+
+    person_ident = Unicode ()
+    person = Reference (person_ident, Entity.ident)
+
+    email = Unicode ()
+
+    check_time = DateTime ()
+    check_type = Unicode ()
+    check_hash = Unicode ()
+
+    data = Pickle (default_factory=dict)
+
+
+class Login (PulseModel):
+    __storm_primary__ = 'username', 'ipaddress'
+    __pulse_store__ = get_store ('account')
+
+    username = Unicode ()
+    account = Reference (username, Account.username)
+
+    token = Unicode ()
+    datetime = DateTime ()
+    ipaddress = Unicode ()
+
+    @classmethod
+    def set_login (cls, account, token, ipaddress):
+        ipaddress = pulse.utils.utf8dec (ipaddress)
+        login = cls.__pulse_store__.get (cls, (account, ipaddress))
+        if login is None:
+            login = cls (username=account.username, token=token, ipaddress=ipaddress,
+                         datetime=datetime.datetime.utcnow())
+        else:
+            login.token = token
+            login.datetime = datetime.datetime.utcnow()
+        return login
+
+    @classmethod
+    def get_login (cls, token, ipaddress):
+        ipaddress = pulse.utils.utf8dec (ipaddress)
+        login = cls.__pulse_store__.get (cls, (account, ipaddress))
+        if login is not None:
+            now = datetime.datetime.utcnow()
+            if (now - login.datetime).days > 0:
+                cls.__pulse_store__.remove (login)
+                return None
+            login.datetime = now
+        return login
+
+
+class AccountWatch (PulseModel):
+    __storm_primary__ = 'username', 'ident'
+    __pulse_store__ = get_store ('account')
+
+    username = Unicode ()
+    account = Reference (username, Account.username)
+    ident = Unicode ()
+
+    @classmethod
+    def add_watch (cls, account, ident):
+        watch = cls.__pulse_store__.get (cls, (account.ident, ident))
+        if watch is None:
+            watch = cls (username=account.ident, ident=ident)
+        return watch
+
+    @classmethod
+    def has_watch (cls, account, ident):
+        return cls.select (account=account, ident=ident).count() > 0
+
+
+class Message (PulseModel):
+    id = Int (primary=True)
+
+    type = Unicode ()
+    subj = Unicode ()
+    pred = Unicode ()
+    count = Int ()
+
+    datetime = DateTime ()
+    weeknum = Int ()
+
+    def __init__ (self, *args, **kw):
+        if kw.has_key ('datetime'):
+            kw['weeknum'] = pulse.utils.weeknum (kw['datetime'])
+        PulseModel.__init__ (self, **kw)
+
+    @classmethod
+    def make_message (cls, type, subj, pred, dt):
+        daystart = datetime.datetime (dt.year, dt.month, dt.day)
+        dayend = daystart + datetime.timedelta (days=1)
+        if (datetime.datetime.utcnow() - daystart).days > 14:
+            return None
+        filterargs = {'type': type, 'datetime__gte': daystart, 'datetime__lt': dayend}
+        if subj != None:
+            filterargs['subj'] = subj
+        else:
+            filterargs['subj__isnull'] = True
+        if pred != None:
+            filterargs['pred'] = pred
+        else:
+            filterargs['pred__isnull'] = True
+        oldmsg = cls.objects.filter (**filterargs)
+        try:
+            oldmsg = oldmsg[0]
+        except:
+            oldmsg = None
+        if oldmsg != None:
+            if oldmsg.count == None:
+                oldmsg.count = 1
+            oldmsg.count = oldmsg.count + 1
+            oldmsg.datetime = max (oldmsg.datetime, dt)
+            oldmsg.save ()
+            return oldmsg
+        msg = cls (type=type, subj=subj, pred=pred, count=1,
+                   datetime=dt, weeknum=pulse.utils.weeknum(daystart))
+        msg.save ()
+        return msg
+
+
+################################################################################
 ## Other Tables
 
 class Revision (PulseModel):
@@ -814,6 +977,7 @@ class Revision (PulseModel):
 
     @classmethod
     def select_revisions (cls, *args, **kw):
+        store = get_store (kw.pop ('__pulse_store__', cls.__pulse_store__))
         args = list (args)
         files = kw.pop ('files', None)
         range = kw.pop ('week_range', None)
@@ -833,6 +997,7 @@ class Revision (PulseModel):
 
     @classmethod
     def count_revisions (cls, *args, **kw):
+        store = get_store (kw.pop ('__pulse_store__', cls.__pulse_store__))
         args = list (args)
         files = kw.pop ('files', None)
         range = kw.pop ('week_range', None)
@@ -980,11 +1145,13 @@ class Queue (PulseModel):
 
     @classmethod
     def push (cls, module, ident):
+        store = get_store (kw.pop ('__pulse_store__', cls.__pulse_store__))
         if cls.select (cls.module == module, cls.ident == ident).count () == 0:
-            cls (module=module, ident=ident)
+            cls (module=module, ident=ident, __pulse_store__=store)
 
     @classmethod
-    def pop (cls):
+    def pop (cls, **kw):
+        store = get_store (kw.pop ('__pulse_store__', cls.__pulse_store__))
         try:
             sel = cls.select()[0]
             module = sel.module
@@ -995,7 +1162,8 @@ class Queue (PulseModel):
             return None
 
     @classmethod
-    def remove (cls, module, ident):
+    def remove (cls, module, ident, **kw):
+        store = get_store (kw.pop ('__pulse_store__', cls.__pulse_store__))
         try:
             rec = cls.select (module=module, ident=ident)
             store.remove (rec)
@@ -1033,6 +1201,7 @@ def create_tables ():
         'TimeDelta': {'postgres': 'INTERVAL',  'mysql': 'TEXT',       'sqlite': 'TEXT'},
         'List':      {'postgres': 'ARRAY[]',   'mysql': None,         'sqlite': 'TEXT'},
         }
+    store = get_store ('default')
     for cls in get_tables ():
         fields = []
         indexes = []
