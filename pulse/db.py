@@ -864,18 +864,28 @@ class Login (PulseModel):
         else:
             login.token = token
             login.datetime = datetime.datetime.utcnow()
+        flush (cls)
+        commit (cls)
         return login
 
     @classmethod
     def get_login (cls, token, ipaddress):
+        store = get_store ('login')
+        store.block_implicit_flushes ()
         ipaddress = pulse.utils.utf8dec (ipaddress)
-        login = cls.__pulse_store__.get (cls, (account, ipaddress))
-        if login is not None:
+        login = store.find (cls, token=token, ipaddress=ipaddress)
+        try:
+            login = login[0]
             now = datetime.datetime.utcnow()
             if (now - login.datetime).days > 0:
-                cls.__pulse_store__.remove (login)
+                store.remove (login)
                 return None
             login.datetime = now
+            store.flush ()
+            store.commit ()
+        except:
+            store.rollback ()
+            return None
         return login
 
 

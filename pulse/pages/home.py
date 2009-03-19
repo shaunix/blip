@@ -23,8 +23,8 @@ import datetime
 import os
 
 import pulse.config
+import pulse.db
 import pulse.html
-import pulse.models as db
 import pulse.response
 import pulse.utils
 
@@ -45,7 +45,7 @@ def output_home (response, **kw):
     page = pulse.html.Page (url=(pulse.config.web_root + 'home'))
     page.set_title (pulse.utils.gettext ('Home'))
     if response.http_account != None:
-        page.set_title (response.http_account.realname)
+        page.set_title (response.http_account.person.title)
 
     page.add_tab ('ticker', pulse.utils.gettext ('Ticker'))
     box = get_ticker_tab (response.http_account, **kw)
@@ -67,12 +67,12 @@ def output_ajax_tab (response, **kw):
 
 def get_ticker_tab (account, **kw):
     box = pulse.html.Div ()
-    watches = [watch.ident for watch in db.AccountWatch.objects.filter (account=account)]
+    watches = [watch.ident for watch in pulse.db.AccountWatch.select (account=account)]
     now = datetime.datetime.utcnow ()
 
     populate_caches (watches)
-    messages = db.Message.objects.filter (subj__in=watches,
-                                          datetime__gte=(now - datetime.timedelta (days=8)))
+    messages = pulse.db.Message.select (pulse.db.Message.subj.is_in (watches),
+                                        pulse.db.Message.datetime > (now - datetime.timedelta (days=8)) )
     messages = messages.order_by ('-datetime')
     weeknow = now.weekday ()
     weekday = None
@@ -106,15 +106,15 @@ def get_ticker_tab (account, **kw):
                     continue
                 elif message.pred == None:
                     span = pulse.html.Span ()
-                    branch = db.Branch.get_cached (message.subj)
+                    branch = pulse.db.Branch.get (message.subj)
                     span.add_content (pulse.html.Link (branch))
                     span.add_content (pulse.utils.gettext ('had %i commits on %s.') %
                                       (message.count, branch.scm_branch))
                     ticker.add_event (span, icon=branch.get_icon_url())
                 else:
                     span = pulse.html.Span ()
-                    person = db.Entity.get_cached (message.subj)
-                    branch = db.Branch.get_cached (message.pred)
+                    person = pulse.db.Entity.get (message.subj)
+                    branch = pulse.db.Branch.get (message.pred)
                     span.add_content (pulse.html.Link (person))
                     span.add_content (pulse.utils.gettext (' made %i commits to ') % message.count)
                     span.add_content (pulse.html.Link (branch))
@@ -131,9 +131,9 @@ def get_watches_tab (account, **kw):
     cont.add_content (box)
     box.set_title (pulse.utils.gettext ('What You Watch'))
 
-    watches = [watch.ident for watch in db.AccountWatch.objects.filter (account=account)]
+    watches = [watch.ident for watch in pulse.db.AccountWatch.select (account=account)]
     populate_caches (watches)
-    watches = filter (lambda x: x != None, [db.get_by_ident (watch) for watch in watches])
+    watches = filter (lambda x: x != None, [pulse.db.get_by_ident (watch) for watch in watches])
 
     watches = pulse.utils.attrsorted (watches, 'title')
     for record in watches:
@@ -142,8 +142,8 @@ def get_watches_tab (account, **kw):
     box = pulse.html.IconBox ()
     cont.add_content (box)
     box.set_title (pulse.utils.gettext ('Who Watches You'))
-    watches = list(db.AccountWatch.objects.filter (ident=account.person.ident))
-    watches = pulse.utils.attrsorted ([db.Entity.get_cached (watch.ident) for watch in watches], 'title')
+    watches = list(pulse.db.AccountWatch.select (ident=account.person.ident))
+    watches = pulse.utils.attrsorted ([pulse.db.Entity.get (watch.ident) for watch in watches], 'title')
     if len(watches) == 0:
         box.add_content (pulse.utils.gettext ('Nobody is watching you'))
     else:
@@ -156,13 +156,8 @@ def get_watches_tab (account, **kw):
 def populate_caches (idents):
     people = [ident for ident in idents if ident.startswith('/person/')]
     if len(people) > 0:
-        people = db.Entity.objects.filter (ident__in=people)
-        for person in list(people):
-            db.Entity.set_cached (person.ident, person)
+        list (pulse.db.Entity.select (pulse.db.Entity.ident.is_in (people)))
 
     branches = [ident for ident in idents if ident.startswith('/mod/')]
     if len(branches) > 0:
-        branches = db.Branch.objects.filter (ident__in=branches)
-        for branch in list(branches):
-            db.Branch.set_cached (branch.ident, branch)
-
+        list (pulse.db.Branch.select (pulse.db.Branch.ident.is_in (branches)))

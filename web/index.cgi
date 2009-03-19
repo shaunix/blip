@@ -76,7 +76,7 @@ def main ():
         ck = Cookie.SimpleCookie ()
         ck.load (os.getenv ('HTTP_COOKIE') or '')
         token = ck.get('pulse_auth')
-        token = token.value
+        token = pulse.utils.utf8dec (token.value)
         response.http_login = pulse.db.Login.get_login (token, os.getenv ('REMOTE_ADDR'))
         response.http_account = response.http_login.account
     except:
