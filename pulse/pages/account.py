@@ -223,11 +223,14 @@ def output_account_auth (response, token, **kw):
         account.check_hash = None
         token = pulse.utils.get_token ()
         login = pulse.db.Login.set_login (account, token, os.getenv ('REMOTE_ADDR'))
+        realname = account.data.pop ('realname', None)
+        if realname is not None:
+            account.person.update (name=realname)
         response.redirect (pulse.config.web_root + 'home')
         response.set_cookie ('pulse_auth', token)
-    except Exception, e:
+    except:
         pulse.db.rollback (pulse.db.Account)
-        page = pulse.html.PageError (pulse.utils.gettext('There was a problem processing the request %s.') % e,
+        page = pulse.html.PageError (pulse.utils.gettext('There was a problem processing the request.'),
                                      **kw)
         response.set_contents (page)
     else:
