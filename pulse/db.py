@@ -185,6 +185,21 @@ class WillNotDelete (Exception):
 ################################################################################
 ## Base Classes
 
+def get_by_ident (ident):
+    first = ident.split('/')[1]
+    try:
+        if first == 'set':
+            cls = ReleaseSet
+        elif first in ('mod', 'doc', 'ref', 'app', 'applet', 'lib', 'ext', 'i18n', 'l10n'):
+            cls = Branch
+        elif first in ('person', 'team', 'ghost'):
+            cls = Entity
+        elif first == 'list':
+            cls = Forum
+        return cls.get (ident)
+    except:
+        return None
+
 class PulseModelType (storm.properties.PropertyPublisherMeta):
     def __new__ (meta, name, bases, attrs):
         cls = super (PulseModelType, meta).__new__ (meta, name, bases, attrs)
@@ -418,7 +433,7 @@ class PulseRelation (PulseModel):
         return rel
 
     @classmethod
-    def select_related (cls, subj=None, pred=None):
+    def select_related (cls, subj=None, pred=None, **kw):
         store = get_store (kw.pop ('__pulse_store__', cls.__pulse_store__))
         if subj != None and pred != None:
             rel = store.find (cls, subj_ident=subj.ident, pred_ident=pred.ident)
@@ -523,6 +538,12 @@ class Branch (PulseRecord):
             args.append (cls.parent_ident == SetModule.pred_ident)
             args.append (SetModule.subj_ident == rset.ident)
         return (args, kw)
+
+    @ classmethod
+    def select (cls, *args, **kw):
+        store = get_store (kw.pop ('__pulse_store__', cls.__pulse_store__))
+        args, kw = cls._select_args (*args, **kw)
+        return store.find (cls, *args, **kw)
 
     @ classmethod
     def select_with_mod_person (cls, *args, **kw):
@@ -1144,7 +1165,7 @@ class Queue (PulseModel):
         pass
 
     @classmethod
-    def push (cls, module, ident):
+    def push (cls, module, ident, **kw):
         store = get_store (kw.pop ('__pulse_store__', cls.__pulse_store__))
         if cls.select (cls.module == module, cls.ident == ident).count () == 0:
             cls (module=module, ident=ident, __pulse_store__=store)
