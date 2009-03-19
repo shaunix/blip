@@ -483,8 +483,7 @@ class Page (HtmlWidget, ContentComponent, SublinksComponent, FactsComponent):
         try:
             # FIXME: i18n
             screen = screenshot['C']
-            # FIXME STORM
-            of = db.OutputFile.objects.get (id=screen)
+            of = pulse.db.OutputFile.get (screen)
             self._screenshot_file = of
         except:
             pass
@@ -539,7 +538,7 @@ class Page (HtmlWidget, ContentComponent, SublinksComponent, FactsComponent):
         p (fd, '<div id="subheader">', None, False)
         if self.http_response.http_account != None and self._ident != None:
             # FIXME STORM
-            if not db.AccountWatch.has_watch (self.http_response.http_account, self._ident):
+            if not pulse.db.AccountWatch.has_watch (self.http_response.http_account, self._ident):
                 p (fd, '<div class="watch"><a href="javascript:watch(\'%s\')">%s</a></div>',
                    (self._ident, pulse.utils.gettext ('Watch')), False)
         p (fd, '<h1>', None, False)
