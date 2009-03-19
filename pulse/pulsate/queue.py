@@ -1,4 +1,4 @@
-# Copyright (c) 2008  Shaun McCance  <shaunm@gnome.org>
+# Copyright (c) 2008-2009  Shaun McCance  <shaunm@gnome.org>
 #
 # This file is part of Pulse, a program for displaying various statistics
 # of questionable relevance about software and the people who make it.

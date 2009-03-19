@@ -1,4 +1,4 @@
-# Copyright (c) 2006  Shaun McCance  <shaunm@gnome.org>
+# Copyright (c) 2006-2009  Shaun McCance  <shaunm@gnome.org>
 #
 # This file is part of Pulse, a program for displaying various statistics
 # of questionable relevance about software and the people who make it.
@@ -73,7 +73,7 @@ def get_ticker_tab (account, **kw):
     populate_caches (watches)
     messages = pulse.db.Message.select (pulse.db.Message.subj.is_in (watches),
                                         pulse.db.Message.datetime > (now - datetime.timedelta (days=8)) )
-    messages = messages.order_by ('-datetime')
+    messages.order_by (pulse.db.Desc (pulse.db.Message.datetime))
     weeknow = now.weekday ()
     weekday = None
     weekiter = 0
@@ -110,7 +110,7 @@ def get_ticker_tab (account, **kw):
                     span.add_content (pulse.html.Link (branch))
                     span.add_content (pulse.utils.gettext ('had %i commits on %s.') %
                                       (message.count, branch.scm_branch))
-                    ticker.add_event (span, icon=branch.get_icon_url())
+                    ticker.add_event (span, icon=branch.icon_url)
                 else:
                     span = pulse.html.Span ()
                     person = pulse.db.Entity.get (message.subj)
@@ -119,7 +119,7 @@ def get_ticker_tab (account, **kw):
                     span.add_content (pulse.utils.gettext (' made %i commits to ') % message.count)
                     span.add_content (pulse.html.Link (branch))
                     span.add_content (pulse.utils.gettext (' on %s.') % branch.scm_branch)
-                    ticker.add_event (span, icon=person.get_icon_url())
+                    ticker.add_event (span, icon=person.icon_url)
         except:
             pass
     return box

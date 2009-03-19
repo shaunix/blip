@@ -1,4 +1,4 @@
-# Copyright (c) 2006  Shaun McCance  <shaunm@gnome.org>
+# Copyright (c) 2006-2009  Shaun McCance  <shaunm@gnome.org>
 #
 # This file is part of Pulse, a program for displaying various statistics
 # of questionable relevance about software and the people who make it.
@@ -315,8 +315,9 @@ def output_account_watch (response, **kw):
     query = kw.get ('query', {})
     ident = query.get('ident', None)
     if response.http_account is not None and ident is not None:
+        username = response.http_account.username
         try:
-            pulse.db.AccountWatch.add_watch (response.http_account, ident)
+            pulse.db.AccountWatch.add_watch (username, ident)
         except:
             pulse.db.rollback (pulse.db.Account)
             admon = pulse.html.AdmonBox (pulse.html.AdmonBox.error,

@@ -881,6 +881,7 @@ class Login (PulseModel):
                 store.remove (login)
                 return None
             login.datetime = now
+            login.account
             store.flush ()
             store.commit ()
         except:
@@ -898,10 +899,10 @@ class AccountWatch (PulseModel):
     ident = Unicode ()
 
     @classmethod
-    def add_watch (cls, account, ident):
-        watch = cls.__pulse_store__.get (cls, (account.ident, ident))
+    def add_watch (cls, username, ident):
+        watch = cls.__pulse_store__.get (cls, (username, ident))
         if watch is None:
-            watch = cls (username=account.ident, ident=ident)
+            watch = cls (username=username, ident=ident)
         return watch
 
     @classmethod
@@ -925,22 +926,21 @@ class Message (PulseModel):
             kw['weeknum'] = pulse.utils.weeknum (kw['datetime'])
         PulseModel.__init__ (self, **kw)
 
+    def log_create (self):
+        pass
+
     @classmethod
     def make_message (cls, type, subj, pred, dt):
         daystart = datetime.datetime (dt.year, dt.month, dt.day)
         dayend = daystart + datetime.timedelta (days=1)
         if (datetime.datetime.utcnow() - daystart).days > 14:
             return None
-        filterargs = {'type': type, 'datetime__gte': daystart, 'datetime__lt': dayend}
-        if subj != None:
-            filterargs['subj'] = subj
-        else:
-            filterargs['subj__isnull'] = True
-        if pred != None:
-            filterargs['pred'] = pred
-        else:
-            filterargs['pred__isnull'] = True
-        oldmsg = cls.objects.filter (**filterargs)
+        filterargs = [pulse.db.Message.type == type,
+                      pulse.db.Message.datetime >= daystart,
+                      pulse.db.Message.datetime < dayend,
+                      pulse.db.Message.subj == subj,
+                      pulse.db.Message.pred == pred]
+        oldmsg = cls.select (*filterargs)
         try:
             oldmsg = oldmsg[0]
         except:
@@ -950,11 +950,9 @@ class Message (PulseModel):
                 oldmsg.count = 1
             oldmsg.count = oldmsg.count + 1
             oldmsg.datetime = max (oldmsg.datetime, dt)
-            oldmsg.save ()
             return oldmsg
         msg = cls (type=type, subj=subj, pred=pred, count=1,
                    datetime=dt, weeknum=pulse.utils.weeknum(daystart))
-        msg.save ()
         return msg
 
 
@@ -981,6 +979,8 @@ class Revision (PulseModel):
     def __init__ (self, **kw):
         kw['weeknum'] = pulse.utils.weeknum (kw['datetime'])
         PulseModel.__init__ (self, **kw)
+        Message.make_message (u'commit', self.person_ident, self.branch_ident, self.datetime)
+        Message.make_message (u'commit', self.branch_ident, None, self.datetime)
 
     def log_create (self):
         pass
