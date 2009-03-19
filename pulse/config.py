@@ -107,7 +107,7 @@ l10n_root = files_root + 'l10n/'
 ################################################################################
 ## Database settings
 
-database = 'sqlite:/shaunm/Projects/pulse/storm/storm.db'
+database = 'sqlite:/shaunm/Projects/pulse/scratch/pulse.db'
 
 
 ################################################################################
