@@ -836,7 +836,7 @@ class Login (PulseModel):
     @classmethod
     def set_login (cls, account, token, ipaddress):
         ipaddress = pulse.utils.utf8dec (ipaddress)
-        login = cls.__pulse_store__.get (cls, (account, ipaddress))
+        login = cls.__pulse_store__.get (cls, (account.username, ipaddress))
         if login is None:
             login = cls (username=account.username, token=token, ipaddress=ipaddress,
                          datetime=datetime.datetime.utcnow())
