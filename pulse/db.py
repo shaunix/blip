@@ -425,6 +425,8 @@ class PulseRecord (PulseModel):
     web = Unicode ()
 
     data = Pickle (default_factory=dict)
+
+    updated = DateTime ()
     
     # Whether Pulse should link to this thing, i.e. whether it
     # displays pages for this kind of thing.  Subclasses will

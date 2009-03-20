@@ -65,6 +65,7 @@ def update_translation (po, **kw):
     else:
         potfile = get_xml2po_potfile (po.parent, checkout, **kw)
     if potfile == None: return
+    po.parent.updated = datetime.datetime.utcnow ()
 
     filepath = os.path.join (checkout.directory, po.scm_dir, po.scm_file)
     if not os.path.exists (filepath):
@@ -80,6 +81,7 @@ def update_translation (po, **kw):
             potmd5 = potfile.data.get('md5', None)
             if pomd5 != None and pomd5 == potmd5:
                 pulse.utils.log ('Skipping file %s' % rel_scm)
+                po.updated = datetime.datetime.utcnow ()
                 return
 
     if po.subtype == 'intltool':
@@ -112,6 +114,8 @@ def update_translation (po, **kw):
 
     po.data['md5'] = potfile.data.get('md5', None)
     pulse.db.Timestamp.set_timestamp (rel_scm, mtime)
+
+    po.updated = datetime.datetime.utcnow ()
 
 
 def update_intltool (po, checkout, potfile, rel_scm, **kw):

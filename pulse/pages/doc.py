@@ -278,6 +278,10 @@ def get_info_tab (doc, **kw):
     facts.add_fact_divider ()
     facts.add_fact (pulse.utils.gettext ('Score'), str(doc.mod_score))
 
+    if doc.updated is not None:
+        facts.add_fact_divider ()
+        facts.add_fact (pulse.utils.gettext ('Last Updated'),
+                        doc.updated.strftime('%Y-%m-%d %T'))
     return facts
 
 

@@ -61,6 +61,8 @@ def update_document (doc, **kw):
     else:
         pulse.utils.warn ('Skipping document %s with unknown type %s' % (doc.ident, doc.subtype))
 
+    doc.updated = datetime.datetime.utcnow ()
+
 
 def update_gdu_docbook (doc, **kw):
     checkout = kw.pop('checkout', None)

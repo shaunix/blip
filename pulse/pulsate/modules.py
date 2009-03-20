@@ -201,6 +201,8 @@ def update_branch (branch, **kw):
         branch.icon_dir = None
         branch.icon_name = None
         branch.data.pop ('screenshot', None)
+
+    branch.updated = datetime.datetime.utcnow ()
     
 
 def check_history (branch, checkout):
