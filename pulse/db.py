@@ -1298,10 +1298,13 @@ class Queue (PulseModel):
             cls (module=module, ident=ident, __pulse_store__=store)
 
     @classmethod
-    def pop (cls, **kw):
+    def pop (cls, ident=None, **kw):
         store = get_store (kw.pop ('__pulse_store__', cls.__pulse_store__))
         try:
-            sel = cls.select()[0]
+            if ident is not None:
+                sel = cls.select(cls.ident.like (ident))[0]
+            else:
+                sel = cls.select()[0]
             module = sel.module
             ident = sel.ident
             store.remove (sel)

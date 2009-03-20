@@ -22,7 +22,7 @@ import pulse.db
 import pulse.utils
 
 synop = 'update information for queued objects'
-usage_extra = ''
+usage_extra = '[ident]'
 args = pulse.utils.odict()
 args['length'] = (None, 'print the length of the queue and exit')
 args['limit='] = ('num', 'process at most num entries from the queue')
@@ -33,7 +33,7 @@ args['no-update']  = (None, 'do not update SCM checkouts')
 args['no-docs'] = (None, 'do not update the documentation')
 args['no-i18n'] = (None, 'do not update the translations')
 def help_extra (fd=None):
-    pass
+    print >>fd, 'If ident is passed, only records with a matching identifier will be updated.'
 
 
 def main (argv, options={}):
@@ -63,7 +63,11 @@ def main (argv, options={}):
         import datetime
         timestart = datetime.datetime.now()
     iter = 0
-    el = pulse.db.Queue.pop ()
+    if len(argv) == 0:
+        ident = None
+    else:
+        ident = pulse.utils.utf8dec (argv[0])
+    el = pulse.db.Queue.pop (ident)
     while el != None:
         if limit != None and iter >= limit:
             return 0
@@ -77,5 +81,5 @@ def main (argv, options={}):
             ret = mod.main ([el['ident']])
         if ret != 0:
             return ret
-        el = pulse.db.Queue.pop ()
+        el = pulse.db.Queue.pop (ident)
     return 0
