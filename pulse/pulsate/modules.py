@@ -203,6 +203,7 @@ def update_branch (branch, **kw):
         branch.data.pop ('screenshot', None)
 
     branch.updated = datetime.datetime.utcnow ()
+    pulse.db.Queue.remove ('modules', branch.ident)
     
 
 def check_history (branch, checkout):

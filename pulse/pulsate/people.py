@@ -75,6 +75,7 @@ def update_person (person, **kw):
         else:
             pulse.utils.log ('Skipping blog %s' % bident)
 
+    person.updated = datetime.datetime.utcnow ()
     pulse.db.Queue.remove ('people', person.ident)
 
 
