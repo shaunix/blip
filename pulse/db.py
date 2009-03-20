@@ -21,7 +21,6 @@
 import datetime
 import inspect
 import os
-import urllib
 import sys
 
 from storm.locals import *
@@ -746,7 +745,7 @@ class Entity (PulseRecord):
     @classmethod
     def get_or_create_email (cls, email, **kw):
         if email.find('@') < 0:
-            ident = u'/person/' + urllib.quote(email) + u'@'
+            ident = u'/person/' + email + u'@'
             ent = cls.get_or_create (ident, u'Person', **kw)
         else:
             ent = cls.get_or_create (u'/person/' + email, u'Person', **kw)
