@@ -312,14 +312,14 @@ def process_credits (doc, **kw):
     for cr_name, cr_email, cr_type, cr_maint in doc.credits:
         ent = None
         if cr_email != None:
-            ent = pulse.db.Entity.get_or_create (u'/person/' + cr_email, u'Person')
+            ent = pulse.db.Entity.get_or_create_email (cr_email)
         if ent == None:
             ident = u'/ghost/' + urllib.quote (cr_name)
             ent = pulse.db.Entity.get_or_create (ident, u'Ghost')
             if ent.ident == ident:
                 ent.update (name=cr_name)
-            if cr_email != None:
-                ent.email = cr_email
+        if cr_email != None:
+            ent.extend (email=cr_email)
         rel = pulse.db.DocumentEntity.set_related (doc, ent)
         if cr_type in ('author', 'corpauthor'):
             rel.author = True

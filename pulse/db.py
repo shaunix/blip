@@ -21,6 +21,7 @@
 import datetime
 import inspect
 import os
+import urllib
 import sys
 
 from storm.locals import *
@@ -742,8 +743,24 @@ class Entity (PulseRecord):
                 ent = ent.entity
         return ent
 
+    @classmethod
+    def get_or_create_email (cls, email, **kw):
+        if email.find('@') < 0:
+            ident = u'/person/' + urllib.quote(email) + u'@'
+            ent = cls.get_or_create (ident, u'Person', **kw)
+        else:
+            ent = cls.get_or_create (u'/person/' + email, u'Person', **kw)
+        ent.extend (email=email)
+        return ent
+
     def select_children (self):
         return self.__class__.select (parent=self)
+
+    @property
+    def title_default (self):
+        if self.email is not None:
+            return self.email
+        return self.ident.split('/')[-1]
 
     @property
     def linkable (self):

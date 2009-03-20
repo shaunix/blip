@@ -214,19 +214,21 @@ def check_history (branch, checkout):
     pulse.utils.log ('Checking history for %s' % branch.ident)
     serverid = u'.'.join (pulse.scm.server_name (checkout.scm_type, checkout.scm_server).split('.')[-2:])
     for hist in checkout.read_history (since=since):
-        ptype = u'Person'
         if hist['author'][0] != None:
             pident = u'/person/%s@%s' % (hist['author'][0], serverid)
+            person = pulse.db.Entity.get_or_create (pident, u'Person')
         elif hist['author'][2] != None:
-            pident = u'/person/%s' % hist['author'][2]
+            person = pulse.db.Entity.get_or_create_email (hist['author'][2])
         else:
             pident = u'/ghost/%' % hist['author'][1]
-            ptype = u'Ghost'
-        person = pulse.db.Entity.get_or_create (pident, ptype)
-        if ptype == u'Person':
+            person = pulse.db.Entity.get_or_create (pident, u'Ghost')
+
+        if person.type == u'Person':
             pulse.db.Queue.push (u'people', pident)
         if hist['author'][1] != None:
             person.extend (name=hist['author'][1])
+        if hist['author'][2] != None:
+            person.extend (email=hist['author'][2])
         rev = {'branch': branch, 'person': person,
                'revision': hist['revision'],
                'datetime': hist['datetime'],
