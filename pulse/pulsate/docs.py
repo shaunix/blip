@@ -318,7 +318,9 @@ def process_credits (doc, **kw):
             ent = pulse.db.Entity.get_or_create (ident, u'Ghost')
             if ent.ident == ident:
                 ent.update (name=cr_name)
-        if cr_email != None:
+        if cr_name is not None:
+            ent.extend (name=cr_name)
+        if cr_email is not None:
             ent.extend (email=cr_email)
         rel = pulse.db.DocumentEntity.set_related (doc, ent)
         if cr_type in ('author', 'corpauthor'):
