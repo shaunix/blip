@@ -159,7 +159,7 @@ def process_docbook_docfile (docfile, doc, **kw):
         root = xmldoc.getRootElement()
     except Exception, e:
         pulse.utils.warn ('Failed to load file %s' % rel_scm)
-        doc.error = str(e)
+        doc.error = unicode(e)
         return
     doc.error = None
     seen = 0
