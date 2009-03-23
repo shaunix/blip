@@ -37,9 +37,16 @@ def help_extra (fd=None):
 
 
 def main (argv, options={}):
+    if len(argv) == 0:
+        ident = None
+    else:
+        ident = pulse.utils.utf8dec (argv[0])
     length = options.get ('--length', False)
     if length:
-        print pulse.db.Queue.select().count()
+        if ident is not None:
+            print pulse.db.Queue.select(pulse.db.Queue.ident.like (ident)).count()
+        else:
+            print pulse.db.Queue.select().count()
         return 0
     limit = options.get ('--limit', None)
     if limit is not None:
@@ -63,10 +70,6 @@ def main (argv, options={}):
         import datetime
         timestart = datetime.datetime.now()
     iter = 0
-    if len(argv) == 0:
-        ident = None
-    else:
-        ident = pulse.utils.utf8dec (argv[0])
     el = pulse.db.Queue.pop (ident)
     while el != None:
         if limit != None and iter >= limit:
