@@ -33,6 +33,7 @@ args = pulse.utils.odict()
 args['log-file=']  = ('FILE', 'log updates to the file FILE')
 args['log-level='] = ('LEVEL', 'minimum level of log messages')
 args['debug-db'] = (None, 'print database queries')
+args['debug-db-summary'] = (None, 'print summary of database queries')
 args['rollback'] = (None, 'roll back all changes (dry run)')
 
 def print_args (args, fd=sys.stderr):
@@ -119,11 +120,17 @@ if __name__ == "__main__":
     debug = options.get ('--debug-db', False)
     if debug:
         pulse.db.debug ()
+    else:
+        summary = options.get ('--debug-db-summary', False)
+        if summary:
+            pulse.db.debug (False)
+            debug = True
 
     if options.get ('--rollback', False):
         pulse.db.rollback_all ()
 
     pulse.utils.set_log_level (options.get ('--log-level', 'log'))
+    pulse.utils.set_log_file (options.get ('--log-file', None))
 
     retcode = 1
     try:

@@ -232,15 +232,26 @@ def check_history (branch, checkout):
             person.extend (name=hist['author'][1])
         if hist['author'][2] != None:
             person.extend (email=hist['author'][2])
-        rev = {'branch': branch, 'person': person,
+        # IMPORTANT: If we were to just set branch and person, instead of
+        # branch_ident and person_ident, Storm would keep referencess to
+        # the Revision object.  That would eat your computer.
+        revident = branch.ident + u'/' + hist['revision']
+        rev = {'ident': revident,
+               'branch_ident': branch.ident,
+               'person_ident': person.ident,
                'revision': hist['revision'],
                'datetime': hist['datetime'],
                'comment': hist['comment'] }
         if person.ident != pident:
             rev['alias_ident'] = pident
+        if pulse.db.Revision.select(ident=revident).count() > 0:
+            continue
         rev = pulse.db.Revision (**rev)
+        rev.decache ()
         for filename, filerev, prevrev in hist['files']:
-            rev.add_file (filename, filerev, prevrev)
+            revfile = rev.add_file (filename, filerev, prevrev)
+            revfile.decache ()
+        pulse.db.flush()
 
     revision = pulse.db.Revision.get_last_revision (branch=branch)
     if revision != None:

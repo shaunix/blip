@@ -37,7 +37,7 @@ def update_graphs (record, select, max, **kw):
     finalrev = pulse.db.Revision.select_revisions (**select).order_by ('datetime')
     outpath = None
     try:
-        finalrev = finalrev[0].id
+        finalrev = finalrev[0].ident
         stillrev = True
     except IndexError:
         finalrev = None
@@ -77,7 +77,7 @@ def update_graphs (record, select, max, **kw):
         stats = [0] * numweeks
         revs = list(revs)
         for rev in revs:
-            if rev.id == finalrev:
+            if rev.ident == finalrev:
                 stillrev = False
             idx = rev.weeknum - topweek + numweeks - 1
             stats[idx] += 1

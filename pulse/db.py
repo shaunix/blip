@@ -129,6 +129,13 @@ class GenerationalCache(object):
         """
         self._old_cache, self._new_cache = self._new_cache, self._old_cache
         self._new_cache.clear()
+        if False:
+            # This is handy for tracking down memory eating issues
+            import gc
+            for table in get_tables():
+                refs = len(gc.get_referrers(table))
+                if refs > 100:
+                    print '%s: %i' % (table.__name__, refs)
 
     def add(self, obj_info):
         """See `storm.store.Cache.add`."""
@@ -185,7 +192,8 @@ class PulseTracer (object):
     other_count = 0
     other_total = 0
     
-    def __init__ (self, stream=None):
+    def __init__ (self, log=True, stream=None):
+        self._log = log
         self._stream = stream or sys.stderr
         self._last_time = None
 
@@ -217,6 +225,8 @@ class PulseTracer (object):
         if cmd.startswith ('SELECT '):
             self.__class__.select_count += 1
             self.__class__.select_total += sec
+            if not self._log:
+                return
             import re
             outtxt = re.split (' (?=WHERE|AND|GROUP BY|ORDER BY|LIMIT)', cmd)
             sel, frm = outtxt[0].split (' FROM ')
@@ -226,18 +236,28 @@ class PulseTracer (object):
         elif cmd.startswith ('INSERT '):
             self.__class__.insert_count += 1
             self.__class__.insert_total += sec
+            if not self._log:
+                return
             outtxt.append (cmd)
         elif cmd.startswith ('UPDATE '):
             self.__class__.update_count += 1
             self.__class__.update_total += sec
+            if not self._log:
+                return
             outtxt.append (cmd)
         elif cmd.startswith ('COMMIT') or cmd.startswith ('ROLLBACK'):
+            if not self._log:
+                return
             outtxt.append (cmd)
         else:
             self.__class__.other_count += 1
             self.__class__.other_total += sec
+            if not self._log:
+                return
             outtxt.append (cmd)
 
+        if not self._log:
+            return
         self._stream.write ((u'%sms  %s\n' % (timing, outtxt[0])).encode ('utf8'))
         for txt in outtxt[1:]:
             self._stream.write ((u'           %s\n' % txt).encode ('utf8'))
@@ -251,9 +271,9 @@ class PulseTracer (object):
                                         statement, params):
         self.print_command (statement, params)
 
-def debug ():
+def debug (log=True):
     import storm.tracer
-    storm.tracer.install_tracer (PulseTracer ())
+    storm.tracer.install_tracer (PulseTracer (log=log))
 
 def debug_summary ():
     print '---------'
@@ -328,6 +348,9 @@ class PulseModel (Storm):
 
     def log_create (self):
         pulse.utils.log ('Creating %s' % self)
+
+    def decache (self):
+        storm.store.Store.of(self)._cache.remove (self)
 
     @ classmethod
     def find (cls, *args, **kw):
@@ -1077,7 +1100,7 @@ class Message (PulseModel):
 ## Other Tables
 
 class Revision (PulseModel):
-    id = Int (primary=True)
+    ident = Unicode (primary=True)
 
     branch_ident = Unicode ()
     branch = Reference (branch_ident, Branch.ident)
@@ -1103,10 +1126,11 @@ class Revision (PulseModel):
         pass
 
     def add_file (self, filename, filerev, prevrev):
-        rfile = RevisionFile (revision=self,
+        rfile = RevisionFile (revision_ident=self.ident,
                               filename=filename,
                               filerev=filerev,
                               prevrev=prevrev)
+        return rfile
 
     def display_revision (self, branch=None):
         if branch == None:
@@ -1130,7 +1154,7 @@ class Revision (PulseModel):
         files = kw.pop ('files', None)
         range = kw.pop ('week_range', None)
         if files != None:
-            args.append (Revision.id == RevisionFile.revision_id)
+            args.append (Revision.ident == RevisionFile.revision_ident)
             if len(files) == 1:
                 args.append (RevisionFile.filename == files[0])
             else:
@@ -1140,7 +1164,7 @@ class Revision (PulseModel):
                               Revision.weeknum <= range[1]))
         sel = store.find (cls, *args, **kw)
         if files != None:
-            sel = sel.group_by (Revision.id)
+            sel = sel.group_by (Revision.ident)
         return sel.order_by (Desc (Revision.datetime))
 
     @classmethod
@@ -1150,7 +1174,7 @@ class Revision (PulseModel):
         files = kw.pop ('files', None)
         range = kw.pop ('week_range', None)
         if files != None:
-            args.append (Revision.id == RevisionFile.revision_id)
+            args.append (Revision.ident == RevisionFile.revision_ident)
             if len(files) == 1:
                 args.append (RevisionFile.filename == files[0])
             else:
@@ -1159,14 +1183,14 @@ class Revision (PulseModel):
             args.append (And (Revision.weeknum >= range[0],
                               Revision.weeknum <= range[1]))
         sel = store.find (cls, *args, **kw)
-        return sel.count (Revision.id, distinct=True)
+        return sel.count (Revision.ident, distinct=True)
 
 
 class RevisionFile (PulseModel):
-    id = Int (primary=True)
+    __storm_primary__ = 'revision_ident', 'filename'
 
-    revision_id = Int ()
-    revision = Reference (revision_id, Revision.id)
+    revision_ident = Unicode ()
+    revision = Reference (revision_ident, Revision.ident)
 
     filename = Unicode ()
     filerev = Unicode ()
