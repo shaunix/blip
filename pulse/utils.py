@@ -302,17 +302,20 @@ class Logger (object):
         else:
             self.log_file = sys.stdout
 
-    def log (self, msg, fd=sys.stdout):
+    def log (self, msg):
         """Write a log message"""
         if self.log_level == 'log':
-            self.log_file.write ('[%s] %s\n' % (datetime.now().strftime ('%Y-%m-%d %H:%M:%S'), msg))
-            self.log_file.flush ()
+            self.log_write ('[%s] %s\n' % (datetime.now().strftime ('%Y-%m-%d %H:%M:%S'), msg))
 
-    def warn (self, msg, fd=sys.stderr):
+    def warn (self, msg):
         """Write a warning message"""
         if self.log_level in ('warn', 'log'):
-            self.log_file.write ('[%s] %s\n' % (datetime.now().strftime ('%Y-%m-%d %H:%M:%S'), msg))
-            self.log_file.flush ()
+            self.log_write ('[%s] %s\n' % (datetime.now().strftime ('%Y-%m-%d %H:%M:%S'), msg))
+
+    def log_write (self, str):
+        self.log_file.write (str)
+        self.log_file.flush ()
+        
 
 logger = Logger ()
 
@@ -322,11 +325,14 @@ def set_log_level (level):
 def set_log_file (filename):
     logger.set_log_file (filename)
 
-def log (msg, fd=sys.stdout):
-    logger.log (msg, fd=fd)
+def log (msg):
+    logger.log (msg)
 
-def warn (msg, fd=sys.stderr):
-    logger.log (msg, fd=fd)
+def warn (msg):
+    logger.log (msg)
+
+def log_write (str):
+    logger.log_write (str)
 
 
 def import_ (name):

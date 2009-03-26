@@ -192,9 +192,8 @@ class PulseTracer (object):
     other_count = 0
     other_total = 0
     
-    def __init__ (self, log=True, stream=None):
+    def __init__ (self, log=True):
         self._log = log
-        self._stream = stream or sys.stderr
         self._last_time = None
 
     @staticmethod
@@ -258,9 +257,9 @@ class PulseTracer (object):
 
         if not self._log:
             return
-        self._stream.write ((u'%sms  %s\n' % (timing, outtxt[0])).encode ('utf8'))
+        pulse.utils.log_write ((u'%sms  %s\n' % (timing, outtxt[0])).encode ('utf8'))
         for txt in outtxt[1:]:
-            self._stream.write ((u'           %s\n' % txt).encode ('utf8'))
+            pulse.utils.log_write ((u'           %s\n' % txt).encode ('utf8'))
 
     def connection_raw_execute_error (self, connection, raw_cursor,
                                       statement, params, error):
@@ -278,16 +277,19 @@ def debug (log=True):
 def debug_summary ():
     print '---------'
     timing = PulseTracer.timing_string (PulseTracer.select_total)
-    print '%i SELECT statements in %sms' % (PulseTracer.select_count, timing)
+    pulse.utils.log_write ('%i SELECT statements in %sms\n' % (PulseTracer.select_count, timing))
     if PulseTracer.insert_total > 0:
         timing = PulseTracer.timing_string (PulseTracer.insert_total)
-        print '%i INSERT statements in %sms' % (PulseTracer.insert_count, timing)
+        pulse.utils.log_write ('%i INSERT statements in %sms\n'
+                               % (PulseTracer.insert_count, timing))
     if PulseTracer.update_total > 0:
         timing = PulseTracer.timing_string (PulseTracer.update_total)
-        print '%i UPDATE statements in %sms' % (PulseTracer.update_count, timing)
+        pulse.utils.log_write ('%i UPDATE statements in %sms\n'
+                               % (PulseTracer.update_count, timing))
     if PulseTracer.other_total > 0:
         timing = PulseTracer.timing_string (PulseTracer.other_total)
-        print '%i other statements in %sms' % (PulseTracer.other_count, timing)
+        pulse.utils.log_write ('%i other statements in %sms\n'
+                               % (PulseTracer.other_count, timing))
     
 
 
