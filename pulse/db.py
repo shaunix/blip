@@ -1313,15 +1313,19 @@ class Queue (PulseModel):
     __storm_primary__ = 'module', 'ident'
     module = Unicode ()
     ident = Unicode ()
+    cache = {}
 
     def log_create (self):
         pass
 
     @classmethod
     def push (cls, module, ident, **kw):
-        store = get_store (kw.pop ('__pulse_store__', cls.__pulse_store__))
-        if cls.select (cls.module == module, cls.ident == ident).count () == 0:
-            cls (module=module, ident=ident, __pulse_store__=store)
+        if not cls.cache.get(module, {}).get(ident, False):
+            store = get_store (kw.pop ('__pulse_store__', cls.__pulse_store__))
+            if cls.select (cls.module == module, cls.ident == ident).count () == 0:
+                cls (module=module, ident=ident, __pulse_store__=store)
+            cls.cache.setdefault (module, {})
+            cls.cache[module][ident] = True
 
     @classmethod
     def pop (cls, ident=None, **kw):
