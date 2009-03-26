@@ -107,7 +107,12 @@ l10n_root = files_root + 'l10n/'
 ################################################################################
 ## Database settings
 
-database = 'sqlite:/shaunm/Projects/pulse/scratch/pulse.db'
+database = 'sqlite:/home/shaunm/Projects/pulse/scratch/pulse.db'
+
+# Larger values will result in fewer queries and faster crawl
+# times, but will use more memory.  Note that, unless you set
+# this ridiculously low, the web app won't be affected.
+database_cache_size = 5000
 
 
 ################################################################################

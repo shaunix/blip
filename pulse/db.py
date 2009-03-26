@@ -21,6 +21,7 @@
 import datetime
 import inspect
 import os
+import re
 import sys
 
 from storm.locals import *
@@ -41,7 +42,8 @@ def get_store (store):
     if hasattr (store, '__pulse_store__'):
         return store.__pulse_store__
     if not stores.has_key (store):
-        stores[store] = Store (database, cache=GenerationalCache())
+        stores[store] = Store (database,
+                               cache=GenerationalCache(size=pulse.config.database_cache_size))
     return stores[store]
 store_options = {'rollback' : False}
 
@@ -226,7 +228,6 @@ class PulseTracer (object):
             self.__class__.select_total += sec
             if not self._log:
                 return
-            import re
             outtxt = re.split (' (?=WHERE|AND|GROUP BY|ORDER BY|LIMIT)', cmd)
             sel, frm = outtxt[0].split (' FROM ')
             if not sel.startswith ('SELECT COUNT'):
@@ -237,13 +238,13 @@ class PulseTracer (object):
             self.__class__.insert_total += sec
             if not self._log:
                 return
-            outtxt.append (cmd)
+            outtxt = re.split (' (?=VALUES)', cmd)
         elif cmd.startswith ('UPDATE '):
             self.__class__.update_count += 1
             self.__class__.update_total += sec
             if not self._log:
                 return
-            outtxt.append (cmd)
+            outtxt = re.split (' (?=SET|WHERE|AND)', cmd)
         elif cmd.startswith ('COMMIT') or cmd.startswith ('ROLLBACK'):
             if not self._log:
                 return
@@ -275,7 +276,7 @@ def debug (log=True):
     storm.tracer.install_tracer (PulseTracer (log=log))
 
 def debug_summary ():
-    print '---------'
+    pulse.utils.log_write ('---------\n')
     timing = PulseTracer.timing_string (PulseTracer.select_total)
     pulse.utils.log_write ('%i SELECT statements in %sms\n' % (PulseTracer.select_count, timing))
     if PulseTracer.insert_total > 0:
