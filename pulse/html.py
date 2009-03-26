@@ -1620,7 +1620,7 @@ class PopupLink (HtmlWidget):
                 else:
                     base += branch.scm_module + '/branches/' + branch.scm_branch
                 mlink = MenuLink (rev.revision, 'files')
-                mlink.set_menu_url (branch.pulse_url + '?ajax=revfiles&revid=' + str(rev.id))
+                mlink.set_menu_url (branch.pulse_url + '?ajax=revfiles&revid=' + str(rev.ident))
                 lnk.add_link (mlink)
                 infourl = base + '?view=revision&revision=' + rev.revision
                 lnk.add_link (infourl, pulse.utils.gettext ('info'))

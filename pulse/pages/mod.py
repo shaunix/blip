@@ -334,7 +334,7 @@ def output_ajax_revfiles (response, module, **kw):
 
     query = kw.get ('query', {})
     revid = query.get('revid', None)
-    revision = pulse.db.Revision.select (id=int(revid)).one ()
+    revision = pulse.db.Revision.get (revid)
     files = pulse.db.RevisionFile.select (revision=revision)
 
     mlink = pulse.html.MenuLink (revision.revision, menu_only=True)
