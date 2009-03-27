@@ -65,7 +65,6 @@ def update_translation (po, **kw):
     else:
         potfile = get_xml2po_potfile (po.parent, checkout, **kw)
     if potfile == None: return
-    po.parent.updated = datetime.datetime.utcnow ()
 
     filepath = os.path.join (checkout.directory, po.scm_dir, po.scm_file)
     if not os.path.exists (filepath):
@@ -115,7 +114,7 @@ def update_translation (po, **kw):
     po.data['md5'] = potfile.data.get('md5', None)
     pulse.db.Timestamp.set_timestamp (rel_scm, mtime)
 
-    po.updated = datetime.datetime.utcnow ()
+    po.updated = of.datetime
 
 
 def update_intltool (po, checkout, potfile, rel_scm, **kw):
@@ -236,6 +235,7 @@ def get_intltool_potfile (domain, checkout, **kw):
         of.statistic = num
         of.data['md5'] = m.hexdigest ()
         intltool_potfiles[indir] = of
+        domain.updated = of.datetime
         return of
     else:
         pulse.utils.warn('Failed to create POT file %s' % potfile_rel)
