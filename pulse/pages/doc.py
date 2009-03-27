@@ -314,7 +314,7 @@ def get_files_tab (doc, **kw):
     box = pulse.html.InfoBox (pulse.utils.gettext ('XML Files'))
     columns.add_to_column (0, box)
     xmlfiles = doc.data.get('xmlfiles', [])
-    if len(xmlfiles) > 10:
+    if len(xmlfiles) > 20:
         div = pulse.html.AjaxBox (doc.pulse_url + '?ajax=xmlfiles')
     else:
         div = get_xmlfiles (doc, xmlfiles)
@@ -325,7 +325,7 @@ def get_files_tab (doc, **kw):
     if len(figures) > 0:
         box = pulse.html.InfoBox (pulse.utils.gettext ('Figures'))
         columns.add_to_column (1, box)
-        if len(figures) > 10:
+        if len(figures) > 20:
             div = pulse.html.AjaxBox (doc.pulse_url + '?ajax=figures')
         else:
             div = get_figures (doc, figures)
@@ -416,14 +416,19 @@ def get_xmlfiles (doc, xmlfiles):
         cont.set_sortable_class ('xmlfiles')
         cont.add_sort_link ('title', pulse.utils.gettext ('name'), 1)
         cont.add_sort_link ('mtime', pulse.utils.gettext ('modified'))
+    files = [os.path.join (doc.scm_dir, xmlfile) for xmlfile in xmlfiles]
+    commits = pulse.db.RevisionFileCache.select_with_revision (branch=doc.parent, files=files)
+    revisions = {}
+    for cache, revision in list(commits):
+        revisions[cache.filename] = revision
     for xmlfile in xmlfiles:
         span = pulse.html.Span (xmlfile)
         span.add_class ('title')
         dl.add_term (span, classname='xmlfiles')
-        files = [os.path.join (doc.scm_dir, xmlfile)]
-        commit = pulse.db.Revision.get_last_revision (branch=doc.parent, files=files)
+        fullfile = os.path.join (doc.scm_dir, xmlfile)
+        commit = revisions.get (fullfile)
         if commit != None:
-            span = pulse.html.Span(divider=pulse.html.SPACE)
+            span = pulse.html.Span (divider=pulse.html.SPACE)
             # FIXME: i18n, word order, but we want to link person
             mspan = pulse.html.Span()
             mspan.add_content (commit.datetime.strftime('%Y-%m-%d %T'))
@@ -444,18 +449,24 @@ def get_figures (doc, figures):
     cont.add_sort_link ('mtime', pulse.utils.gettext ('modified'))
     ofs = pulse.db.OutputFile.select (type=u'figures', ident=doc.ident, subdir=u'C')
     ofs_by_source = {}
+    files = []
     for of in ofs:
         ofs_by_source[of.source] = of
+        files.append (os.path.join (doc.scm_dir, of.source))
     dl = pulse.html.DefinitionList ()
     cont.add_content (dl)
+    commits = pulse.db.RevisionFileCache.select_with_revision (branch=doc.parent, files=files)
+    revisions = {}
+    for cache, revision in list(commits):
+        revisions[cache.filename] = revision
     for figure in sorted(figures.keys()):
         of = ofs_by_source.get(figure)
         if of:
             span = pulse.html.Span (pulse.html.Link (of.pulse_url, figure, classname='zoom'))
             span.add_class ('title')
             dl.add_term (span, classname='figures')
-            files = [os.path.join (doc.scm_dir, of.source)]
-            commit = pulse.db.Revision.get_last_revision (branch=doc.parent, files=files)
+            fullfile = os.path.join (doc.scm_dir, of.source)
+            commit = revisions.get (fullfile)
             if commit != None:
                 span = pulse.html.Span(divider=pulse.html.SPACE)
                 # FIXME: i18n, word order, but we want to link person

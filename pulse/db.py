@@ -1246,13 +1246,13 @@ class Revision (PulseModel):
         args = list (args)
         files = kw.pop ('files', None)
         range = kw.pop ('week_range', None)
-        if files != None:
+        if files is not None:
             args.append (Revision.ident == RevisionFile.revision_ident)
             if len(files) == 1:
                 args.append (RevisionFile.filename == files[0])
             else:
                 args.append (RevisionFile.filename.is_in (files))
-        if range != None:
+        if range is not None:
             args.append (And (Revision.weeknum >= range[0],
                               Revision.weeknum <= range[1]))
         sel = store.find (cls, *args, **kw)
@@ -1289,6 +1289,15 @@ class RevisionFileCache (PulseModel):
     def select_with_revision (cls, *args, **kw):
         store = get_store (kw.pop ('__pulse_store__', cls.__pulse_store__))
         args = list(args)
+        files = kw.pop ('files', None)
+        if files is not None:
+            if len(files) == 1:
+                args.append (RevisionFileCache.filename == files[0])
+            else:
+                args.append (RevisionFileCache.filename.is_in (files))
+        branch = kw.pop ('branch', None)
+        if branch is not None:
+            kw['branch_ident'] = branch.ident
         kwarg = storm.store.get_where_for_args ([], kw, cls)
         if kwarg != storm.store.Undef:
             args.append (kwarg)
