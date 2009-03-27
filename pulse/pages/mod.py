@@ -297,7 +297,8 @@ def output_ajax_commits (response, module, **kw):
         cnt = revs.count()
         revs = list(revs[:20])
     else:
-        revs = pulse.db.Revision.select_revisions (branch=module)
+        revs = pulse.db.Revision.select_revisions (branch=module,
+                                                   week_range=(pulse.utils.weeknum()-52,))
         cnt = revs.count()
         revs = list(revs[:10])
     if weeknum == None:
@@ -414,7 +415,8 @@ def get_activity_tab (module, **kw):
     except IndexError:
         pass
 
-    revs = pulse.db.Revision.select_revisions (branch=module)
+    revs = pulse.db.Revision.select_revisions (branch=module,
+                                               week_range=(pulse.utils.weeknum()-52,))
     cnt = revs.count()
     revs = list(revs[:10])
     title = (pulse.utils.gettext('Showing %i of %i commits:') % (len(revs), cnt))

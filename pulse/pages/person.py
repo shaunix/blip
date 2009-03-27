@@ -209,7 +209,8 @@ def get_activity_tab (person, **kw):
     except IndexError:
         pass
 
-    revs = pulse.db.Revision.select_revisions (person=person)
+    revs = pulse.db.Revision.select_revisions (person=person,
+                                               week_range=(pulse.utils.weeknum()-52,))
     cnt = revs.count()
     revs = list(revs[:10])
     div = get_commits_div (person, revs,

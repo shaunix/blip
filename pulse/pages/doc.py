@@ -207,7 +207,8 @@ def output_ajax_commits (response, doc, **kw):
         revs = list(revs[:20])
     else:
         cnt = pulse.db.Revision.count_revisions (branch=doc.parent, files=files)
-        revs = pulse.db.Revision.select_revisions (branch=doc.parent, files=files)
+        revs = pulse.db.Revision.select_revisions (branch=doc.parent, files=files,
+                                                   week_range=(pulse.utils.weeknum()-52,))
         revs = list(revs[:10])
     if weeknum == None:
         title = (pulse.utils.gettext('Showing %i of %i commits:')
@@ -298,7 +299,8 @@ def get_activity_tab (doc, **kw):
 
     files = [os.path.join (doc.scm_dir, f) for f in doc.data.get ('xmlfiles', [])]
     cnt = pulse.db.Revision.count_revisions (branch=doc.parent, files=files)
-    revs = pulse.db.Revision.select_revisions (branch=doc.parent, files=files)
+    revs = pulse.db.Revision.select_revisions (branch=doc.parent, files=files,
+                                               week_range=(pulse.utils.weeknum()-52,))
     revs = list(revs[:10])
     title = (pulse.utils.gettext('Showing %i of %i commits:') % (len(revs), cnt))
     div = get_commits_div (doc, revs, title)

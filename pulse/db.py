@@ -1232,9 +1232,10 @@ class Revision (PulseModel):
                 args.append (RevisionFile.filename == files[0])
             else:
                 args.append (RevisionFile.filename.is_in (files))
-        if range != None:
-            args.append (And (Revision.weeknum >= range[0],
-                              Revision.weeknum <= range[1]))
+        if range is not None:
+            args.append (Revision.weeknum >= range[0])
+            if len(range) > 1 and range[1] is not None:
+                args.append (Revision.weeknum <= range[1])
         sel = store.find (cls, *args, **kw)
         if files != None:
             sel = sel.group_by (Revision.ident)
