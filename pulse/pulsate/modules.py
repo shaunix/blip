@@ -253,6 +253,7 @@ def check_history (branch, checkout):
             revfile.decache ()
         pulse.db.flush()
 
+    pulse.db.Revision.flush_file_cache ()
     revision = pulse.db.Revision.get_last_revision (branch=branch)
     if revision != None:
         branch.mod_datetime = revision.datetime

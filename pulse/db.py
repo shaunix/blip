@@ -1119,6 +1119,8 @@ class Revision (PulseModel):
     weeknum = Int ()
     comment = Unicode ()
 
+    _file_cache = {}
+
     def __init__ (self, **kw):
         kw['weeknum'] = pulse.utils.weeknum (kw['datetime'])
         PulseModel.__init__ (self, **kw)
@@ -1133,6 +1135,11 @@ class Revision (PulseModel):
                               filename=filename,
                               filerev=filerev,
                               prevrev=prevrev)
+        Revision._file_cache.setdefault (self.branch_ident, {})
+        if not Revision._file_cache[self.branch_ident].has_key (filename):
+            Revision._file_cache[self.branch_ident][filename] = self
+        elif Revision._file_cache[self.branch_ident][filename].datetime < self.datetime:
+            Revision._file_cache[self.branch_ident][filename] = self
         return rfile
 
     def display_revision (self, branch=None):
@@ -1144,11 +1151,74 @@ class Revision (PulseModel):
             return self.revision
 
     @classmethod
+    def flush_file_cache (cls):
+        for branch_ident in cls._file_cache.keys ():
+            branch_cache = cls._file_cache.pop (branch_ident)
+            for filename in branch_cache.keys ():
+                revision = branch_cache.pop (filename)
+                sel = RevisionFileCache.select_with_revision (branch_ident=branch_ident, filename=filename)
+                try:
+                    cache, oldrev = sel[0]
+                    if revision.datetime > oldrev.datetime:
+                        cache.revision_ident = revision.ident
+                except IndexError:
+                    RevisionFileCache (branch_ident=branch_ident,
+                                       filename=filename,
+                                       revision_ident=revision.ident)
+            flush (RevisionFileCache)
+
+    @classmethod
     def get_last_revision (cls, **kw):
         try:
-            return cls.select_revisions (**kw)[0]
-        except IndexError:
-            return None
+            ret = cls._get_last_revision_cached (**kw)
+        except:
+            ret = cls._get_last_revision_expensive (**kw)
+        return ret
+
+    @classmethod
+    def _get_last_revision_cached (cls, **kw):
+        args = []
+        files = kw.pop ('files', None)
+        if files is not None:
+            args.append (Revision.ident == RevisionFileCache.revision_ident)
+            if len(files) == 1:
+                args.append (RevisionFileCache.filename == files[0])
+            else:
+                args.append (RevisionFileCache.filename.is_in (files))
+        else:
+            raise pulse.utils.PulseException ('Cannot fetch from file cache')
+        for key in kw.keys ():
+            if key == 'branch':
+                args.append (pulse.db.RevisionFileCache.branch_ident == kw[key].ident)
+            elif key == 'branch_ident':
+                args.append (pulse.db.RevisionFileCache.branch_ident == kw[key])
+            else:
+                raise pulse.utils.PulseException ('Cannot fetch from file cache')
+
+        return cls.select (*args).order_by (Revision.datetime)[0]
+
+    @classmethod
+    def _get_last_revision_expensive (cls, **kw):
+        ret = None
+        # This function is expensive.  To lighten the load a bit, we first
+        # restrict the query to the last year.  Failing that, we look at
+        # everything.  In tests against SQLite, we get around 30% increase
+        # in speed.  We should test this against other databases to see
+        # how much of a bottleneck this function is, how much of a speed
+        # increase this gets us, and if there's a better first-pass than
+        # 52 weeks.
+        if not kw.has_key ('week_range'):
+            try:
+                ret = cls.select_revisions (cls.weeknum > (pulse.utils.weeknum() - 52), **kw)[0]
+            except IndexError:
+                ret = None
+        if ret is None:
+            try:
+                ret = cls.select_revisions (**kw)[0]
+            except IndexError:
+                ret = None
+        return ret
+                
 
     @classmethod
     def select_revisions (cls, *args, **kw):
@@ -1201,6 +1271,30 @@ class RevisionFile (PulseModel):
 
     def log_create (self):
         pass
+
+
+class RevisionFileCache (PulseModel):
+    __storm_primary__ = 'branch_ident', 'filename'
+
+    branch_ident = Unicode ()
+    filename = Unicode ()
+
+    revision_ident = Unicode ()
+    revision = Reference (revision_ident, Revision.ident)
+
+    def log_create (self):
+        pass
+
+    @classmethod
+    def select_with_revision (cls, *args, **kw):
+        store = get_store (kw.pop ('__pulse_store__', cls.__pulse_store__))
+        args = list(args)
+        kwarg = storm.store.get_where_for_args ([], kw, cls)
+        if kwarg != storm.store.Undef:
+            args.append (kwarg)
+        args.append (cls.revision_ident == Revision.ident)
+        sel = store.find ((cls, Revision), *args)
+        return sel
 
 
 class Statistic (PulseModel):
