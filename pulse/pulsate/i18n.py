@@ -250,10 +250,13 @@ def get_xml2po_potfile (doc, checkout, **kw):
         return xml2po_potfiles[indir]
 
     makefile = pulse.parsers.Automake (os.path.join (indir, 'Makefile.am'))
+    doc_module = makefile['DOC_MODULE']
+    if doc_module == '@PACKAGE_NAME@':
+        doc_module = doc.parent.data.get ('PACKAGE_NAME', '@PACKAGE_NAME@')
     docfiles = [os.path.join ('C', fname)
-                for fname in ([makefile['DOC_MODULE']+'.xml'] + makefile.get('DOC_INCLUDES', '').split())]
-    potname = makefile['DOC_MODULE']
-    potfile = potname + '.pot'
+                for fname in ([doc_module+'.xml'] + makefile.get('DOC_INCLUDES', '').split())]
+    potname = doc_module
+    potfile = potname + u'.pot'
     of = pulse.db.OutputFile.select (type=u'l10n', ident=doc.ident, filename=potfile)
     try:
         of = of[0]
