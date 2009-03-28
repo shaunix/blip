@@ -1195,7 +1195,7 @@ class Revision (PulseModel):
             else:
                 raise pulse.utils.PulseException ('Cannot fetch from file cache')
 
-        return cls.select (*args).order_by (Revision.datetime)[0]
+        return cls.select (*args).order_by (Desc(Revision.datetime))[0]
 
     @classmethod
     def _get_last_revision_expensive (cls, **kw):
