@@ -95,6 +95,9 @@ def usage (fd=sys.stderr, mod=None, verbose=False):
             print >>fd, ''
             mod.help_extra (fd=fd)
 
+class ReturnCodeException (pulse.utils.PulseException):
+    pass
+
 if __name__ == "__main__":
     if len (sys.argv) < 2:
         usage (sys.stderr)
@@ -142,8 +145,10 @@ if __name__ == "__main__":
         else:
             retcode = mod.main (argv[1:])
         if retcode != 0:
-            raise pulse.utils.PulseException ('Return code not 0')
-    except:
+            raise ReturnCodeException ('Return code not 0')
+    except Exception, e:
+        if not isinstance (e, ReturnCodeException):
+            raise e
         if retcode == 0:
             retcode = -1
 

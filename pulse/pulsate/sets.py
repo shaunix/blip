@@ -313,4 +313,5 @@ def main (argv, options={}):
     if not options.get ('--no-deps', False):
         update_deps ()
 
+    pulse.db.commit ()
     return 0

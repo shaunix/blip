@@ -34,5 +34,6 @@ def main (argv, options={}):
         os.makedirs (pulse.config.web_files_dir)
 
     pulse.db.create_tables ()
+    pulse.db.commit ()
 
     return 0
