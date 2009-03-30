@@ -472,6 +472,7 @@ class Checkout (object):
             while line:
                 line = fd.readline()
                 if not line: break
+                onbranch = (prefix is None)
                 (revnumber, revauthor, revdate) = line.split('|')[:3]
                 revnumber = revnumber[1:].strip()
                 prevrev = str(int(revnumber) - 1)
@@ -487,6 +488,7 @@ class Checkout (object):
                             break
                         filename = line.strip()[3:]
                         if prefix != None and filename.startswith (prefix):
+                            onbranch = True
                             filename = filename[len(prefix):]
                         elif filename.startswith ('trunk/'):
                             filename = filename[6:]
@@ -511,9 +513,10 @@ class Checkout (object):
                     comment += line
                     line = fd.readline()
                 if revnumber != since:
-                    yield {'revision' : revnumber, 'datetime' : revdate,
-                           'author' : revauthor, 'comment' : comment,
-                           'files' : revfiles }
+                    if onbranch:
+                        yield {'revision' : revnumber, 'datetime' : revdate,
+                               'author' : revauthor, 'comment' : comment,
+                               'files' : revfiles }
             else:
                 line = fd.readline()
         except:
