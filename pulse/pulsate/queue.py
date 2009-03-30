@@ -18,6 +18,8 @@
 # Suite 330, Boston, MA  0211-1307  USA.
 #
 
+import datetime
+
 import pulse.db
 import pulse.utils
 
@@ -67,15 +69,18 @@ def main (argv, options={}):
         else:
             tlsec = int(timelimit)
         timelimit = 3600 * tlhour + 60 * tlmin + tlsec
-        import datetime
         timestart = datetime.datetime.now()
     iter = 0
     el = pulse.db.Queue.pop (ident)
+    timestart = datetime.datetime.now ()
+    ret = 0
     while el != None:
         if limit != None and iter >= limit:
-            return 0
+            ret = 0
+            break
         if timelimit != None and (datetime.datetime.now() - timestart).seconds > timelimit:
-            return 0
+            ret = 0
+            break
         iter += 1
         mod = pulse.utils.import_ ('pulse.pulsate.' + el['module'])
         if hasattr (mod, 'args'):
@@ -83,6 +88,12 @@ def main (argv, options={}):
         else:
             ret = mod.main ([el['ident']])
         if ret != 0:
-            return ret
+            break
         el = pulse.db.Queue.pop (ident)
-    return 0
+    diff = datetime.datetime.now () - timestart
+    diff = datetime.timedelta (days=diff.days, seconds=diff.seconds)
+    pulse.utils.log ('Queue processed %i records in %s' % (iter, diff))
+    if ret == 0 and iter == 0:
+        return -1
+    else:
+        return ret

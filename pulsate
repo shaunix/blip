@@ -142,13 +142,10 @@ if __name__ == "__main__":
         else:
             retcode = mod.main (argv[1:])
         if retcode != 0:
-            raise 'Return code not 0'
+            raise pulse.utils.PulseException ('Return code not 0')
     except:
-        pulse.db.rollback ()
-        raise
-    else:
-        pulse.db.flush ()
-        pulse.db.commit ()
+        if retcode == 0:
+            retcode = -1
 
     if debug:
         pulse.db.debug_summary ()
