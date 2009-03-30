@@ -221,13 +221,14 @@ def check_history (branch, checkout):
             pident = u'/person/%s@%s' % (hist['author'][0], serverid)
             person = pulse.db.Entity.get_or_create (pident, u'Person')
         elif hist['author'][2] != None:
+            pident = u'/person/' + hist['author'][2]
             person = pulse.db.Entity.get_or_create_email (hist['author'][2])
         else:
             pident = u'/ghost/%' % hist['author'][1]
             person = pulse.db.Entity.get_or_create (pident, u'Ghost')
 
         if person.type == u'Person':
-            pulse.db.Queue.push (u'people', pident)
+            pulse.db.Queue.push (u'people', person.ident)
         if hist['author'][1] != None:
             person.extend (name=hist['author'][1])
         if hist['author'][2] != None:
