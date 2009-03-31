@@ -27,6 +27,7 @@ synop = 'update information for queued objects'
 usage_extra = '[ident]'
 args = pulse.utils.odict()
 args['length'] = (None, 'print the length of the queue and exit')
+args['list'] = (None, 'list the matching items in the queue and exit')
 args['limit='] = ('num', 'process at most num entries from the queue')
 args['time-limit='] = ('time', 'process the queue for at most time seconds')
 args['no-history'] = (None, 'do not check SCM history')
@@ -49,6 +50,16 @@ def main (argv, options={}):
             print pulse.db.Queue.select(pulse.db.Queue.ident.like (ident)).count()
         else:
             print pulse.db.Queue.select().count()
+        return 0
+    listqueue = options.get ('--list', False)
+    if listqueue:
+        if ident is not None:
+            items = pulse.db.Queue.select (pulse.db.Queue.ident.like (ident))
+        else:
+            items = pulse.db.Queue.select ()
+        items.order_by (pulse.db.Queue.module, pulse.db.Queue.ident)
+        for item in items:
+            print '%s\t%s' % (item.module, item.ident)
         return 0
     limit = options.get ('--limit', None)
     if limit is not None:
