@@ -52,58 +52,296 @@ def help_extra (fd=None):
     print >>fd, 'If ident is passed, only modules and branches with a matching identifier will be updated.'
 
 
-def update_branch (branch, **kw):
-    checkout = pulse.scm.Checkout.from_record (branch, update=kw.get('update', True))
+class ModuleScanner (object):
+    _plugins = []
+    
+    def __init__ (self, branch, **kw):
+        self.branch = branch
+        self.checkout = pulse.scm.Checkout.from_record (branch,
+                                                        update=(not kw.get('no_update', False)))
+        self._plugins = [plugin (self) for plugin in self.__class__._plugins]
+        self._parsed_files = {}
+        self._children = {}
 
-    if checkout.error != None:
-        branch.update(error=checkout.error)
-        return
-    else:
-        branch.update(error=None)
+    @classmethod
+    def register_plugin (cls, plugin):
+        cls._plugins.append (plugin)
 
-    if kw.get('history', True):
-        check_history (branch, checkout)
+    def add_child (self, type, rel):
+        self._children.setdefault (type, [])
+        if rel not in self._children[type]:
+            self._children[type].append (rel)
 
-    pulse.pulsate.update_graphs (branch, {'branch' : branch}, 80, **kw)
+    def get_parsed_file (self, parser, filename):
+        if not self._parsed_files.has_key ((parser, filename)):
+            self._parsed_files[(parser, filename)] = parser (filename)
+        return self._parsed_files[(parser, filename)]
 
-    # FIXME: what do we want to know?
-    # mailing list
-    # bug information
-    podirs = []
-    pkgconfigs = []
-    oafservers = []
-    keyfiles = []
-    images = []
-    gdu_docs = []
-    gtk_docs = []
-    def visit (arg, dirname, names):
-        for ignore in (checkout.ignoredir, 'examples', 'test', 'tests'):
-            if ignore in names:
-                names.remove (ignore)
-        for name in names:
-            filename = os.path.join (dirname, name)
-            if not os.path.isfile (filename):
+    def scan (self, **kw):
+        if self.checkout.error is not None:
+            self.branch.update (error=checkout.error)
+            return
+        else:
+            self.branch.update (error=None)
+
+        if not kw.get ('no_history', False):
+            self.check_history ()
+
+        pulse.pulsate.update_graphs (self.branch, {'branch' : self.branch}, 80, **kw)
+
+        def visit (arg, dirname, names):
+            for ignore in (self.checkout.ignoredir, 'examples', 'test', 'tests'):
+                if ignore in names:
+                    names.remove (ignore)
+            for basename in names:
+                filename = os.path.join (dirname, basename)
+                if not os.path.isfile (filename):
+                    continue
+                for plugin in self._plugins:
+                    if hasattr (plugin, 'handle_file'):
+                        plugin.handle_file (dirname, basename, **kw)
+        os.path.walk (self.checkout.directory, visit, None)
+
+        for plugin in self._plugins:
+            if hasattr (plugin, 'process_files'):
+                plugin.process_files (**kw)
+
+        for type in self._children.keys ():
+            self.branch.set_children (type, self._children[type])
+
+
+    def check_history (self):
+        since = pulse.db.Revision.get_last_revision (branch=self.branch)
+        if since != None:
+            since = since.revision
+            current = self.checkout.get_revision()
+            if current != None and since == current[0]:
+                pulse.utils.log ('Skipping history for %s' % self.branch.ident)
+                return
+        pulse.utils.log ('Checking history for %s' % self.branch.ident)
+        serverid = u'.'.join (pulse.scm.server_name (self.checkout.scm_type,
+                                                     self.checkout.scm_server).split('.')[-2:])
+        for hist in self.checkout.read_history (since=since):
+            if hist['author'][0] != None:
+                pident = u'/person/%s@%s' % (hist['author'][0], serverid)
+                person = pulse.db.Entity.get_or_create (pident, u'Person')
+            elif hist['author'][2] != None:
+                pident = u'/person/' + hist['author'][2]
+                person = pulse.db.Entity.get_or_create_email (hist['author'][2])
+            else:
+                pident = u'/ghost/%' % hist['author'][1]
+                person = pulse.db.Entity.get_or_create (pident, u'Ghost')
+
+            if person.type == u'Person':
+                pulse.db.Queue.push (u'people', person.ident)
+            if hist['author'][1] != None:
+                person.extend (name=hist['author'][1])
+            if hist['author'][2] != None:
+                person.extend (email=hist['author'][2])
+            # IMPORTANT: If we were to just set branch and person, instead of
+            # branch_ident and person_ident, Storm would keep referencess to
+            # the Revision object.  That would eat your computer.
+            revident = self.branch.ident + u'/' + hist['revision']
+            rev = {'ident': revident,
+                   'branch_ident': self.branch.ident,
+                   'person_ident': person.ident,
+                   'revision': hist['revision'],
+                   'datetime': hist['datetime'],
+                   'comment': hist['comment'] }
+            if person.ident != pident:
+                rev['alias_ident'] = pident
+            if pulse.db.Revision.select(ident=revident).count() > 0:
                 continue
-            if name == 'POTFILES.in':
-                podirs.append (dirname)
-            elif re.match('.*\.pc(\.in)+$', name):
-                pkgconfigs.append (filename)
-            elif re.match('.*\.desktop(\.in)+$', name):
-                keyfiles.append (filename)
-            elif re.match('.*\.server(\.in)+$', name):
-                oafservers.append (filename)
-            elif name.endswith ('.png'):
-                images.append (filename)
-            elif name == 'Makefile.am':
-                # FIXME: timestamp this
-                makefile = pulse.parsers.Automake (filename)
-                for line in makefile.get_lines():
-                    if line.startswith ('include $(top_srcdir)/'):
-                        if line.endswith ('gnome-doc-utils.make'):
-                            gdu_docs.append((dirname, makefile))
-                        elif line.endswith ('gtk-doc.make'):
-                            gtk_docs.append((dirname, makefile))
-    os.path.walk (checkout.directory, visit, None)
+            rev = pulse.db.Revision (**rev)
+            rev.decache ()
+            for filename, filerev, prevrev in hist['files']:
+                revfile = rev.add_file (filename, filerev, prevrev)
+                revfile.decache ()
+            pulse.db.flush()
+
+        pulse.db.Revision.flush_file_cache ()
+        revision = pulse.db.Revision.get_last_revision (branch=self.branch)
+        if revision != None:
+            self.branch.mod_datetime = revision.datetime
+            self.branch.mod_person = revision.person
+
+
+## PotHandler
+class PotHandler (object):
+    def __init__ (self, scanner):
+        self.scanner = scanner
+        self.podirs = []
+
+    def handle_file (self, dirname, basename, **kw):
+        if basename == 'POTFILES.in':
+            self.podirs.append (os.path.join (dirname, basename))
+
+ModuleScanner.register_plugin (PotHandler)
+
+
+## PkgConfigHandler
+class PkgConfigHandler (object):
+    def __init__ (self, scanner):
+        self.scanner = scanner
+        self.pkgconfigs = []
+
+    def handle_file (self, dirname, basename, **kw):
+        if re.match ('.*\.pc(\.in)+$', basename):
+            self.pkgconfigs.append (os.path.join (dirname, basename))
+
+ModuleScanner.register_plugin (PkgConfigHandler)
+
+
+## KeyFileHandler
+class KeyFileHandler (object):
+    def __init__ (self, scanner):
+        self.scanner = scanner
+        self.keyfiles = []
+
+    def handle_file (self, dirname, basename, **kw):
+        if re.match('.*\.desktop(\.in)+$', basename):
+            self.keyfiles.append (os.path.join (dirname, basename))
+
+ModuleScanner.register_plugin (KeyFileHandler)
+
+
+## OafServerHandler
+class OafServerHandler (object):
+    def __init__ (self, scanner):
+        self.scanner = scanner
+        self.oafservers = []
+
+    def handle_file (self, dirname, basename, **kw):
+        if re.match('.*\.server(\.in)+$', basename):
+            self.oafservers.append (os.path.join (dirname, basename))
+
+ModuleScanner.register_plugin (OafServerHandler)
+
+
+## ImagesHandler
+class ImagesHandler (object):
+    def __init__ (self, scanner):
+        self.scanner = scanner
+        self.images = []
+
+    def handle_file (self, dirname, basename, **kw):
+        if basename.endswith ('.png'):
+            self.images.append (os.path.join (dirname, basename))
+
+ModuleScanner.register_plugin (ImagesHandler)
+
+
+## GnomeDocUtilsHandler
+class GnomeDocUtilsHandler (object):
+    def __init__ (self, scanner):
+        self.scanner = scanner
+        self.gdu_docs = []
+
+    def handle_file (self, dirname, basename, **kw):
+        if basename == 'Makefile.am':
+            makefile = self.scanner.get_parsed_file (pulse.parsers.Automake, os.path.join (dirname, basename))
+            for line in makefile.get_lines():
+                if line.startswith ('include $(top_srcdir)/'):
+                    if line.endswith ('gnome-doc-utils.make'):
+                        self.gdu_docs.append((dirname, makefile))
+                        break
+
+    def process_files (self, **kw):
+        branch = self.scanner.branch
+        checkout = self.scanner.checkout
+        bserver, bmodule, bbranch = branch.ident.split('/')[2:]
+        for docdir, makefile in self.gdu_docs:
+            doc_module = makefile['DOC_MODULE']
+            if doc_module == '@PACKAGE_NAME@':
+                doc_module = branch.data.get ('PACKAGE_NAME', '@PACKAGE_NAME@')
+            ident = u'/'.join(['/doc', bserver, bmodule, doc_module, bbranch])
+            document = pulse.db.Branch.get_or_create (ident, u'Document')
+            document.parent = branch
+
+            relpath = pulse.utils.relative_path (docdir, checkout.directory)
+
+            data = {}
+            for key in ('scm_type', 'scm_server', 'scm_module', 'scm_branch', 'scm_path'):
+                data[key] = getattr(branch, key)
+            data['subtype'] = u'gdu-docbook'
+            data['scm_dir'] = os.path.join (relpath, 'C')
+            data['scm_file'] = doc_module + '.xml'
+            document.update (data)
+
+            translations = []
+            if makefile.has_key ('DOC_LINGUAS'):
+                for lang in makefile['DOC_LINGUAS'].split():
+                    lident = u'/l10n/' + lang + document.ident
+                    translation = pulse.db.Branch.get_or_create (lident, u'Translation')
+                    translations.append (translation)
+                    ldata = {}
+                    for key in ('scm_type', 'scm_server', 'scm_module', 'scm_branch', 'scm_path'):
+                        ldata[key] = data[key]
+                    ldata['subtype'] = u'xml2po'
+                    ldata['scm_dir'] = os.path.join (pulse.utils.relative_path (docdir, checkout.directory), lang)
+                    ldata['scm_file'] = lang + '.po'
+                    translation.update (ldata)
+                document.set_children (u'Translation', translations)
+
+            # FIXME
+            if not kw.get('no_i18n', False):
+                for po in translations:
+                    pulse.pulsate.i18n.update_translation (po, checkout=checkout, **kw)
+
+            if document is not None:
+                self.scanner.add_child (u'Document', document)
+
+ModuleScanner.register_plugin (GnomeDocUtilsHandler)
+
+
+## GtkDocHandler
+class GtkDocHandler (object):
+    def __init__ (self, scanner):
+        self.scanner = scanner
+        self.gtk_docs = []
+
+    def handle_file (self, dirname, basename, **kw):
+        if basename == 'Makefile.am':
+            makefile = self.scanner.get_parsed_file (pulse.parsers.Automake, os.path.join (dirname, basename))
+            for line in makefile.get_lines():
+                if line.startswith ('include $(top_srcdir)/'):
+                    if line.endswith ('gtk-doc.make'):
+                        self.gtk_docs.append((dirname, makefile))
+                        break
+
+    def process_gtk_docdir (branch, checkout, docdir, makefile, **kw):
+        pass
+    def process_files (self, **kw):
+        branch = self.scanner.branch
+        checkout = self.scanner.checkout
+        bserver, bmodule, bbranch = branch.ident.split('/')[2:]
+        for docdir, makefile in self.gtk_docs:
+            doc_module = makefile['DOC_MODULE']
+            ident = u'/'.join(['/ref', bserver, bmodule, doc_module, bbranch])
+            document = pulse.db.Branch.get_or_create (ident, u'Document')
+            relpath = pulse.utils.relative_path (docdir, checkout.directory)
+
+            data = {}
+            for key in ('scm_type', 'scm_server', 'scm_module', 'scm_branch', 'scm_path'):
+                data[key] = getattr(branch, key)
+            data['subtype'] = u'gtk-doc'
+            data['scm_dir'] = relpath
+            scm_file = makefile['DOC_MAIN_SGML_FILE']
+            if '$(DOC_MODULE)' in scm_file:
+                scm_file = scm_file.replace ('$(DOC_MODULE)', doc_module)
+            data['scm_file'] = scm_file
+
+            document.update (data)
+
+            if document is not None:
+                self.scanner.add_child (u'Document', document)
+
+ModuleScanner.register_plugin (GtkDocHandler)
+
+
+#############################################
+
+def update_branch (branch, **kw):
 
     process_configure (branch, checkout, **kw)
     if branch.name == {}:
@@ -118,17 +356,8 @@ def update_branch (branch, **kw):
             domains.append (domain)
     branch.set_children (u'Domain', domains)
 
-    documents = []
-    for docdir, makefile in gdu_docs:
-        document = process_gdu_docdir (branch, checkout, docdir, makefile, **kw)
-        if document != None:
-            documents.append (document)
-    for docdir, makefile in gtk_docs:
-        document = process_gtk_docdir (branch, checkout, docdir, makefile, **kw)
-        if document != None:
-            documents.append (document)
     branch.set_children (u'Document', documents)
-    if kw.get('do_docs', True):
+    if not kw.get('no_docs', False):
         for doc in documents:
             pulse.pulsate.docs.update_document (doc, checkout=checkout, **kw)
 
@@ -206,59 +435,6 @@ def update_branch (branch, **kw):
     pulse.db.Queue.remove ('modules', branch.ident)
     
 
-def check_history (branch, checkout):
-    since = pulse.db.Revision.get_last_revision (branch=branch)
-    if since != None:
-        since = since.revision
-        current = checkout.get_revision()
-        if current != None and since == current[0]:
-            pulse.utils.log ('Skipping history for %s' % branch.ident)
-            return
-    pulse.utils.log ('Checking history for %s' % branch.ident)
-    serverid = u'.'.join (pulse.scm.server_name (checkout.scm_type, checkout.scm_server).split('.')[-2:])
-    for hist in checkout.read_history (since=since):
-        if hist['author'][0] != None:
-            pident = u'/person/%s@%s' % (hist['author'][0], serverid)
-            person = pulse.db.Entity.get_or_create (pident, u'Person')
-        elif hist['author'][2] != None:
-            pident = u'/person/' + hist['author'][2]
-            person = pulse.db.Entity.get_or_create_email (hist['author'][2])
-        else:
-            pident = u'/ghost/%' % hist['author'][1]
-            person = pulse.db.Entity.get_or_create (pident, u'Ghost')
-
-        if person.type == u'Person':
-            pulse.db.Queue.push (u'people', person.ident)
-        if hist['author'][1] != None:
-            person.extend (name=hist['author'][1])
-        if hist['author'][2] != None:
-            person.extend (email=hist['author'][2])
-        # IMPORTANT: If we were to just set branch and person, instead of
-        # branch_ident and person_ident, Storm would keep referencess to
-        # the Revision object.  That would eat your computer.
-        revident = branch.ident + u'/' + hist['revision']
-        rev = {'ident': revident,
-               'branch_ident': branch.ident,
-               'person_ident': person.ident,
-               'revision': hist['revision'],
-               'datetime': hist['datetime'],
-               'comment': hist['comment'] }
-        if person.ident != pident:
-            rev['alias_ident'] = pident
-        if pulse.db.Revision.select(ident=revident).count() > 0:
-            continue
-        rev = pulse.db.Revision (**rev)
-        rev.decache ()
-        for filename, filerev, prevrev in hist['files']:
-            revfile = rev.add_file (filename, filerev, prevrev)
-            revfile.decache ()
-        pulse.db.flush()
-
-    pulse.db.Revision.flush_file_cache ()
-    revision = pulse.db.Revision.get_last_revision (branch=branch)
-    if revision != None:
-        branch.mod_datetime = revision.datetime
-        branch.mod_person = revision.person
 
 
 def process_maintainers (branch, checkout, **kw):
@@ -269,7 +445,7 @@ def process_maintainers (branch, checkout, **kw):
     rel_scm = pulse.utils.relative_path (maintfile, pulse.config.scm_dir)
     mtime = os.stat(maintfile).st_mtime
 
-    if kw.get('timestamps', True):
+    if not kw.get('no_timestamps', False):
         stamp = pulse.db.Timestamp.get_timestamp (rel_scm)
         mtime = os.stat(maintfile).st_mtime
         if mtime <= stamp:
@@ -328,7 +504,7 @@ def process_configure (branch, checkout, **kw):
     rel_scm = pulse.utils.relative_path (filename, pulse.config.scm_dir)
     mtime = os.stat(filename).st_mtime
 
-    if kw.get('timestamps', True):
+    if not kw.get('no_timestamps', False):
         stamp = pulse.db.Timestamp.get_timestamp (rel_scm)
         if mtime <= stamp:
             pulse.utils.log ('Skipping file %s' % rel_scm)
@@ -461,7 +637,7 @@ def process_podir (branch, checkout, podir, **kw):
     langs = []
     translations = []
 
-    if kw.get('timestamps', True):
+    if not kw.get('no_timestamps', False):
         stamp = pulse.db.Timestamp.get_timestamp (rel_scm)
         if mtime <= stamp:
             pulse.utils.log ('Skipping file %s' % rel_scm)
@@ -487,7 +663,7 @@ def process_podir (branch, checkout, podir, **kw):
         translation.update (ldata)
     domain.set_children (u'Translation', translations)
 
-    if kw.get('do_i18n', True):
+    if not kw.get('no_i18n', False):
         for po in translations:
             pulse.pulsate.i18n.update_translation (po, checkout=checkout, **kw)
 
@@ -496,67 +672,8 @@ def process_podir (branch, checkout, podir, **kw):
     return domain
 
 
-def process_gdu_docdir (branch, checkout, docdir, makefile, **kw):
-    bserver, bmodule, bbranch = branch.ident.split('/')[2:]
-    doc_module = makefile['DOC_MODULE']
-    if doc_module == '@PACKAGE_NAME@':
-        doc_module = branch.data.get ('PACKAGE_NAME', '@PACKAGE_NAME@')
-    ident = u'/'.join(['/doc', bserver, bmodule, doc_module, bbranch])
-    document = pulse.db.Branch.get_or_create (ident, u'Document')
-    document.parent = branch
-
-    relpath = pulse.utils.relative_path (docdir, checkout.directory)
-
-    data = {}
-    for key in ('scm_type', 'scm_server', 'scm_module', 'scm_branch', 'scm_path'):
-        data[key] = getattr(branch, key)
-    data['subtype'] = u'gdu-docbook'
-    data['scm_dir'] = os.path.join (relpath, 'C')
-    data['scm_file'] = doc_module + '.xml'
-    document.update (data)
-
-    translations = []
-    if makefile.has_key ('DOC_LINGUAS'):
-        for lang in makefile['DOC_LINGUAS'].split():
-            lident = u'/l10n/' + lang + document.ident
-            translation = pulse.db.Branch.get_or_create (lident, u'Translation')
-            translations.append (translation)
-            ldata = {}
-            for key in ('scm_type', 'scm_server', 'scm_module', 'scm_branch', 'scm_path'):
-                ldata[key] = data[key]
-            ldata['subtype'] = u'xml2po'
-            ldata['scm_dir'] = os.path.join (pulse.utils.relative_path (docdir, checkout.directory), lang)
-            ldata['scm_file'] = lang + '.po'
-            translation.update (ldata)
-        document.set_children (u'Translation', translations)
-
-    if kw.get('do_i18n', True):
-        for po in translations:
-            pulse.pulsate.i18n.update_translation (po, checkout=checkout, **kw)
-
-    return document
 
 
-def process_gtk_docdir (branch, checkout, docdir, makefile, **kw):
-    bserver, bmodule, bbranch = branch.ident.split('/')[2:]
-    doc_module = makefile['DOC_MODULE']
-    ident = u'/'.join(['/ref', bserver, bmodule, doc_module, bbranch])
-    document = pulse.db.Branch.get_or_create (ident, u'Document')
-    relpath = pulse.utils.relative_path (docdir, checkout.directory)
-
-    data = {}
-    for key in ('scm_type', 'scm_server', 'scm_module', 'scm_branch', 'scm_path'):
-        data[key] = getattr(branch, key)
-    data['subtype'] = u'gtk-doc'
-    data['scm_dir'] = relpath
-    scm_file = makefile['DOC_MAIN_SGML_FILE']
-    if '$(DOC_MODULE)' in scm_file:
-        scm_file = scm_file.replace ('$(DOC_MODULE)', doc_module)
-    data['scm_file'] = scm_file
-
-    document.update (data)
-
-    return document
 
 
 def process_pkgconfig (branch, checkout, filename, **kw):
@@ -568,7 +685,7 @@ def process_pkgconfig (branch, checkout, filename, **kw):
     if '-uninstalled' in basename:
         return None
 
-    if kw.get('timestamps', True):
+    if not kw.get('no_timestamps', False):
         stamp = pulse.db.Timestamp.get_timestamp (rel_scm)
         if mtime <= stamp:
             pulse.utils.log ('Skipping file %s' % rel_scm)
@@ -628,7 +745,7 @@ def process_keyfile (branch, checkout, filename, **kw):
     rel_scm = pulse.utils.relative_path (filename, pulse.config.scm_dir)
     mtime = os.stat(filename).st_mtime
 
-    if kw.get('timestamps', True):
+    if not kw.get('no_timestamps', False):
         stamp = pulse.db.Timestamp.get_timestamp (rel_scm)
         if mtime <= stamp:
             pulse.utils.log ('Skipping file %s' % rel_scm)
@@ -730,7 +847,7 @@ def process_oafserver (branch, checkout, filename, **kw):
     rel_scm = pulse.utils.relative_path (filename, pulse.config.scm_dir)
     mtime = os.stat(filename).st_mtime
 
-    if kw.get('timestamps', True):
+    if not kw.get('no_timestamps', False):
         stamp = pulse.db.Timestamp.get_timestamp (rel_scm)
         if mtime <= stamp:
             pulse.utils.log ('Skipping file %s' % rel_scm)
@@ -866,11 +983,12 @@ def locate_icon (record, icon, images):
 
 
 def main (argv, options={}):
-    update = not options.get ('--no-update', False)
-    timestamps = not options.get ('--no-timestamps', False)
-    history = not options.get ('--no-history', False)
-    do_docs = not options.get ('--no-docs', False)
-    do_i18n = not options.get ('--no-i18n', False)
+    kw = {'no_update': options.get ('--no-update', False),
+          'no_timestamps': options.get ('--no-timestamps', False),
+          'no_history': options.get ('--no-history', False),
+          'no_docs': options.get ('--no-docs', False),
+          'no_i18n': options.get ('--no-i18n', False)
+          }
     if len(argv) == 0:
         ident = None
     else:
@@ -889,8 +1007,7 @@ def main (argv, options={}):
 
     for branch in list(branches):
         try:
-            update_branch (branch, update=update, timestamps=timestamps, history=history,
-                           do_docs=do_docs, do_i18n=do_i18n)
+            ModuleScanner (branch, **kw).scan (**kw)
             pulse.db.flush ()
         except:
             pulse.db.rollback ()
