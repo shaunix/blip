@@ -146,9 +146,7 @@ if __name__ == "__main__":
             retcode = mod.main (argv[1:])
         if retcode != 0:
             raise ReturnCodeException ('Return code not 0')
-    except Exception, e:
-        if not isinstance (e, ReturnCodeException):
-            raise e
+    except ReturnCodeException:
         if retcode == 0:
             retcode = -1
 
