@@ -42,40 +42,41 @@ class GtkDocHandler (object):
         Process a Makefile for gtk-doc information.
         """
         if basename == 'Makefile.am':
-            makefile = self.scanner.get_parsed_file (parsers.Automake,
-                                                     os.path.join (dirname, basename))
+            filename = os.path.join (dirname, basename)
+            makefile = self.scanner.get_parsed_file (parsers.Automake, filename)
             for line in makefile.get_lines():
                 if line.startswith ('include $(top_srcdir)/'):
                     if line.endswith ('gtk-doc.make'):
-                        self.gtk_docs.append((dirname, makefile))
+                        self.process_document (filename, **kw)
                         break
 
-    def update (self, **kw):
+    def process_document (self, filename, **kw):
         """
-        Update all gtk-doc documents for a module.
+        Process a document managed by gtk-doc.
         """
         branch = self.scanner.branch
         checkout = self.scanner.checkout
         bserver, bmodule, bbranch = branch.ident.split('/')[2:]
-        for docdir, makefile in self.gtk_docs:
-            doc_module = makefile['DOC_MODULE']
-            ident = u'/'.join(['/ref', bserver, bmodule, doc_module, bbranch])
-            document = db.Branch.get_or_create (ident, u'Document')
-            relpath = utils.relative_path (docdir, checkout.directory)
+        makefile = self.scanner.get_parsed_file (parsers.Automake, filename)
 
-            data = {}
-            for key in ('scm_type', 'scm_server', 'scm_module', 'scm_branch', 'scm_path'):
-                data[key] = getattr(branch, key)
-            data['subtype'] = u'gtk-doc'
-            data['scm_dir'] = relpath
-            scm_file = makefile['DOC_MAIN_SGML_FILE']
-            if '$(DOC_MODULE)' in scm_file:
-                scm_file = scm_file.replace ('$(DOC_MODULE)', doc_module)
-            data['scm_file'] = scm_file
+        doc_module = makefile['DOC_MODULE']
+        ident = u'/'.join(['/ref', bserver, bmodule, doc_module, bbranch])
+        document = db.Branch.get_or_create (ident, u'Document')
+        relpath = utils.relative_path (docdir, checkout.directory)
 
-            document.update (data)
+        data = {}
+        for key in ('scm_type', 'scm_server', 'scm_module', 'scm_branch', 'scm_path'):
+            data[key] = getattr(branch, key)
+        data['subtype'] = u'gtk-doc'
+        data['scm_dir'] = relpath
+        scm_file = makefile['DOC_MAIN_SGML_FILE']
+        if '$(DOC_MODULE)' in scm_file:
+            scm_file = scm_file.replace ('$(DOC_MODULE)', doc_module)
+        data['scm_file'] = scm_file
 
-            if document is not None:
-                self.scanner.add_child (document)
+        document.update (data)
+
+        if document is not None:
+            self.scanner.add_child (document)
 
 pulse.pulsate.modules.ModuleScanner.register_plugin (GtkDocHandler)

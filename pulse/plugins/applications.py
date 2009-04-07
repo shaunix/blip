@@ -38,121 +38,133 @@ class KeyFileHandler (object):
     def __init__ (self, scanner):
         self.scanner = scanner
         self.keyfiles = []
+        self.appdocs = []
 
     def process_file (self, dirname, basename, **kw):
         """
         Process a desktop entry file for an application.
         """
         if re.match('.*\.desktop(\.in)+$', basename):
-            self.keyfiles.append (os.path.join (dirname, basename))
+            self.process_application (os.path.join (dirname, basename), **kw)
 
-    def update (self, **kw):
+    def process_application (self, filename, **kw):
         """
-        Update all applications.
+        Process an application.
         """
         branch = self.scanner.branch
         checkout = self.scanner.checkout
         bserver, bmodule, bbranch = branch.ident.split('/')[2:]
-        for filename in self.keyfiles:
-            rel_ch = utils.relative_path (filename, checkout.directory)
-            rel_scm = utils.relative_path (filename, config.scm_dir)
-            mtime = os.stat(filename).st_mtime
+        
+        rel_ch = utils.relative_path (filename, checkout.directory)
+        rel_scm = utils.relative_path (filename, config.scm_dir)
+        mtime = os.stat(filename).st_mtime
 
-            if not kw.get('no_timestamps', False):
-                stamp = db.Timestamp.get_timestamp (rel_scm)
-                if mtime <= stamp:
-                    utils.log ('Skipping file %s' % rel_scm)
-                    data = {'parent' : branch}
-                    data['scm_dir'], data['scm_file'] = os.path.split (rel_ch)
-                    apps = db.Branch.select (type=u'Application', **data)
-                    try:
-                        app = apps.one ()
-                        self.scanner.add_child (app)
-                        continue
-                    except:
-                        continue
-            utils.log ('Processing file %s' % rel_scm)
-                     
-            if filename.endswith ('.desktop.in.in'):
-                basename = os.path.basename (filename)[:-14]
-            else:
-                basename = os.path.basename (filename)[:-11]
-            owd = os.getcwd ()
-            try:
+        if not kw.get('no_timestamps', False):
+            stamp = db.Timestamp.get_timestamp (rel_scm)
+            if mtime <= stamp:
+                utils.log ('Skipping file %s' % rel_scm)
+                data = {'parent' : branch}
+                data['scm_dir'], data['scm_file'] = os.path.split (rel_ch)
+                apps = db.Branch.select (type=u'Application', **data)
                 try:
-                    os.chdir (checkout.directory)
-                    keyfile = parsers.KeyFile (
-                        os.popen ('LC_ALL=C intltool-merge -d -q -u po "' + rel_ch + '" -'))
-                finally:
-                    os.chdir (owd)
-            except:
-                return None
-            if not keyfile.has_group ('Desktop Entry'):
-                return None
-            if not keyfile.has_key ('Desktop Entry', 'Type'):
-                return None
-            if keyfile.get_value ('Desktop Entry', 'Type') != 'Application':
-                return None
+                    app = apps.one ()
+                    self.scanner.add_child (app)
+                    return
+                except:
+                    return
+        utils.log ('Processing file %s' % rel_scm)
+                     
+        if filename.endswith ('.desktop.in.in'):
+            basename = os.path.basename (filename)[:-14]
+        else:
+            basename = os.path.basename (filename)[:-11]
+        owd = os.getcwd ()
+        try:
+            try:
+                os.chdir (checkout.directory)
+                keyfile = parsers.KeyFile (
+                    os.popen ('LC_ALL=C intltool-merge -d -q -u po "' + rel_ch + '" -'))
+            finally:
+                os.chdir (owd)
+        except:
+            return
+        if not keyfile.has_group ('Desktop Entry'):
+            return
+        if not keyfile.has_key ('Desktop Entry', 'Type'):
+            return
+        if keyfile.get_value ('Desktop Entry', 'Type') != 'Application':
+            return
 
-            ident = u'/'.join(['/app', bserver, bmodule, basename, bbranch])
+        ident = u'/'.join(['/app', bserver, bmodule, basename, bbranch])
 
-            name = keyfile.get_value ('Desktop Entry', 'Name')
-            if isinstance (name, basestring):
-                name = {'C' : name}
+        name = keyfile.get_value ('Desktop Entry', 'Name')
+        if isinstance (name, basestring):
+            name = {'C' : name}
 
-            if keyfile.has_key ('Desktop Entry', 'Comment'):
-                desc = keyfile.get_value ('Desktop Entry', 'Comment')
-                if isinstance (desc, basestring):
-                    desc = {'C' : desc}
-            else:
-                desc = None
+        if keyfile.has_key ('Desktop Entry', 'Comment'):
+            desc = keyfile.get_value ('Desktop Entry', 'Comment')
+            if isinstance (desc, basestring):
+                desc = {'C' : desc}
+        else:
+            desc = None
 
-            apptype = u'Application'
-            if keyfile.has_key ('Desktop Entry', 'Categories'):
-                cats = keyfile.get_value ('Desktop Entry', 'Categories')
-                if 'Settings' in cats.split(';'):
-                    ident = u'/'.join(['/capplet', bserver, bmodule, basename, bbranch])
-                    apptype = u'Capplet'
+        apptype = u'Application'
+        if keyfile.has_key ('Desktop Entry', 'Categories'):
+            cats = keyfile.get_value ('Desktop Entry', 'Categories')
+            if 'Settings' in cats.split(';'):
+                ident = u'/'.join(['/capplet', bserver, bmodule, basename, bbranch])
+                apptype = u'Capplet'
 
-            app = db.Branch.get_or_create (ident, apptype)
+        app = db.Branch.get_or_create (ident, apptype)
 
-            data = {'data': {}}
-            for key in ('scm_type', 'scm_server', 'scm_module', 'scm_branch', 'scm_path'):
-                data[key] = getattr(branch, key)
-            data['scm_dir'], data['scm_file'] = os.path.split (rel_ch)
+        data = {'data': {}}
+        for key in ('scm_type', 'scm_server', 'scm_module', 'scm_branch', 'scm_path'):
+            data[key] = getattr(branch, key)
+        data['scm_dir'], data['scm_file'] = os.path.split (rel_ch)
 
-            app.update (name=name)
-            if desc != None:
-                app.update (desc=desc)
-            if keyfile.has_key ('Desktop Entry', 'Icon'):
-                iconname = keyfile.get_value ('Desktop Entry', 'Icon')
-                if iconname == '@PACKAGE_NAME@':
-                    iconname = branch.data.get ('PACKAGE_NAME', '@PACKAGE_NAME@')
-                images = self.scanner.get_plugin (pulse.plugins.images.ImagesHandler)
-                images.locate_icon (app, iconname)
+        app.update (name=name)
+        if desc != None:
+            app.update (desc=desc)
+        if keyfile.has_key ('Desktop Entry', 'Icon'):
+            iconname = keyfile.get_value ('Desktop Entry', 'Icon')
+            if iconname == '@PACKAGE_NAME@':
+                iconname = branch.data.get ('PACKAGE_NAME', '@PACKAGE_NAME@')
+            images = self.scanner.get_plugin (pulse.plugins.images.ImagesHandler)
+            # FIXME: move this to post-processing
+            images.locate_icon (app, iconname)
 
-            if keyfile.has_key ('Desktop Entry', 'Exec'):
-                data['data']['exec'] = keyfile.get_value ('Desktop Entry', 'Exec')
-                if data['data']['exec'] == '@PACKAGE_NAME@':
-                    data['data']['exec'] = branch.data.get ('PACKAGE_NAME', '@PACKAGE_NAME@')
+        if keyfile.has_key ('Desktop Entry', 'Exec'):
+            data['data']['exec'] = keyfile.get_value ('Desktop Entry', 'Exec')
+            if data['data']['exec'] == '@PACKAGE_NAME@':
+                data['data']['exec'] = branch.data.get ('PACKAGE_NAME', '@PACKAGE_NAME@')
 
-            app.update (data)
+        app.update (data)
 
-            if keyfile.has_key ('Desktop Entry', 'X-GNOME-DocPath'):
-                docid = keyfile.get_value ('Desktop Entry', 'X-GNOME-DocPath')
-                docid = docid.split('/')[0]
-            else:
-                docid = basename
+        if keyfile.has_key ('Desktop Entry', 'X-GNOME-DocPath'):
+            docid = keyfile.get_value ('Desktop Entry', 'X-GNOME-DocPath')
+            docid = docid.split('/')[0]
+        else:
+            docid = basename
 
-            if docid != '':
-                docident = u'/'.join(['/doc', bserver, bmodule, docid, bbranch])
-                doc = db.Branch.get (docident)
-                if doc != None:
-                    rel = db.Documentation.set_related (app, doc)
-                    app.set_relations (db.Documentation, [rel])
+        if docid != '':
+            docident = u'/'.join(['/doc', bserver, bmodule, docid, bbranch])
+            self.appdocs.append ((app, docident))
 
-            db.Timestamp.set_timestamp (rel_scm, mtime)
-            if app is not None:
-                self.scanner.add_child (app)
+        db.Timestamp.set_timestamp (rel_scm, mtime)
+        if app is not None:
+            self.scanner.add_child (app)
+
+    def update (self, **kw):
+        """
+        Update other information about applications in a module.
+
+        This function will locate documentation for an application.  This
+        happens in the update phase to allow other plugins to add documents.
+        """
+        for app, docident in self.appdocs:
+            doc = db.Branch.get (docident)
+            if doc is not None:
+                rel = db.Documentation.set_related (app, doc)
+                app.set_relations (db.Documentation, [rel])
 
 pulse.pulsate.modules.ModuleScanner.register_plugin (KeyFileHandler)

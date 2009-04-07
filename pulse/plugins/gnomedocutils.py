@@ -43,61 +43,62 @@ class GnomeDocUtilsHandler (object):
         Process a Makefile for gnome-doc-utils information.
         """
         if basename == 'Makefile.am':
-            makefile = self.scanner.get_parsed_file (parsers.Automake,
-                                                     os.path.join (dirname, basename))
+            filename = os.path.join (dirname, basename)
+            makefile = self.scanner.get_parsed_file (parsers.Automake, filename)
             for line in makefile.get_lines():
                 if line.startswith ('include $(top_srcdir)/'):
                     if line.endswith ('gnome-doc-utils.make'):
-                        self.gdu_docs.append((dirname, makefile))
+                        self.process_document (filename, **kw)
                         break
 
-    def update (self, **kw):
+    def process_document (self, filename, **kw):
         """
-        Update all gnome-doc-utils documents for a module.
+        Process a document managed by gnome-doc-utils.
         """
         branch = self.scanner.branch
         checkout = self.scanner.checkout
         bserver, bmodule, bbranch = branch.ident.split('/')[2:]
-        for docdir, makefile in self.gdu_docs:
-            doc_module = makefile['DOC_MODULE']
-            if doc_module == '@PACKAGE_NAME@':
-                doc_module = branch.data.get ('PACKAGE_NAME', '@PACKAGE_NAME@')
-            ident = u'/'.join(['/doc', bserver, bmodule, doc_module, bbranch])
-            document = db.Branch.get_or_create (ident, u'Document')
-            document.parent = branch
+        makefile = self.scanner.get_parsed_file (parsers.Automake, filename)
 
-            relpath = utils.relative_path (docdir, checkout.directory)
+        doc_module = makefile['DOC_MODULE']
+        if doc_module == '@PACKAGE_NAME@':
+            doc_module = branch.data.get ('PACKAGE_NAME', '@PACKAGE_NAME@')
+        ident = u'/'.join(['/doc', bserver, bmodule, doc_module, bbranch])
+        document = db.Branch.get_or_create (ident, u'Document')
+        document.parent = branch
 
-            data = {}
-            for key in ('scm_type', 'scm_server', 'scm_module', 'scm_branch', 'scm_path'):
-                data[key] = getattr(branch, key)
-            data['subtype'] = u'gdu-docbook'
-            data['scm_dir'] = os.path.join (relpath, 'C')
-            data['scm_file'] = doc_module + '.xml'
-            document.update (data)
+        relpath = utils.relative_path (docdir, checkout.directory)
 
-            translations = []
-            if makefile.has_key ('DOC_LINGUAS'):
-                for lang in makefile['DOC_LINGUAS'].split():
-                    lident = u'/l10n/' + lang + document.ident
-                    translation = db.Branch.get_or_create (lident, u'Translation')
-                    translations.append (translation)
-                    ldata = {}
-                    for key in ('scm_type', 'scm_server', 'scm_module', 'scm_branch', 'scm_path'):
-                        ldata[key] = data[key]
-                    ldata['subtype'] = u'xml2po'
-                    ldata['scm_dir'] = os.path.join (
-                        utils.relative_path (docdir, checkout.directory),
-                        lang)
-                    ldata['scm_file'] = lang + '.po'
-                    translation.update (ldata)
-                document.set_children (u'Translation', translations)
+        data = {}
+        for key in ('scm_type', 'scm_server', 'scm_module', 'scm_branch', 'scm_path'):
+            data[key] = getattr(branch, key)
+        data['subtype'] = u'gdu-docbook'
+        data['scm_dir'] = os.path.join (relpath, 'C')
+        data['scm_file'] = doc_module + '.xml'
+        document.update (data)
 
-            if not kw.get('no_i18n', False):
-                for po in translations:
-                    pulse.pulsate.i18n.update_translation (po, checkout=checkout, **kw)
+        translations = []
+        if makefile.has_key ('DOC_LINGUAS'):
+            for lang in makefile['DOC_LINGUAS'].split():
+                lident = u'/l10n/' + lang + document.ident
+                translation = db.Branch.get_or_create (lident, u'Translation')
+                translations.append (translation)
+                ldata = {}
+                for key in ('scm_type', 'scm_server', 'scm_module', 'scm_branch', 'scm_path'):
+                    ldata[key] = data[key]
+                ldata['subtype'] = u'xml2po'
+                ldata['scm_dir'] = os.path.join (
+                    utils.relative_path (docdir, checkout.directory),
+                    lang)
+                ldata['scm_file'] = lang + '.po'
+                translation.update (ldata)
+            document.set_children (u'Translation', translations)
 
-            if document is not None:
-                self.scanner.add_child (document)
+        if not kw.get('no_i18n', False):
+            for po in translations:
+                pulse.pulsate.i18n.update_translation (po, checkout=checkout, **kw)
+
+        if document is not None:
+            self.scanner.add_child (document)
 
 pulse.pulsate.modules.ModuleScanner.register_plugin (GnomeDocUtilsHandler)
