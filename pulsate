@@ -138,6 +138,9 @@ if __name__ == "__main__":
     retcode = 1
     try:
         mod = pulse.utils.import_ ('pulse.pulsate.' + argv[0])
+        import pulse.plugins
+        for plugin in pulse.plugins.__all__:
+            __import__ ('pulse.plugins.' + plugin)
         if hasattr (mod, 'args'):
             mod_opts, mod_argv = getopt (argv[1:], '', mod.args)
             mod_options = get_options (mod_opts, mod.args)

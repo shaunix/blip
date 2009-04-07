@@ -1,0 +1,81 @@
+# Copyright (c) 2006-2009  Shaun McCance  <shaunm@gnome.org>
+#
+# This file is part of Pulse, a program for displaying various statistics
+# of questionable relevance about software and the people who make it.
+#
+# Pulse is free software; you can redistribute it and/or modify it under the
+# terms of the GNU General Public License as published by the Free Software
+# Foundation; either version 2 of the License, or (at your option) any later
+# version.
+#
+# Pulse is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with Pulse; if not, write to the Free Software Foundation, 59 Temple Place,
+# Suite 330, Boston, MA  0211-1307  USA.
+#
+
+"""
+ModuleScanner plugin for gtk-doc documents.
+"""
+
+import os
+
+from pulse import db, parsers, utils
+
+import pulse.pulsate.modules
+
+class GtkDocHandler (object):
+    """
+    ModuleScanner plugin for gtk-doc documents.
+    """
+
+    def __init__ (self, scanner):
+        self.scanner = scanner
+        self.gtk_docs = []
+
+    def process_file (self, dirname, basename, **kw):
+        """
+        Process a Makefile for gtk-doc information.
+        """
+        if basename == 'Makefile.am':
+            makefile = self.scanner.get_parsed_file (parsers.Automake,
+                                                     os.path.join (dirname, basename))
+            for line in makefile.get_lines():
+                if line.startswith ('include $(top_srcdir)/'):
+                    if line.endswith ('gtk-doc.make'):
+                        self.gtk_docs.append((dirname, makefile))
+                        break
+
+    def update (self, **kw):
+        """
+        Update all gtk-doc documents for a module.
+        """
+        branch = self.scanner.branch
+        checkout = self.scanner.checkout
+        bserver, bmodule, bbranch = branch.ident.split('/')[2:]
+        for docdir, makefile in self.gtk_docs:
+            doc_module = makefile['DOC_MODULE']
+            ident = u'/'.join(['/ref', bserver, bmodule, doc_module, bbranch])
+            document = db.Branch.get_or_create (ident, u'Document')
+            relpath = utils.relative_path (docdir, checkout.directory)
+
+            data = {}
+            for key in ('scm_type', 'scm_server', 'scm_module', 'scm_branch', 'scm_path'):
+                data[key] = getattr(branch, key)
+            data['subtype'] = u'gtk-doc'
+            data['scm_dir'] = relpath
+            scm_file = makefile['DOC_MAIN_SGML_FILE']
+            if '$(DOC_MODULE)' in scm_file:
+                scm_file = scm_file.replace ('$(DOC_MODULE)', doc_module)
+            data['scm_file'] = scm_file
+
+            document.update (data)
+
+            if document is not None:
+                self.scanner.add_child (document)
+
+pulse.pulsate.modules.ModuleScanner.register_plugin (GtkDocHandler)
