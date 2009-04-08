@@ -179,13 +179,6 @@ def update_branch (branch, **kw):
 
     default_child = None
 
-    for obj in (applications + capplets + applets):
-        rels = pulse.db.Documentation.get_related (subj=obj)
-        if len(rels) == 0: continue
-        doc = rels[0].pred
-        if doc.data.has_key ('screenshot'):
-            obj.data['screenshot'] = doc.data['screenshot']
-
     if default_child == None:
         if len(applications) == 1 and len(applets) == 0:
             default_child = applications[0]

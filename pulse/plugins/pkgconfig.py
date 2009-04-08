@@ -122,6 +122,8 @@ class PkgConfigHandler (object):
                     doc = db.Branch.get (docident)
             if doc is not None:
                 rel = db.Documentation.set_related (lib, doc)
+                if doc.data.has_key ('screenshot'):
+                    lib.data['screenshot'] = doc.data['screenshot']
                 lib.set_relations (db.Documentation, [rel])
 
 pulse.pulsate.modules.ModuleScanner.register_plugin (PkgConfigHandler)

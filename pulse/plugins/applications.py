@@ -167,6 +167,8 @@ class KeyFileHandler (object):
             doc = db.Branch.get (docident)
             if doc is not None:
                 rel = db.Documentation.set_related (app, doc)
+                if doc.data.has_key ('screenshot'):
+                    app.data['screenshot'] = doc.data['screenshot']
                 app.set_relations (db.Documentation, [rel])
 
 pulse.pulsate.modules.ModuleScanner.register_plugin (KeyFileHandler)
