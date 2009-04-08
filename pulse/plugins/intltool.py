@@ -62,7 +62,8 @@ class PotHandler (object):
 
         linguas = os.path.join (dirname, 'LINGUAS')
         if not os.path.isfile (linguas):
-            domain.error = 'No LINGUAS file'
+            domain.error = u'No LINGUAS file'
+            return
         else:
             domain.error = None
 
