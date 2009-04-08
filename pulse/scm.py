@@ -455,12 +455,11 @@ class Checkout (object):
         owd = os.getcwd ()
         try:
             os.chdir (self.directory)
-            if getattr (self, 'scm_path', None) != None:
-                prefix = self.scm_path + '/'
-            elif self.scm_branch == 'trunk':
-                prefix = None
-            else:
-                prefix = 'branches/' + self.scm_branch + '/'
+            fd = codecs.getreader('utf-8')(os.popen ('svn info'), errors='replace')
+            for line in fd:
+                if line.startswith ('Repository Root:'):
+                    svnroot = line[16:].strip()
+                    break
             cmd = 'svn log -v'
             if since != None:
                 cmd += ' -r' + since + ':HEAD'
@@ -472,7 +471,7 @@ class Checkout (object):
             while line:
                 line = fd.readline()
                 if not line: break
-                onbranch = (prefix is None)
+                onbranch = False
                 (revnumber, revauthor, revdate) = line.split('|')[:3]
                 revnumber = revnumber[1:].strip()
                 prevrev = str(int(revnumber) - 1)
@@ -487,19 +486,18 @@ class Checkout (object):
                         if line == '\n' or line == sep:
                             break
                         filename = line.strip()[3:]
-                        if prefix != None and filename.startswith (prefix):
+                        fullfilename = svnroot + u'/' + filename
+                        if fullfilename.startswith (self._location):
                             onbranch = True
-                            filename = filename[len(prefix):]
-                        elif filename.startswith ('trunk/'):
-                            filename = filename[6:]
+                            filename = fullfilename[len(self._location)+1:]
                         else:
-                            filename = '../' + filename
+                            filename = u'/' + filename
                         i = filename.find ('(from ')
                         if i >= 0:
                             filename = filename[:i]
                         filename = filename.strip()
                         if filename == '':
-                            filename = '.'
+                            filename = u'.'
                         # FIXME: if I knew how to get the previous revision that
                         # affected this file, I would.  But I don't know how to
                         # get that from the single svn log command, and I'm not
