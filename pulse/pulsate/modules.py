@@ -22,13 +22,8 @@
 Update information from module and branch checkouts
 """
 
-import commands
 import datetime
 import os
-import os.path
-import re
-
-import xml.dom.minidom
 
 import pulse.db
 import pulse.graphs
@@ -85,7 +80,7 @@ class ModuleScanner (object):
 
     def update (self, **kw):
         if self.checkout.error is not None:
-            self.branch.update (error=checkout.error)
+            self.branch.update (error=self.checkout.error)
             return
         else:
             self.branch.update (error=None)
@@ -112,8 +107,13 @@ class ModuleScanner (object):
             if hasattr (plugin, 'post_process'):
                 plugin.post_process (**kw)
 
-        for type in self._children.keys ():
-            self.branch.set_children (type, self._children[type])
+        for objtype in self._children.keys ():
+            self.branch.set_children (objtype, self._children[objtype])
+
+        self.set_default_child ()
+
+        self.branch.updated = datetime.datetime.utcnow ()
+        pulse.db.Queue.remove ('modules', self.branch.ident)
 
 
     def check_history (self):
@@ -172,21 +172,19 @@ class ModuleScanner (object):
             self.branch.mod_person = revision.person
 
 
+    def set_default_child (self):
+        default_child = None
 
-#############################################
-
-def update_branch (branch, **kw):
-
-    default_child = None
-
-    if default_child == None:
+        applications = self._children.get ('Application', [])
+        applets = self._children.get ('Applet', [])
+        capplets = self._children.get ('Capplet', [])
         if len(applications) == 1 and len(applets) == 0:
             default_child = applications[0]
         elif len(applets) == 1 and len(applications) == 0:
             default_child = applets[0]
         elif len(applications) > 0:
             for app in applications:
-                if app.data.get ('exec', None) == branch.scm_module:
+                if app.data.get ('exec', None) == self.branch.scm_module:
                     default_child = app
                     break
         elif len(applets) > 0:
@@ -194,22 +192,19 @@ def update_branch (branch, **kw):
         elif len(capplets) == 1:
             default_child = capplets[0]
 
-    if default_child != None:
-        branch.name = default_child.name
-        branch.desc = default_child.desc
-        branch.icon_dir = default_child.icon_dir
-        branch.icon_name = default_child.icon_name
-        if default_child.data.has_key ('screenshot'):
-            branch.data['screenshot'] = default_child.data['screenshot']
-    else:
-        branch.name = {'C' : branch.scm_module}
-        branch.desc = {}
-        branch.icon_dir = None
-        branch.icon_name = None
-        branch.data.pop ('screenshot', None)
-
-    branch.updated = datetime.datetime.utcnow ()
-    pulse.db.Queue.remove ('modules', branch.ident)
+        if default_child is not None:
+            self.branch.name = default_child.name
+            self.branch.desc = default_child.desc
+            self.branch.icon_dir = default_child.icon_dir
+            self.branch.icon_name = default_child.icon_name
+            if default_child.data.has_key ('screenshot'):
+                self.branch.data['screenshot'] = default_child.data['screenshot']
+        else:
+            self.branch.name = {'C' : self.branch.scm_module}
+            self.branch.desc = {}
+            self.branch.icon_dir = None
+            self.branch.icon_name = None
+            self.branch.data.pop ('screenshot', None)
     
 
 def main (argv, options={}):
