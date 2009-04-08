@@ -26,6 +26,7 @@ import os
 
 from pulse import db, parsers, utils
 
+import pulse.pulsate.docs
 import pulse.pulsate.modules
 
 class GtkDocHandler (object):
@@ -73,6 +74,9 @@ class GtkDocHandler (object):
         data['scm_file'] = scm_file
 
         document.update (data)
+
+        if not kw.get('no_docs', False):
+            pulse.pulsate.docs.update_document (document, checkout=checkout, **kw)
 
         if document is not None:
             self.scanner.add_child (document)

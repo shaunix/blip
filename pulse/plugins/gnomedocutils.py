@@ -26,6 +26,7 @@ import os
 
 from pulse import db, parsers, utils
 
+import pulse.pulsate.docs
 import pulse.pulsate.i18n
 import pulse.pulsate.modules
 
@@ -92,6 +93,9 @@ class GnomeDocUtilsHandler (object):
                 translation.parent = document
                 translation.update (ldata)
             document.set_children (u'Translation', translations)
+
+        if not kw.get('no_docs', False):
+            pulse.pulsate.docs.update_document (document, checkout=checkout, **kw)
 
         if not kw.get('no_i18n', False):
             for po in translations:
