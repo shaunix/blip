@@ -89,6 +89,7 @@ class GnomeDocUtilsHandler (object):
                     utils.relative_path (dirname, checkout.directory),
                     lang)
                 ldata['scm_file'] = lang + '.po'
+                translation.parent = document
                 translation.update (ldata)
             document.set_children (u'Translation', translations)
 

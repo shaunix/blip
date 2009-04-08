@@ -61,6 +61,8 @@ def update_translation (po, **kw):
         checkout = get_checkout (po, update=kw.get('update', True))
 
     if po.subtype == 'intltool':
+        print po
+        print po.parent
         potfile = get_intltool_potfile (po.parent, checkout, **kw)
     else:
         potfile = get_xml2po_potfile (po.parent, checkout, **kw)

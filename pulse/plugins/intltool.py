@@ -94,6 +94,7 @@ class PotHandler (object):
             ldata['subtype'] = 'intltool'
             ldata['scm_dir'] = scmdata['scm_dir']
             ldata['scm_file'] = lang + '.po'
+            translation.parent = domain
             translation.update (ldata)
 
         if not kw.get('no_i18n', False):
