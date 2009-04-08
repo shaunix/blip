@@ -34,6 +34,7 @@ args['log-file=']  = ('FILE', 'log updates to the file FILE')
 args['log-level='] = ('LEVEL', 'minimum level of log messages')
 args['debug-db'] = (None, 'print database queries')
 args['debug-db-summary'] = (None, 'print summary of database queries')
+args['disable-plugins='] = ('PLUGINS', 'disable plugins from comma-separated PLUGINS list')
 args['rollback'] = (None, 'roll back all changes (dry run)')
 
 def print_args (args, fd=sys.stderr):
@@ -138,9 +139,11 @@ if __name__ == "__main__":
     retcode = 1
     try:
         mod = pulse.utils.import_ ('pulse.pulsate.' + argv[0])
+        disable = options.get ('--disable-plugins', '').split (',')
         import pulse.plugins
         for plugin in pulse.plugins.__all__:
-            __import__ ('pulse.plugins.' + plugin)
+            if plugin not in disable:
+                __import__ ('pulse.plugins.' + plugin)
         if hasattr (mod, 'args'):
             mod_opts, mod_argv = getopt (argv[1:], '', mod.args)
             mod_options = get_options (mod_opts, mod.args)
