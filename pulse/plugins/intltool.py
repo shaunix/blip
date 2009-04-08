@@ -42,67 +42,66 @@ class PotHandler (object):
         """
         Process a POTFILES.in file for intltool information.
         """
-        if basename == 'POTFILES.in':
-            self.podirs.append (os.path.join (dirname, basename))
+        if not basename == 'POTFILES.in':
+            return
 
-    def update (self, **kw):
-        """
-        Update all translation domains.
-        """
         branch = self.scanner.branch
         checkout = self.scanner.checkout
         bserver, bmodule, bbranch = branch.ident.split('/')[2:]
-        for podir in self.podirs:
-            ident = u'/'.join(['/i18n', bserver, bmodule, os.path.basename (podir), bbranch])
-            domain = db.Branch.get_or_create (ident, u'Domain')
-            domain.parent = branch
 
-            scmdata = {}
-            for key in ('scm_type', 'scm_server', 'scm_module', 'scm_branch', 'scm_path'):
-                scmdata[key] = getattr(branch, key)
-            scmdata['scm_dir'] = utils.relative_path (podir, checkout.directory)
-            domain.update (scmdata)
+        ident = u'/'.join(['/i18n', bserver, bmodule, os.path.basename (dirname), bbranch])
 
-            linguas = os.path.join (podir, 'LINGUAS')
-            if not os.path.isfile (linguas):
+        domain = db.Branch.get_or_create (ident, u'Domain')
+        domain.parent = branch
+
+        scmdata = {}
+        for key in ('scm_type', 'scm_server', 'scm_module', 'scm_branch', 'scm_path'):
+            scmdata[key] = getattr(branch, key)
+        scmdata['scm_dir'] = utils.relative_path (dirname, checkout.directory)
+        domain.update (scmdata)
+
+        linguas = os.path.join (dirname, 'LINGUAS')
+        if not os.path.isfile (linguas):
+            domain.error = 'No LINGUAS file'
+        else:
+            domain.error = None
+
+        rel_scm = utils.relative_path (linguas, config.scm_dir)
+        mtime = os.stat(linguas).st_mtime
+        langs = []
+        translations = []
+
+        if not kw.get('no_timestamps', False):
+            stamp = db.Timestamp.get_timestamp (rel_scm)
+            if mtime <= stamp:
+                utils.log ('Skipping file %s' % rel_scm)
+                return
+        utils.log ('Processing file %s' % rel_scm)
+
+        fd = open (linguas)
+        for line in fd:
+            if line.startswith ('#') or line == '\n':
                 continue
+            for lang in line.split():
+                langs.append (lang)
+        for lang in langs:
+            lident = u'/l10n/' + lang + domain.ident
+            translation = db.Branch.get_or_create (lident, u'Translation')
+            translations.append (translation)
+            ldata = {}
+            for key in ('scm_type', 'scm_server', 'scm_module', 'scm_branch', 'scm_path'):
+                ldata[key] = scmdata[key]
+            ldata['subtype'] = 'intltool'
+            ldata['scm_dir'] = scmdata['scm_dir']
+            ldata['scm_file'] = lang + '.po'
+            translation.update (ldata)
 
-            rel_scm = utils.relative_path (linguas, config.scm_dir)
-            mtime = os.stat(linguas).st_mtime
-            langs = []
-            translations = []
+        if not kw.get('no_i18n', False):
+            for po in translations:
+                pulse.pulsate.i18n.update_translation (po, checkout=checkout, **kw)
 
-            if not kw.get('no_timestamps', False):
-                stamp = db.Timestamp.get_timestamp (rel_scm)
-                if mtime <= stamp:
-                    utils.log ('Skipping file %s' % rel_scm)
-                    continue
-            utils.log ('Processing file %s' % rel_scm)
-
-            fd = open (linguas)
-            for line in fd:
-                if line.startswith ('#') or line == '\n':
-                    continue
-                for lang in line.split():
-                    langs.append (lang)
-            for lang in langs:
-                lident = u'/l10n/' + lang + domain.ident
-                translation = db.Branch.get_or_create (lident, u'Translation')
-                translations.append (translation)
-                ldata = {}
-                for key in ('scm_type', 'scm_server', 'scm_module', 'scm_branch', 'scm_path'):
-                    ldata[key] = scmdata[key]
-                ldata['subtype'] = 'intltool'
-                ldata['scm_dir'] = scmdata['scm_dir']
-                ldata['scm_file'] = lang + '.po'
-                translation.update (ldata)
-
-            if not kw.get('no_i18n', False):
-                for po in translations:
-                    pulse.pulsate.i18n.update_translation (po, checkout=checkout, **kw)
-
-            db.Timestamp.set_timestamp (rel_scm, mtime)
-            if domain is not None:
-                self.scanner.add_child (domain)
+        db.Timestamp.set_timestamp (rel_scm, mtime)
+        if domain is not None:
+            self.scanner.add_child (domain)
 
 pulse.pulsate.modules.ModuleScanner.register_plugin (PotHandler)

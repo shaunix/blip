@@ -40,14 +40,14 @@ class MaintainersHandler (object):
         """
         Process a MAINTAINERS file.
         """
+        is_maintainers = False
         if dirname == self.scanner.checkout.directory:
             if basename == 'MAINTAINERS':
-                self.process_maintainers (os.path.join (dirname, basename), **kw)
+                is_maintainers = True
+        if not is_maintainers:
+            return
 
-    def process_maintainers (self, filename, **kw):
-        """
-        Process a MAINTAINERS file.
-        """
+        filename = os.path.join (dirname, basename)
         branch = self.scanner.branch
         rel_scm = utils.relative_path (filename, config.scm_dir)
         mtime = os.stat(filename).st_mtime

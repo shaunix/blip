@@ -42,14 +42,14 @@ class ConfigureHandler (object):
         """
         Process a configure.in or configure.ac file.
         """
+        is_configure = False
         if dirname == self.scanner.checkout.directory:
             if basename in ('configure.in', 'configure.ac'):
-                self.process_configure (os.path.join (dirname, basename), **kw)
+                is_configure = True
+        if not is_configure:
+            return
 
-    def process_configure (self, filename, **kw):
-        """
-        Process a configure.in or configure.ac file.
-        """
+        filename = os.path.join (dirname, basename)
         branch = self.scanner.branch
         checkout = self.scanner.checkout
 

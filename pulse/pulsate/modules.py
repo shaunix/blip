@@ -109,8 +109,8 @@ class ModuleScanner (object):
         os.path.walk (self.checkout.directory, visit, None)
 
         for plugin in self._plugins.values():
-            if hasattr (plugin, 'update'):
-                plugin.update (**kw)
+            if hasattr (plugin, 'post_process'):
+                plugin.post_process (**kw)
 
         for type in self._children.keys ():
             self.branch.set_children (type, self._children[type])

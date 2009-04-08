@@ -41,28 +41,26 @@ class GtkDocHandler (object):
         """
         Process a Makefile for gtk-doc information.
         """
+        is_gtk_doc = False
         if basename == 'Makefile.am':
             filename = os.path.join (dirname, basename)
             makefile = self.scanner.get_parsed_file (parsers.Automake, filename)
             for line in makefile.get_lines():
                 if line.startswith ('include $(top_srcdir)/'):
                     if line.endswith ('gtk-doc.make'):
-                        self.process_document (filename, **kw)
+                        is_gtk_doc = True
                         break
+        if not is_gtk_doc:
+            return
 
-    def process_document (self, filename, **kw):
-        """
-        Process a document managed by gtk-doc.
-        """
         branch = self.scanner.branch
         checkout = self.scanner.checkout
         bserver, bmodule, bbranch = branch.ident.split('/')[2:]
-        makefile = self.scanner.get_parsed_file (parsers.Automake, filename)
 
         doc_module = makefile['DOC_MODULE']
         ident = u'/'.join(['/ref', bserver, bmodule, doc_module, bbranch])
         document = db.Branch.get_or_create (ident, u'Document')
-        relpath = utils.relative_path (docdir, checkout.directory)
+        relpath = utils.relative_path (dirname, checkout.directory)
 
         data = {}
         for key in ('scm_type', 'scm_server', 'scm_module', 'scm_branch', 'scm_path'):

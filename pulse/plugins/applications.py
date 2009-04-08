@@ -39,18 +39,16 @@ class KeyFileHandler (object):
         self.scanner = scanner
         self.keyfiles = []
         self.appdocs = []
+        self.appicons = []
 
     def process_file (self, dirname, basename, **kw):
         """
         Process a desktop entry file for an application.
         """
-        if re.match('.*\.desktop(\.in)+$', basename):
-            self.process_application (os.path.join (dirname, basename), **kw)
+        if not re.match('.*\.desktop(\.in)+$', basename):
+            return
 
-    def process_application (self, filename, **kw):
-        """
-        Process an application.
-        """
+        filename = os.path.join (dirname, basename)
         branch = self.scanner.branch
         checkout = self.scanner.checkout
         bserver, bmodule, bbranch = branch.ident.split('/')[2:]
@@ -129,9 +127,7 @@ class KeyFileHandler (object):
             iconname = keyfile.get_value ('Desktop Entry', 'Icon')
             if iconname == '@PACKAGE_NAME@':
                 iconname = branch.data.get ('PACKAGE_NAME', '@PACKAGE_NAME@')
-            images = self.scanner.get_plugin (pulse.plugins.images.ImagesHandler)
-            # FIXME: move this to post-processing
-            images.locate_icon (app, iconname)
+            self.appicons.append ((app, iconname))
 
         if keyfile.has_key ('Desktop Entry', 'Exec'):
             data['data']['exec'] = keyfile.get_value ('Desktop Entry', 'Exec')
@@ -154,13 +150,19 @@ class KeyFileHandler (object):
         if app is not None:
             self.scanner.add_child (app)
 
-    def update (self, **kw):
+    def post_process (self, **kw):
         """
         Update other information about applications in a module.
 
-        This function will locate documentation for an application.  This
-        happens in the update phase to allow other plugins to add documents.
+        This function will locate documentation for applications.  This
+        happens in post-processing to allow other plugins to add documents.
+
+        This function will locate icons for applications.  This happens
+        in post-processing to allow the images plugin to find all images.
         """
+        images = self.scanner.get_plugin (pulse.plugins.images.ImagesHandler)
+        for app, iconname in self.appicons:
+            images.locate_icon (app, iconname)
         for app, docident in self.appdocs:
             doc = db.Branch.get (docident)
             if doc is not None:

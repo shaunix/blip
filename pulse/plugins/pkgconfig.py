@@ -43,23 +43,20 @@ class PkgConfigHandler (object):
         """
         Process a file to determine whether it's a pkgconfig file.
         """
-        if re.match ('.*\.pc(\.in)+$', basename):
-            self.process_library (os.path.join (dirname, basename), **kw)
+        if not re.match ('.*\.pc(\.in)+$', basename):
+            return
 
-    def process_library (self, filename, **kw):
-        """
-        Process a library from a pkgconfig file.
-        """
+        filename = os.path.join (dirname, basename)
         branch = self.scanner.branch
         checkout = self.scanner.checkout
         bserver, bmodule, bbranch = branch.ident.split('/')[2:]
 
-        basename = os.path.basename (filename)[:-6]
+        rootname = basename[:-6]
         rel_ch = utils.relative_path (filename, checkout.directory)
         rel_scm = utils.relative_path (filename, config.scm_dir)
         mtime = os.stat(filename).st_mtime
         # Hack for GTK+'s uninstalled pkgconfig files
-        if '-uninstalled' in basename:
+        if '-uninstalled' in rootname:
             return
 
         if not kw.get('no_timestamps', False):
@@ -87,7 +84,7 @@ class PkgConfigHandler (object):
         if libname == '':
             return
 
-        ident = u'/'.join(['/lib', bserver, bmodule, basename, bbranch])
+        ident = u'/'.join(['/lib', bserver, bmodule, rootname, bbranch])
         lib = db.Branch.get_or_create (ident, u'Library')
 
         if libname == '@PACKAGE_NAME@':
@@ -95,8 +92,7 @@ class PkgConfigHandler (object):
 
         lib.update (name=libname, desc=libdesc)
 
-        docident = u'/'.join(['/ref', bserver, bmodule, basename, bbranch])
-        self.libdocs.append ((lib, docident))
+        self.libdocs.append ((lib, bserver, bmodule, rootname, bbranch))
 
         data = {}
         for key in ('scm_type', 'scm_server', 'scm_module', 'scm_branch', 'scm_path'):
@@ -109,17 +105,18 @@ class PkgConfigHandler (object):
         if lib is not None:
             self.scanner.add_child (lib)
 
-    def update (self, **kw):
+    def post_process (self, **kw):
         """
         Update other information about libraries in a module.
 
-        This function will locate documentation for a library.  This happens
-        in the update phase to allow other plugins to add documents.
+        This function will locate documentation for libraries.  This happens
+        in post-processing to allow other plugins to add documents.
         """
-        for lib, docident in self.libdocs:
+        for lib, bserver, bmodule, rootname, bbranch in self.libdocs:
+            docident = u'/'.join(['/ref', bserver, bmodule, rootname, bbranch])
             doc = db.Branch.get (docident)
             if doc is None:
-                match = re.match ('(.+)-\\d+(\\d\\d+)?', basename)
+                match = re.match ('(.+)-\\d+(\\d\\d+)?', rootname)
                 if match:
                     docident = u'/'.join(['/ref', bserver, bmodule, match.group(1), bbranch])
                     doc = db.Branch.get (docident)
