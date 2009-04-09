@@ -75,6 +75,10 @@ class DocumentScanner (object):
                         % (self.document.ident, self.document.subtype))
 
 
+def update_document (document, **kw):
+    DocumentScanner (document, **kw).update_document (**kw)
+
+
 def main (argv, options=None):
     if options is None:
         options = {}
@@ -101,7 +105,7 @@ def main (argv, options=None):
 
     for doc in list(docs):
         try:
-            DocumentScanner (doc, **kw).update_document (**kw)
+            update_document (doc, **kw)
             db.flush ()
         except:
             db.rollback ()
