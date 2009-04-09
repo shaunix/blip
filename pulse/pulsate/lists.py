@@ -259,7 +259,9 @@ def update_graphs (mlist, max, **kw):
         i += 1
 
 
-def main (argv, options={}):
+def main (argv, options=None):
+    if options is None:
+        options = {}
     shallow = options.get ('--shallow', False)
     timestamps = not options.get ('--no-timestamps', False)
     if len(argv) == 0:

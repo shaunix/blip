@@ -301,7 +301,9 @@ def get_deps (moduleset, pkg, seen=[]):
     return deps
 
 
-def main (argv, options={}):
+def main (argv, options=None):
+    if options is None:
+        options = {}
     update = not options.get ('--no-update', False)
 
     data = pulse.xmldata.get_data (os.path.join (pulse.config.input_dir, 'xml', 'sets.xml'))

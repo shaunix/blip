@@ -207,7 +207,9 @@ class ModuleScanner (object):
             self.branch.data.pop ('screenshot', None)
     
 
-def main (argv, options={}):
+def main (argv, options=None):
+    if options is None:
+        options = {}
     kw = {'no_update': options.get ('--no-update', False),
           'no_timestamps': options.get ('--no-timestamps', False),
           'no_history': options.get ('--no-history', False),

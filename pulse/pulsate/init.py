@@ -27,7 +27,9 @@ import pulse.db
 
 synop = 'initialize the Pulse database'
 
-def main (argv, options={}):
+def main (argv, options=None):
+    if options is None:
+        options = {}
     if not os.path.exists (pulse.config.scratch_dir):
         os.makedirs (pulse.config.scratch_dir)
     if not os.path.exists (pulse.config.web_files_dir):

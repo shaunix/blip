@@ -39,7 +39,9 @@ def help_extra (fd=None):
     print >>fd, 'If ident is passed, only records with a matching identifier will be updated.'
 
 
-def main (argv, options={}):
+def main (argv, options=None):
+    if options is None:
+        options = {}
     if len(argv) == 0:
         ident = None
     else:

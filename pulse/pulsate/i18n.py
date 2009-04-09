@@ -313,7 +313,9 @@ def get_xml2po_potfile (doc, checkout, **kw):
 ################################################################################
 ## main
 
-def main (argv, options={}):
+def main (argv, options=None):
+    if options is None:
+        options = {}
     update = not options.get ('--no-update', False)
     timestamps = not options.get ('--no-timestamps', False)
     if len(argv) == 0:
