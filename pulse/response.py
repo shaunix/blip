@@ -29,7 +29,7 @@ import pulse.config
 class HttpWidget (object):
     def __init__ (self, **kw):
         super (HttpWidget, self).__init__ (**kw)
-        self.http_content_type = 'Content-type: text/html; charset=utf-8'
+        self.http_content_type = 'text/html; charset=utf-8'
         self.http_response = None
         self.http_status = 200
 
@@ -42,7 +42,7 @@ class HttpResponse (HttpWidget):
         super (HttpResponse, self).__init__ (**kw)
         self.http_login = None
         self.http_account = None
-        self.http_content_type = 'Content-type: text/html; charset=utf-8'
+        self.http_content_type = 'text/html; charset=utf-8'
         self.http_status = 200
         self._http = kw.get ('http', True)
         self._contents = None

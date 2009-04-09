@@ -52,7 +52,7 @@ class HtmlWidget (HttpWidget):
 
     def __init__ (self, **kw):
         super (HtmlWidget, self).__init__ (**kw)
-        self.http_content_type = 'Content-type: text/html; charset=utf-8'
+        self.http_content_type = 'text/html; charset=utf-8'
         self._widget_id = kw.get ('widget_id', None)
         self._widget_class = kw.get ('widget_class', None)
         
