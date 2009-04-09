@@ -22,15 +22,18 @@
 ModuleScanner plugin for the Evolution Quick Reference Card.
 """
 
+import datetime
+import Image
 import os
 import re
+import StringIO
 
 from pulse import db, parsers, utils
 
 import pulse.pulsate.i18n
 import pulse.pulsate.modules
 
-class EvolutionQuickRefHandler (object):
+class EvolutionQuickRefModuleHandler (object):
     """
     ModuleScanner plugin for the Evolution Quick Reference Card.
     """
@@ -71,14 +74,11 @@ class EvolutionQuickRefHandler (object):
         data['scm_file'] = u'quickref.tex'
         document.update (data)
 
-        texfile = os.path.join (dirname, 'C', 'quickref.tex')
-        title = get_quickref_title (texfile)
-        if title is not None:
-            document.update (name=title)
-
         langs = makefile['SUBDIRS'].split ()
         translations = []
         for lang in langs:
+            if lang == 'C':
+                continue
             lident = u'/l10n/' + lang + document.ident
             translation = db.Branch.get_or_create (lident, u'Translation')
             translations.append (translation)
@@ -104,12 +104,102 @@ class EvolutionQuickRefHandler (object):
         if document is not None:
             self.scanner.add_child (document)
 
-def get_quickref_title (filename):
-    regexp = re.compile ('\\s*\\\\textbf{\\\\Huge{(.*)}}')
-    for line in open (filename):
-        match = regexp.match (line)
-        if match:
-            return match.group(1)
-    return None
+pulse.pulsate.modules.ModuleScanner.register_plugin (EvolutionQuickRefModuleHandler)
 
-pulse.pulsate.modules.ModuleScanner.register_plugin (EvolutionQuickRefHandler)
+
+class EvolutionQuickRefDocumentHandler (object):
+    """
+    DocumentScanner plugin for the Evolution Quick Reference Card.
+    """
+
+    def __init__ (self, scanner):
+        self.scanner = scanner
+
+    def update_document (self, **kw):
+        document = self.scanner.document
+        checkout = self.scanner.checkout
+        if document.subtype != u'evolution-quickref':
+            return False
+
+        langs = [('C', document)]
+        translations = db.Branch.select (type=u'Translation', parent=document)
+        for translation in translations:
+            langs.append ((os.path.basename (translation.scm_dir), translation))
+
+        name = {}
+        regexp = re.compile ('\\s*\\\\textbf{\\\\Huge{(.*)}}')
+
+        ofs_by_lang = {}
+        ofs = list(db.OutputFile.select (type=u'figures', ident=document.ident))
+        for of in ofs:
+            ofs_by_lang[of.filename[:-4]] = of
+
+        for lang, obj in langs:
+            texfile = os.path.join (checkout.directory, obj.scm_dir, obj.scm_file)
+            for line in open (texfile):
+                match = regexp.match (line)
+                if match:
+                    name[lang] = match.group (1)
+                    break
+                
+            of = ofs_by_lang.get (lang, None)
+            create_figure = False
+            pdffile = os.path.join (obj.scm_dir, 'quickref.pdf')
+            pdffull = os.path.join (checkout.directory, pdffile)
+            if of is None:
+                of = db.OutputFile (type=u'figures', ident=document.ident,
+                                    filename=(lang + u'.png'), source=pdffile,
+                                    datetime=datetime.datetime.utcnow())
+                create_figure = True
+            else:
+                if kw.get('no_timestamps', False):
+                    create_figure = True
+                else:
+                    try:
+                        mtime = os.stat(pdffull).st_mtime
+                        if mtime > time.mktime(of.datetime.timetuple()):
+                            create_figure = True
+                    except:
+                        pass
+            outfile = of.get_file_path ()
+            outfile_rel = utils.relative_path (outfile, pulse.config.web_figures_dir)
+            if create_figure:
+                outdir = os.path.dirname (outfile)
+                if not os.path.exists (outdir):
+                    os.makedirs (outdir)
+                utils.log ('Creating image %s' % outfile_rel)
+                try:
+                    fd = os.popen ('convert "%s" png:-' % pdffull)
+                    im = Image.open (StringIO.StringIO (fd.read()))
+                    im = im.rotate (-90)
+                    im.thumbnail ((600, 600), Image.ANTIALIAS)
+
+                    width, height = im.size
+                    im.save (outfile)
+
+                    tfile = of.get_file_path ('thumbs')
+                    tdir = os.path.dirname (tfile)
+                    if not os.path.exists (tdir):
+                        os.makedirs (tdir)
+                    im.thumbnail((120, 120), Image.ANTIALIAS)
+                    twidth, theight = im.size
+                    im.save (tfile, 'PNG')
+
+                    of.datetime = datetime.datetime.utcnow()
+                    of.data['width'] = width
+                    of.data['height'] = height
+                    of.data['thumb_width'] = twidth
+                    of.data['thumb_height'] = theight
+
+                    document.data.setdefault ('screenshot', {})
+                    document.data['screenshot'][lang] = of.id
+                except:
+                    of.delete ()
+            else:
+                utils.log ('Skipping image %s' % outfile_rel)
+
+        document.update (name=name)
+
+        return True
+
+pulse.pulsate.docs.DocumentScanner.register_plugin (EvolutionQuickRefDocumentHandler)
