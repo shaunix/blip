@@ -30,7 +30,9 @@ import pulse.pulsate.docs
 import pulse.pulsate.i18n
 import pulse.pulsate.modules
 
-class GnomeDocUtilsHandler (object):
+import pulse.plugins.docbook
+
+class GnomeDocUtilsModuleHandler (object):
     """
     ModuleScanner plugin for gnome-doc-utils documents.
     """
@@ -104,4 +106,63 @@ class GnomeDocUtilsHandler (object):
         if document is not None:
             self.scanner.add_child (document)
 
-pulse.pulsate.modules.ModuleScanner.register_plugin (GnomeDocUtilsHandler)
+pulse.pulsate.modules.ModuleScanner.register_plugin (GnomeDocUtilsModuleHandler)
+
+
+class GnomeDocUtilsDocumentHandler (object):
+    """
+    DocumentScanner plugin for gnome-doc-utils documents.
+    """
+
+    def __init__ (self, scanner):
+        self.scanner = scanner
+
+    def update_document (self, **kw):
+        document = self.scanner.document
+        checkout = self.scanner.checkout
+        if document.subtype != 'gdu-docbook':
+            return False
+
+        document.icon_name = document.parent.icon_name
+        document.icon_dir = document.parent.icon_dir
+
+        docbook = pulse.plugins.docbook.DocBookHandler (self)
+
+        docfile = os.path.join (checkout.directory, document.scm_dir, document.scm_file)
+        docbook.process_docfile (docfile, **kw)
+
+        docbook.process_translations (**kw)
+        docbook.process_credits (**kw)
+        docbook.process_figures (**kw)
+
+        makedir = os.path.join (checkout.directory, os.path.dirname (document.scm_dir))
+        makefile = pulse.parsers.Automake (os.path.join (makedir, 'Makefile.am'))
+        xmlfiles = []
+        doc_module = makefile['DOC_MODULE']
+        if doc_module == '@PACKAGE_NAME@':
+            doc_module = document.parent.data.get ('PACKAGE_NAME', '@PACKAGE_NAME@')
+        fnames = ([doc_module + '.xml']  +
+                  makefile.get('DOC_INCLUDES', '').split() +
+                  makefile.get('DOC_ENTITIES', '').split() )
+        for fname in (fnames):
+            xmlfiles.append (fname)
+
+        document.data['xmlfiles'] = sorted (xmlfiles)
+
+        files = [os.path.join (document.scm_dir, f) for f in xmlfiles]
+        revision = pulse.db.Revision.get_last_revision (branch=document.parent, files=files)
+        if revision != None:
+            document.mod_datetime = revision.datetime
+            document.mod_person = revision.person
+
+        files = [os.path.join (document.scm_dir, f) for f in document.data.get ('xmlfiles', [])]
+        if len(files) == 0:
+            document.mod_score = 0
+        else:
+            pulse.pulsate.update_graphs (document,
+                                         {'branch' : document.parent, 'files' : files},
+                                         10, **kw)
+        return True
+
+
+pulse.pulsate.docs.DocumentScanner.register_plugin (GnomeDocUtilsDocumentHandler)

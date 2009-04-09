@@ -29,7 +29,7 @@ from pulse import db, parsers, utils
 import pulse.pulsate.docs
 import pulse.pulsate.modules
 
-class GtkDocHandler (object):
+class GtkDocModuleHandler (object):
     """
     ModuleScanner plugin for gtk-doc documents.
     """
@@ -81,4 +81,31 @@ class GtkDocHandler (object):
         if document is not None:
             self.scanner.add_child (document)
 
-pulse.pulsate.modules.ModuleScanner.register_plugin (GtkDocHandler)
+pulse.pulsate.modules.ModuleScanner.register_plugin (GtkDocModuleHandler)
+
+
+class GtkDocDocumentHandler (object):
+    """
+    DocumentScanner plugin for gtk-doc documents.
+    """
+
+    def __init__ (self, scanner):
+        self.scanner = scanner
+
+    def update_document (self, **kw):
+        document = self.scanner.document
+        checkout = self.scanner.checkout
+        if document.subtype != 'gtk-doc':
+            return False
+
+        docbook = pulse.plugins.docbook.DocBookHandler (self)
+
+        docfile = os.path.join (checkout.directory, document.scm_dir, document.scm_file)
+        docbook.process_docfile (docfile, **kw)
+
+        docbook.process_credits (**kw)
+        docbook.process_figures (**kw)
+
+        return True
+
+pulse.pulsate.docs.DocumentScanner.register_plugin (GtkDocDocumentHandler)
