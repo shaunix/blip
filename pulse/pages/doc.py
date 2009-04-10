@@ -197,7 +197,10 @@ def output_ajax_tab (response, doc, **kw):
 def output_ajax_commits (response, doc, **kw):
     query = kw.get('query', {})
     weeknum = query.get('weeknum', None)
-    files = [os.path.join (doc.scm_dir, f) for f in doc.data.get ('xmlfiles', [])]
+    files = (doc.data.get ('xmlfiles', [])
+             + doc.data.get ('files', [])
+             + doc.data.get ('figures', []))
+    files = [os.path.join (doc.scm_dir, f) for f in files]
     if weeknum != None:
         weeknum = int(weeknum)
         thisweek = pulse.utils.weeknum ()
@@ -297,7 +300,10 @@ def get_activity_tab (doc, **kw):
     except IndexError:
         pass
 
-    files = [os.path.join (doc.scm_dir, f) for f in doc.data.get ('xmlfiles', [])]
+    files = (doc.data.get ('xmlfiles', [])
+             + doc.data.get ('files', [])
+             + doc.data.get ('figures', []))
+    files = [os.path.join (doc.scm_dir, f) for f in files]
     cnt = pulse.db.Revision.count_revisions (branch=doc.parent, files=files)
     revs = pulse.db.Revision.select_revisions (branch=doc.parent, files=files,
                                                week_range=(pulse.utils.weeknum()-52,))
@@ -313,9 +319,9 @@ def get_files_tab (doc, **kw):
     columns = pulse.html.ColumnBox (2)
 
     # Files
-    box = pulse.html.InfoBox (pulse.utils.gettext ('XML Files'))
+    box = pulse.html.InfoBox (pulse.utils.gettext ('Files'))
     columns.add_to_column (0, box)
-    xmlfiles = doc.data.get('xmlfiles', [])
+    xmlfiles = doc.data.get('xmlfiles', []) + doc.data.get ('files', [])
     if len(xmlfiles) > 20:
         div = pulse.html.AjaxBox (doc.pulse_url + '?ajax=xmlfiles')
     else:
@@ -374,7 +380,7 @@ def get_translations_tab (doc, **kw):
         grid = pulse.html.GridBox ()
         pad.add_content (grid)
         for translation, mstat, istat in translations:
-            span = pulse.html.Span (translation.scm_file[:-3])
+            span = pulse.html.Span (os.path.basename (translation.scm_dir))
             span.add_class ('title')
             link = pulse.html.Link (translation.pulse_url, span)
             row = [link]

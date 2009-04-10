@@ -19,23 +19,16 @@
 #
 
 import os
-import os.path
 import sys
 
-import pulse.config
-import pulse.db
+__all__ = []
 
-synop = 'initialize the Pulse database'
-
-def main (argv, options=None):
-    if options is None:
-        options = {}
-    if not os.path.exists (pulse.config.scratch_dir):
-        os.makedirs (pulse.config.scratch_dir)
-    if not os.path.exists (pulse.config.web_files_dir):
-        os.makedirs (pulse.config.web_files_dir)
-
-    pulse.db.create_tables ()
-    pulse.db.commit ()
-
-    return 0
+for f in os.listdir (os.path.dirname (sys.modules[__name__].__file__)):
+    if f.endswith ('.py'):
+        tool = os.path.basename (f)[:-3]
+    elif f.endswith ('.pyc'):
+        tool = os.path.basename (f)[:-4]
+    else:
+        continue
+    if not tool in __all__:
+        __all__.append (tool)

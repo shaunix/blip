@@ -28,7 +28,7 @@ max-attributes=20
 max-branchs=20
 
 # Default is 15.  That's just too small.
-max-locals=20
+max-locals=30
 
 
 [FORMAT]
@@ -49,8 +49,9 @@ indent-string="    "
 # E1103 complains whenever we have a function that can return multiple types
 # W0142 complains about using *args and **kw
 # W0511 tells me about FIXMEs.  I'd rather grep for them separately
+# W0702 complains about not specifying exception types
 # W0704 complains about except doing nothing but pass
-disable-msg=E1103,W0142,W0511,W0704
+disable-msg=E1103,W0142,W0511,W0702,W0704
 
 
 [REPORTS]

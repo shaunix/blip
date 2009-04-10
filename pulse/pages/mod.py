@@ -203,6 +203,9 @@ def output_ajax_domain (response, module, **kw):
     pad = pulse.html.PaddingBox ()
     pagediv.add_content (pad)
 
+    if domain.error is not None:
+        pad.add_content (pulse.html.AdmonBox (pulse.html.AdmonBox.error, domain.error))
+
     if domain.scm_dir == 'po':
         potfile = domain.scm_module + '.pot'
     else:

@@ -88,7 +88,9 @@ def update_icon (team, href, icondir, **kw):
 ################################################################################
 ## main
 
-def main (argv, options={}):
+def main (argv, options=None):
+    if options is None:
+        options = {}
     timestamps = not options.get ('--no-timestamps', False)
 
     update_teams (timestamps=timestamps)

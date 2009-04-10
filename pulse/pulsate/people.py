@@ -82,7 +82,9 @@ def update_person (person, **kw):
 ################################################################################
 ## main
 
-def main (argv, options={}):
+def main (argv, options=None):
+    if options is None:
+        options = {}
     timestamps = not options.get ('--no-timestamps', False)
     if len(argv) == 0:
         ident = None
