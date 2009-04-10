@@ -155,7 +155,8 @@ class GnomeDocUtilsDocumentHandler (object):
             document.mod_datetime = revision.datetime
             document.mod_person = revision.person
 
-        files = [os.path.join (document.scm_dir, f) for f in document.data.get ('xmlfiles', [])]
+        files = doc.data.get ('xmlfiles', []) + doc.data.get ('figures', [])
+        files = [os.path.join (document.scm_dir, f) for f in files]
         if len(files) == 0:
             document.mod_score = 0
         else:

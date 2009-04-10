@@ -200,7 +200,11 @@ class EvolutionQuickRefDocumentHandler (object):
                 utils.log ('Skipping image %s' % outfile_rel)
 
         document.update (name=name)
-
+        document.data['files'] = [u'quickref.pdf', u'quickref.tex']
+        files = [os.path.join (document.scm_dir, f) for f in document.data['files']]
+        pulse.pulsate.update_graphs (document,
+                                     {'branch' : document.parent, 'files' : files},
+                                     10, **kw)
         return True
 
 pulse.pulsate.docs.DocumentScanner.register_plugin (EvolutionQuickRefDocumentHandler)
