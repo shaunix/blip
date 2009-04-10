@@ -19,7 +19,7 @@
 #
 
 """
-Plugins for intltool-managed translation .
+Plugins for xml2po-managed translation .
 """
 
 import commands
@@ -31,104 +31,22 @@ import shutil
 from pulse import config, db, parsers, utils
 
 import pulse.pulsate.i18n
-import pulse.pulsate.modules
 
-class PotModuleHandler (object):
+class Xml2PoTranslationHandler (object):
     """
-    ModuleScanner plugin for intltool-managed translation domains.
-    """
-
-    def __init__ (self, scanner):
-        self.scanner = scanner
-        self.podirs = []
-
-    def process_file (self, dirname, basename, **kw):
-        """
-        Process a POTFILES.in file for intltool information.
-        """
-        if not basename == 'POTFILES.in':
-            return
-
-        branch = self.scanner.branch
-        checkout = self.scanner.checkout
-        bserver, bmodule, bbranch = branch.ident.split('/')[2:]
-
-        ident = u'/'.join(['/i18n', bserver, bmodule, os.path.basename (dirname), bbranch])
-
-        domain = db.Branch.get_or_create (ident, u'Domain')
-        domain.parent = branch
-
-        scmdata = {}
-        for key in ('scm_type', 'scm_server', 'scm_module', 'scm_branch', 'scm_path'):
-            scmdata[key] = getattr(branch, key)
-        scmdata['scm_dir'] = utils.relative_path (dirname, checkout.directory)
-        domain.update (scmdata)
-
-        linguas = os.path.join (dirname, 'LINGUAS')
-        if not os.path.isfile (linguas):
-            domain.error = u'No LINGUAS file'
-            return
-        else:
-            domain.error = None
-
-        rel_scm = utils.relative_path (linguas, config.scm_dir)
-        mtime = os.stat(linguas).st_mtime
-        langs = []
-        translations = []
-
-        if not kw.get('no_timestamps', False):
-            stamp = db.Timestamp.get_timestamp (rel_scm)
-            if mtime <= stamp:
-                utils.log ('Skipping file %s' % rel_scm)
-                return
-        utils.log ('Processing file %s' % rel_scm)
-
-        fd = open (linguas)
-        for line in fd:
-            if line.startswith ('#') or line == '\n':
-                continue
-            for lang in line.split():
-                langs.append (lang)
-        for lang in langs:
-            lident = u'/l10n/' + lang + domain.ident
-            translation = db.Branch.get_or_create (lident, u'Translation')
-            translations.append (translation)
-            ldata = {}
-            for key in ('scm_type', 'scm_server', 'scm_module', 'scm_branch', 'scm_path'):
-                ldata[key] = scmdata[key]
-            ldata['subtype'] = 'intltool'
-            ldata['scm_dir'] = scmdata['scm_dir']
-            ldata['scm_file'] = lang + '.po'
-            translation.parent = domain
-            translation.update (ldata)
-
-        if not kw.get('no_i18n', False):
-            for po in translations:
-                pulse.pulsate.i18n.update_translation (po, checkout=checkout, **kw)
-
-        db.Timestamp.set_timestamp (rel_scm, mtime)
-        if domain is not None:
-            self.scanner.add_child (domain)
-
-pulse.pulsate.modules.ModuleScanner.register_plugin (PotModuleHandler)
-
-
-class PotTranslationHandler (object):
-    """
-    TranslationScanner plugin for intltool-managed translations.
+    TranslationScanner plugin for xml2po-managed translations.
     """
     potfiles = {}
-
     def __init__ (self, scanner):
         self.scanner = scanner
 
     def update_translation (self, **kw):
         """
-        Update information about an intltool-managed translation.
+        Update information about an xml2po-managed translation.
         """
         translation = self.scanner.translation
         checkout = self.scanner.checkout
-        if translation.subtype != 'intltool':
+        if translation.subtype != 'xml2po':
             return False
 
         potfile = self.get_potfile (**kw)
@@ -154,27 +72,36 @@ class PotTranslationHandler (object):
                     utils.log ('Skipping file %s' % rel_scm)
                     return True
 
-        podir = os.path.join (checkout.directory, translation.scm_dir)
-        cmd = 'msgmerge "%s" "%s" 2>&1' % (translation.scm_file, potfile.get_file_path())
+        makedir = os.path.join (checkout.directory,
+                                os.path.dirname (translation.scm_dir))
+        cmd = 'msgmerge "%s" "%s" 2>&1' % (
+            os.path.join (os.path.basename (translation.scm_dir), translation.scm_file),
+            potfile.get_file_path() )
         owd = os.getcwd ()
         try:
-            os.chdir (podir)
-            pulse.utils.log ('Processing file ' + rel_scm)
-            popo = parsers.Po (os.popen (cmd))
+            os.chdir (makedir)
+            utils.log ('Processing file ' + rel_scm)
+            popo = pulse.parsers.Po (os.popen (cmd))
             stats = popo.get_stats()
             total = stats[0] + stats[1] + stats[2]
             db.Statistic.set_statistic (translation, utils.daynum(), u'Messages',
                                         stats[0], stats[1], total)
+            stats = popo.get_image_stats()
+            total = stats[0] + stats[1] + stats[2]
+            db.Statistic.set_statistic (translation, utils.daynum(), u'ImageMessages',
+                                        stats[0], stats[1], total)
         finally:
             os.chdir (owd)
 
-        # FIXME: things like .desktop files might not be reprocessed because
-        # they haven't changed, but translators might have updated the name
-        # or description.  Rather than trying to make those things run when
-        # po files have been updated, let's just grab these:
-        # po.parent.parent.select_children (...)
-        # for Application, Capplet, Applet, and Library and see if we can
-        # provide an updated name or description.
+        translation.data['figures'] = {}
+        for figure in translation.parent.data.get('figures', {}).keys():
+            translation.data['figures'].setdefault(figure, {})
+            translation.data['figures'][figure]['status'] = popo.get_image_status (figure)
+            comment = translation.parent.data['figures'][figure].get('comment', '')
+            if comment == '':
+                translation.data['figures'][figure]['comment'] = ''
+            elif popo.has_message (comment):
+                translation.data['figures'][figure]['comment'] = popo.get_translations (comment)[0]
 
         of = db.OutputFile.select (type=u'l10n',
                                    ident=translation.parent.ident,
@@ -213,25 +140,29 @@ class PotTranslationHandler (object):
 
     def get_potfile (self, **kw):
         """
-        Get a POT file for an intltool-managed translation domain.
+        Get a POT file for an xml2po-managed translation domain.
         """
         checkout = self.scanner.checkout
         domain = self.scanner.translation.parent
-        indir = os.path.join (checkout.directory, domain.scm_dir)
+        indir = os.path.dirname (os.path.join (checkout.directory, domain.scm_dir))
         if self.__class__.potfiles.has_key (indir):
             return self.__class__.potfiles[indir]
 
-        if domain.scm_dir == 'po':
-            potname = domain.scm_module
-        else:
-            potname = domain.scm_dir
-        potfile = potname + '.pot'
-        of = pulse.db.OutputFile.select (type=u'l10n', ident=domain.ident, filename=potfile)
+        makefile = parsers.Automake (os.path.join (indir, 'Makefile.am'))
+        doc_module = makefile['DOC_MODULE']
+        if doc_module == '@PACKAGE_NAME@':
+            doc_module = domain.parent.data.get ('PACKAGE_NAME', '@PACKAGE_NAME@')
+        docfiles = [os.path.join ('C', fname)
+                    for fname
+                    in ([doc_module+'.xml'] + makefile.get('DOC_INCLUDES', '').split())]
+        potname = doc_module
+        potfile = potname + u'.pot'
+        of = db.OutputFile.select (type=u'l10n', ident=domain.ident, filename=potfile)
         try:
             of = of[0]
         except IndexError:
-            of = pulse.db.OutputFile (type=u'l10n', ident=domain.ident, filename=potfile,
-                                      datetime=datetime.datetime.utcnow())
+            of = db.OutputFile (type=u'l10n', ident=domain.ident, filename=potfile,
+                                datetime=datetime.datetime.utcnow())
 
         potfile_abs = of.get_file_path()
         potfile_rel = utils.relative_path (potfile_abs, config.web_l10n_dir)
@@ -239,28 +170,22 @@ class PotTranslationHandler (object):
         if not kw.get('no_timestamps', False):
             dt = of.data.get ('mod_datetime')
             if dt != None and dt == domain.parent.mod_datetime:
-                pulse.utils.log ('Skipping POT file %s' % potfile_rel)
+                utils.log ('Skipping POT file %s' % potfile_rel)
                 self.__class__.potfiles[indir] = of
                 return of
 
         potdir = os.path.dirname (potfile_abs)
         if not os.path.exists (potdir):
             os.makedirs (potdir)
-        cmd = 'intltool-update -p -g "%s" && mv "%s" "%s"' % (potname, potfile, potdir)
+
+        cmd = 'xml2po -e -o "' + potfile_abs + '" "' + '" "'.join(docfiles) + '"'
         owd = os.getcwd ()
         try:
             os.chdir (indir)
-            pulse.utils.log ('Creating POT file %s' % potfile_rel)
-            (mstatus, moutput) = commands.getstatusoutput (
-                'rm -f missing notexist && intltool-update -m')
+            utils.log ('Creating POT file %s' % potfile_rel)
             (status, output) = commands.getstatusoutput (cmd)
         finally:
             os.chdir (owd)
-        missing = []
-        if mstatus == 0:
-            mfile = os.path.join (indir, 'missing')
-            if os.access (mfile, os.R_OK):
-                missing = [line.strip() for line in open(mfile).readlines()]
         if status == 0:
             potmd5 = md5.new()
             # We don't start feeding potmd5 until we've hit a blank line.
@@ -278,17 +203,13 @@ class PotTranslationHandler (object):
             num = popo.get_num_messages ()
             of.datetime = datetime.datetime.utcnow()
             of.data['mod_datetime'] = domain.parent.mod_datetime
-            of.data['missing'] = missing
             of.statistic = num
             of.data['md5'] = potmd5.hexdigest ()
             self.__class__.potfiles[indir] = of
-            domain.error = None
-            domain.updated = of.datetime
             return of
         else:
-            domain.error = u'Failed to create POT file'
-            pulse.utils.warn('Failed to create POT file %s' % potfile_rel)
+            utils.warn ('Failed to create POT file %s' % potfile_rel)
             self.__class__.potfiles[indir] = None
             return None
 
-pulse.pulsate.i18n.TranslationScanner.register_plugin (PotTranslationHandler)
+pulse.pulsate.i18n.TranslationScanner.register_plugin (Xml2PoTranslationHandler)
