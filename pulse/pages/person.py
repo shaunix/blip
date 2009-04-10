@@ -86,7 +86,7 @@ def output_top (response, **kw):
     page = pulse.html.Page ()
     response.set_contents (page)
     page.set_title (pulse.utils.gettext ('People'))
-    people = pulse.db.Entity.objects.filter (type=u'Person').order_by (Desc (pulse.db.Entity.mod_score))
+    people = pulse.db.Entity.select (type=u'Person').order_by (Desc (pulse.db.Entity.mod_score))
     page.add_content(pulse.html.Div(pulse.utils.gettext('42 most active people:')))
     for person in people[:42]:
         lbox = pulse.html.LinkBox (person)

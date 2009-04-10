@@ -38,7 +38,7 @@ def main (response, path, query):
     if len(path) == 7:
         po = pulse.db.Branch.get (ident)
     elif len(path) == 6:
-        branchable = pulse.db.Branch.select (branchable=ident)
+        branches = pulse.db.Branch.select (branchable=ident)
         po = [branch for branch in branches if branch.is_default]
         if len(po) > 0:
             po = po[0]

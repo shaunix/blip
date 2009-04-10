@@ -27,6 +27,7 @@ import Image
 import os
 import re
 import StringIO
+import time
 
 from pulse import db, parsers, utils
 

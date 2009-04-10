@@ -19,7 +19,9 @@
 #
 
 import datetime
+import Image
 import os
+import urllib
 
 import pulse.db
 import pulse.graphs
@@ -71,11 +73,11 @@ def update_teams (**kw):
 
 def update_icon (team, href, icondir, **kw):
     # FIXME: we really shouldn't redownload these every time,
-    # but we want to make sure we get updates versions.  Check
+    # but we want to make sure we get updated versions.  Check
     # into using timestamps and If-Modified-Since
     iconname = urllib.quote ('/'.join (team.ident.split('/')[2:]), '')
     iconpath = os.path.join (pulse.config.web_icons_dir, icondir)
-    iconorig = os.path.join (path, iconname + '@@original.png')
+    iconorig = os.path.join (iconpath, iconname + '@@original.png')
     if not os.path.isdir (iconpath):
         os.makedirs (iconpath)
     urllib.urlretrieve (href, iconorig)

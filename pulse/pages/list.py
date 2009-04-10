@@ -161,7 +161,7 @@ def get_info_tab (mlist, **kw):
     facts = pulse.html.FactsTable()
     try:
         facts.add_fact (pulse.utils.gettext ('Description'),
-                       module.localized_desc)
+                        mlist.localized_desc)
         facts.add_fact_divider ()
     except:
         pass

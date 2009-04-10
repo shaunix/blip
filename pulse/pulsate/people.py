@@ -49,7 +49,7 @@ def update_person (person, **kw):
     feed = person.data.get ('blog')
     if feed != None:
         bident = '/blog' + person.ident
-        forum = db.Forum.get_record (bident, 'Blog')
+        forum = pulse.db.Forum.get_or_create (bident, u'Blog')
         forum.data['feed'] = feed
         etag = forum.data.get ('etag')
         modified = forum.data.get ('modified')

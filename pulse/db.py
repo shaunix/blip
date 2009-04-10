@@ -20,6 +20,7 @@
 
 import datetime
 import inspect
+import itertools
 import os
 import re
 import sys
@@ -265,7 +266,7 @@ class PulseTracer (object):
     def connection_raw_execute_error (self, connection, raw_cursor,
                                       statement, params, error):
         self.print_command (statement, params)
-        self._stream.write ('ERROR: %s\n' % error)
+        pulse.utils.log_write ('ERROR: %s\n' % error)
 
     def connection_raw_execute_success (self, connection, raw_cursor,
                                         statement, params):
@@ -345,7 +346,7 @@ class PulseModel (Storm):
 
     def __repr__ (self):
         if hasattr (self, 'id'):
-            return '%s %s' % (self.__class__.__name__, self.id)
+            return '%s %s' % (self.__class__.__name__, getattr (self, 'id'))
         else:
             return self.__class__.__name__
 
@@ -387,9 +388,6 @@ class PulseModel (Storm):
             if fieldcls == None:
                 raise NoSuchFieldError ('Table %s has no field for %s'
                                         % (self.__class__.__name__, key))
-                if overwrite or (self.data.get (key) == None):
-                    self.data[key] = val
-                pass
             elif issubclass (fieldcls, Pickle):
                 dd = getattr (self, key, {})
                 if not isinstance (val, dict):
@@ -514,20 +512,6 @@ class PulseRecord (PulseModel):
             return record
         return cls (ident, type, **kw)
 
-    @classmethod
-    def get_cached (cls, ident):
-        if cls._record_cache.has_key (ident):
-            return cls._record_cache[ident]
-        record = cls.get (ident)
-        if record != None:
-            cls.set_cached (ident, record)
-        return record
-
-    @classmethod
-    def set_cached (cls, ident, record):
-        cls._record_cache[ident] = record
-        return record
-
     def set_relations (self, cls, rels):
         old = list (self.__pulse_store__.find (cls, subj_ident=self.ident))
         olddict = {}
@@ -594,10 +578,6 @@ class ReleaseSet (PulseRecord):
     parent = Reference (parent_ident, 'ReleaseSet.ident')
 
     subsets = ReferenceSet ('ReleaseSet.ident', parent_ident)
-
-    @property
-    def subsets (self):
-        return ReleaseSet.select (parent=self)
 
 
 class Branch (PulseRecord):
