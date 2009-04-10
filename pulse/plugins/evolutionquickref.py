@@ -19,7 +19,7 @@
 #
 
 """
-ModuleScanner plugin for the Evolution Quick Reference Card.
+Plugins for the Evolution Quick Reference Card.
 """
 
 import datetime

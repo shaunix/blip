@@ -19,7 +19,7 @@
 #
 
 """
-ModuleScanner plugin for gtk-doc documents.
+Plugins for gtk-doc documents.
 """
 
 import os

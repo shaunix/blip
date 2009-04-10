@@ -19,7 +19,7 @@
 #
 
 """
-ModuleScanner plugin for gnome-doc-utils documents.
+Plugins for gnome-doc-utils documents.
 """
 
 import os
