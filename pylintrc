@@ -28,7 +28,7 @@ max-attributes=20
 max-branchs=20
 
 # Default is 15.  That's just too small.
-max-locals=20
+max-locals=30
 
 
 [FORMAT]
