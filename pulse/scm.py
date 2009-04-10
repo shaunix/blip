@@ -18,6 +18,10 @@
 # Suite 330, Boston, MA  0211-1307  USA.
 #
 
+"""
+Read information from a source code repository.
+"""
+
 import commands
 import codecs
 import datetime
@@ -37,8 +41,14 @@ default_branches = {
     'git' : 'master',
     'svn' : 'trunk'
     }
+months = {'Jan':1, 'Feb':2, 'Mar':3, 'Apr':4, 'May':5, 'Jun':6,
+          'Jul':7, 'Aug':8, 'Sep':9, 'Oct':10, 'Nov':11, 'Dec':12}
+
 
 def server_name (scm_type, scm_server):
+    """
+    Get a somewhat human-readable server name for a source code repository.
+    """
     if scm_type == 'cvs':
         name = scm_server.split(':')[2]
         if name.find ('@') >= 0:
@@ -55,12 +65,22 @@ def server_name (scm_type, scm_server):
         return None
 
 class CheckoutError (pulse.utils.PulseException):
+    """
+    An error in reading from a source code repository.
+    """
     def __init__ (self, msg):
         pulse.utils.PulseException.__init__ (self, msg)
 
 class Checkout (object):
+    """
+    Checkout or clone of a source code repository.
+    """
+
     @classmethod
     def from_record (cls, record, **kw):
+        """
+        Get a checkout from the information in a database record.
+        """
         return cls (scm_type=record.scm_type,
                     scm_server=record.scm_server,
                     scm_module=record.scm_module,
@@ -124,6 +144,9 @@ class Checkout (object):
                 self.checkout ()
 
     def _init_cvs (self):
+        """
+        Initialize information for a CVS repository.
+        """
         if not hasattr (self, 'scm_module'):
             raise CheckoutError ('Checkout did not receive a module')
         if not hasattr (self, 'scm_server'):
@@ -145,6 +168,9 @@ class Checkout (object):
         self._up = 'cvs -z3 up -Pd'
 
     def _init_git (self):
+        """
+        Initialize information for a Git repository.
+        """
         if not hasattr (self, 'scm_module'):
             raise CheckoutError ('Checkout did not receive a module')
         if not hasattr (self, 'scm_server'):
@@ -175,6 +201,9 @@ class Checkout (object):
         self._up = 'git fetch origin && git rebase origin/' + self.scm_branch
 
     def _init_svn (self):
+        """
+        Initialize information for an SVN repository.
+        """
         if not hasattr (self, 'scm_module'):
             raise CheckoutError ('Checkout did not receive a module')
         if not hasattr (self, 'scm_server'):
@@ -201,13 +230,21 @@ class Checkout (object):
         self._up = 'svn up'
         
 
-    directory = property (lambda self: os.path.join (pulse.config.scm_dir,
-                                                     self._server_dir,
-                                                     self._module_dir,
-                                                     self._branch_dir))
+    @property
+    def directory (self):
+        """
+        Get the directory on the local filesystem of the checkout.
+        """
+        return os.path.join (pulse.config.scm_dir,
+                             self._server_dir,
+                             self._module_dir,
+                             self._branch_dir)
 
 
     def get_location (self, scm_dir=None, scm_file=None):
+        """
+        Get the location of a resource in a source code repository.
+        """
         if scm_dir == None:
             return self._location
         elif scm_file == None:
@@ -218,6 +255,9 @@ class Checkout (object):
 
 
     def checkout (self):
+        """
+        Check out or clone the repository from a server.
+        """
         pulse.utils.log ('Checking out %s from %s'
                          % (self._name, self._server_dir))
         topdir = os.path.join (pulse.config.scm_dir,
@@ -239,6 +279,9 @@ class Checkout (object):
         
 
     def update (self):
+        """
+        Update the repository from a server.
+        """
         pulse.utils.log ('Updating %s from %s' % (self._name, self._server_dir))
         owd = os.getcwd ()
         try:
@@ -252,7 +295,11 @@ class Checkout (object):
     ############################################################################
 
     def get_revision (self):
-        if hasattr (Checkout, '_get_revision_' + self.scm_type) and self.scm_type in default_branches:
+        """
+        Get the current revision for a repository.
+        """
+        if (hasattr (Checkout, '_get_revision_' + self.scm_type) and
+            self.scm_type in default_branches):
             func = getattr (Checkout, '_get_revision_' + self.scm_type)
         else:
             raise CheckoutError (
@@ -260,10 +307,16 @@ class Checkout (object):
         return func (self)
 
     def _get_revision_cvs (self):
+        """
+        Get the current revision for a CVS repository.
+        """
         # FIXME
         return None
 
     def _get_revision_git (self):
+        """
+        Get the current revision for a Git repository.
+        """
         owd = os.getcwd ()
         revnumber = revdate = None
         try:
@@ -279,6 +332,9 @@ class Checkout (object):
         return (revnumber, revdate)
 
     def _get_revision_svn (self):
+        """
+        Get the current revision for an SVN repository.
+        """
         owd = os.getcwd ()
         retval = None
         try:
@@ -303,6 +359,9 @@ class Checkout (object):
     ############################################################################
 
     def _get_file_revision_cvs (self, filename):
+        """
+        Get the revision of a file in a CVS repository.
+        """
         entries = os.path.join (self.directory, os.path.dirname (filename), 'CVS', 'Entries')
         for line in open(entries):
             if line.startswith ('/' + os.path.basename (filename) + '/'):
@@ -310,8 +369,6 @@ class Checkout (object):
                 datelist = [0, 0, 0, 0, 0, 0]
                 revdate = revdate.split()
                 datelist[0] = int(revdate[-1])
-                months = {'Jan':1, 'Feb':2, 'Mar':3, 'Apr':4, 'May':5, 'Jun':6,
-                          'Jul':7, 'Aug':8, 'Sep':9, 'Oct':10, 'Nov':11, 'Dec':12}
                 datelist[1] = months[revdate[1]]
                 datelist[2] = int(revdate[2])
                 datelist[3:6] = map (int, revdate[3].split(':'))
@@ -321,7 +378,15 @@ class Checkout (object):
     ############################################################################
 
     def read_history (self, since=None):
-        if hasattr (Checkout, '_read_history_' + self.scm_type) and self.scm_type in default_branches:
+        """
+        Read the history of a source code repository.
+
+        You can optionally pass in a revision to read the history since.
+        This function is an iterator, and will yeild dictionaries with
+        information about each revision.
+        """
+        if (hasattr (Checkout, '_read_history_' + self.scm_type) and
+            self.scm_type in default_branches):
             func = getattr (Checkout, '_read_history_' + self.scm_type)
         else:
             raise CheckoutError (
@@ -329,6 +394,9 @@ class Checkout (object):
         return func (self, since=since)
 
     def _read_history_cvs (self, since=None):
+        """
+        Read the history of a CVS repository.
+        """
         sep = '---------------------\n'
         owd = os.getcwd ()
         try:
@@ -390,6 +458,9 @@ class Checkout (object):
         os.chdir (owd)
 
     def _read_history_git (self, since=None):
+        """
+        Read the history of a Git repository.
+        """
         owd = os.getcwd ()
         try:
             os.chdir (self.directory)
@@ -451,6 +522,9 @@ class Checkout (object):
         os.chdir (owd)
 
     def _read_history_svn (self, since=None):
+        """
+        Read the history of an SVN repository.
+        """
         sep = '-' * 72 + '\n'
         owd = os.getcwd ()
         try:
@@ -470,7 +544,8 @@ class Checkout (object):
             line = fd.readline()
             while line:
                 line = fd.readline()
-                if not line: break
+                if not line:
+                    break
                 onbranch = False
                 (revnumber, revauthor, revdate) = line.split('|')[:3]
                 revnumber = revnumber[1:].strip()
@@ -504,7 +579,8 @@ class Checkout (object):
                         # about to do extra svn calls for each revision.
                         revfiles.append ((filename, revnumber, prevrev))
                         line = fd.readline()
-                if line == '\n': line = fd.readline()
+                if line == '\n':
+                    line = fd.readline()
                 while line:
                     if line == sep:
                         break
@@ -523,22 +599,28 @@ class Checkout (object):
         os.chdir (owd)
 
 
-months = {'Jan':1, 'Feb':2, 'Mar':3, 'Apr':4, 'May':5, 'Jun':6,
-          'Jul':7, 'Aug':8, 'Sep':9, 'Oct':10, 'Nov':11, 'Dec':12}
-
-def parse_date (d):
-    dt = datetime.datetime (*time.strptime(d[:19], '%Y-%m-%d %H:%M:%S')[:6])
-    off = d[20:25]
+def parse_date (datestr):
+    """
+    Parse a date in the format yyyy-mm-dd hh:mm::ss.
+    """
+    dt = datetime.datetime (*time.strptime(datestr[:19], '%Y-%m-%d %H:%M:%S')[:6])
+    off = datestr[20:25]
     offhours = int(off[:3])
     offmins = int(off[0] + off[3:])
     delta = datetime.timedelta (hours=offhours, minutes=offmins)
     return dt - delta
 
-def parse_date_svn (d):
-    return parse_date (d.split('(')[0].strip())
+def parse_date_svn (datestr):
+    """
+    Parse a date in the format given by SVN.
+    """
+    return parse_date (datestr.split('(')[0].strip())
 
-def parse_date_git (d):
-    revdate = d.split()
+def parse_date_git (datestr):
+    """
+    Parse a date in the format given by Git.
+    """
+    revdate = datestr.split()
     datelist = [0, 0, 0, 0, 0, 0]
     datelist[0] = int(revdate[4])
     datelist[1] = months[revdate[1]]
