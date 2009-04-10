@@ -30,6 +30,7 @@ import StringIO
 
 from pulse import db, parsers, utils
 
+import pulse.pulsate.docs
 import pulse.pulsate.i18n
 import pulse.pulsate.modules
 
@@ -203,3 +204,48 @@ class EvolutionQuickRefDocumentHandler (object):
         return True
 
 pulse.pulsate.docs.DocumentScanner.register_plugin (EvolutionQuickRefDocumentHandler)
+
+
+class EvolutionQuickRefTranslationHandler (object):
+    """
+    TranslationScanner plugin for the Evolution Quick Reference Card.
+    """
+    potfiles = {}
+
+    def __init__ (self, scanner):
+        self.scanner = scanner
+
+    def update_translation (self, **kw):
+        """
+        Update information about an intltool-managed translation.
+        """
+        translation = self.scanner.translation
+        checkout = self.scanner.checkout
+        if translation.subtype != 'evolution-quickref':
+            return False
+
+        filepath = os.path.join (checkout.directory,
+                                 translation.scm_dir,
+                                 translation.scm_file)
+        if not os.path.exists (filepath):
+            utils.warn('Could not locate file %s for %s'
+                       % (translation.scm_file, translation.parent.ident))
+            return False
+
+        files = [os.path.join (translation.parent.scm_dir, translation.parent.scm_file)]
+        origrev = db.Revision.get_last_revision (branch=translation.parent.parent, files=files)
+
+        files = [os.path.join (translation.scm_dir, translation.scm_file)]
+        thisrev = db.Revision.get_last_revision (branch=translation.parent.parent, files=files)
+
+        if thisrev.datetime > origrev.datetime:
+            db.Statistic.set_statistic (translation, utils.daynum(), u'Messages',
+                                        1, 0, 1)
+        else:
+            db.Statistic.set_statistic (translation, utils.daynum(), u'Messages',
+                                        0, 0, 1)
+        db.Statistic.set_statistic (translation, utils.daynum(), u'ImageMessages', 0, 0, 0)
+
+        return True
+
+pulse.pulsate.i18n.TranslationScanner.register_plugin (EvolutionQuickRefTranslationHandler)

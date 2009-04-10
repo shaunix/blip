@@ -374,7 +374,7 @@ def get_translations_tab (doc, **kw):
         grid = pulse.html.GridBox ()
         pad.add_content (grid)
         for translation, mstat, istat in translations:
-            span = pulse.html.Span (translation.scm_file[:-3])
+            span = pulse.html.Span (os.path.basename (translation.scm_dir))
             span.add_class ('title')
             link = pulse.html.Link (translation.pulse_url, span)
             row = [link]
