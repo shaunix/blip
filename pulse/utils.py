@@ -39,7 +39,10 @@ def get_token ():
 
 
 def utf8dec (s):
-    return codecs.getdecoder('utf-8')(s, errors='replace')[0]
+    if s is not None:
+        return codecs.getdecoder('utf-8')(s, errors='replace')[0]
+    else:
+        return None
 
 
 # Just a dummy until we hook up gettext

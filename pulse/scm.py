@@ -37,9 +37,9 @@ import pulse.config
 import pulse.utils
 
 default_branches = {
-    'cvs' : 'HEAD',
-    'git' : 'master',
-    'svn' : 'trunk'
+    'cvs' : u'HEAD',
+    'git' : u'master',
+    'svn' : u'trunk'
     }
 months = {'Jan':1, 'Feb':2, 'Mar':3, 'Apr':4, 'May':5, 'Jun':6,
           'Jul':7, 'Aug':8, 'Sep':9, 'Oct':10, 'Nov':11, 'Dec':12}
@@ -71,6 +71,27 @@ class CheckoutError (pulse.utils.PulseException):
     def __init__ (self, msg):
         pulse.utils.PulseException.__init__ (self, msg)
 
+class Commit (object):
+    def __init__ (self, checkout, **kw):
+        self.checkout = checkout
+        self.id = pulse.utils.utf8dec (kw.get ('id'))
+        self.datetime = kw.get ('datetime')
+        self.author_id = pulse.utils.utf8dec (kw.get ('author_id'))
+        self.author_email = pulse.utils.utf8dec (kw.get ('author_email'))
+        self.author_name = pulse.utils.utf8dec (kw.get ('author_name'))
+        self.comment = pulse.utils.utf8dec (kw.get ('comment'))
+        self.files = kw.get ('files', [])
+
+    @property
+    def author_ident (self):
+        if self.author_id is not None:
+            return u'/person/%s@%s' % (self.author_id, self.checkout.server_name)
+        elif self.author_email is not None:
+            return u'/person/' + self.author_email
+        else:
+            return u'/ghost/' + self.author_name
+        
+
 class Checkout (object):
     """
     Checkout or clone of a source code repository.
@@ -87,6 +108,10 @@ class Checkout (object):
                     scm_branch=record.scm_branch,
                     scm_path=record.scm_path,
                     **kw)
+
+    @property
+    def server_name (self):
+        return server_name (self.scm_type, self.scm_server)
 
     def __init__ (self, **kw):
         if not kw.has_key ('scm_type'):
@@ -411,8 +436,8 @@ class Checkout (object):
                 if not line.startswith ('PatchSet '):
                     line = fd.readline()
                     continue
-                revnumber = line[9:].strip()
-                revauthor = None
+                revid = line[9:].strip()
+                author_id = None
                 revdate = None
                 comment = ''
                 revfiles = []
@@ -421,10 +446,11 @@ class Checkout (object):
                 line = fd.readline()
                 while True:
                     if not line or line == sep:
-                        if revnumber != since:
-                            yield {'revision' : revnumber, 'datetime' : revdate,
-                                   'author' : revauthor, 'comment' : comment,
-                                   'files' : revfiles }
+                        if revid != since:
+                            yield Commit (self, id=revid, datetime=revdate,
+                                          author_id=author_id,
+                                          comment=comment,
+                                          files=revfiles)
                         break
                     if current == 'Log':
                         if blank:
@@ -447,7 +473,7 @@ class Checkout (object):
                         dt = datetime.datetime (*time.strptime (datestr, '%Y/%m/%d %H:%M:%S')[:6])
                         revdate = dt + datetime.timedelta (seconds=time.timezone)
                     elif line.startswith ('Author: '):
-                        revauthor = (line[8:].strip(), None, None)
+                        author_id = line[8:].strip()
                     elif line.strip() == 'Log:':
                         current = 'Log'
                         blank = False
@@ -473,12 +499,13 @@ class Checkout (object):
             fd = codecs.getreader('utf-8')(os.popen (cmd), errors='replace')
             for line in fd:
                 hashes = line.split()
-                revnumber = hashes[0]
-                parnumber = len(hashes) > 1 and hashes[1] or None
-                allrevs.insert (0, (revnumber, parnumber))
-            for revnumber, parnumber in allrevs:
-                cmd = 'git show --name-only ' + revnumber
-                revauthor = None
+                revid = hashes[0]
+                parid = len(hashes) > 1 and hashes[1] or None
+                allrevs.insert (0, (revid, parid))
+            for revid, parid in allrevs:
+                cmd = 'git show --name-only ' + revid
+                author_email = None
+                author_name = None
                 revdate = None
                 comment = ''
                 revfiles = []
@@ -486,7 +513,7 @@ class Checkout (object):
                 line = fd.readline()
                 while line:
                     if line.startswith ('Author: '):
-                        revauthor = (None,) + parseaddr (line[8:].strip())
+                        author_email, author_name = parseaddr (line[8:].strip())
                     elif line.startswith ('Date: '):
                         revdate = line[8:].strip()
                         revdate = parse_date_git (revdate)
@@ -509,13 +536,16 @@ class Checkout (object):
                                     comment += line
                             line = fd.readline()
                         while line:
-                            revfiles.append ((line.strip(), revnumber, parnumber))
+                            revfiles.append ((line.strip(), revid, parid))
                             line = fd.readline()
                     if line:
                         line = fd.readline()
-                yield {'revision' : revnumber, 'datetime' : revdate,
-                       'author' : revauthor, 'comment' : comment,
-                       'files' : revfiles }
+
+                yield Commit (self, id=revid, datetime=revdate,
+                              author_email=author_email,
+                              author_name=author_name,
+                              comment=comment,
+                              files=revfiles)
         except:
             os.chdir (owd)
             raise
@@ -547,10 +577,10 @@ class Checkout (object):
                 if not line:
                     break
                 onbranch = False
-                (revnumber, revauthor, revdate) = line.split('|')[:3]
-                revnumber = revnumber[1:].strip()
-                prevrev = str(int(revnumber) - 1)
-                revauthor = (revauthor.strip(), None, None)
+                (revid, author_id, revdate) = line.split('|')[:3]
+                revid = revid[1:].strip()
+                prevrev = str(int(revid) - 1)
+                author_id = author_id.strip ()
                 revdate = parse_date_svn (revdate)
                 comment = ''
                 revfiles = []
@@ -577,7 +607,7 @@ class Checkout (object):
                         # affected this file, I would.  But I don't know how to
                         # get that from the single svn log command, and I'm not
                         # about to do extra svn calls for each revision.
-                        revfiles.append ((filename, revnumber, prevrev))
+                        revfiles.append ((filename, revid, prevrev))
                         line = fd.readline()
                 if line == '\n':
                     line = fd.readline()
@@ -586,11 +616,12 @@ class Checkout (object):
                         break
                     comment += line
                     line = fd.readline()
-                if revnumber != since:
+                if revid != since:
                     if onbranch:
-                        yield {'revision' : revnumber, 'datetime' : revdate,
-                               'author' : revauthor, 'comment' : comment,
-                               'files' : revfiles }
+                        yield Commit (self, id=revid, datetime=revdate,
+                                      author_id=author_id,
+                                      comment=comment,
+                                      files=revfiles)
             else:
                 line = fd.readline()
         except:

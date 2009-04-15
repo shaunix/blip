@@ -125,42 +125,37 @@ class ModuleScanner (object):
                 pulse.utils.log ('Skipping history for %s' % self.branch.ident)
                 return
         pulse.utils.log ('Checking history for %s' % self.branch.ident)
-        serverid = u'.'.join (pulse.scm.server_name (self.checkout.scm_type,
-                                                     self.checkout.scm_server).split('.')[-2:])
-        for hist in self.checkout.read_history (since=since):
-            if hist['author'][0] != None:
-                pident = u'/person/%s@%s' % (hist['author'][0], serverid)
-                person = pulse.db.Entity.get_or_create (pident, u'Person')
-            elif hist['author'][2] != None:
-                pident = u'/person/' + hist['author'][2]
-                person = pulse.db.Entity.get_or_create_email (hist['author'][2])
+        for commit in self.checkout.read_history (since=since):
+            if commit.author_id is not None:
+                person = pulse.db.Entity.get_or_create (commit.author_ident, u'Person')
+            elif commit.author_email is not None:
+                person = pulse.db.Entity.get_or_create_email (commit.author_email)
             else:
-                pident = u'/ghost/%' % hist['author'][1]
-                person = pulse.db.Entity.get_or_create (pident, u'Ghost')
+                person = pulse.db.Entity.get_or_create (commit.author_ident, u'Ghost')
 
             if person.type == u'Person':
                 pulse.db.Queue.push (u'people', person.ident)
-            if hist['author'][1] != None:
-                person.extend (name=hist['author'][1])
-            if hist['author'][2] != None:
-                person.extend (email=hist['author'][2])
+            if commit.author_name is not None:
+                person.extend (name=commit.author_name)
+            if commit.author_email is not None:
+                person.extend (email=commit.author_email)
             # IMPORTANT: If we were to just set branch and person, instead of
             # branch_ident and person_ident, Storm would keep referencess to
             # the Revision object.  That would eat your computer.
-            revident = self.branch.ident + u'/' + hist['revision']
+            revident = self.branch.ident + u'/' + commit.id
             rev = {'ident': revident,
                    'branch_ident': self.branch.ident,
                    'person_ident': person.ident,
-                   'revision': hist['revision'],
-                   'datetime': hist['datetime'],
-                   'comment': hist['comment'] }
-            if person.ident != pident:
-                rev['alias_ident'] = pident
+                   'revision': commit.id,
+                   'datetime': commit.datetime,
+                   'comment': commit.comment }
+            if person.ident != commit.author_ident:
+                rev['alias_ident'] = commit.author_ident
             if pulse.db.Revision.select(ident=revident).count() > 0:
                 continue
             rev = pulse.db.Revision (**rev)
             rev.decache ()
-            for filename, filerev, prevrev in hist['files']:
+            for filename, filerev, prevrev in commit.files:
                 revfile = rev.add_file (filename, filerev, prevrev)
                 revfile.decache ()
             pulse.db.flush()
