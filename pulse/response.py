@@ -43,6 +43,7 @@ class HttpResponse (HttpWidget):
         self.http_login = None
         self.http_account = None
         self.http_content_type = 'text/html; charset=utf-8'
+        self.http_content_disposition = None
         self.http_status = 200
         self._http = kw.get ('http', True)
         self._contents = None
@@ -75,6 +76,8 @@ class HttpResponse (HttpWidget):
                 p (fd, 'Location: %s' % (self._location or pulse.config.web_root))
             else:
                 p (fd, 'Content-type: %s' % self.http_content_type)
+                if self.http_content_disposition is not None:
+                    p (fd, 'Content-disposition: %s' % self.http_content_disposition)
             if len(self._cookies) > 0:
                 ck = Cookie.SimpleCookie()
                 for cookie, value in self._cookies:
@@ -88,6 +91,19 @@ class HttpResponse (HttpWidget):
             p (fd, '')
         if self._contents != None:
             self._contents.output (fd=fd)
+
+
+class HttpTextPacket (HttpWidget):
+    def __init__ (self, **kw):
+        super (HttpTextPacket, self).__init__ (**kw)
+        self.http_content_type = 'text/plain; charset=utf-8'
+        self._content = ''
+
+    def add_text_content (self, content):
+        self._content += content
+
+    def output (self, fd=None):
+        p (fd, self._content)
 
 
 ################################################################################

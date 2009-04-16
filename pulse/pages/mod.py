@@ -20,6 +20,7 @@
 
 import datetime
 import math
+import re
 import urllib
 
 from storm.expr import *
@@ -28,6 +29,7 @@ import pulse.config
 import pulse.db
 import pulse.graphs
 import pulse.html
+import pulse.response
 import pulse.scm
 import pulse.utils
 
@@ -75,6 +77,8 @@ def main (response, path, query):
         output_ajax_graphmap (response, branch, **kw)
     elif query.get('ajax', None) == 'revfiles':
         output_ajax_revfiles (response, branch, **kw)
+    elif query.has_key ('doap'):
+        output_doap_file (response, branch, query.get ('doap'), **kw)
     else:
         output_module (response, branch, **kw)
 
@@ -121,6 +125,74 @@ def synopsis ():
         else:
             bl.add_link (module)
     return box
+
+
+def output_doap_file (response, module, filename, **kw):
+    content = pulse.response.HttpTextPacket ()
+    response.set_contents (content)
+    response.http_content_type = 'application/rdf+xml'
+    response.http_content_disposition = 'attachment; filename=%s' % filename
+
+    content.add_text_content (
+        '<Project xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"\n' +
+        '         xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"\n' +
+        '         xmlns:foaf="http://xmlns.com/foaf/0.1/"\n' +
+        '         xmlns:gnome="http://api.gnome.org/doap-extensions#"\n' +
+        '         xmlns="http://usefulinc.com/ns/doap#">\n\n')
+
+    content.add_text_content (
+        '  <!--\n'
+        '  This is a DOAP template file.  It contains Pulse\'s best guesses at\n'
+        '  some basic content.  You should verify the information in this file\n'
+        '  and modify anything that isn\'t right.  Add the corrected file to your\n'
+        '  source code repository to help tools better understand your project.\n'
+        '  -->\n\n')
+
+    content.add_text_content ('  <name xml:lang="en">%s</name>\n'
+                              % pulse.response.esc (module.title))
+    desc = module.localized_desc
+    if desc is not None:
+        content.add_text_content ('  <shortdesc xml:lang="en">%s</shortdesc>\n'
+                                  % pulse.response.esc (desc))
+    else:
+        content.add_text_content (
+            '  <!-- Description, e.g.\n' +
+            '       "Falling blocks game"\n' +
+            '       "Internationalized text layout and rendering library"\n' +
+            '  <shortdesc xml:lang="en">FIXME</shortdesc>\n' +
+            '  -->\n')
+    content.add_text_content (
+        '  <!--\n' + 
+        '  <homepage rdf:resource="http://www.gnome.org/" />\n' +
+        '  -->\n')
+    content.add_text_content (
+        '  <!--\n' + 
+        '  <mailing-list rdf:resource="http://mail.gnome.org/mailman/listinfo/desktop-devel-list" />\n' +
+        '  -->\n')
+
+    content.add_text_content ('\n')
+    rels = pulse.db.ModuleEntity.get_related (subj=module)
+    regexp = re.compile ('^/person/(.*)@gnome.org$')
+    for rel in rels:
+        if not rel.maintainer:
+            continue
+        content.add_text_content (
+            '  <maintainer>\n' +
+            '    <foaf:Person>\n')
+        content.add_text_content ('      <foaf:name>%s</foaf:name>\n'
+                                  % pulse.response.esc (rel.pred.title))
+        if rel.pred.email is not None:
+            content.add_text_content ('      <foaf:mbox rdf:resource="%s" />\n'
+                                      % pulse.response.esc (rel.pred.email))
+        match = regexp.match (rel.pred.ident)
+        if match:
+            content.add_text_content ('      <gnome:userid>%s</gnome:userid>\n'
+                                      % match.group (1))
+        content.add_text_content (
+            '    </foaf:Person>\n'
+            '  </maintainer>\n')
+
+    content.add_text_content ('</Project>\n')
 
 
 def output_module (response, module, **kw):
@@ -404,6 +476,15 @@ def get_info_tab (module, **kw):
         facts.add_fact_divider ()
         facts.add_fact (pulse.utils.gettext ('Last Updated'),
                         module.updated.strftime('%Y-%m-%d %T'))
+
+    doapdiv = pulse.html.Div ()
+    div.add_content (doapdiv)
+    doaplink = pulse.html.Link (
+        module.pulse_url + ('?doap=%s.doap' % module.scm_module),
+        'Download DOAP template file',
+        icon='download')
+    doapdiv.add_content (doaplink)
+
     return div
 
 
