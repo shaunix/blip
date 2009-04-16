@@ -53,6 +53,18 @@ def gettext (msg):
     return msg
 
 
+def parse_date (datestr):
+    """
+    Parse a date in the format yyyy-mm-dd hh:mm::ss.
+    """
+    dt = datetime.datetime (*time.strptime(datestr[:19], '%Y-%m-%d %H:%M:%S')[:6])
+    off = datestr[20:25]
+    offhours = int(off[:3])
+    offmins = int(off[0] + off[3:])
+    delta = datetime.timedelta (hours=offhours, minutes=offmins)
+    return dt - delta
+
+
 def daynum (when=datetime.now()):
     """
     Return the number of days since the epoch for a given date

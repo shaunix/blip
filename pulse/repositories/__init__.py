@@ -22,20 +22,17 @@
 Read information from a source code repository.
 """
 
-import inspect
+import os
+import sys
 
-import pulse.utils
-import pulse.repositories
+__all__ = []
 
-from pulse.repositories.common import Checkout
-
-for tool in pulse.repositories.__all__:
-    if tool in ('__init__', 'common'):
+for f in os.listdir (os.path.dirname (sys.modules[__name__].__file__)):
+    if f.endswith ('.py'):
+        tool = os.path.basename (f)[:-3]
+    elif f.endswith ('.pyc'):
+        tool = os.path.basename (f)[:-4]
+    else:
         continue
-    mod = pulse.utils.import_ ('pulse.repositories.' + tool)
-    for obj in mod.__dict__.values():
-        if not inspect.isclass (obj):
-            continue
-        if not issubclass (obj, Checkout):
-            continue
-        Checkout.register_subclass (obj)
+    if not tool in __all__:
+        __all__.append (tool)
