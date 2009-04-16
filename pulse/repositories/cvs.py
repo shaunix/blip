@@ -35,10 +35,9 @@ class CvsCheckout (scm.Checkout):
     """
 
     scm_type = 'cvs'
+    scm_branch = 'HEAD'
 
     def __init__ (self, **kw):
-        if kw.get ('scm_branch') is None:
-            kw['scm_branch'] = u'HEAD'
         scm.Checkout.__init__ (self, **kw)
 
         self.ignoredir = 'CVS'

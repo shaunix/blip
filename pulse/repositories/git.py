@@ -39,10 +39,9 @@ class GitClone (scm.Checkout):
     """
 
     scm_type = 'git'
+    scm_branch = 'master'
 
     def __init__ (self, **kw):
-        if kw.get ('scm_branch') is None:
-            kw['scm_branch'] = u'master'
         scm.Checkout.__init__ (self, **kw)
 
         self.ignoredir = '.git'

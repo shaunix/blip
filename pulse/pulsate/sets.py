@@ -110,7 +110,7 @@ class ModuleSet:
                         if child.hasAttribute ('revision'):
                             pkg_data['scm_branch'] = child.getAttribute ('revision')
                         else:
-                            pkg_data['scm_branch'] = pulse.scm.default_branches.get(pkg_data['scm_type'])
+                            pkg_data['scm_branch'] = pulse.scm.Checkout.default_branch (pkg_data['scm_type'])
                     elif child.tagName == 'dependencies':
                         deps = []
                         for dep in child.childNodes:
@@ -191,7 +191,7 @@ def update_set (data, update=True, parent=None):
             if servername == None:
                 continue
             if mod_data.get ('scm_branch', '') == '':
-                mod_data['scm_branch'] = pulse.scm.default_branches.get (mod_data['scm_type'])
+                mod_data['scm_branch'] = pulse.scm.Checkout.default_branch (mod_data['scm_type'])
             if mod_data.get ('scm_branch', '') == '':
                 continue
             ident = u'/'.join (['/mod', servername, mod_data['scm_module'], mod_data['scm_branch']])

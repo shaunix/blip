@@ -35,10 +35,9 @@ class SvnCheckout (scm.Checkout):
     """
 
     scm_type = 'svn'
+    scm_branch = 'trunk'
 
     def __init__ (self, **kw):
-        if kw.get ('scm_branch') is None:
-            kw['scm_branch'] = u'trunk'
         scm.Checkout.__init__ (self, **kw)
 
         self.ignoredir = '.svn'

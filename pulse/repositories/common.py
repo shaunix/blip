@@ -72,6 +72,11 @@ class Checkout (object):
     """
 
     @classmethod
+    def default_branch (cls, scm_type):
+        return cls._subclasses.get (scm_type).scm_branch
+
+
+    @classmethod
     def from_record (cls, record, **kw):
         """
         Get a checkout from the information in a database record.
@@ -127,6 +132,8 @@ class Checkout (object):
         if self.scm_server is None:
             raise CheckoutError ('Checkout did not receive a server for %s.'
                                  % self.scm_module)
+        if self.scm_branch is None:
+            self.scm_branch = self.__class__.scm_branch
         if self.scm_branch is None:
             raise CheckoutError ('Checkout did not receive a branch for %s.'
                                  % self.scm_module)
