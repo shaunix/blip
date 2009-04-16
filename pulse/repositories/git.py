@@ -73,6 +73,7 @@ class GitClone (scm.Checkout):
         if self.scm_branch != 'master':
             ret = '%s (%s)' % (ret, self.scm_branch)
         return ret
+    location = property (get_location)
 
 
     @property

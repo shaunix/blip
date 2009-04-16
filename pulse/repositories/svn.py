@@ -68,6 +68,8 @@ class SvnCheckout (scm.Checkout):
             return '%s%s/%s' % (self._svn_url, scm_dir)
         else:
             return '%s%s/%s' % (self._svn_url, scm_dir, scm_file)
+    location = property (get_location)
+
 
     @property
     def server_name (self):

@@ -58,6 +58,7 @@ class CvsCheckout (scm.Checkout):
             if scm_file is not None:
                 ret = '%s/%s' % (ret, scm_file)
         return ret
+    location = property (get_location)
 
 
     @property
