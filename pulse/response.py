@@ -97,13 +97,14 @@ class HttpTextPacket (HttpWidget):
     def __init__ (self, **kw):
         super (HttpTextPacket, self).__init__ (**kw)
         self.http_content_type = 'text/plain; charset=utf-8'
-        self._content = ''
+        self._content = []
 
     def add_text_content (self, content):
-        self._content += content
+        self._content.append (content)
 
     def output (self, fd=None):
-        p (fd, self._content)
+        for line in self._content:
+            p (fd, line, None, False)
 
 
 ################################################################################
