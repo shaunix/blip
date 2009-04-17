@@ -170,6 +170,19 @@ def output_doap_file (response, module, filename, **kw):
         '  <mailing-list rdf:resource="http://mail.gnome.org/mailman/listinfo/desktop-devel-list" />\n' +
         '  -->\n')
 
+    if module.data.has_key ('tarname'):
+        content.add_text_content (
+            '  <download-page rdf:resource="http://ftp.gnome.org/pub/gnome/sources/%s/" />\n'
+            % module.data['tarname'])
+    else:
+        content.add_text_content (
+            '  <!--\n' + 
+            '  <download-page rdf:resource="http://ftp.gnome.org/pub/gnome/sources/FIXME/" />\n'
+            '  -->\n')
+    content.add_text_content (
+        '  <bug-database rdf:resource="http://bugzilla.gnome.org/browse.cgi?product=%s" />\n'
+        % module.scm_module)
+
     content.add_text_content ('\n')
     rels = pulse.db.ModuleEntity.get_related (subj=module)
     regexp = re.compile ('^/person/(.*)@gnome.org$')
