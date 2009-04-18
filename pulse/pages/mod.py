@@ -130,8 +130,8 @@ def synopsis ():
 def output_doap_file (response, module, filename, **kw):
     content = pulse.response.HttpTextPacket ()
     response.set_contents (content)
-    #response.http_content_type = 'application/rdf+xml'
-    #response.http_content_disposition = 'attachment; filename=%s' % filename
+    response.http_content_type = 'application/rdf+xml'
+    response.http_content_disposition = 'attachment; filename=%s' % filename
 
     content.add_text_content (
         '<Project xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"\n' +
