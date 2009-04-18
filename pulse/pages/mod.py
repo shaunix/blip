@@ -130,8 +130,8 @@ def synopsis ():
 def output_doap_file (response, module, filename, **kw):
     content = pulse.response.HttpTextPacket ()
     response.set_contents (content)
-    response.http_content_type = 'application/rdf+xml'
-    response.http_content_disposition = 'attachment; filename=%s' % filename
+    #response.http_content_type = 'application/rdf+xml'
+    #response.http_content_disposition = 'attachment; filename=%s' % filename
 
     content.add_text_content (
         '<Project xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"\n' +
@@ -182,6 +182,55 @@ def output_doap_file (response, module, filename, **kw):
     content.add_text_content (
         '  <bug-database rdf:resource="http://bugzilla.gnome.org/browse.cgi?product=%s" />\n'
         % module.scm_module)
+
+    rels = pulse.db.SetModule.get_related (pred=module)
+    group = None
+    bindings = re.compile ('.*-bindings-.*')
+    for rel in rels:
+        if bindings.match (rel.subj.ident):
+            group = 'bindings'
+            break
+        elif rel.subj.ident.endswith ('-desktop'):
+            group = 'desktop'
+            break
+        elif rel.subj.ident.endswith ('-devtools'):
+            group = 'development'
+            break
+        elif rel.subj.ident.endswith ('-infrastructure'):
+            group = 'infrastructure'
+            break
+        elif rel.subj.ident.endswith ('-platform'):
+            group = 'platform'
+            break
+    content.add_text_content (
+        '\n  <!-- DOAP category: This is used to categorize repositories in cgit.\n'
+        )
+    if group is None:
+        content.add_text_content (
+            '       Pulse could not find an appropriate category for this repository.\n' +
+            '       Set the rdf:resource attribute with one of the following:\n')
+    else:
+        content.add_text_content (
+            '       Pulse has taken its best guess at the correct category.  You may\n' +
+            '       want to replace the rdf:resource attribute with one of the following:\n')
+    content.add_text_content (
+        '         http://api.gnome.org/doap-extensions#admin\n' +
+        '         http://api.gnome.org/doap-extensions#bindings\n' +
+        '         http://api.gnome.org/doap-extensions#deprecated\n' +
+        '         http://api.gnome.org/doap-extensions#desktop\n' +
+        '         http://api.gnome.org/doap-extensions#development\n' +
+        '         http://api.gnome.org/doap-extensions#infrastructure\n' +
+        '         http://api.gnome.org/doap-extensions#platform\n' +
+        '         http://api.gnome.org/doap-extensions#productivity\n')
+    if group is None:
+        content.add_text_content (
+            '  <category rdf:resource="FIXME" />\n' +
+            '  -->\n')
+    else:
+        content.add_text_content ('  -->\n')
+        content.add_text_content (
+            '  <category rdf:resource="http://api.gnome.org/doap-extensions#%s" />\n'
+            % group)
 
     content.add_text_content ('\n')
     rels = pulse.db.ModuleEntity.get_related (subj=module)
