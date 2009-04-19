@@ -221,7 +221,11 @@ def output_doap_file (response, module, filename, **kw):
         '         http://api.gnome.org/doap-extensions#development\n' +
         '         http://api.gnome.org/doap-extensions#infrastructure\n' +
         '         http://api.gnome.org/doap-extensions#platform\n' +
-        '         http://api.gnome.org/doap-extensions#productivity\n')
+        '         http://api.gnome.org/doap-extensions#productivity\n' +
+        '       NOTE: There is an "Other" categorization on cgit, but we do not have a\n' +
+        '       DOAP category for it.  If your module does not belong to one of these\n' +
+        '       groups, then do not include a category property in your DOAP file.\n'
+        )
     if group is None:
         content.add_text_content (
             '  <category rdf:resource="FIXME" />\n' +
