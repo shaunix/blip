@@ -435,24 +435,32 @@ $(document).ready (function () { $('html').pulse_init(); });
 function tab (tabid) {
   var tabbar = $('#tabs');
   var tabs = tabbar.children ('.tab');
+  var firsttab = tabs.attr('id').substring(4);
+  var curhash = '';
+  if (location.hash == '')
+    curhash = location.hash.substring(1);
 
   if (tabid == undefined) {
-    tabid = location.hash;
-    if (tabid == '' || tabid == '#') {
-      tabid = tabs.attr('id');
-      tabid = tabid.substring(4);
-    } else {
-      tabid = tabid.substring(1);
+    if (curhash == '')
+      tabid = firsttab;
+    else
+      tabid = curhash;
+  }
+  else if (tabid == curhash || (curhash == '' && tabid == firsttab)) {
+    if (tabbar[0].current_tabid != undefined) {
+      oldpane = $('#pane-' + tabbar[0].current_tabid);
+      oldpane.remove ();
     }
   }
-  else
+  else {
     location.hash = tabid;
+  }
 
   var oldpane = undefined;
   if (tabbar[0].current_tabid != undefined)
     oldpane = $('#pane-' + tabbar[0].current_tabid);
   if (oldpane != undefined)
-    oldpane.hide ();
+    oldpane.hide();
 
   tabs.removeClass ('tabactive');
   var tab = $('#tab-' + tabid);
