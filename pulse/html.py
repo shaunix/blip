@@ -515,6 +515,8 @@ class Page (HtmlWidget, ContentComponent, SublinksComponent, FactsComponent):
         p (fd, '</script>')
         p (fd, '<script language="javascript" type="text/javascript" src="%sjquery.js"></script>',
            pulse.config.data_root)
+        p (fd, '<script language="javascript" type="text/javascript" src="%sjquery.dropshadow.js"></script>',
+           pulse.config.data_root)
         p (fd, '<script language="javascript" type="text/javascript" src="%spulse.js"></script>',
            pulse.config.data_root)
         p (fd, '</head><body>')
@@ -541,7 +543,7 @@ class Page (HtmlWidget, ContentComponent, SublinksComponent, FactsComponent):
                (pulse.config.web_root, pulse.utils.gettext ('Log out')))
         p (fd, '</td></tr></table></div>')
 
-        p (fd, '<div id="subheader">', None, False)
+        p (fd, '<div id="subheader"><div id="subheaderbar">', None, False)
         if self.http_response.http_account != None and self._ident != None:
             # FIXME STORM
             if not pulse.db.AccountWatch.has_watch (self.http_response.http_account, self._ident):
@@ -558,7 +560,7 @@ class Page (HtmlWidget, ContentComponent, SublinksComponent, FactsComponent):
             p (fd, '</td></tr></table>', None, False)
         p (fd, '</h1>')
         SublinksComponent.output (self, fd=fd)
-        p (fd, '</div>')
+        p (fd, '</div></div>')
 
         p (fd, '<div id="sidebar">')
 
