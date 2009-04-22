@@ -23,48 +23,112 @@ import math
 import re
 import urllib
 
-from storm.expr import *
+from pulse import db, html, scm, utils
+import pulse.response as core
 
-import pulse.config
-import pulse.db
-import pulse.graphs
-import pulse.html
-import pulse.response
-import pulse.scm
-import pulse.utils
+class ModuleHandler (core.RequestHandler):
+    def initialize (self):
+        ident = u'/' + u'/'.join(self.request.path)
+        if len(self.request.path) == 3:
+            branches = list(db.Branch.select (branchable=ident))
+            if len(branches) == 0:
+                raise core.RequestHandlerException (
+                    utils.gettext ('Module Not Found'),
+                    utils.gettext ('Pulse could not find the module %s')
+                    % self.request.path[2])
+            branch = [branch for branch in branches if branch.is_default]
+            if len(branch) == 0:
+                raise core.RequestHandlerException (
+                    utils.gettext ('Default Branch Not Found'),
+                    utils.gettext (
+                    'Pulse could not find a default branch for the module %s')
+                    % self.request.path[2])
+            branch = branch[0]
+        elif len(self.request.path) == 4:
+            branch = db.Branch.get (ident)
+            if branch is None:
+                raise core.RequestHandlerException (
+                    utils.gettext ('Branch Not Found'),
+                    utils.gettext (
+                    'Pulse could not find the branch %s of the module %s')
+                    % (self.request.path[3], self.request.path[2]))
+        else:
+            raise core.RequestHandlerExcpeption (
+                utils.gettext ('Branch Not Found'),
+                utils.gettext ('Pulse could not find the branch %s') % ident)
+        self.record = branch
+
+    def handle_request (self):
+        self.output_module_page ()
+
+    def output_module_page (self):
+        module = self.record
+        branchable = module.branchable
+
+        page = html.Page (module)
+        self.response.set_contents (page)
+
+        branches = utils.attrsorted (list(db.Branch.select (branchable=module.branchable)),
+                                     '-is_default', 'scm_branch')
+        if len(branches) > 1:
+            for branch in branches:
+                if branch.ident != module.ident:
+                    page.add_sublink (branch.pulse_url, branch.ident.split('/')[-1])
+                else:
+                    page.add_sublink (None, branch.ident.split('/')[-1])
+
+        if module.data.has_key ('screenshot'):
+            page.add_screenshot (module.data['screenshot'])
+
+        # FIXME below
+        page.add_tab ('info', utils.gettext ('Info'))
+        box = html.Div()
+        page.add_to_tab ('info', box)
+
+        for name in self.applications.keys():
+            app = self.applications[name]
+            if app.provides (html.Tab):
+                page.add_tab (name, app.get_tab_title ())
+
+        # Developers
+        box = get_developers_box (module)
+        page.add_sidebar_content (box)
+
+        return
+
+
+
+        page.add_tab ('activity', utils.gettext ('Activity'))
+        page.add_tab ('components', utils.gettext ('Components'))
+        if module.select_children (u'Domain').count() > 0:
+            page.add_tab ('translations', utils.gettext ('Translations'))
+
+        # Dependencies
+        deps = db.ModuleDependency.get_related (subj=module)
+        deps = utils.attrsorted (list(deps), ['pred', 'scm_module'])
+        if len(deps) > 0:
+            box = html.SidebarBox (utils.gettext ('Dependencies'))
+            page.add_sidebar_content (box)
+            d1 = html.Div()
+            d2 = html.Div()
+            box.add_content (d1)
+            box.add_content (html.Rule())
+            box.add_content (d2)
+            for dep in deps:
+                div = html.Div ()
+                link = html.Link (dep.pred.pulse_url, dep.pred.scm_module)
+                div.add_content (link)
+                if dep.direct:
+                    d1.add_content (div)
+                else:
+                    d2.add_content (div)
+
+
+def get_request_handler (request, response):
+    return ModuleHandler (request, response)
+
 
 def main (response, path, query):
-    ident = u'/' + u'/'.join(path)
-    if len(path) == 3:
-        branches = list(pulse.db.Branch.select (branchable=ident))
-        if len(branches) == 0:
-            page = pulse.html.PageNotFound (
-                pulse.utils.gettext ('Pulse could not find the module %s') % path[2],
-                title=pulse.utils.gettext ('Module Not Found'))
-            response.set_contents (page)
-            return
-
-        branch = [branch for branch in branches if branch.is_default]
-        if len(branch) == 0:
-            page = pulse.html.PageNotFound (
-                pulse.utils.gettext ('Pulse could not find a default branch for the module %s')
-                % path[2],
-                title=pulse.utils.gettext ('Default Branch Not Found'))
-            response.set_contents (page)
-            return
-        branch = branch[0]
-    elif len(path) == 4:
-        branch = pulse.db.Branch.get (ident)
-        if branch == None:
-            page = pulse.html.PageNotFound (
-                pulse.utils.gettext ('Pulse could not find the branch %s of the module %s')
-                % (path[3], path[2]),
-                title=pulse.utils.gettext ('Branch Not Found'))
-            response.set_contents (page)
-            return
-    else:
-        # FIXME: redirect to /set or something
-        pass
 
     kw = {'path' : path, 'query' : query}
     if query.get('ajax', None) == 'tab':
@@ -80,24 +144,25 @@ def main (response, path, query):
     elif query.has_key ('doap'):
         output_doap_file (response, branch, query.get ('doap'), **kw)
     else:
-        output_module (response, branch, **kw)
+        pass
+        #output_module (response, branch, **kw)
 
 synopsis_sort = -1
 def synopsis ():
     """Construct an info box for the front page"""
-    box = pulse.html.SectionBox (pulse.utils.gettext ('Modules'))
-    txt = (pulse.utils.gettext ('Pulse is watching %i branches in %i modules.') %
-           (pulse.db.Branch.select (type=u'Module').count(),
-            pulse.db.Branch.count_branchables (u'Module') ))
-    box.add_content (pulse.html.Div (txt))
+    box = html.SectionBox (utils.gettext ('Modules'))
+    txt = (utils.gettext ('Pulse is watching %i branches in %i modules.') %
+           (db.Branch.select (type=u'Module').count(),
+            db.Branch.count_branchables (u'Module') ))
+    box.add_content (html.Div (txt))
 
-    columns = pulse.html.ColumnBox (2)
+    columns = html.ColumnBox (2)
     box.add_content (columns)
 
     # FIXME STORM
-    modules = pulse.db.Branch.select (type=u'Module').order_by (Desc (pulse.db.Branch.mod_score))
-    bl = pulse.html.BulletList ()
-    bl.set_title (pulse.utils.gettext ('Kicking ass and taking names:'))
+    modules = db.Branch.select (type=u'Module').order_by (db.Desc (db.Branch.mod_score))
+    bl = html.BulletList ()
+    bl.set_title (utils.gettext ('Kicking ass and taking names:'))
     columns.add_to_column (0, bl)
     modules = modules[:6]
     scm_mods = {}
@@ -110,9 +175,9 @@ def synopsis ():
         else:
             bl.add_link (module)
 
-    modules = pulse.db.Branch.select (type=u'Module').order_by (Desc (pulse.db.Branch.mod_score_diff))
-    bl = pulse.html.BulletList ()
-    bl.set_title (pulse.utils.gettext ('Recently rocking:'))
+    modules = db.Branch.select (type=u'Module').order_by (db.Desc (db.Branch.mod_score_diff))
+    bl = html.BulletList ()
+    bl.set_title (utils.gettext ('Recently rocking:'))
     columns.add_to_column (1, bl)
     modules = modules[:6]
     scm_mods = {}
@@ -128,7 +193,7 @@ def synopsis ():
 
 
 def output_doap_file (response, module, filename, **kw):
-    content = pulse.response.HttpTextPacket ()
+    content = core.HttpTextPacket ()
     response.set_contents (content)
     response.http_content_type = 'application/rdf+xml'
     response.http_content_disposition = 'attachment; filename=%s' % filename
@@ -149,11 +214,11 @@ def output_doap_file (response, module, filename, **kw):
         '  -->\n\n')
 
     content.add_text_content ('  <name xml:lang="en">%s</name>\n'
-                              % pulse.response.esc (module.title))
+                              % core.esc (module.title))
     desc = module.localized_desc
     if desc is not None:
         content.add_text_content ('  <shortdesc xml:lang="en">%s</shortdesc>\n'
-                                  % pulse.response.esc (desc))
+                                  % core.esc (desc))
     else:
         content.add_text_content (
             '  <!-- Description, e.g.\n' +
@@ -183,7 +248,7 @@ def output_doap_file (response, module, filename, **kw):
         '  <bug-database rdf:resource="http://bugzilla.gnome.org/browse.cgi?product=%s" />\n'
         % module.scm_module)
 
-    rels = pulse.db.SetModule.get_related (pred=module)
+    rels = db.SetModule.get_related (pred=module)
     group = None
     bindings = re.compile ('.*-bindings-.*')
     for rel in rels:
@@ -233,7 +298,7 @@ def output_doap_file (response, module, filename, **kw):
             % group)
 
     content.add_text_content ('\n')
-    rels = pulse.db.ModuleEntity.get_related (subj=module)
+    rels = db.ModuleEntity.get_related (subj=module)
     regexp = re.compile ('^/person/(.*)@gnome.org$')
     for rel in rels:
         if not rel.maintainer:
@@ -242,10 +307,10 @@ def output_doap_file (response, module, filename, **kw):
             '  <maintainer>\n' +
             '    <foaf:Person>\n')
         content.add_text_content ('      <foaf:name>%s</foaf:name>\n'
-                                  % pulse.response.esc (rel.pred.title))
+                                  % core.esc (rel.pred.title))
         if rel.pred.email is not None:
             content.add_text_content ('      <foaf:mbox rdf:resource="%s" />\n'
-                                      % pulse.response.esc (rel.pred.email))
+                                      % core.esc (rel.pred.email))
         match = regexp.match (rel.pred.ident)
         if match:
             content.add_text_content ('      <gnome:userid>%s</gnome:userid>\n'
@@ -257,56 +322,6 @@ def output_doap_file (response, module, filename, **kw):
     content.add_text_content ('</Project>\n')
 
 
-def output_module (response, module, **kw):
-    branchable = module.branchable
-
-    page = pulse.html.Page (module)
-    response.set_contents (page)
-
-    branches = pulse.utils.attrsorted (list(pulse.db.Branch.select (branchable=module.branchable)),
-                                       '-is_default', 'scm_branch')
-    if len(branches) > 1:
-        for branch in branches:
-            if branch.ident != module.ident:
-                page.add_sublink (branch.pulse_url, branch.ident.split('/')[-1])
-            else:
-                page.add_sublink (None, branch.ident.split('/')[-1])
-
-    if module.data.has_key ('screenshot'):
-        page.add_screenshot (module.data['screenshot'])
-
-    page.add_tab ('info', pulse.utils.gettext ('Info'))
-    box = get_info_tab (module, **kw)
-    page.add_to_tab ('info', box)
-
-    # Developers
-    box = get_developers_box (module)
-    page.add_sidebar_content (box)
-
-    page.add_tab ('activity', pulse.utils.gettext ('Activity'))
-    page.add_tab ('components', pulse.utils.gettext ('Components'))
-    if module.select_children (u'Domain').count() > 0:
-        page.add_tab ('translations', pulse.utils.gettext ('Translations'))
-
-    # Dependencies
-    deps = pulse.db.ModuleDependency.get_related (subj=module)
-    deps = pulse.utils.attrsorted (list(deps), ['pred', 'scm_module'])
-    if len(deps) > 0:
-        box = pulse.html.SidebarBox (pulse.utils.gettext ('Dependencies'))
-        page.add_sidebar_content (box)
-        d1 = pulse.html.Div()
-        d2 = pulse.html.Div()
-        box.add_content (d1)
-        box.add_content (pulse.html.Rule())
-        box.add_content (d2)
-        for dep in deps:
-            div = pulse.html.Div ()
-            link = pulse.html.Link (dep.pred.pulse_url, dep.pred.scm_module)
-            div.add_content (link)
-            if dep.direct:
-                d1.add_content (div)
-            else:
-                d2.add_content (div)
 
 
 def output_ajax_tab (response, module, **kw):
@@ -326,64 +341,64 @@ def output_ajax_domain (response, module, **kw):
     query = kw.get ('query', {})
     ident = query.get('domain', None)
 
-    domain = pulse.db.Branch.get (ident)
+    domain = db.Branch.get (ident)
     domainid = domain.ident.split('/')[-2].replace('-', '_')
-    translations = pulse.db.Branch.select_with_statistic (u'Messages',
-                                                          type=u'Translation',
-                                                          parent=domain)
-    translations = pulse.utils.attrsorted (list(translations), (0, 'title'))
-    pagediv = pulse.html.Div ()
+    translations = db.Branch.select_with_statistic (u'Messages',
+                                                    type=u'Translation',
+                                                    parent=domain)
+    translations = utils.attrsorted (list(translations), (0, 'title'))
+    pagediv = html.Div ()
     response.set_contents (pagediv)
-    pad = pulse.html.PaddingBox ()
+    pad = html.PaddingBox ()
     pagediv.add_content (pad)
 
     if domain.error is not None:
-        pad.add_content (pulse.html.AdmonBox (pulse.html.AdmonBox.error, domain.error))
+        pad.add_content (html.AdmonBox (html.AdmonBox.error, domain.error))
 
     if domain.scm_dir == 'po':
         potfile = domain.scm_module + '.pot'
     else:
         potfile = domain.scm_dir + '.pot'
-    of = pulse.db.OutputFile.select (type=u'l10n', ident=domain.ident, filename=potfile)
+    of = db.OutputFile.select (type=u'l10n', ident=domain.ident, filename=potfile)
     try:
         of = of[0]
-        div = pulse.html.Div()
+        div = html.Div()
         pad.add_content (div)
 
-        linkdiv = pulse.html.Div()
-        linkspan = pulse.html.Span (divider=pulse.html.SPACE)
+        linkdiv = html.Div()
+        linkspan = html.Span (divider=html.SPACE)
         linkdiv.add_content (linkspan)
         div.add_content (linkdiv)
-        linkspan.add_content (pulse.html.Link (of.pulse_url,
-                                               pulse.utils.gettext ('POT file'),
-                                               icon='download' ))
+        linkspan.add_content (html.Link (of.pulse_url,
+                                         utils.gettext ('POT file'),
+                                         icon='download' ))
         # FIXME: i18n reordering
-        linkspan.add_content (pulse.utils.gettext ('(%i messages)')
+        linkspan.add_content (utils.gettext ('(%i messages)')
                               % of.statistic)
-        linkspan.add_content (pulse.utils.gettext ('on %s')
+        linkspan.add_content (utils.gettext ('on %s')
                               % of.datetime.strftime('%Y-%m-%d %T'))
         missing = of.data.get ('missing', [])
         if len(missing) > 0:
-            msg = pulse.utils.gettext('%i missing files') % len(missing)
-            admon = pulse.html.AdmonBox (pulse.html.AdmonBox.warning, msg, tag='span')
-            mdiv = pulse.html.Div()
-            popup = pulse.html.PopupLink (admon, '\n'.join(missing))
+            msg = utils.gettext('%i missing files') % len(missing)
+            admon = html.AdmonBox (html.AdmonBox.warning, msg, tag='span')
+            mdiv = html.Div()
+            popup = html.PopupLink (admon, '\n'.join(missing))
             mdiv.add_content (popup)
             div.add_content (mdiv)
     except IndexError:
-        pad.add_content (pulse.html.AdmonBox (pulse.html.AdmonBox.warning,
-                                               pulse.utils.gettext ('No POT file') ))
+        pad.add_content (html.AdmonBox (html.AdmonBox.warning,
+                                        utils.gettext ('No POT file') ))
 
     if len(translations) == 0:
-        pad.add_content (pulse.html.AdmonBox (pulse.html.AdmonBox.warning,
-                                               pulse.utils.gettext ('No translations') ))
+        pad.add_content (html.AdmonBox (html.AdmonBox.warning,
+                                        utils.gettext ('No translations') ))
     else:
-        grid = pulse.html.GridBox ()
+        grid = html.GridBox ()
         pad.add_content (grid)
         for translation, statistic in translations:
-            span = pulse.html.Span (translation.scm_file[:-3])
+            span = html.Span (translation.scm_file[:-3])
             span.add_class ('title')
-            link = pulse.html.Link (translation.pulse_url, span)
+            link = html.Link (translation.pulse_url, span)
             row = [link]
             percent = 0
             stat1 = statistic.stat1
@@ -391,11 +406,11 @@ def output_ajax_domain (response, module, **kw):
             total = statistic.total
             untranslated = total - stat1 - stat2
             percent = total and math.floor (100 * (float(stat1) / total)) or 0
-            span = pulse.html.Span ('%i%%' % percent)
+            span = html.Span ('%i%%' % percent)
             span.add_class ('percent')
             row.append (span)
 
-            row.append (pulse.utils.gettext ('%i.%i.%i') %
+            row.append (utils.gettext ('%i.%i.%i') %
                         (stat1, stat2, untranslated))
             idx = grid.add_row (*row)
             grid.add_row_class (idx, 'po')
@@ -412,12 +427,12 @@ def output_ajax_graphmap (response, module, **kw):
     num = query.get('num')
     filename = query.get('filename')
     
-    of = pulse.db.OutputFile.select (type=u'graphs', ident=module.ident, filename=filename)
+    of = db.OutputFile.select (type=u'graphs', ident=module.ident, filename=filename)
     try:
         of = of[0]
-        graph = pulse.html.Graph.activity_graph (of, module.pulse_url, 'commits',
-                                                 pulse.utils.gettext ('%i commits'),
-                                                 count=int(id), num=int(num), map_only=True)
+        graph = html.Graph.activity_graph (of, module.pulse_url, 'commits',
+                                           utils.gettext ('%i commits'),
+                                           count=int(id), num=int(num), map_only=True)
         response.set_contents (graph)
     except IndexError:
         pass
@@ -428,27 +443,27 @@ def output_ajax_commits (response, module, **kw):
     weeknum = query.get('weeknum', None)
     if weeknum != None:
         weeknum = int(weeknum)
-        thisweek = pulse.utils.weeknum ()
+        thisweek = utils.weeknum ()
         ago = thisweek - weeknum
-        revs = pulse.db.Revision.select_revisions (branch=module, weeknum=weeknum)
+        revs = db.Revision.select_revisions (branch=module, weeknum=weeknum)
         cnt = revs.count()
         revs = list(revs[:20])
     else:
-        revs = pulse.db.Revision.select_revisions (branch=module,
-                                                   week_range=(pulse.utils.weeknum()-52,))
+        revs = db.Revision.select_revisions (branch=module,
+                                             week_range=(utils.weeknum()-52,))
         cnt = revs.count()
         revs = list(revs[:10])
     if weeknum == None:
-        title = (pulse.utils.gettext('Showing %i of %i commits:')
+        title = (utils.gettext('Showing %i of %i commits:')
                  % (len(revs), cnt))
     elif ago == 0:
-        title = (pulse.utils.gettext('Showing %i of %i commits from this week:')
+        title = (utils.gettext('Showing %i of %i commits from this week:')
                  % (len(revs), cnt))
     elif ago == 1:
-        title = (pulse.utils.gettext('Showing %i of %i commits from last week:')
+        title = (utils.gettext('Showing %i of %i commits from last week:')
                  % (len(revs), cnt))
     else:
-        title = (pulse.utils.gettext('Showing %i of %i commits from %i weeks ago:')
+        title = (utils.gettext('Showing %i of %i commits from %i weeks ago:')
                  % (len(revs), cnt, ago))
     div = get_commits_div (module, revs, title)
     response.set_contents (div)
@@ -472,10 +487,10 @@ def output_ajax_revfiles (response, module, **kw):
 
     query = kw.get ('query', {})
     revid = query.get('revid', None)
-    revision = pulse.db.Revision.get (revid)
-    files = pulse.db.RevisionFile.select (revision=revision)
+    revision = db.Revision.get (revid)
+    files = db.RevisionFile.select (revision=revision)
 
-    mlink = pulse.html.MenuLink (revision.revision, menu_only=True)
+    mlink = html.MenuLink (revision.revision, menu_only=True)
     response.set_contents (mlink)
     for file in files:
         url = base + file.filename
@@ -484,64 +499,64 @@ def output_ajax_revfiles (response, module, **kw):
 
 
 def get_info_tab (module, **kw):
-    div = pulse.html.PaddingBox()
+    div = html.PaddingBox()
 
     if module.error != None:
-        div.add_content (pulse.html.AdmonBox (pulse.html.AdmonBox.error, module.error))
+        div.add_content (html.AdmonBox (html.AdmonBox.error, module.error))
 
-    facts = pulse.html.FactsTable()
+    facts = html.FactsTable()
     div.add_content (facts)
 
     sep = False
     try:
-        facts.add_fact (pulse.utils.gettext ('Description'),
+        facts.add_fact (utils.gettext ('Description'),
                         module.localized_desc)
         sep = True
     except:
         pass
 
-    rels = pulse.db.SetModule.get_related (pred=module)
+    rels = db.SetModule.get_related (pred=module)
     if len(rels) > 0:
-        sets = pulse.utils.attrsorted ([rel.subj for rel in rels], 'title')
-        span = pulse.html.Span (*[pulse.html.Link(rset) for rset in sets])
-        span.set_divider (pulse.html.BULLET)
-        facts.add_fact (pulse.utils.gettext ('Release Sets'), span)
+        sets = utils.attrsorted ([rel.subj for rel in rels], 'title')
+        span = html.Span (*[html.Link(rset) for rset in sets])
+        span.set_divider (html.BULLET)
+        facts.add_fact (utils.gettext ('Release Sets'), span)
         sep = True
 
     if sep:
         facts.add_fact_divider ()
 
-    checkout = pulse.scm.Checkout.from_record (module, checkout=False, update=False)
-    facts.add_fact (pulse.utils.gettext ('Location'), checkout.location)
+    checkout = scm.Checkout.from_record (module, checkout=False, update=False)
+    facts.add_fact (utils.gettext ('Location'), checkout.location)
 
     if module.mod_datetime != None:
-        span = pulse.html.Span(divider=pulse.html.SPACE)
+        span = html.Span(divider=html.SPACE)
         # FIXME: i18n, word order, but we want to link person
         span.add_content (module.mod_datetime.strftime('%Y-%m-%d %T'))
         if module.mod_person_ident != None:
             span.add_content (' by ')
-            span.add_content (pulse.html.Link (module.mod_person))
-        facts.add_fact (pulse.utils.gettext ('Last Modified'), span)
+            span.add_content (html.Link (module.mod_person))
+        facts.add_fact (utils.gettext ('Last Modified'), span)
 
     if module.data.has_key ('tarname'):
         facts.add_fact_divider ()
-        facts.add_fact (pulse.utils.gettext ('Tarball Name'), module.data['tarname'])
+        facts.add_fact (utils.gettext ('Tarball Name'), module.data['tarname'])
     if module.data.has_key ('tarversion'):
         if not module.data.has_key ('tarname'):
             facts.add_fact_divider ()
-        facts.add_fact (pulse.utils.gettext ('Version'), module.data['tarversion'])
+        facts.add_fact (utils.gettext ('Version'), module.data['tarversion'])
 
     facts.add_fact_divider ()
-    facts.add_fact (pulse.utils.gettext ('Score'), str(module.mod_score))
+    facts.add_fact (utils.gettext ('Score'), str(module.mod_score))
 
     if module.updated is not None:
         facts.add_fact_divider ()
-        facts.add_fact (pulse.utils.gettext ('Last Updated'),
+        facts.add_fact (utils.gettext ('Last Updated'),
                         module.updated.strftime('%Y-%m-%d %T'))
 
-    doapdiv = pulse.html.Div ()
+    doapdiv = html.Div ()
     div.add_content (doapdiv)
-    doaplink = pulse.html.Link (
+    doaplink = html.Link (
         module.pulse_url + ('?doap=%s.doap' % module.scm_module),
         'Download DOAP template file',
         icon='download')
@@ -551,21 +566,21 @@ def get_info_tab (module, **kw):
 
 
 def get_activity_tab (module, **kw):
-    box = pulse.html.Div ()
-    of = pulse.db.OutputFile.select (type=u'graphs', ident=module.ident, filename=u'commits-0.png')
+    box = html.Div ()
+    of = db.OutputFile.select (type=u'graphs', ident=module.ident, filename=u'commits-0.png')
     try:
         of = of[0]
-        graph = pulse.html.Graph.activity_graph (of, module.pulse_url, 'commits',
-                                                 pulse.utils.gettext ('%i commits'))
+        graph = html.Graph.activity_graph (of, module.pulse_url, 'commits',
+                                           utils.gettext ('%i commits'))
         box.add_content (graph)
     except IndexError:
         pass
 
-    revs = pulse.db.Revision.select_revisions (branch=module,
-                                               week_range=(pulse.utils.weeknum()-52,))
+    revs = db.Revision.select_revisions (branch=module,
+                                         week_range=(utils.weeknum()-52,))
     cnt = revs.count()
     revs = list(revs[:10])
-    title = (pulse.utils.gettext('Showing %i of %i commits:') % (len(revs), cnt))
+    title = (utils.gettext('Showing %i of %i commits:') % (len(revs), cnt))
     div = get_commits_div (module, revs, title)
     box.add_content (div)
 
@@ -573,123 +588,101 @@ def get_activity_tab (module, **kw):
 
 
 def get_components_tab (module, **kw):
-    columns = pulse.html.ColumnBox (2)
+    columns = html.ColumnBox (2)
 
     # Programs and Libraries
     for branchtype, title in (
-        (u'Application', pulse.utils.gettext ('Applications')),
-        (u'Capplet', pulse.utils.gettext ('Capplets')),
-        (u'Applet', pulse.utils.gettext ('Applets')),
-        (u'Library', pulse.utils.gettext ('Libraries')) ):
+        (u'Application', utils.gettext ('Applications')),
+        (u'Capplet', utils.gettext ('Capplets')),
+        (u'Applet', utils.gettext ('Applets')),
+        (u'Library', utils.gettext ('Libraries')) ):
 
         box = get_component_info_box (module, branchtype, title)
         if box != None:
             columns.add_to_column (0, box)
 
     # Documents
-    box = pulse.html.InfoBox (pulse.utils.gettext ('Documents'))
+    box = html.InfoBox (utils.gettext ('Documents'))
     columns.add_to_column (1, box)
     docs = module.select_children (u'Document')
-    docs = pulse.utils.attrsorted (list(docs), 'title')
+    docs = utils.attrsorted (list(docs), 'title')
     if len(docs) > 0:
         if len(docs) > 1:
-            box.add_sort_link ('title', pulse.utils.gettext ('title'), 1)
-            box.add_sort_link ('status', pulse.utils.gettext ('status'), 0)
-            box.add_sort_link ('translations', pulse.utils.gettext ('translations'), 0)
+            box.add_sort_link ('title', utils.gettext ('title'), 1)
+            box.add_sort_link ('status', utils.gettext ('status'), 0)
+            box.add_sort_link ('translations', utils.gettext ('translations'), 0)
         for doc in docs:
             lbox = box.add_link_box (doc)
-            lbox.add_fact (pulse.utils.gettext ('status'),
-                           pulse.html.StatusSpan (doc.data.get('status')))
+            lbox.add_fact (utils.gettext ('status'),
+                           html.StatusSpan (doc.data.get('status')))
             res = doc.select_children (u'Translation')
-            span = pulse.html.Span (str(res.count()))
+            span = html.Span (str(res.count()))
             span.add_class ('translations')
-            lbox.add_fact (pulse.utils.gettext ('translations'), span)
+            lbox.add_fact (utils.gettext ('translations'), span)
     else:
-        box.add_content (pulse.html.AdmonBox (pulse.html.AdmonBox.warning,
-                                              pulse.utils.gettext ('No documents') ))
+        box.add_content (html.AdmonBox (html.AdmonBox.warning,
+                                        utils.gettext ('No documents') ))
 
     return columns
 
 
 def get_translations_tab (module, **kw):
-    box = pulse.html.PaddingBox ()
+    box = html.PaddingBox ()
     domains = module.select_children (u'Domain')
-    domains = pulse.utils.attrsorted (list(domains), 'title')
+    domains = utils.attrsorted (list(domains), 'title')
     if len(domains) > 0:
         for domain in domains:
             domainid = domain.ident.split('/')[-2].replace('-', '_')
-            translations = pulse.db.Branch.select (type=u'Translation', parent=domain)
-            cont = pulse.html.ContainerBox ()
+            translations = db.Branch.select (type=u'Translation', parent=domain)
+            cont = html.ContainerBox ()
             cont.set_id ('po_' + domainid)
             if len(domains) > 1:
-                cont.set_title (pulse.utils.gettext ('%s (%s)')
+                cont.set_title (utils.gettext ('%s (%s)')
                                 % (domain.title, translations.count()))
             cont.set_sortable_tag ('tr')
             cont.set_sortable_class ('po_' + domainid)
-            cont.add_sort_link ('title', pulse.utils.gettext ('lang'), 1)
-            cont.add_sort_link ('percent', pulse.utils.gettext ('percent'))
-            div = pulse.html.AjaxBox (module.pulse_url + '?ajax=domain&domain=' +
-                                      urllib.quote (domain.ident))
+            cont.add_sort_link ('title', utils.gettext ('lang'), 1)
+            cont.add_sort_link ('percent', utils.gettext ('percent'))
+            div = html.AjaxBox (module.pulse_url + '?ajax=domain&domain=' +
+                                urllib.quote (domain.ident))
             cont.add_content (div)
             box.add_content (cont)
     else:
-        box.add_content (pulse.html.AdmonBox (pulse.html.AdmonBox.warning,
-                                              pulse.utils.gettext ('No domains') ))
+        box.add_content (html.AdmonBox (html.AdmonBox.warning,
+                                        utils.gettext ('No domains') ))
     return box
 
 
 def get_developers_box (module):
-    box = pulse.html.SidebarBox (title=pulse.utils.gettext ('Developers'))
-    rels = pulse.db.ModuleEntity.get_related (subj=module)
+    box = html.SidebarBox (title=utils.gettext ('Developers'))
+    rels = db.ModuleEntity.get_related (subj=module)
     if len(rels) > 0:
         people = {}
         for rel in rels:
             people[rel.pred] = rel
-        for person in pulse.utils.attrsorted (people.keys(), 'title'):
+        for person in utils.attrsorted (people.keys(), 'title'):
             lbox = box.add_link_box (person)
             rel = people[person]
             if rel.maintainer:
                 lbox.add_badge ('maintainer')
     else:
-        box.add_content (pulse.html.AdmonBox (pulse.html.AdmonBox.warning,
-                                              pulse.utils.gettext ('No developers') ))
+        box.add_content (html.AdmonBox (html.AdmonBox.warning,
+                                        utils.gettext ('No developers') ))
     return box
 
 
 def get_component_info_box (module, branchtype, title):
     objs = module.select_children (branchtype)
-    objs = pulse.utils.attrsorted (list(objs), 'title')
+    objs = utils.attrsorted (list(objs), 'title')
     if len(objs) > 0:
-        box = pulse.html.InfoBox (title)
+        box = html.InfoBox (title)
         for obj in objs:
             lbox = box.add_link_box (obj)
-            doc = pulse.db.Documentation.get_related (subj=obj)
+            doc = db.Documentation.get_related (subj=obj)
             try:
                 doc = doc[0]
-                lbox.add_fact (pulse.utils.gettext ('docs'), doc.pred)
+                lbox.add_fact (utils.gettext ('docs'), doc.pred)
             except IndexError:
                 pass
         return box
     return None
-
-
-def get_commits_div (module, revs, title):
-    div = pulse.html.Div (widget_id='commits')
-    div.add_content (title)
-    dl = pulse.html.DefinitionList()
-    div.add_content (dl)
-    curweek = None
-    for rev in revs:
-        if curweek != None and curweek != rev.weeknum:
-            dl.add_divider ()
-        curweek = rev.weeknum
-        # FIXME: i18n word order
-        span = pulse.html.Span (divider=pulse.html.SPACE)
-        span.add_content (rev.display_revision (module))
-        span.add_content ('on')
-        span.add_content (rev.datetime.strftime('%Y-%m-%d %T'))
-        span.add_content ('by')
-        span.add_content (pulse.html.Link (rev.person))
-        dl.add_term (span)
-        dl.add_entry (pulse.html.PopupLink.from_revision (rev, branch=module))
-    return div

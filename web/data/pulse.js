@@ -485,7 +485,7 @@ function tab (tabid) {
     pane.show ();
     thr.start ();
     tabbar[0].loading_tabid = tabid;
-    var href = pulse_url + '?ajax=tab&tab=' + tabid;
+    var href = pulse_url + '?application=' + tabid;
     var func = function (data, status) {
       var pane = $('#' + paneid);
       if (status == 'success')

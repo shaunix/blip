@@ -36,16 +36,18 @@ import sys
 
 import pulse.config
 import pulse.db
-from pulse.response import *
 import pulse.utils
 
+import pulse.response as core
+p = core.p
+esc = core.esc
 
 SPACE = ' '
 BULLET = u' • '
 TRIANGLE = u' ‣ '
 
 
-class HtmlWidget (HttpWidget):
+class HtmlWidget (core.HttpWidget):
     """
     Base class for all HTML widgets.
     """
@@ -87,7 +89,7 @@ class HtmlWidget (HttpWidget):
         pass
 
 
-class Component (HttpWidget):
+class Component (core.HttpWidget):
     """
     Base class for all components.
 
@@ -489,7 +491,7 @@ class Page (HtmlWidget, ContentComponent, SublinksComponent, FactsComponent):
             pass
 
     def add_sidebar_content (self, content):
-        if self._sidebar == None:
+        if self._sidebar is None:
             self._sidebar = ContentComponent ()
         self._sidebar.add_content (content)
 
@@ -512,10 +514,6 @@ class Page (HtmlWidget, ContentComponent, SublinksComponent, FactsComponent):
         p (fd, '<script language="javascript" type="text/javascript" src="%spulse.js"></script>',
            pulse.config.data_root)
         p (fd, '</head><body>')
-
-        sidebarred = self._sidebar != None or self._screenshot_file != None
-        if sidebarred:
-            p (fd, '<div class="sidebarred">')
 
         p (fd, '<div id="header"><table><tr>')
         p (fd, '<td><a href="%s"><img src="%s" alt="Pulse"></a></td>',
@@ -557,21 +555,19 @@ class Page (HtmlWidget, ContentComponent, SublinksComponent, FactsComponent):
                 p (fd, '<span class="tab" id="tab-%s">', tabid, False)
                 p (fd, '<a href="javascript:tab(\'%s\')">' + title + '</a></span>', tabid)
             p (fd, '</div>')
-        p (fd, '</div>')
 
-        if sidebarred:
-            p (fd, '<div id="sidebar">')
-            if self._screenshot_file != None:
-                p (fd, '<div class="screenshot">', None, False)
-                url = self._screenshot_file.get_pulse_url ()
-                p (fd, '<a href="%s" class="zoom">', self._screenshot_file.pulse_url, False)
-                p (fd, '<img src="%s" width="%i" height="%i">',
-                   (self._screenshot_file.get_pulse_url ('thumbs'),
-                    self._screenshot_file.data['thumb_width'],
-                    self._screenshot_file.data['thumb_height']))
-                p (fd, '</a></div>')
-            self._sidebar.output (fd=fd)
-            p (fd, '</div>')
+        p (fd, '<div id="sidebar">')
+        if self._screenshot_file != None:
+            p (fd, '<div class="screenshot">', None, False)
+            url = self._screenshot_file.get_pulse_url ()
+            p (fd, '<a href="%s" class="zoom">', self._screenshot_file.pulse_url, False)
+            p (fd, '<img src="%s" width="%i" height="%i">',
+               (self._screenshot_file.get_pulse_url ('thumbs'),
+                self._screenshot_file.data['thumb_width'],
+                self._screenshot_file.data['thumb_height']))
+            p (fd, '</a></div>')
+        self._sidebar.output (fd=fd)
+        p (fd, '</div>')
 
         p (fd, '<div id="body"><div id="panes">')
         FactsComponent.output (self, fd=fd)
@@ -1726,6 +1722,10 @@ class Div (HtmlWidget, ContentComponent):
         p (fd, '>', None, False)
         ContentComponent.output (self, fd=fd)
         p (fd, '</div>')
+
+
+class Tab (Div):
+    pass
 
 
 class Table (HtmlWidget):
