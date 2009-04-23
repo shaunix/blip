@@ -83,9 +83,11 @@ class ModuleHandler (core.RequestHandler):
         for name in self.applications.keys():
             app = self.applications[name]
             if isinstance (app, applications.TabProvider):
-                tabs.append ((app.__class__.tab_group, app.get_tab_title (), name))
+                tabs.append ((app.__class__.tab_group, app.get_tab_title (), name, app))
         for tab in utils.attrsorted (tabs, 0, 1):
             page.add_tab (tab[2], tab[1])
+            if tab[0] == applications.TabProvider.FIRST_TAB:
+                page.add_to_tab (tab[2], tab[3].get_tab())
 
         return
 
