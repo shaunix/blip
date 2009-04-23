@@ -185,6 +185,7 @@ $.fn.pulse_init = function () {
   /** Info Boxes **/
   this.find ('div.info').each (function () {
     var div = $(this);
+    div.dropShadow ({left: 1, top: 1, blur: 2, color: '#888a85'});
     div.children ('div.infotitle').click (function () {
     var active = div.hasClass ('infoactive');
     $('div.info').each (function () {
@@ -435,24 +436,31 @@ $(document).ready (function () { $('html').pulse_init(); });
 function tab (tabid) {
   var tabbar = $('#tabs');
   var tabs = tabbar.children ('.tab');
+  var curhash = '';
+  if (location.hash != '')
+    curhash = location.hash.substring(1);
 
   if (tabid == undefined) {
-    tabid = location.hash;
-    if (tabid == '' || tabid == '#') {
-      tabid = tabs.attr('id');
-      tabid = tabid.substring(4);
-    } else {
-      tabid = tabid.substring(1);
-    }
+    if (curhash == '')
+      tabid = tabbar[0].default_tabid;
+    else
+      tabid = curhash;
   }
-  else
-    location.hash = tabid;
+  else {
+    if (tabid == curhash || (curhash == '' && tabid == tabbar[0].default_tabid)) {
+      if (tabbar[0].current_tabid != undefined) {
+        oldpane = $('#pane-' + tabbar[0].current_tabid);
+        oldpane.remove ();
+      }
+    }
+    location.hash = '#' + tabid;
+  }
 
   var oldpane = undefined;
   if (tabbar[0].current_tabid != undefined)
     oldpane = $('#pane-' + tabbar[0].current_tabid);
   if (oldpane != undefined)
-    oldpane.hide ();
+    oldpane.hide();
 
   tabs.removeClass ('tabactive');
   var tab = $('#tab-' + tabid);

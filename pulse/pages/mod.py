@@ -80,23 +80,22 @@ class ModuleHandler (core.RequestHandler):
         if module.data.has_key ('screenshot'):
             page.add_screenshot (module.data['screenshot'])
 
-        # FIXME below
-        page.add_tab ('info', utils.gettext ('Info'))
-        box = html.Div()
-        page.add_to_tab ('info', box)
-
         for name in self.applications.keys():
             app = self.applications[name]
             if app.provides (html.Tab):
                 page.add_tab (name, app.get_tab_title ())
 
-        # Developers
-        box = get_developers_box (module)
-        page.add_sidebar_content (box)
-
         return
 
 
+        # FIXME below
+        page.add_tab ('info', utils.gettext ('Info'))
+        box = html.Div()
+        page.add_to_tab ('info', box)
+
+        # Developers
+        box = get_developers_box (module)
+        page.add_sidebar_content (box)
 
         page.add_tab ('activity', utils.gettext ('Activity'))
         page.add_tab ('components', utils.gettext ('Components'))
