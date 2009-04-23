@@ -23,8 +23,7 @@ import math
 import re
 import urllib
 
-from pulse import applications, db, html, scm, utils
-import pulse.response as core
+from pulse import applications, core, db, html, scm, utils
 
 class ModuleHandler (core.RequestHandler):
     def initialize (self):

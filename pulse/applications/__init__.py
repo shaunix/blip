@@ -21,7 +21,7 @@
 import os
 import sys
 
-import pulse.response as core
+from pulse import core
 
 class TabProvider (core.Application):
     def __init__ (self, handler):

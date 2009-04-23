@@ -25,7 +25,6 @@ import os
 import pulse.config
 import pulse.db
 import pulse.html
-import pulse.response
 import pulse.utils
 
 def main (response, path, query):

@@ -6,8 +6,7 @@ import os
 import sys
 import cgi
 
-from pulse import config, db, html, pages, utils
-import pulse.response as core
+from pulse import config, core, db, html, pages, utils
 
 def usage ():
     print >>sys.stderr, ('Usage: %s [options] [PATHINFO [QUERYSTRING]]' % sys.argv[0])

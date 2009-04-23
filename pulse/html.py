@@ -35,19 +35,19 @@ import re
 import sys
 
 import pulse.config
+import pulse.core
 import pulse.db
 import pulse.utils
 
-import pulse.response as core
-p = core.p
-esc = core.esc
+p = pulse.core.p
+esc = pulse.core.esc
 
 SPACE = ' '
 BULLET = u' • '
 TRIANGLE = u' ‣ '
 
 
-class HtmlWidget (core.HttpWidget):
+class HtmlWidget (pulse.core.HttpWidget):
     """
     Base class for all HTML widgets.
     """
@@ -89,7 +89,7 @@ class HtmlWidget (core.HttpWidget):
         pass
 
 
-class Component (core.HttpWidget):
+class Component (pulse.core.HttpWidget):
     """
     Base class for all components.
 

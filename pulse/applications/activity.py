@@ -18,8 +18,7 @@
 # Suite 330, Boston, MA  0211-1307  USA.
 #
 
-from pulse import applications, db, html, utils
-import pulse.response as core
+from pulse import applications, core, db, html, utils
 
 class ActivityTab (applications.TabProvider):
     def __init__ (self, handler):
