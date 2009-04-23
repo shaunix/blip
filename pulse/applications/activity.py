@@ -34,9 +34,10 @@ class ActivityTab (core.Application):
 
     def handle_request (self):
         if self.handler.request.query.get ('action') == 'commits':
-            raise NotImplementedError ('FIXME')
+            contents = self.get_commits_action ()
         else:
-            self.handler.response.set_contents (self.get_tab ())
+            contents = self.get_tab ()
+        self.handler.response.set_contents (contents)
 
     def get_tab (self):
         tab = html.Tab ()
@@ -61,6 +62,35 @@ class ActivityTab (core.Application):
         div = self.get_commits_div (revs, title)
         tab.add_content (div)
         return tab
+
+    def get_commits_action (self):
+        weeknum = self.handler.request.query.get('weeknum', None)
+        if weeknum != None:
+            weeknum = int(weeknum)
+            thisweek = utils.weeknum ()
+            ago = thisweek - weeknum
+            revs = db.Revision.select_revisions (branch=self.handler.record,
+                                                 weeknum=weeknum)
+            cnt = revs.count()
+            revs = list(revs[:20])
+        else:
+            revs = db.Revision.select_revisions (branch=self.handler.record,
+                                                 week_range=(utils.weeknum()-52,))
+            cnt = revs.count()
+            revs = list(revs[:10])
+        if weeknum == None:
+            title = (utils.gettext('Showing %i of %i commits:')
+                     % (len(revs), cnt))
+        elif ago == 0:
+            title = (utils.gettext('Showing %i of %i commits from this week:')
+                     % (len(revs), cnt))
+        elif ago == 1:
+            title = (utils.gettext('Showing %i of %i commits from last week:')
+                     % (len(revs), cnt))
+        else:
+            title = (utils.gettext('Showing %i of %i commits from %i weeks ago:')
+                     % (len(revs), cnt, ago))
+        return self.get_commits_div (revs, title)
 
     def get_commits_div (self, revs, title):
         div = html.Div (widget_id='commits')

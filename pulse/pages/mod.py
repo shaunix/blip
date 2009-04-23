@@ -437,35 +437,6 @@ def output_ajax_graphmap (response, module, **kw):
         pass
 
 
-def output_ajax_commits (response, module, **kw):
-    query = kw.get ('query', {})
-    weeknum = query.get('weeknum', None)
-    if weeknum != None:
-        weeknum = int(weeknum)
-        thisweek = utils.weeknum ()
-        ago = thisweek - weeknum
-        revs = db.Revision.select_revisions (branch=module, weeknum=weeknum)
-        cnt = revs.count()
-        revs = list(revs[:20])
-    else:
-        revs = db.Revision.select_revisions (branch=module,
-                                             week_range=(utils.weeknum()-52,))
-        cnt = revs.count()
-        revs = list(revs[:10])
-    if weeknum == None:
-        title = (utils.gettext('Showing %i of %i commits:')
-                 % (len(revs), cnt))
-    elif ago == 0:
-        title = (utils.gettext('Showing %i of %i commits from this week:')
-                 % (len(revs), cnt))
-    elif ago == 1:
-        title = (utils.gettext('Showing %i of %i commits from last week:')
-                 % (len(revs), cnt))
-    else:
-        title = (utils.gettext('Showing %i of %i commits from %i weeks ago:')
-                 % (len(revs), cnt, ago))
-    div = get_commits_div (module, revs, title)
-    response.set_contents (div)
 
 
 def output_ajax_revfiles (response, module, **kw):
