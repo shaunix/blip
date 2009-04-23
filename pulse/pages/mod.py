@@ -126,17 +126,14 @@ def get_request_handler (request, response):
     return ModuleHandler (request, response)
 
 
+
 def main (response, path, query):
 
     kw = {'path' : path, 'query' : query}
     if query.get('ajax', None) == 'tab':
         output_ajax_tab (response, branch, **kw)
-    elif query.get('ajax', None) == 'commits':
-        output_ajax_commits (response, branch, **kw)
     elif query.get('ajax', None) == 'domain':
         output_ajax_domain (response, branch, **kw)
-    elif query.get('ajax', None) == 'graphmap':
-        output_ajax_graphmap (response, branch, **kw)
     elif query.get('ajax', None) == 'revfiles':
         output_ajax_revfiles (response, branch, **kw)
     elif query.has_key ('doap'):
@@ -417,24 +414,6 @@ def output_ajax_domain (response, module, **kw):
                 grid.add_row_class (idx, 'po80')
             elif percent >= 50:
                 grid.add_row_class (idx, 'po50')
-
-
-def output_ajax_graphmap (response, module, **kw):
-    query = kw.get ('query', {})
-    id = query.get('id')
-    num = query.get('num')
-    filename = query.get('filename')
-    
-    of = db.OutputFile.select (type=u'graphs', ident=module.ident, filename=filename)
-    try:
-        of = of[0]
-        graph = html.Graph.activity_graph (of, module.pulse_url, 'commits',
-                                           utils.gettext ('%i commits'),
-                                           count=int(id), num=int(num), map_only=True)
-        response.set_contents (graph)
-    except IndexError:
-        pass
-
 
 
 

@@ -28,11 +28,17 @@ class ActivityTab (applications.TabProvider):
         return utils.gettext ('Activity')
 
     def handle_request (self):
-        if self.handler.request.query.get ('action') == 'commits':
+        action = self.handler.request.query.get ('action')
+        if action == 'commits':
             contents = self.get_commits_action ()
-        else:
+        elif action == 'graphmap':
+            contents = self.get_graphmap_action ()
+        elif action is None:
             contents = self.get_tab ()
-        self.handler.response.set_contents (contents)
+        if contents is not None:
+            self.handler.response.set_contents (contents)
+        else:
+            raise core.NoSuchActionException (action)
 
     def get_tab (self):
         tab = html.Div ()
@@ -40,11 +46,11 @@ class ActivityTab (applications.TabProvider):
                                    ident=self.handler.record.ident,
                                    filename=u'commits-0.png')
         try:
-            of = of[0]
+            of = of[0] 
             graph = html.Graph.activity_graph (of,
                                                self.handler.record.pulse_url,
                                                'commits', utils.gettext ('%i commits'),
-                                               {'application': 'activity', 'action': 'commits'})
+                                               'activity', {'action': 'commits'})
             tab.add_content (graph)
         except IndexError:
             pass
@@ -107,6 +113,23 @@ class ActivityTab (applications.TabProvider):
             dl.add_term (span)
             dl.add_entry (html.PopupLink.from_revision (rev, branch=self.handler.record))
         return div
+
+    def get_graphmap_action (self):
+        id = self.handler.request.query.get ('id')
+        num = self.handler.request.query.get ('num')
+        filename = self.handler.request.query.get ('filename')
+
+        graph = None
+        of = db.OutputFile.select (type=u'graphs', ident=self.handler.record.ident, filename=filename)
+        try:
+            of = of[0]
+            graph = html.Graph.activity_graph (of, self.handler.record.pulse_url,
+                                               'commits', utils.gettext ('%i commits'),
+                                               'activity', {'action': 'commits'},
+                                               count=int(id), num=int(num), map_only=True)
+        except:
+            pass
+        return graph
 
 def initialize (handler):
     if handler.__class__.__name__ == 'ModuleHandler':

@@ -659,7 +659,7 @@ function cal_next (cal) {
 /******************************************************************************/
 /** Graph slides **/
 
-function slide (id, dir) {
+function slide (app, id, dir) {
   var div = $('#graph-' + id);
   if (div[0].timer != undefined) {
     return;
@@ -676,10 +676,16 @@ function slide (id, dir) {
   var newsrc = newdata.src;
   var newcmt = $('#comments-' + id + '-' + newdata.num);
   if (newcmt.length == 0) {
-    var filename = newdata.filename;
-    var graphurl = pulse_url + '?ajax=graphmap&id=' + id + '&num=' + newdata.num + '&filename=' + filename;
-    $.get(graphurl, function (data) {
-      div.append(data);
+    $.ajax ({
+      type: 'GET',
+      url: pulse_url,
+      data: {'application': app, 'action': 'graphmap', 'id': id,
+             'num' : newdata.num, 'filename': newdata.filename},
+      complete: function (req, status) {
+        if (status == 'success') {
+          div.append ($(req.responseText));
+        }
+      }
     });
   }
 

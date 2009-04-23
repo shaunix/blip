@@ -32,6 +32,12 @@ class RequestHandlerException (utils.PulseException):
         self.title = title
         self.desc = desc
 
+class NoSuchActionException (RequestHandlerException):
+    def __init__ (self, action):
+        RequestHandlerException.__init__ (
+            self, utils.gettext ('No Such Action'),
+            utils.gettext ('Pulse does not understand the action %s.' % action))
+
 
 class RequestHandler (object):
     def __init__ (self, request, response):

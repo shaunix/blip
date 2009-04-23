@@ -1375,6 +1375,7 @@ class Graph (HtmlWidget):
     def __init__ (self, url, **kw):
         super (Graph, self).__init__ (**kw)
         self._url = url
+        self._application = kw.get('application')
         self._count = kw.get('count', None)
         self._num = kw.get('num', 0)
         self._links = kw.get('links', False)
@@ -1425,26 +1426,27 @@ class Graph (HtmlWidget):
             if self._links:
                 p (fd, '</td></tr><tr>')
                 p (fd, '<td class="graphprev">', None, False)
-                p (fd, '<a class="graphprev" id="graphprev-%i" href="javascript:slide(%i, -1)"',
-                   (self._count, self._count), False)
+                p (fd, '<a class="graphprev" id="graphprev-%i" href="javascript:slide(\'%s\', %i, -1)"',
+                   (self._count, self._application, self._count), False)
                 p (fd, '<img src="%sgo-prev.png" height="12" width="12"></a>',
                    pulse.config.data_root, False)
                 p (fd, '</td><td class="graphnext">', None, False)
-                p (fd, '<a class="graphnext" id="graphnext-%i" href="javascript:slide(%i, 1)">',
-                   (self._count, self._count), False)
+                p (fd, '<a class="graphnext" id="graphnext-%i" href="javascript:slide(\'%s\', %i, 1)">',
+                   (self._count, self._application, self._count), False)
                 p (fd, '<img src="%sgo-next.png" height="12" width="12"></a>',
                    pulse.config.data_root, False)
                 p (fd, '</td></tr></table>')
 
     @classmethod
-    def activity_graph (cls, outfile, url, boxid, title, data, **kw):
+    def activity_graph (cls, outfile, url, boxid, title, application, data, **kw):
         """A convenience constructor to make an activity graph from an OutputFile."""
         kw.setdefault ('links', True)
         kw.setdefault ('width', outfile.data.get('width'))
         kw.setdefault ('height', outfile.data.get('height'))
+        kw['application'] = application
         graph = cls (outfile.pulse_url, **kw)
         thisweek = pulse.utils.weeknum (datetime.datetime.now())
-        qs = '?'
+        qs = '?application=%s&' % application
         for key in data.keys():
             qs += '%s=%s&' % (key, data[key])
         for (coords, tot, weeknum) in outfile.data.get ('coords', []):
