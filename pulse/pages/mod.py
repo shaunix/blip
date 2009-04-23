@@ -131,7 +131,6 @@ def get_request_handler (request, response):
 
 
 def main (response, path, query):
-
     kw = {'path' : path, 'query' : query}
     if query.get('ajax', None) == 'tab':
         output_ajax_tab (response, branch, **kw)
@@ -139,8 +138,6 @@ def main (response, path, query):
         output_ajax_domain (response, branch, **kw)
     elif query.get('ajax', None) == 'revfiles':
         output_ajax_revfiles (response, branch, **kw)
-    elif query.has_key ('doap'):
-        output_doap_file (response, branch, query.get ('doap'), **kw)
     else:
         pass
         #output_module (response, branch, **kw)
@@ -192,104 +189,13 @@ def synopsis ():
 
 
 
-
-
 def output_ajax_tab (response, module, **kw):
     query = kw.get ('query', {})
     tab = query.get('tab', None)
-    if tab == 'info':
-        response.set_contents (get_info_tab (module, **kw))
-    elif tab == 'activity':
-        response.set_contents (get_activity_tab (module, **kw))
-    elif tab == 'components':
+    if tab == 'components':
         response.set_contents (get_components_tab (module, **kw))
     elif tab == 'translations':
         response.set_contents (get_translations_tab (module, **kw))
-
-
-def output_ajax_domain (response, module, **kw):
-    query = kw.get ('query', {})
-    ident = query.get('domain', None)
-
-    domain = db.Branch.get (ident)
-    domainid = domain.ident.split('/')[-2].replace('-', '_')
-    translations = db.Branch.select_with_statistic (u'Messages',
-                                                    type=u'Translation',
-                                                    parent=domain)
-    translations = utils.attrsorted (list(translations), (0, 'title'))
-    pagediv = html.Div ()
-    response.set_contents (pagediv)
-    pad = html.PaddingBox ()
-    pagediv.add_content (pad)
-
-    if domain.error is not None:
-        pad.add_content (html.AdmonBox (html.AdmonBox.error, domain.error))
-
-    if domain.scm_dir == 'po':
-        potfile = domain.scm_module + '.pot'
-    else:
-        potfile = domain.scm_dir + '.pot'
-    of = db.OutputFile.select (type=u'l10n', ident=domain.ident, filename=potfile)
-    try:
-        of = of[0]
-        div = html.Div()
-        pad.add_content (div)
-
-        linkdiv = html.Div()
-        linkspan = html.Span (divider=html.SPACE)
-        linkdiv.add_content (linkspan)
-        div.add_content (linkdiv)
-        linkspan.add_content (html.Link (of.pulse_url,
-                                         utils.gettext ('POT file'),
-                                         icon='download' ))
-        # FIXME: i18n reordering
-        linkspan.add_content (utils.gettext ('(%i messages)')
-                              % of.statistic)
-        linkspan.add_content (utils.gettext ('on %s')
-                              % of.datetime.strftime('%Y-%m-%d %T'))
-        missing = of.data.get ('missing', [])
-        if len(missing) > 0:
-            msg = utils.gettext('%i missing files') % len(missing)
-            admon = html.AdmonBox (html.AdmonBox.warning, msg, tag='span')
-            mdiv = html.Div()
-            popup = html.PopupLink (admon, '\n'.join(missing))
-            mdiv.add_content (popup)
-            div.add_content (mdiv)
-    except IndexError:
-        pad.add_content (html.AdmonBox (html.AdmonBox.warning,
-                                        utils.gettext ('No POT file') ))
-
-    if len(translations) == 0:
-        pad.add_content (html.AdmonBox (html.AdmonBox.warning,
-                                        utils.gettext ('No translations') ))
-    else:
-        grid = html.GridBox ()
-        pad.add_content (grid)
-        for translation, statistic in translations:
-            span = html.Span (translation.scm_file[:-3])
-            span.add_class ('title')
-            link = html.Link (translation.pulse_url, span)
-            row = [link]
-            percent = 0
-            stat1 = statistic.stat1
-            stat2 = statistic.stat2
-            total = statistic.total
-            untranslated = total - stat1 - stat2
-            percent = total and math.floor (100 * (float(stat1) / total)) or 0
-            span = html.Span ('%i%%' % percent)
-            span.add_class ('percent')
-            row.append (span)
-
-            row.append (utils.gettext ('%i.%i.%i') %
-                        (stat1, stat2, untranslated))
-            idx = grid.add_row (*row)
-            grid.add_row_class (idx, 'po')
-            grid.add_row_class (idx, 'po_' + domainid)
-            if percent >= 80:
-                grid.add_row_class (idx, 'po80')
-            elif percent >= 50:
-                grid.add_row_class (idx, 'po50')
-
 
 
 def output_ajax_revfiles (response, module, **kw):
@@ -322,27 +228,6 @@ def output_ajax_revfiles (response, module, **kw):
 
 
 
-
-def get_activity_tab (module, **kw):
-    box = html.Div ()
-    of = db.OutputFile.select (type=u'graphs', ident=module.ident, filename=u'commits-0.png')
-    try:
-        of = of[0]
-        graph = html.Graph.activity_graph (of, module.pulse_url, 'commits',
-                                           utils.gettext ('%i commits'))
-        box.add_content (graph)
-    except IndexError:
-        pass
-
-    revs = db.Revision.select_revisions (branch=module,
-                                         week_range=(utils.weeknum()-52,))
-    cnt = revs.count()
-    revs = list(revs[:10])
-    title = (utils.gettext('Showing %i of %i commits:') % (len(revs), cnt))
-    div = get_commits_div (module, revs, title)
-    box.add_content (div)
-
-    return box
 
 
 def get_components_tab (module, **kw):
@@ -384,31 +269,6 @@ def get_components_tab (module, **kw):
     return columns
 
 
-def get_translations_tab (module, **kw):
-    box = html.PaddingBox ()
-    domains = module.select_children (u'Domain')
-    domains = utils.attrsorted (list(domains), 'title')
-    if len(domains) > 0:
-        for domain in domains:
-            domainid = domain.ident.split('/')[-2].replace('-', '_')
-            translations = db.Branch.select (type=u'Translation', parent=domain)
-            cont = html.ContainerBox ()
-            cont.set_id ('po_' + domainid)
-            if len(domains) > 1:
-                cont.set_title (utils.gettext ('%s (%s)')
-                                % (domain.title, translations.count()))
-            cont.set_sortable_tag ('tr')
-            cont.set_sortable_class ('po_' + domainid)
-            cont.add_sort_link ('title', utils.gettext ('lang'), 1)
-            cont.add_sort_link ('percent', utils.gettext ('percent'))
-            div = html.AjaxBox (module.pulse_url + '?ajax=domain&domain=' +
-                                urllib.quote (domain.ident))
-            cont.add_content (div)
-            box.add_content (cont)
-    else:
-        box.add_content (html.AdmonBox (html.AdmonBox.warning,
-                                        utils.gettext ('No domains') ))
-    return box
 
 
 def get_developers_box (module):

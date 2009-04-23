@@ -172,13 +172,16 @@ $.fn.pulse_init = function () {
     div.append (thr);
     thr.start ();
 
-    $.get(href, {}, function (data) {
-      var cont = $(data).css('display', 'none');
-      cont.insertAfter(div);
-      thr.stop ();
-      div.remove ();
-      cont.pulse_init ();
-      cont.slideDown('fast');
+    $.ajax({
+      url: href, 
+      complete: function (req, status) {
+        var cont = $(req.responseText).css('display', 'none');
+        cont.insertAfter(div);
+        thr.stop ();
+        div.remove ();
+        cont.pulse_init ();
+        cont.slideDown('fast');
+      }
     });
   });
 
