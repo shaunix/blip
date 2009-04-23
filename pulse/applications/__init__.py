@@ -21,6 +21,16 @@
 import os
 import sys
 
+import pulse.response as core
+
+class TabProvider (core.Application):
+    def __init__ (self, handler):
+        super (TabProvider, self).__init__ (handler)
+
+    def get_tab_title (self):
+        raise NotImplementedError ('%s does not provide the get_tab_title method.'
+                                   % self.__class__.__name__)
+
 __all__ = []
 
 for f in os.listdir (os.path.dirname (sys.modules[__name__].__file__)):

@@ -54,10 +54,6 @@ class RequestHandler (object):
 
 
 class Application (object):
-    @classmethod
-    def provides (cls, cap):
-        raise NotImplementedError ('%s does not provide the provides method.' % cls.__name__)
-
     def __init__ (self, handler):
         self.handler = handler
 

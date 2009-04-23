@@ -1750,10 +1750,6 @@ class Div (HtmlWidget, ContentComponent):
         p (fd, '</div>')
 
 
-class Tab (Div):
-    pass
-
-
 class Table (HtmlWidget):
     def __init__ (self, **kw):
         super (Table, self).__init__ (**kw)

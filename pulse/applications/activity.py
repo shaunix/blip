@@ -18,16 +18,12 @@
 # Suite 330, Boston, MA  0211-1307  USA.
 #
 
-from pulse import db, html, utils
+from pulse import applications, db, html, utils
 import pulse.response as core
 
-class ActivityTab (core.Application):
-    @classmethod
-    def provides (cls, cap):
-        return cap == html.Tab
-    
+class ActivityTab (applications.TabProvider):
     def __init__ (self, handler):
-        core.Application.__init__ (self, handler)
+        super (ActivityTab, self).__init__ (handler)
 
     def get_tab_title (self):
         return utils.gettext ('Activity')
@@ -40,7 +36,7 @@ class ActivityTab (core.Application):
         self.handler.response.set_contents (contents)
 
     def get_tab (self):
-        tab = html.Tab ()
+        tab = html.Div ()
         of = db.OutputFile.select (type=u'graphs',
                                    ident=self.handler.record.ident,
                                    filename=u'commits-0.png')

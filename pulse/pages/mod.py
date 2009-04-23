@@ -23,7 +23,7 @@ import math
 import re
 import urllib
 
-from pulse import db, html, scm, utils
+from pulse import applications, db, html, scm, utils
 import pulse.response as core
 
 class ModuleHandler (core.RequestHandler):
@@ -82,7 +82,7 @@ class ModuleHandler (core.RequestHandler):
 
         for name in self.applications.keys():
             app = self.applications[name]
-            if app.provides (html.Tab):
+            if isinstance (app, applications.TabProvider):
                 page.add_tab (name, app.get_tab_title ())
 
         return
