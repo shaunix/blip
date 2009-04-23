@@ -792,11 +792,16 @@ function replace (id, url) {
   thr.css('width', el.width() / 2);
   el.append (thr);
   thr.start ();
-  $.get(url, function (data) {
-    el.after ($(data));
-    thr.stop ();
-    el.remove ();
-    par.unshade();
+  $.ajax ({
+    type: 'GET',
+    url: url,
+    complete: function (req, status) {
+      data = $(req.responseText);
+      data.attr ('id', el.attr ('id'));
+      el.after (data);
+      el.remove ();
+      par.unshade ();
+    }
   });
 }
 

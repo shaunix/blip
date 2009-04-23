@@ -1437,13 +1437,16 @@ class Graph (HtmlWidget):
                 p (fd, '</td></tr></table>')
 
     @classmethod
-    def activity_graph (cls, outfile, url, boxid, title, **kw):
+    def activity_graph (cls, outfile, url, boxid, title, data, **kw):
         """A convenience constructor to make an activity graph from an OutputFile."""
         kw.setdefault ('links', True)
         kw.setdefault ('width', outfile.data.get('width'))
         kw.setdefault ('height', outfile.data.get('height'))
         graph = cls (outfile.pulse_url, **kw)
         thisweek = pulse.utils.weeknum (datetime.datetime.now())
+        qs = '?'
+        for key in data.keys():
+            qs += '%s=%s&' % (key, data[key])
         for (coords, tot, weeknum) in outfile.data.get ('coords', []):
             ago = thisweek - weeknum
             if ago == 0:
@@ -1455,7 +1458,7 @@ class Graph (HtmlWidget):
                          pulse.utils.weeknumday(weeknum).strftime('%Y-%m-%d'))
             cmt = title % tot
             jslink = 'javascript:replace(\'' + boxid + '\', '
-            jslink += ('\'%s?ajax=' + boxid + '&weeknum=%i\')') % (url, weeknum)
+            jslink += ('\'%s%sweeknum=%i\')') % (url, qs, weeknum)
             graph.add_comment (coords, label, cmt, jslink)
         return graph
 

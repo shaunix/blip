@@ -93,8 +93,7 @@ def main ():
     except Exception, err:
         if not http:
             raise
-        # FIXME
-        if query.has_key ('ajax'):
+        if request.query.has_key ('action'):
             page = html.AdmonBox (
                 html.AdmonBox.error,
                 utils.gettext (

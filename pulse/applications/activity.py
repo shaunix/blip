@@ -33,7 +33,7 @@ class ActivityTab (core.Application):
         return utils.gettext ('Activity')
 
     def handle_request (self):
-        if self.handler.request.query.get('foo') == 'bar':
+        if self.handler.request.query.get ('action') == 'commits':
             raise NotImplementedError ('FIXME')
         else:
             self.handler.response.set_contents (self.get_tab ())
@@ -47,8 +47,8 @@ class ActivityTab (core.Application):
             of = of[0]
             graph = html.Graph.activity_graph (of,
                                                self.handler.record.pulse_url,
-                                               'commits',
-                                               utils.gettext ('%i commits'))
+                                               'commits', utils.gettext ('%i commits'),
+                                               {'application': 'activity', 'action': 'commits'})
             tab.add_content (graph)
         except IndexError:
             pass
