@@ -89,6 +89,8 @@ def main ():
                 app.handle_request ()
             else:
                 handler.handle_request ()
+        if not response.has_contents ():
+            raise utils.PulseException ('No response contents')
     except Exception, err:
         if not http:
             raise

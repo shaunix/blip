@@ -32,12 +32,6 @@ class RequestHandlerException (utils.PulseException):
         self.title = title
         self.desc = desc
 
-class NoSuchActionException (RequestHandlerException):
-    def __init__ (self, action):
-        RequestHandlerException.__init__ (
-            self, utils.gettext ('No Such Action'),
-            utils.gettext ('Pulse does not understand the action %s.' % action))
-
 
 class RequestHandler (object):
     def __init__ (self, request, response):
@@ -121,6 +115,9 @@ class HttpResponse (HttpWidget):
         self.http_status = contents.http_status or self.http_status
         self.http_content_type = contents.http_content_type or self.http_content_type
         contents.http_response = self
+
+    def has_contents (self):
+        return self._contents is not None
 
     def set_cookie (self, cookie, value):
         self._cookies.append ((cookie, value))

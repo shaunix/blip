@@ -493,17 +493,10 @@ function tab (tabid) {
     pane.show ();
     thr.start ();
     tabbar[0].loading_tabid = tabid;
-    var href = pulse_url + '?application=' + tabid;
-    var func = function (data, status) {
+    var href = pulse_url + '?application=' + tabid + '&action=tab';
+    var func = function (req, status) {
       var pane = $('#' + paneid);
-      if (status == 'success')
-        pane.html ($(data));
-      else
-        /* FIXME: sucky.  Would rather send a Fragment back from index.cgi
-         * with an admon box or some such, but I can't get responseText
-         * from an XMLHttpRequest on error.
-         */
-        pane.text('There was a problem processing the request.');
+      pane.html ($(req.responseText));
       pane.pulse_init ();
       pane.removeClass ('paneloading');
       if (tabid == tabbar[0].current_tabid) {
@@ -513,7 +506,7 @@ function tab (tabid) {
         pane.show ();
       }
     };
-    $.ajax({url: href, success: func, error: func});
+    $.ajax({url: href, complete: func});
   }
 }
 

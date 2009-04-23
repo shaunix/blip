@@ -189,7 +189,11 @@ def attrsorted (lst, *attrs):
     def attrcmp (val1, val2, attrs):
         """Compare two objects based on some attributes"""
         attr = attrs[0]
-        if attr[0] == '-':
+        try:
+            attrf = attr[0]
+        except:
+            attrf = None
+        if attrf == '-':
             attr = attr[1:]
             cmpval = lcmp (attrget(val2, attr), attrget(val1, attr))
         else:

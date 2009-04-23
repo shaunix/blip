@@ -24,11 +24,21 @@ import sys
 from pulse import core
 
 class TabProvider (core.Application):
+    FIRST_TAB = 0
+    CORE_TAB = 1
+    EXTRA_TAB = 2
+
+    tab_group = 2
+
     def __init__ (self, handler):
         super (TabProvider, self).__init__ (handler)
 
     def get_tab_title (self):
         raise NotImplementedError ('%s does not provide the get_tab_title method.'
+                                   % self.__class__.__name__)
+
+    def get_tab (self):
+        raise NotImplementedError ('%s does not provide the get_tab method.'
                                    % self.__class__.__name__)
 
 __all__ = []

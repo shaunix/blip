@@ -21,6 +21,8 @@
 from pulse import applications, core, db, html, utils
 
 class ActivityTab (applications.TabProvider):
+    tab_group = applications.TabProvider.CORE_TAB
+
     def __init__ (self, handler):
         super (ActivityTab, self).__init__ (handler)
 
@@ -28,17 +30,16 @@ class ActivityTab (applications.TabProvider):
         return utils.gettext ('Activity')
 
     def handle_request (self):
+        contents = None
         action = self.handler.request.query.get ('action')
         if action == 'commits':
             contents = self.get_commits_action ()
         elif action == 'graphmap':
             contents = self.get_graphmap_action ()
-        elif action is None:
+        elif action == 'tab':
             contents = self.get_tab ()
         if contents is not None:
             self.handler.response.set_contents (contents)
-        else:
-            raise core.NoSuchActionException (action)
 
     def get_tab (self):
         tab = html.Div ()

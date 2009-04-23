@@ -79,10 +79,13 @@ class ModuleHandler (core.RequestHandler):
         if module.data.has_key ('screenshot'):
             page.add_screenshot (module.data['screenshot'])
 
+        tabs = []
         for name in self.applications.keys():
             app = self.applications[name]
             if isinstance (app, applications.TabProvider):
-                page.add_tab (name, app.get_tab_title ())
+                tabs.append ((app.__class__.tab_group, app.get_tab_title (), name))
+        for tab in utils.attrsorted (tabs, 0, 1):
+            page.add_tab (tab[2], tab[1])
 
         return
 
@@ -187,134 +190,6 @@ def synopsis ():
     return box
 
 
-def output_doap_file (response, module, filename, **kw):
-    content = core.HttpTextPacket ()
-    response.set_contents (content)
-    response.http_content_type = 'application/rdf+xml'
-    response.http_content_disposition = 'attachment; filename=%s' % filename
-
-    content.add_text_content (
-        '<Project xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"\n' +
-        '         xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"\n' +
-        '         xmlns:foaf="http://xmlns.com/foaf/0.1/"\n' +
-        '         xmlns:gnome="http://api.gnome.org/doap-extensions#"\n' +
-        '         xmlns="http://usefulinc.com/ns/doap#">\n\n')
-
-    content.add_text_content (
-        '  <!--\n'
-        '  This is a DOAP template file.  It contains Pulse\'s best guesses at\n'
-        '  some basic content.  You should verify the information in this file\n'
-        '  and modify anything that isn\'t right.  Add the corrected file to your\n'
-        '  source code repository to help tools better understand your project.\n'
-        '  -->\n\n')
-
-    content.add_text_content ('  <name xml:lang="en">%s</name>\n'
-                              % core.esc (module.title))
-    desc = module.localized_desc
-    if desc is not None:
-        content.add_text_content ('  <shortdesc xml:lang="en">%s</shortdesc>\n'
-                                  % core.esc (desc))
-    else:
-        content.add_text_content (
-            '  <!-- Description, e.g.\n' +
-            '       "Falling blocks game"\n' +
-            '       "Internationalized text layout and rendering library"\n' +
-            '  <shortdesc xml:lang="en">FIXME</shortdesc>\n' +
-            '  -->\n')
-    content.add_text_content (
-        '  <!--\n' + 
-        '  <homepage rdf:resource="http://www.gnome.org/" />\n' +
-        '  -->\n')
-    content.add_text_content (
-        '  <!--\n' + 
-        '  <mailing-list rdf:resource="http://mail.gnome.org/mailman/listinfo/desktop-devel-list" />\n' +
-        '  -->\n')
-
-    if module.data.has_key ('tarname'):
-        content.add_text_content (
-            '  <download-page rdf:resource="http://download.gnome.org/sources/%s/" />\n'
-            % module.data['tarname'])
-    else:
-        content.add_text_content (
-            '  <!--\n' + 
-            '  <download-page rdf:resource="http://download.gnome.org/sources/FIXME/" />\n'
-            '  -->\n')
-    content.add_text_content (
-        '  <bug-database rdf:resource="http://bugzilla.gnome.org/browse.cgi?product=%s" />\n'
-        % module.scm_module)
-
-    rels = db.SetModule.get_related (pred=module)
-    group = None
-    bindings = re.compile ('.*-bindings-.*')
-    for rel in rels:
-        if bindings.match (rel.subj.ident):
-            group = 'bindings'
-            break
-        elif rel.subj.ident.endswith ('-desktop'):
-            group = 'desktop'
-            break
-        elif rel.subj.ident.endswith ('-devtools'):
-            group = 'development'
-            break
-        elif rel.subj.ident.endswith ('-infrastructure'):
-            group = 'infrastructure'
-            break
-        elif rel.subj.ident.endswith ('-platform'):
-            group = 'platform'
-            break
-    content.add_text_content (
-        '\n  <!-- DOAP category: This is used to categorize repositories in cgit.\n'
-        )
-    if group is None:
-        content.add_text_content (
-            '       Pulse could not find an appropriate category for this repository.\n' +
-            '       Set the rdf:resource attribute with one of the following:\n')
-    else:
-        content.add_text_content (
-            '       Pulse has taken its best guess at the correct category.  You may\n' +
-            '       want to replace the rdf:resource attribute with one of the following:\n')
-    content.add_text_content (
-        '         http://api.gnome.org/doap-extensions#admin\n' +
-        '         http://api.gnome.org/doap-extensions#bindings\n' +
-        '         http://api.gnome.org/doap-extensions#deprecated\n' +
-        '         http://api.gnome.org/doap-extensions#desktop\n' +
-        '         http://api.gnome.org/doap-extensions#development\n' +
-        '         http://api.gnome.org/doap-extensions#infrastructure\n' +
-        '         http://api.gnome.org/doap-extensions#platform\n' +
-        '         http://api.gnome.org/doap-extensions#productivity\n')
-    if group is None:
-        content.add_text_content (
-            '  <category rdf:resource="FIXME" />\n' +
-            '  -->\n')
-    else:
-        content.add_text_content ('  -->\n')
-        content.add_text_content (
-            '  <category rdf:resource="http://api.gnome.org/doap-extensions#%s" />\n'
-            % group)
-
-    content.add_text_content ('\n')
-    rels = db.ModuleEntity.get_related (subj=module)
-    regexp = re.compile ('^/person/(.*)@gnome.org$')
-    for rel in rels:
-        if not rel.maintainer:
-            continue
-        content.add_text_content (
-            '  <maintainer>\n' +
-            '    <foaf:Person>\n')
-        content.add_text_content ('      <foaf:name>%s</foaf:name>\n'
-                                  % core.esc (rel.pred.title))
-        if rel.pred.email is not None:
-            content.add_text_content ('      <foaf:mbox rdf:resource="%s" />\n'
-                                      % core.esc (rel.pred.email))
-        match = regexp.match (rel.pred.ident)
-        if match:
-            content.add_text_content ('      <gnome:userid>%s</gnome:userid>\n'
-                                      % match.group (1))
-        content.add_text_content (
-            '    </foaf:Person>\n'
-            '  </maintainer>\n')
-
-    content.add_text_content ('</Project>\n')
 
 
 
@@ -446,71 +321,6 @@ def output_ajax_revfiles (response, module, **kw):
         mlink.add_link (url, file.filename)
 
 
-def get_info_tab (module, **kw):
-    div = html.PaddingBox()
-
-    if module.error != None:
-        div.add_content (html.AdmonBox (html.AdmonBox.error, module.error))
-
-    facts = html.FactsTable()
-    div.add_content (facts)
-
-    sep = False
-    try:
-        facts.add_fact (utils.gettext ('Description'),
-                        module.localized_desc)
-        sep = True
-    except:
-        pass
-
-    rels = db.SetModule.get_related (pred=module)
-    if len(rels) > 0:
-        sets = utils.attrsorted ([rel.subj for rel in rels], 'title')
-        span = html.Span (*[html.Link(rset) for rset in sets])
-        span.set_divider (html.BULLET)
-        facts.add_fact (utils.gettext ('Release Sets'), span)
-        sep = True
-
-    if sep:
-        facts.add_fact_divider ()
-
-    checkout = scm.Checkout.from_record (module, checkout=False, update=False)
-    facts.add_fact (utils.gettext ('Location'), checkout.location)
-
-    if module.mod_datetime != None:
-        span = html.Span(divider=html.SPACE)
-        # FIXME: i18n, word order, but we want to link person
-        span.add_content (module.mod_datetime.strftime('%Y-%m-%d %T'))
-        if module.mod_person_ident != None:
-            span.add_content (' by ')
-            span.add_content (html.Link (module.mod_person))
-        facts.add_fact (utils.gettext ('Last Modified'), span)
-
-    if module.data.has_key ('tarname'):
-        facts.add_fact_divider ()
-        facts.add_fact (utils.gettext ('Tarball Name'), module.data['tarname'])
-    if module.data.has_key ('tarversion'):
-        if not module.data.has_key ('tarname'):
-            facts.add_fact_divider ()
-        facts.add_fact (utils.gettext ('Version'), module.data['tarversion'])
-
-    facts.add_fact_divider ()
-    facts.add_fact (utils.gettext ('Score'), str(module.mod_score))
-
-    if module.updated is not None:
-        facts.add_fact_divider ()
-        facts.add_fact (utils.gettext ('Last Updated'),
-                        module.updated.strftime('%Y-%m-%d %T'))
-
-    doapdiv = html.Div ()
-    div.add_content (doapdiv)
-    doaplink = html.Link (
-        module.pulse_url + ('?doap=%s.doap' % module.scm_module),
-        'Download DOAP template file',
-        icon='download')
-    doapdiv.add_content (doaplink)
-
-    return div
 
 
 def get_activity_tab (module, **kw):
