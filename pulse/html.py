@@ -570,16 +570,6 @@ class Page (HtmlWidget, ContentComponent, SublinksComponent, FactsComponent):
                 self._screenshot_file.data['thumb_height']))
             p (fd, '</a></div>')
 
-        if self._screenshot_file != None:
-            p (fd, '<div class="screenshot">', None, False)
-            url = self._screenshot_file.get_pulse_url ()
-            p (fd, '<a href="%s" class="zoom">', self._screenshot_file.pulse_url, False)
-            p (fd, '<img src="%s" width="%i" height="%i">',
-               (self._screenshot_file.get_pulse_url ('thumbs'),
-                self._screenshot_file.data['thumb_width'],
-                self._screenshot_file.data['thumb_height']))
-            p (fd, '</a></div>')
-
         if len(self._tabs) > 0:
             p (fd, '<ul id="tabs">')
             for tabid, title in self._tabs:
@@ -1588,7 +1578,7 @@ class PopupLink (HtmlWidget):
         p (fd, '</div>')
 
     @classmethod
-    def from_revision (cls, rev, **kw):
+    def from_revision (cls, rev, app, **kw):
         comment = rev.comment
         if comment.strip() == '':
             lnk = cls (AdmonBox (AdmonBox.warning, pulse.utils.gettext ('No comment')),
@@ -1642,7 +1632,8 @@ class PopupLink (HtmlWidget):
                 else:
                     base += branch.scm_module + '/branches/' + branch.scm_branch
                 mlink = MenuLink (rev.revision, 'files')
-                mlink.set_menu_url (branch.pulse_url + '?ajax=revfiles&revid=' + str(rev.ident))
+                mlink.set_menu_url ('%s?application=%s&action=revfiles&revid=%s'
+                                    % (branch.pulse_url, app, str(rev.ident)))
                 lnk.add_link (mlink)
                 infourl = base + '?view=revision&revision=' + rev.revision
                 lnk.add_link (infourl, pulse.utils.gettext ('info'))

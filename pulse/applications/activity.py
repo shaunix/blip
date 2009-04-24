@@ -37,6 +37,8 @@ class ActivityTab (applications.TabProvider):
             contents = self.get_commits_action ()
         elif action == 'graphmap':
             contents = self.get_graphmap_action ()
+        elif action == 'revfiles':
+            contents = self.get_revfiles_action ()
         elif action == 'tab':
             contents = self.get_tab ()
         if contents is not None:
@@ -113,7 +115,8 @@ class ActivityTab (applications.TabProvider):
             span.add_content ('by')
             span.add_content (html.Link (rev.person))
             dl.add_term (span)
-            dl.add_entry (html.PopupLink.from_revision (rev, branch=self.handler.record))
+            dl.add_entry (html.PopupLink.from_revision (rev, 'activity',
+                                                        branch=self.handler.record))
         return div
 
     def get_graphmap_action (self):
@@ -132,6 +135,36 @@ class ActivityTab (applications.TabProvider):
         except:
             pass
         return graph
+
+    def get_revfiles_action (self):
+        module = self.handler.record
+        if module.scm_server.endswith ('/svn/'):
+            base = module.scm_server[:-4] + 'viewvc/'
+            colon = base.find (':')
+            if colon < 0:
+                response.http_status = 404
+                return
+            if base[:colon] != 'http':
+                base = 'http' + base[colon:]
+            if module.scm_path != None:
+                base += module.scm_path
+            elif module.scm_branch == 'trunk':
+                base += module.scm_module + '/trunk/'
+            else:
+                base += module.scm_module + '/branches/' + module.scm_branch + '/'
+
+        revid = self.handler.request.query.get('revid', None)
+        revision = db.Revision.get (revid)
+        files = db.RevisionFile.select (revision=revision)
+
+        mlink = html.MenuLink (revision.revision, menu_only=True)
+        for file in files:
+            url = base + file.filename
+            url += '?r1=%s&r2=%s' % (file.prevrev, file.filerev)
+            mlink.add_link (url, file.filename)
+
+        return mlink
+
 
 def initialize (handler):
     if handler.__class__.__name__ == 'ModuleHandler':

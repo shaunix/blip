@@ -86,22 +86,9 @@ class ModuleHandler (core.RequestHandler):
             if tab.tab_group == applications.TabProvider.FIRST_TAB:
                 page.add_to_tab (tab.application_id, tab.get_tab())
 
-        return
-
-
-        # FIXME below
-        page.add_tab ('info', utils.gettext ('Info'))
-        box = html.Div()
-        page.add_to_tab ('info', box)
-
         # Developers
         box = get_developers_box (module)
         page.add_sidebar_content (box)
-
-        page.add_tab ('activity', utils.gettext ('Activity'))
-        page.add_tab ('components', utils.gettext ('Components'))
-        if module.select_children (u'Domain').count() > 0:
-            page.add_tab ('translations', utils.gettext ('Translations'))
 
         # Dependencies
         deps = db.ModuleDependency.get_related (subj=module)
@@ -127,19 +114,6 @@ class ModuleHandler (core.RequestHandler):
 def get_request_handler (request, response):
     return ModuleHandler (request, response)
 
-
-
-def main (response, path, query):
-    kw = {'path' : path, 'query' : query}
-    if query.get('ajax', None) == 'tab':
-        output_ajax_tab (response, branch, **kw)
-    elif query.get('ajax', None) == 'domain':
-        output_ajax_domain (response, branch, **kw)
-    elif query.get('ajax', None) == 'revfiles':
-        output_ajax_revfiles (response, branch, **kw)
-    else:
-        pass
-        #output_module (response, branch, **kw)
 
 synopsis_sort = -1
 def synopsis ():
@@ -184,53 +158,6 @@ def synopsis ():
         else:
             bl.add_link (module)
     return box
-
-
-
-
-def output_ajax_tab (response, module, **kw):
-    query = kw.get ('query', {})
-    tab = query.get('tab', None)
-    if tab == 'components':
-        response.set_contents (get_components_tab (module, **kw))
-    elif tab == 'translations':
-        response.set_contents (get_translations_tab (module, **kw))
-
-
-def output_ajax_revfiles (response, module, **kw):
-    if module.scm_server.endswith ('/svn/'):
-        base = module.scm_server[:-4] + 'viewvc/'
-        colon = base.find (':')
-        if colon < 0:
-            response.http_status = 404
-            return
-        if base[:colon] != 'http':
-            base = 'http' + base[colon:]
-        if module.scm_path != None:
-            base += module.scm_path
-        elif module.scm_branch == 'trunk':
-            base += module.scm_module + '/trunk/'
-        else:
-            base += module.scm_module + '/branches/' + module.scm_branch + '/'
-
-    query = kw.get ('query', {})
-    revid = query.get('revid', None)
-    revision = db.Revision.get (revid)
-    files = db.RevisionFile.select (revision=revision)
-
-    mlink = html.MenuLink (revision.revision, menu_only=True)
-    response.set_contents (mlink)
-    for file in files:
-        url = base + file.filename
-        url += '?r1=%s&r2=%s' % (file.prevrev, file.filerev)
-        mlink.add_link (url, file.filename)
-
-
-
-
-
-
-
 
 def get_developers_box (module):
     box = html.SidebarBox (title=utils.gettext ('Developers'))
