@@ -23,6 +23,7 @@ import re
 from pulse import applications, core, db, html, scm, utils
 
 class OverviewTab (applications.TabProvider):
+    application_id = 'overview'
     tab_group = applications.TabProvider.FIRST_TAB
 
     def __init__ (self, handler):
@@ -242,4 +243,4 @@ class OverviewTab (applications.TabProvider):
 
 def initialize (handler):
     if handler.__class__.__name__ == 'ModuleHandler':
-        handler.register_application ('overview', OverviewTab)
+        handler.register_application (OverviewTab)

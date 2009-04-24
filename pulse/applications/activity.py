@@ -21,6 +21,7 @@
 from pulse import applications, core, db, html, utils
 
 class ActivityTab (applications.TabProvider):
+    application_id = 'activity'
     tab_group = applications.TabProvider.CORE_TAB
 
     def __init__ (self, handler):
@@ -134,4 +135,4 @@ class ActivityTab (applications.TabProvider):
 
 def initialize (handler):
     if handler.__class__.__name__ == 'ModuleHandler':
-        handler.register_application ('activity', ActivityTab)
+        handler.register_application (ActivityTab)

@@ -38,15 +38,22 @@ class RequestHandler (object):
         self.request = request
         self.response = response
         self.record = None
-        self.applications = {}
+        self._applications = {}
         self.initialize ()
 
     def initialize (self):
         raise NotImplementedError ('%s does not provide the initialize method.'
                                    % self.__class__.__name__)
 
-    def register_application (self, name, application):
-        self.applications[name] = application (self)
+    def register_application (self, application):
+        self._applications[application.application_id] = application (self)
+
+    def get_application (self, name):
+        return self._applications.get (name)
+
+    @property
+    def applications (self):
+        return self._applications.values()
 
     def handle_request (self):
         raise NotImplementedError ('%s does not provide the handle_request method.'
@@ -54,6 +61,11 @@ class RequestHandler (object):
 
 
 class Application (object):
+    @property
+    def application_id (self):
+        raise NotImplementedError ('%s does not provide an application_id.'
+                                   % self.__class__.__name__)
+
     def __init__ (self, handler):
         self.handler = handler
 

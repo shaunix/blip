@@ -24,6 +24,7 @@ import urllib
 from pulse import applications, core, db, html, utils
 
 class TranslationsTab (applications.TabProvider):
+    application_id = 'translations'
     tab_group = applications.TabProvider.CORE_TAB
 
     def __init__ (self, handler):
@@ -156,4 +157,6 @@ class TranslationsTab (applications.TabProvider):
 
 def initialize (handler):
     if handler.__class__.__name__ == 'ModuleHandler':
-        handler.register_application ('translations', TranslationsTab)
+        domains = handler.record.select_children (u'Domain')
+        if domains.count() > 0:
+            handler.register_application (TranslationsTab)
