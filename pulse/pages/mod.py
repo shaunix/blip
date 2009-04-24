@@ -229,44 +229,6 @@ def output_ajax_revfiles (response, module, **kw):
 
 
 
-def get_components_tab (module, **kw):
-    columns = html.ColumnBox (2)
-
-    # Programs and Libraries
-    for branchtype, title in (
-        (u'Application', utils.gettext ('Applications')),
-        (u'Capplet', utils.gettext ('Capplets')),
-        (u'Applet', utils.gettext ('Applets')),
-        (u'Library', utils.gettext ('Libraries')) ):
-
-        box = get_component_info_box (module, branchtype, title)
-        if box != None:
-            columns.add_to_column (0, box)
-
-    # Documents
-    box = html.InfoBox (utils.gettext ('Documents'))
-    columns.add_to_column (1, box)
-    docs = module.select_children (u'Document')
-    docs = utils.attrsorted (list(docs), 'title')
-    if len(docs) > 0:
-        if len(docs) > 1:
-            box.add_sort_link ('title', utils.gettext ('title'), 1)
-            box.add_sort_link ('status', utils.gettext ('status'), 0)
-            box.add_sort_link ('translations', utils.gettext ('translations'), 0)
-        for doc in docs:
-            lbox = box.add_link_box (doc)
-            lbox.add_fact (utils.gettext ('status'),
-                           html.StatusSpan (doc.data.get('status')))
-            res = doc.select_children (u'Translation')
-            span = html.Span (str(res.count()))
-            span.add_class ('translations')
-            lbox.add_fact (utils.gettext ('translations'), span)
-    else:
-        box.add_content (html.AdmonBox (html.AdmonBox.warning,
-                                        utils.gettext ('No documents') ))
-
-    return columns
-
 
 
 
@@ -288,18 +250,3 @@ def get_developers_box (module):
     return box
 
 
-def get_component_info_box (module, branchtype, title):
-    objs = module.select_children (branchtype)
-    objs = utils.attrsorted (list(objs), 'title')
-    if len(objs) > 0:
-        box = html.InfoBox (title)
-        for obj in objs:
-            lbox = box.add_link_box (obj)
-            doc = db.Documentation.get_related (subj=obj)
-            try:
-                doc = doc[0]
-                lbox.add_fact (utils.gettext ('docs'), doc.pred)
-            except IndexError:
-                pass
-        return box
-    return None
