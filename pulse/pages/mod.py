@@ -248,7 +248,7 @@ def output_doap_file (response, module, filename, **kw):
         content.add_text_content ('      <foaf:name>%s</foaf:name>\n'
                                   % pulse.response.esc (rel.pred.title))
         if rel.pred.email is not None:
-            content.add_text_content ('      <foaf:mbox rdf:resource="%s" />\n'
+            content.add_text_content ('      <foaf:mbox rdf:resource="mailto:%s" />\n'
                                       % pulse.response.esc (rel.pred.email))
         match = regexp.match (rel.pred.ident)
         if match:
