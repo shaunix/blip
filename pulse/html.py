@@ -517,8 +517,6 @@ class Page (HtmlWidget, ContentComponent, SublinksComponent, FactsComponent):
         p (fd, '</script>')
         p (fd, '<script language="javascript" type="text/javascript" src="%sjquery.js"></script>',
            pulse.config.data_root)
-        p (fd, '<script language="javascript" type="text/javascript" src="%sjquery.dropshadow.js"></script>',
-           pulse.config.data_root)
         p (fd, '<script language="javascript" type="text/javascript" src="%spulse.js"></script>',
            pulse.config.data_root)
         p (fd, '</head><body>')

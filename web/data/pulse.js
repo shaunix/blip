@@ -188,7 +188,6 @@ $.fn.pulse_init = function () {
   /** Info Boxes **/
   this.find ('div.info').each (function () {
     var div = $(this);
-    div.dropShadow ({left: 1, top: 1, blur: 2, color: '#888a85'});
     div.children ('div.infotitle').click (function () {
     var active = div.hasClass ('infoactive');
     $('div.info').each (function () {
