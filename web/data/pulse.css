@@ -13,16 +13,34 @@ body {
 
 #header {
   background: #555753 url(header-bg.png) 0 0 repeat-x;
-  height: 56px;
+  height: 36px;
   padding: 0 0 0 2.4em;
 }
 #header table {
   width: 100%;
 }
+#header table td {
+  vertical-align: bottom;
+  padding-top: 6px;
+  padding-bottom: 2px;
+}
+#header a {
+  color: white;
+}
+#header a:hover { text-decoration: none; }
+td.headerpulse img {
+  float: left;
+  margin-right: 6px;
+}
+
+td.headerpulse a {
+  font-weight: bold;
+  font-variant: small-caps;
+  font-size: 1.2em;
+}
 td.headerlinks {
   text-align: right;
-  vertical-align: bottom;
-  padding: 6px 1.2em 6px 0;
+  padding-right: 1.2em;
   color: #888a85;
 }
 td.headerlinks a { color: white; }

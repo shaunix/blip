@@ -522,8 +522,8 @@ class Page (HtmlWidget, ContentComponent, SublinksComponent, FactsComponent):
         p (fd, '</head><body>')
 
         p (fd, '<div id="header"><table><tr>')
-        p (fd, '<td><a href="%s"><img src="%s" alt="Pulse"></a></td>',
-           (pulse.config.web_root, pulse.config.data_root + 'pulse-logo.png'))
+        p (fd, '<td class="headerpulse"><a href="%s" id="headerlink"><img src="%s" alt="Pulse">Pulse</a></td>',
+           (pulse.config.web_root, pulse.config.data_root + 'pulse-logo-small.png'))
         p (fd, '<td class="headerlinks">')
         if self.http_response.http_account == None:
             p (fd, '<a href="%saccount/login">%s</a>',
