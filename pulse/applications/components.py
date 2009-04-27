@@ -94,4 +94,8 @@ class ComponentsTab (applications.TabProvider):
 
 def initialize (handler):
     if handler.__class__.__name__ == 'ModuleHandler':
-        handler.register_application (ComponentsTab)
+        handler.register_application (ComponentsTab (handler))
+
+def initialize_application (handler, application):
+    if application == 'components':
+        initialize (handler)

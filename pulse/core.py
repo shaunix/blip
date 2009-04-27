@@ -46,7 +46,7 @@ class RequestHandler (object):
                                    % self.__class__.__name__)
 
     def register_application (self, application):
-        self._applications[application.application_id] = application (self)
+        self._applications[application.application_id] = application
 
     def get_application (self, name):
         return self._applications.get (name)

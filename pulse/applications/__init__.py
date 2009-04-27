@@ -29,6 +29,7 @@ class TabProvider (core.Application):
     EXTRA_TAB = 2
 
     tab_group = 2
+    tab_sort = 0
 
     def __init__ (self, handler):
         super (TabProvider, self).__init__ (handler)

@@ -79,13 +79,18 @@ def main ():
             mod = utils.import_ ('pulse.pages.' + request.path[0])
             handler = mod.get_request_handler (request, response)
             import pulse.applications
+            appreq = request.query.get ('application')
             for app in pulse.applications.__all__:
                 app = pulse.utils.import_ ('pulse.applications.' + app)
-                if hasattr (app, 'initialize'):
-                    app.initialize (handler)
-            app = request.query.get ('application')
-            if app is not None:
-                app = handler.get_application (app)
+                if appreq is None:
+                    if hasattr (app, 'initialize'):
+                        app.initialize (handler)
+                else:
+                    if hasattr (app, 'initialize_application'):
+                        app.initialize_application (handler, appreq)
+            app = None
+            if appreq is not None:
+                app = handler.get_application (appreq)
             if app is not None:
                 app.handle_request ()
             else:

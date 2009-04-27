@@ -159,4 +159,9 @@ def initialize (handler):
     if handler.__class__.__name__ == 'ModuleHandler':
         domains = handler.record.select_children (u'Domain')
         if domains.count() > 0:
-            handler.register_application (TranslationsTab)
+            handler.register_application (TranslationsTab (handler))
+
+def initialize_application (handler, application):
+    if application == 'translations':
+        if handler.__class__.__name__ == 'ModuleHandler':
+            handler.register_application (TranslationsTab (handler))

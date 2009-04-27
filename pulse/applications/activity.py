@@ -168,4 +168,8 @@ class ActivityTab (applications.TabProvider):
 
 def initialize (handler):
     if handler.__class__.__name__ == 'ModuleHandler':
-        handler.register_application (ActivityTab)
+        handler.register_application (ActivityTab (handler))
+
+def initialize_application (handler, application):
+    if application == 'activity':
+        initialize (handler)

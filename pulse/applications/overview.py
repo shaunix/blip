@@ -285,4 +285,8 @@ class OverviewTab (applications.TabProvider):
 
 def initialize (handler):
     if handler.__class__.__name__ == 'ModuleHandler':
-        handler.register_application (OverviewTab)
+        handler.register_application (OverviewTab (handler))
+
+def initialize_application (handler, application):
+    if application == 'overview':
+        initialize (handler)
