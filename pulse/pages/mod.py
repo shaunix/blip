@@ -64,7 +64,7 @@ class ModuleHandler (core.RequestHandler):
         module = self.record
         branchable = module.branchable
 
-        page = html.Page (module)
+        page = html.Page (self)
         self.response.set_contents (page)
 
         branches = utils.attrsorted (list(db.Branch.select (branchable=module.branchable)),
@@ -78,13 +78,6 @@ class ModuleHandler (core.RequestHandler):
 
         if module.data.has_key ('screenshot'):
             page.add_screenshot (module.data['screenshot'])
-
-        tabs = []
-        tabs = [app for app in self.applications if isinstance (app, applications.TabProvider)]
-        for tab in utils.attrsorted (tabs, 'tab_group', 'application_id'):
-            page.add_tab (tab.application_id, tab.get_tab_title ())
-            if tab.tab_group == applications.TabProvider.FIRST_TAB:
-                page.add_to_tab (tab.application_id, tab.get_tab())
 
 
 def get_request_handler (request, response):

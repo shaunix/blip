@@ -34,6 +34,7 @@ import cgi
 import re
 import sys
 
+import pulse.applications
 import pulse.config
 import pulse.core
 import pulse.db
@@ -439,22 +440,42 @@ class Page (HtmlWidget, ContentComponent, SublinksComponent, FactsComponent):
     def __init__ (self, *args, **kw):
         super (Page, self).__init__ (**kw)
         self._ident = None
+        self._title = None
+        self._desc = None
+        self._icon = None
+        self._url = None
+        handler = None
+        record = None
         if len(args) > 0 and isinstance (args[0], pulse.db.PulseRecord):
-            self._title = args[0].title
-            self._desc = args[0].localized_desc
-            self._icon = args[0].icon_url
-            self._url = args[0].pulse_url
-            if args[0].watchable:
-                self._ident = args[0].ident
-        else:
-            self._title = kw.get ('title')
-            self._desc = kw.get ('desc')
-            self._icon = kw.get ('icon')
-            self._url = kw.get ('url')
+            record = args[0]
+        elif len(args) > 0 and isinstance (args[0], pulse.core.RequestHandler):
+            handler = args[0]
+            if getattr (handler, 'record', None) is not None:
+                record = args[0].record
+        if record is not None:
+            self._title = record.title
+            self._desc = record.localized_desc
+            self._icon = record.icon_url
+            self._url = record.pulse_url
+            if record.watchable:
+                self._ident = record.ident
+        self._title = kw.get ('title') or self._title
+        self._desc = kw.get ('desc') or self._desc
+        self._icon = kw.get ('icon') or self._icon
+        self._url = kw.get ('url') or self._url
         self._screenshot_file = None
         self._sidebar = None
         self._tabs = []
         self._panes = {}
+
+        if handler is not None:
+            tabs = []
+            tabs = [app for app in handler.applications
+                    if isinstance (app, pulse.applications.TabProvider)]
+            for tab in pulse.utils.attrsorted (tabs, 'tab_group', 'tab_sort', 'application_id'):
+                self.add_tab (tab.application_id, tab.get_tab_title ())
+                if tab.tab_group == pulse.applications.TabProvider.FIRST_TAB:
+                    self.add_to_tab (tab.application_id, tab.get_tab())
 
 
     def set_title (self, title):

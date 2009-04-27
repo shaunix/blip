@@ -71,19 +71,12 @@ class SetHandler (core.RequestHandler):
 
     def get_set_page (self):
         """Output information about a release set"""
-        page = html.Page (self.record)
+        page = html.Page (self)
 
         page.set_sublinks_divider (html.TRIANGLE)
         page.add_sublink (config.web_root + 'set', utils.gettext ('Sets'))
         for superset in SetHandler.get_supersets (self.record):
             page.add_sublink (superset.pulse_url, superset.title)
-
-        tabs = []
-        tabs = [app for app in self.applications if isinstance (app, applications.TabProvider)]
-        for tab in utils.attrsorted (tabs, 'tab_group', 'tab_sort', 'application_id'):
-            page.add_tab (tab.application_id, tab.get_tab_title ())
-            if tab.tab_group == applications.TabProvider.FIRST_TAB:
-                page.add_to_tab (tab.application_id, tab.get_tab())
 
         # Schedule
         schedule = self.record.data.get ('schedule', [])
