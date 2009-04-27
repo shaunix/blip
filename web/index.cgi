@@ -86,6 +86,7 @@ def main ():
             app = request.query.get ('application')
             if app is not None:
                 app = handler.get_application (app)
+            if app is not None:
                 app.handle_request ()
             else:
                 handler.handle_request ()
