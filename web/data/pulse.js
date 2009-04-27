@@ -258,7 +258,7 @@ $.fn.pulse_init = function () {
     });
     mask.hide();
     mask.appendTo(body);
-    mask.fadeIn('fast');
+    mask.show();
     var link = $(this);
     var img = new Image();
     img.src = link.attr('href');
@@ -266,13 +266,11 @@ $.fn.pulse_init = function () {
       var zoomdiv = $('<div class="zoom"><img src="' + img.src + '"></div>');
       zoomdiv.appendTo('body');
       zoomdiv.css({
-        top: link.offset().top,
+        top: ((window.innerHeight - zoomdiv.height()) / 2),
         left: ((window.innerWidth - zoomdiv.width()) / 2) - 22,
         zIndex: 20
       });
-      zoomdiv.fadeIn('fast', function () {
-        scroll(zoomdiv, 40);
-      });
+      zoomdiv.show();
     }
     if (img.complete) {
       open(link, img);

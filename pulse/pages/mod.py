@@ -86,30 +86,6 @@ class ModuleHandler (core.RequestHandler):
             if tab.tab_group == applications.TabProvider.FIRST_TAB:
                 page.add_to_tab (tab.application_id, tab.get_tab())
 
-        # Developers
-        box = get_developers_box (module)
-        page.add_sidebar_content (box)
-
-        # Dependencies
-        deps = db.ModuleDependency.get_related (subj=module)
-        deps = utils.attrsorted (list(deps), ['pred', 'scm_module'])
-        if len(deps) > 0:
-            box = html.SidebarBox (utils.gettext ('Dependencies'))
-            page.add_sidebar_content (box)
-            d1 = html.Div()
-            d2 = html.Div()
-            box.add_content (d1)
-            box.add_content (html.Rule())
-            box.add_content (d2)
-            for dep in deps:
-                div = html.Div ()
-                link = html.Link (dep.pred.pulse_url, dep.pred.scm_module)
-                div.add_content (link)
-                if dep.direct:
-                    d1.add_content (div)
-                else:
-                    d2.add_content (div)
-
 
 def get_request_handler (request, response):
     return ModuleHandler (request, response)
@@ -158,22 +134,4 @@ def synopsis ():
         else:
             bl.add_link (module)
     return box
-
-def get_developers_box (module):
-    box = html.SidebarBox (title=utils.gettext ('Developers'))
-    rels = db.ModuleEntity.get_related (subj=module)
-    if len(rels) > 0:
-        people = {}
-        for rel in rels:
-            people[rel.pred] = rel
-        for person in utils.attrsorted (people.keys(), 'title'):
-            lbox = box.add_link_box (person)
-            rel = people[person]
-            if rel.maintainer:
-                lbox.add_badge ('maintainer')
-    else:
-        box.add_content (html.AdmonBox (html.AdmonBox.warning,
-                                        utils.gettext ('No developers') ))
-    return box
-
 

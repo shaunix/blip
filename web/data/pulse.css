@@ -84,7 +84,7 @@ h1 img { vertical-align: middle; }
 .pane { display: none; }
 
 #sidebar {
-  padding-top: 1em;
+  margin-top: -1px;
   position: absolute;
   right: 0;
   background-color: #f7f7f5;

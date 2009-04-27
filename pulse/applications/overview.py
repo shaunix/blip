@@ -44,13 +44,13 @@ class OverviewTab (applications.TabProvider):
             self.handler.response.set_contents (contents)
 
     def get_tab (self):
-        div = html.PaddingBox()
+        tab = html.PaddingBox()
 
         if self.handler.record.error != None:
-            div.add_content (html.AdmonBox (html.AdmonBox.error, self.handler.record.error))
+            tab.add_content (html.AdmonBox (html.AdmonBox.error, self.handler.record.error))
 
         facts = html.FactsTable()
-        div.add_content (facts)
+        tab.add_content (facts)
 
         sep = False
         try:
@@ -100,14 +100,56 @@ class OverviewTab (applications.TabProvider):
                             self.handler.record.updated.strftime('%Y-%m-%d %T'))
 
         doapdiv = html.Div ()
-        div.add_content (doapdiv)
+        tab.add_content (doapdiv)
         doaplink = html.Link (
             self.handler.record.pulse_url + '?application=overview&file=doap',
             'Download DOAP template file',
             icon='download')
         doapdiv.add_content (doaplink)
 
-        return div
+        # Developers
+        box = self.get_developers_box ()
+        tab.add_content (box)
+
+        # Dependencies
+        deps = db.ModuleDependency.get_related (subj=self.handler.record)
+        deps = utils.attrsorted (list(deps), ['pred', 'scm_module'])
+        if len(deps) > 0:
+            box = html.ContainerBox (utils.gettext ('Dependencies'))
+            tab.add_content (box)
+            d1 = html.Div()
+            d2 = html.Div()
+            box.add_content (d1)
+            box.add_content (html.Rule())
+            box.add_content (d2)
+            for dep in deps:
+                depdiv = html.Div ()
+                link = html.Link (dep.pred.pulse_url, dep.pred.scm_module)
+                depdiv.add_content (link)
+                if dep.direct:
+                    d1.add_content (depdiv)
+                else:
+                    d2.add_content (depdiv)
+        return tab
+
+
+    def get_developers_box (self):
+        box = html.ContainerBox (utils.gettext ('Developers'))
+        rels = db.ModuleEntity.get_related (subj=self.handler.record)
+        if len(rels) > 0:
+            people = {}
+            for rel in rels:
+                people[rel.pred] = rel
+            for person in utils.attrsorted (people.keys(), 'title'):
+                lbox = box.add_link_box (person)
+                rel = people[person]
+                if rel.maintainer:
+                    lbox.add_badge ('maintainer')
+        else:
+            box.add_content (html.AdmonBox (html.AdmonBox.warning,
+                                            utils.gettext ('No developers') ))
+        return box
+
 
     def handle_doap_request (self):
         module = self.handler.record

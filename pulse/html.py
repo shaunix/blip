@@ -560,6 +560,14 @@ class Page (HtmlWidget, ContentComponent, SublinksComponent, FactsComponent):
 
         p (fd, '<div id="sidebar">')
 
+        if len(self._tabs) > 0:
+            p (fd, '<ul id="tabs">')
+            for tabid, title in self._tabs:
+                title = esc (title).replace(' ', '&nbsp;')
+                p (fd, '<li class="tab" id="tab-%s">', tabid, False)
+                p (fd, '<a href="javascript:tab(\'%s\')"><div>' + title + '</div></a></li>', tabid)
+            p (fd, '</ul>')
+
         if self._screenshot_file != None:
             p (fd, '<div class="screenshot">', None, False)
             url = self._screenshot_file.get_pulse_url ()
@@ -569,14 +577,6 @@ class Page (HtmlWidget, ContentComponent, SublinksComponent, FactsComponent):
                 self._screenshot_file.data['thumb_width'],
                 self._screenshot_file.data['thumb_height']))
             p (fd, '</a></div>')
-
-        if len(self._tabs) > 0:
-            p (fd, '<ul id="tabs">')
-            for tabid, title in self._tabs:
-                title = esc (title).replace(' ', '&nbsp;')
-                p (fd, '<li class="tab" id="tab-%s">', tabid, False)
-                p (fd, '<a href="javascript:tab(\'%s\')"><div>' + title + '</div></a></li>', tabid)
-            p (fd, '</ul>')
 
         if self._sidebar is not None:
             self._sidebar.output (fd=fd)
