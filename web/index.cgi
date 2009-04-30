@@ -54,47 +54,27 @@ def main ():
 
     try:
         if len (request.path) == 0:
-            # FIXME
-            page = html.Page ()
-            page.set_title (utils.gettext ('Pulse'))
-            cont = html.PaddingBox ()
-            page.add_content (cont)
-            types = pages.__all__
-            mods = [utils.import_ ('pulse.pages.' + t) for t in types]
-            for mod in mods:
-                if not hasattr(mod, 'synopsis_sort'):
-                    setattr (mod, 'synopsis_sort', 0)
-            for mod in sorted (mods,
-                               cmp=(lambda x, y:
-                                    cmp(x.synopsis_sort, y.synopsis_sort) or
-                                    cmp(x.__name__, y.__name__))):
-                if hasattr (mod, 'synopsis'):
-                    box = mod.synopsis ()
-                    if isinstance (box, html.SidebarBox):
-                        page.add_sidebar_content (box)
-                    else:
-                        cont.add_content (box)
-            response.set_contents (page)
+            mod = utils.import_ ('pulse.pages.__index__')
         else:
             mod = utils.import_ ('pulse.pages.' + request.path[0])
-            handler = mod.get_request_handler (request, response)
-            import pulse.applications
-            appreq = request.query.get ('application')
-            for app in pulse.applications.__all__:
-                app = pulse.utils.import_ ('pulse.applications.' + app)
-                if appreq is None:
-                    if hasattr (app, 'initialize'):
-                        app.initialize (handler)
-                else:
-                    if hasattr (app, 'initialize_application'):
-                        app.initialize_application (handler, appreq)
-            app = None
-            if appreq is not None:
-                app = handler.get_application (appreq)
-            if app is not None:
-                app.handle_request ()
+        handler = mod.get_request_handler (request, response)
+        import pulse.applications
+        appreq = request.query.get ('application')
+        for app in pulse.applications.__all__:
+            app = pulse.utils.import_ ('pulse.applications.' + app)
+            if appreq is None:
+                if hasattr (app, 'initialize'):
+                    app.initialize (handler)
             else:
-                handler.handle_request ()
+                if hasattr (app, 'initialize_application'):
+                    app.initialize_application (handler, appreq)
+        app = None
+        if appreq is not None:
+            app = handler.get_application (appreq)
+        if app is not None:
+            app.handle_request ()
+        else:
+            handler.handle_request ()
         if not response.has_contents ():
             raise utils.PulseException ('No response contents')
     except Exception, err:
