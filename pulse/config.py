@@ -29,8 +29,10 @@ import os
 ## Directories for local stuff
 # These are the local directories where stuff can be found.
 # You probably only need to change base_dir.
+p = os.path
+base_dir = p.dirname(p.dirname(p.abspath(__file__)))
+del p
 
-base_dir = '/home/shaunm/Projects/pulse/'
 
 # The directory containing input files that are stored in git with Pulse
 input_dir = os.path.join (base_dir, 'input')
@@ -107,7 +109,7 @@ l10n_root = files_root + 'l10n/'
 ################################################################################
 ## Database settings
 
-database = 'sqlite:/home/shaunm/Projects/pulse/scratch/pulse.db'
+database = 'sqlite:%s/pulse.db' % scratch_dir
 
 # Larger values will result in fewer queries and faster crawl
 # times, but will use more memory.  Note that, unless you set

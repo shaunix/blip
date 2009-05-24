@@ -4,9 +4,7 @@ on Pulse, then Pulse is probably working on you.
 
 Here's some basic instructions for running Pulse on your machine:
 
-*) Install Django.  Django is a complete web-development framework for
-   Python.  We abuse it slightly and only use its ORM, because it's the
-   best Python ORM I've seen.
+*) Install the python ORM "storm".
 
 *) To generate charts and such, you need to have pycairo installed.
 
