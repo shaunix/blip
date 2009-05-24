@@ -172,13 +172,16 @@ $.fn.pulse_init = function () {
     div.append (thr);
     thr.start ();
 
-    $.get(href, {}, function (data) {
-      var cont = $(data).css('display', 'none');
-      cont.insertAfter(div);
-      thr.stop ();
-      div.remove ();
-      cont.pulse_init ();
-      cont.slideDown('fast');
+    $.ajax({
+      url: href, 
+      complete: function (req, status) {
+        var cont = $(req.responseText).css('display', 'none');
+        cont.insertAfter(div);
+        thr.stop ();
+        div.remove ();
+        cont.pulse_init ();
+        cont.slideDown('fast');
+      }
     });
   });
 
@@ -255,7 +258,7 @@ $.fn.pulse_init = function () {
     });
     mask.hide();
     mask.appendTo(body);
-    mask.fadeIn('fast');
+    mask.show();
     var link = $(this);
     var img = new Image();
     img.src = link.attr('href');
@@ -263,13 +266,11 @@ $.fn.pulse_init = function () {
       var zoomdiv = $('<div class="zoom"><img src="' + img.src + '"></div>');
       zoomdiv.appendTo('body');
       zoomdiv.css({
-        top: link.offset().top,
+        top: ((window.innerHeight - zoomdiv.height()) / 2),
         left: ((window.innerWidth - zoomdiv.width()) / 2) - 22,
         zIndex: 20
       });
-      zoomdiv.fadeIn('fast', function () {
-        scroll(zoomdiv, 40);
-      });
+      zoomdiv.show();
     }
     if (img.complete) {
       open(link, img);
@@ -435,24 +436,31 @@ $(document).ready (function () { $('html').pulse_init(); });
 function tab (tabid) {
   var tabbar = $('#tabs');
   var tabs = tabbar.children ('.tab');
+  var curhash = '';
+  if (location.hash != '')
+    curhash = location.hash.substring(1);
 
   if (tabid == undefined) {
-    tabid = location.hash;
-    if (tabid == '' || tabid == '#') {
-      tabid = tabs.attr('id');
-      tabid = tabid.substring(4);
-    } else {
-      tabid = tabid.substring(1);
-    }
+    if (curhash == '')
+      tabid = tabbar[0].default_tabid;
+    else
+      tabid = curhash;
   }
-  else
-    location.hash = tabid;
+  else {
+    if (tabid == curhash || (curhash == '' && tabid == tabbar[0].default_tabid)) {
+      if (tabbar[0].current_tabid != undefined) {
+        oldpane = $('#pane-' + tabbar[0].current_tabid);
+        oldpane.remove ();
+      }
+    }
+    location.hash = '#' + tabid;
+  }
 
   var oldpane = undefined;
   if (tabbar[0].current_tabid != undefined)
     oldpane = $('#pane-' + tabbar[0].current_tabid);
   if (oldpane != undefined)
-    oldpane.hide ();
+    oldpane.hide();
 
   tabs.removeClass ('tabactive');
   var tab = $('#tab-' + tabid);
@@ -485,17 +493,10 @@ function tab (tabid) {
     pane.show ();
     thr.start ();
     tabbar[0].loading_tabid = tabid;
-    var href = pulse_url + '?ajax=tab&tab=' + tabid;
-    var func = function (data, status) {
+    var href = pulse_url + '?application=' + tabid + '&action=tab';
+    var func = function (req, status) {
       var pane = $('#' + paneid);
-      if (status == 'success')
-        pane.html ($(data));
-      else
-        /* FIXME: sucky.  Would rather send a Fragment back from index.cgi
-         * with an admon box or some such, but I can't get responseText
-         * from an XMLHttpRequest on error.
-         */
-        pane.text('There was a problem processing the request.');
+      pane.html ($(req.responseText));
       pane.pulse_init ();
       pane.removeClass ('paneloading');
       if (tabid == tabbar[0].current_tabid) {
@@ -505,7 +506,7 @@ function tab (tabid) {
         pane.show ();
       }
     };
-    $.ajax({url: href, success: func, error: func});
+    $.ajax({url: href, complete: func});
   }
 }
 
@@ -651,7 +652,7 @@ function cal_next (cal) {
 /******************************************************************************/
 /** Graph slides **/
 
-function slide (id, dir) {
+function slide (app, id, dir) {
   var div = $('#graph-' + id);
   if (div[0].timer != undefined) {
     return;
@@ -668,10 +669,16 @@ function slide (id, dir) {
   var newsrc = newdata.src;
   var newcmt = $('#comments-' + id + '-' + newdata.num);
   if (newcmt.length == 0) {
-    var filename = newdata.filename;
-    var graphurl = pulse_url + '?ajax=graphmap&id=' + id + '&num=' + newdata.num + '&filename=' + filename;
-    $.get(graphurl, function (data) {
-      div.append(data);
+    $.ajax ({
+      type: 'GET',
+      url: pulse_url,
+      data: {'application': app, 'action': 'graphmap', 'id': id,
+             'num' : newdata.num, 'filename': newdata.filename},
+      complete: function (req, status) {
+        if (status == 'success') {
+          div.append ($(req.responseText));
+        }
+      }
     });
   }
 
@@ -784,11 +791,16 @@ function replace (id, url) {
   thr.css('width', el.width() / 2);
   el.append (thr);
   thr.start ();
-  $.get(url, function (data) {
-    el.after ($(data));
-    thr.stop ();
-    el.remove ();
-    par.unshade();
+  $.ajax ({
+    type: 'GET',
+    url: url,
+    complete: function (req, status) {
+      data = $(req.responseText);
+      data.attr ('id', el.attr ('id'));
+      el.after (data);
+      el.remove ();
+      par.unshade ();
+    }
   });
 }
 

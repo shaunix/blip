@@ -34,18 +34,21 @@ import cgi
 import re
 import sys
 
+import pulse.applications
 import pulse.config
+import pulse.core
 import pulse.db
-from pulse.response import *
 import pulse.utils
 
+p = pulse.core.p
+esc = pulse.core.esc
 
 SPACE = ' '
 BULLET = u' • '
 TRIANGLE = u' ‣ '
 
 
-class HtmlWidget (HttpWidget):
+class HtmlWidget (pulse.core.HttpWidget):
     """
     Base class for all HTML widgets.
     """
@@ -87,7 +90,7 @@ class HtmlWidget (HttpWidget):
         pass
 
 
-class Component (HttpWidget):
+class Component (pulse.core.HttpWidget):
     """
     Base class for all components.
 
@@ -437,25 +440,51 @@ class Page (HtmlWidget, ContentComponent, SublinksComponent, FactsComponent):
     def __init__ (self, *args, **kw):
         super (Page, self).__init__ (**kw)
         self._ident = None
+        self._title = None
+        self._desc = None
+        self._icon = None
+        self._url = None
+        handler = None
+        record = None
         if len(args) > 0 and isinstance (args[0], pulse.db.PulseRecord):
-            self._title = args[0].title
-            self._icon = args[0].icon_url
-            self._url = args[0].pulse_url
-            if args[0].watchable:
-                self._ident = args[0].ident
-        else:
-            self._title = kw.get ('title')
-            self._icon = kw.get ('icon')
-            self._url = kw.get ('url')
+            record = args[0]
+        elif len(args) > 0 and isinstance (args[0], pulse.core.RequestHandler):
+            handler = args[0]
+            if getattr (handler, 'record', None) is not None:
+                record = args[0].record
+        if record is not None:
+            self._title = record.title
+            self._desc = record.localized_desc
+            self._icon = record.icon_url
+            self._url = record.pulse_url
+            if record.watchable:
+                self._ident = record.ident
+        self._title = kw.get ('title') or self._title
+        self._desc = kw.get ('desc') or self._desc
+        self._icon = kw.get ('icon') or self._icon
+        self._url = kw.get ('url') or self._url
         self._screenshot_file = None
         self._sidebar = None
         self._tabs = []
         self._panes = {}
 
+        if handler is not None:
+            tabs = []
+            tabs = [app for app in handler.applications
+                    if isinstance (app, pulse.applications.TabProvider)]
+            for tab in pulse.utils.attrsorted (tabs, 'tab_group', 'tab_sort', 'application_id'):
+                self.add_tab (tab.application_id, tab.get_tab_title ())
+                if tab.tab_group == pulse.applications.TabProvider.FIRST_TAB:
+                    self.add_to_tab (tab.application_id, tab.get_tab())
+
 
     def set_title (self, title):
         """Set the title of the page."""
         self._title = title
+
+    def set_desc (self, desc):
+        """Set the description of the page."""
+        self._desc = desc
 
     def set_icon (self, icon):
         """Set the URL of an icon for the page."""
@@ -489,7 +518,7 @@ class Page (HtmlWidget, ContentComponent, SublinksComponent, FactsComponent):
             pass
 
     def add_sidebar_content (self, content):
-        if self._sidebar == None:
+        if self._sidebar is None:
             self._sidebar = ContentComponent ()
         self._sidebar.add_content (content)
 
@@ -513,13 +542,9 @@ class Page (HtmlWidget, ContentComponent, SublinksComponent, FactsComponent):
            pulse.config.data_root)
         p (fd, '</head><body>')
 
-        sidebarred = self._sidebar != None or self._screenshot_file != None
-        if sidebarred:
-            p (fd, '<div class="sidebarred">')
-
         p (fd, '<div id="header"><table><tr>')
-        p (fd, '<td><a href="%s"><img src="%s" alt="Pulse"></a></td>',
-           (pulse.config.web_root, pulse.config.data_root + 'pulse-logo.png'))
+        p (fd, '<td class="headerpulse"><a href="%s" id="headerlink"><img src="%s" alt="Pulse">Pulse</a></td>',
+           (pulse.config.web_root, pulse.config.data_root + 'pulse-logo-small.png'))
         p (fd, '<td class="headerlinks">')
         if self.http_response.http_account == None:
             p (fd, '<a href="%saccount/login">%s</a>',
@@ -535,43 +560,48 @@ class Page (HtmlWidget, ContentComponent, SublinksComponent, FactsComponent):
                (pulse.config.web_root, pulse.utils.gettext ('Log out')))
         p (fd, '</td></tr></table></div>')
 
-        p (fd, '<div id="subheader">', None, False)
+        p (fd, '<div id="subheader"><div id="subheaderbar">', None, False)
         if self.http_response.http_account != None and self._ident != None:
             # FIXME STORM
             if not pulse.db.AccountWatch.has_watch (self.http_response.http_account, self._ident):
                 p (fd, '<div class="watch"><a href="javascript:watch(\'%s\')">%s</a></div>',
                    (self._ident, pulse.utils.gettext ('Watch')), False)
         p (fd, '<h1>', None, False)
-        if self._icon != None:
-            p (fd, '<img class="icon" src="%s" alt="%s"> ', (self._icon, self._title), False)
-        p (fd, None, self._title)
+        if self._icon is not None:
+            p (fd, '<table><tr><td><img class="icon" src="%s" alt="%s"></td><td>',
+               (self._icon, self._title), False)
+        p (fd, '<div class="title">%s</div>', self._title)
+        if self._desc is not None:
+            p (fd, '<div class="desc">%s</div>', self._desc)
+        if self._icon is not None:
+            p (fd, '</td></tr></table>', None, False)
         p (fd, '</h1>')
         SublinksComponent.output (self, fd=fd)
+        p (fd, '</div></div>')
+
+        p (fd, '<div id="sidebar">')
+
         if len(self._tabs) > 0:
-            p (fd, '<div id="tabs">')
-            p (fd, '<div id="reload"><a href="javascript:reload()"><img src="%sreload.png"></a></div>',
-               pulse.config.data_root)
-            p (fd, '<div id="throbber"></div>')
+            p (fd, '<ul id="tabs">')
             for tabid, title in self._tabs:
                 title = esc (title).replace(' ', '&nbsp;')
-                p (fd, '<span class="tab" id="tab-%s">', tabid, False)
-                p (fd, '<a href="javascript:tab(\'%s\')">' + title + '</a></span>', tabid)
-            p (fd, '</div>')
-        p (fd, '</div>')
+                p (fd, '<li class="tab" id="tab-%s">', tabid, False)
+                p (fd, '<a href="javascript:tab(\'%s\')"><div>' + title + '</div></a></li>', tabid)
+            p (fd, '</ul>')
 
-        if sidebarred:
-            p (fd, '<div id="sidebar">')
-            if self._screenshot_file != None:
-                p (fd, '<div class="screenshot">', None, False)
-                url = self._screenshot_file.get_pulse_url ()
-                p (fd, '<a href="%s" class="zoom">', self._screenshot_file.pulse_url, False)
-                p (fd, '<img src="%s" width="%i" height="%i">',
-                   (self._screenshot_file.get_pulse_url ('thumbs'),
-                    self._screenshot_file.data['thumb_width'],
-                    self._screenshot_file.data['thumb_height']))
-                p (fd, '</a></div>')
+        if self._screenshot_file != None:
+            p (fd, '<div class="screenshot">', None, False)
+            url = self._screenshot_file.get_pulse_url ()
+            p (fd, '<a href="%s" class="zoom">', self._screenshot_file.pulse_url, False)
+            p (fd, '<img src="%s" width="%i" height="%i">',
+               (self._screenshot_file.get_pulse_url ('thumbs'),
+                self._screenshot_file.data['thumb_width'],
+                self._screenshot_file.data['thumb_height']))
+            p (fd, '</a></div>')
+
+        if self._sidebar is not None:
             self._sidebar.output (fd=fd)
-            p (fd, '</div>')
+        p (fd, '</div>')
 
         p (fd, '<div id="body"><div id="panes">')
         FactsComponent.output (self, fd=fd)
@@ -583,8 +613,6 @@ class Page (HtmlWidget, ContentComponent, SublinksComponent, FactsComponent):
                 p (fd, '</div>')
         p (fd, '</div></div>')
 
-        if sidebarred:
-            p (fd, '</div>')
         p (fd, '</body></html>')
         
     def output_page_content (self, fd=None):
@@ -1356,6 +1384,7 @@ class Graph (HtmlWidget):
     def __init__ (self, url, **kw):
         super (Graph, self).__init__ (**kw)
         self._url = url
+        self._application = kw.get('application')
         self._count = kw.get('count', None)
         self._num = kw.get('num', 0)
         self._links = kw.get('links', False)
@@ -1406,25 +1435,29 @@ class Graph (HtmlWidget):
             if self._links:
                 p (fd, '</td></tr><tr>')
                 p (fd, '<td class="graphprev">', None, False)
-                p (fd, '<a class="graphprev" id="graphprev-%i" href="javascript:slide(%i, -1)"',
-                   (self._count, self._count), False)
+                p (fd, '<a class="graphprev" id="graphprev-%i" href="javascript:slide(\'%s\', %i, -1)"',
+                   (self._count, self._application, self._count), False)
                 p (fd, '<img src="%sgo-prev.png" height="12" width="12"></a>',
                    pulse.config.data_root, False)
                 p (fd, '</td><td class="graphnext">', None, False)
-                p (fd, '<a class="graphnext" id="graphnext-%i" href="javascript:slide(%i, 1)">',
-                   (self._count, self._count), False)
+                p (fd, '<a class="graphnext" id="graphnext-%i" href="javascript:slide(\'%s\', %i, 1)">',
+                   (self._count, self._application, self._count), False)
                 p (fd, '<img src="%sgo-next.png" height="12" width="12"></a>',
                    pulse.config.data_root, False)
                 p (fd, '</td></tr></table>')
 
     @classmethod
-    def activity_graph (cls, outfile, url, boxid, title, **kw):
+    def activity_graph (cls, outfile, url, boxid, title, application, data, **kw):
         """A convenience constructor to make an activity graph from an OutputFile."""
         kw.setdefault ('links', True)
         kw.setdefault ('width', outfile.data.get('width'))
         kw.setdefault ('height', outfile.data.get('height'))
+        kw['application'] = application
         graph = cls (outfile.pulse_url, **kw)
         thisweek = pulse.utils.weeknum (datetime.datetime.now())
+        qs = '?application=%s&' % application
+        for key in data.keys():
+            qs += '%s=%s&' % (key, data[key])
         for (coords, tot, weeknum) in outfile.data.get ('coords', []):
             ago = thisweek - weeknum
             if ago == 0:
@@ -1436,7 +1469,7 @@ class Graph (HtmlWidget):
                          pulse.utils.weeknumday(weeknum).strftime('%Y-%m-%d'))
             cmt = title % tot
             jslink = 'javascript:replace(\'' + boxid + '\', '
-            jslink += ('\'%s?ajax=' + boxid + '&weeknum=%i\')') % (url, weeknum)
+            jslink += ('\'%s%sweeknum=%i\')') % (url, qs, weeknum)
             graph.add_comment (coords, label, cmt, jslink)
         return graph
 
@@ -1566,7 +1599,7 @@ class PopupLink (HtmlWidget):
         p (fd, '</div>')
 
     @classmethod
-    def from_revision (cls, rev, **kw):
+    def from_revision (cls, rev, app, **kw):
         comment = rev.comment
         if comment.strip() == '':
             lnk = cls (AdmonBox (AdmonBox.warning, pulse.utils.gettext ('No comment')),
@@ -1620,7 +1653,8 @@ class PopupLink (HtmlWidget):
                 else:
                     base += branch.scm_module + '/branches/' + branch.scm_branch
                 mlink = MenuLink (rev.revision, 'files')
-                mlink.set_menu_url (branch.pulse_url + '?ajax=revfiles&revid=' + str(rev.ident))
+                mlink.set_menu_url ('%s?application=%s&action=revfiles&revid=%s'
+                                    % (branch.pulse_url, app, str(rev.ident)))
                 lnk.add_link (mlink)
                 infourl = base + '?view=revision&revision=' + rev.revision
                 lnk.add_link (infourl, pulse.utils.gettext ('info'))

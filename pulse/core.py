@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright (c) 2008  Shaun McCance  <shaunm@gnome.org>
+# Copyright (c) 2008-2009  Shaun McCance  <shaunm@gnome.org>
 #
 # This file is part of Pulse, a program for displaying various statistics
 # of questionable relevance about software and the people who make it.
@@ -21,9 +21,76 @@
 
 import cgi
 import Cookie
+import os
 import sys
 
-import pulse.config
+from pulse import config, utils
+
+
+class RequestHandlerException (utils.PulseException):
+    def __init__ (self, title, desc):
+        self.title = title
+        self.desc = desc
+
+
+class RequestHandler (object):
+    def __init__ (self, request, response):
+        self.request = request
+        self.response = response
+        self.record = None
+        self._applications = {}
+        self.initialize ()
+
+    def initialize (self):
+        raise NotImplementedError ('%s does not provide the initialize method.'
+                                   % self.__class__.__name__)
+
+    def register_application (self, application):
+        self._applications[application.application_id] = application
+
+    def get_application (self, name):
+        return self._applications.get (name)
+
+    @property
+    def applications (self):
+        return self._applications.values()
+
+    def handle_request (self):
+        raise NotImplementedError ('%s does not provide the handle_request method.'
+                                   % self.__class__.__name__)
+
+
+class Application (object):
+    @property
+    def application_id (self):
+        raise NotImplementedError ('%s does not provide an application_id.'
+                                   % self.__class__.__name__)
+
+    def __init__ (self, handler):
+        self.handler = handler
+
+
+class HttpRequest (object):
+    def __init__ (self, **kw):
+        self.path_info = kw.get ('path_info', os.getenv ('PATH_INFO'))
+        self.query_string = kw.get ('query_string', os.getenv ('QUERY_STRING'))
+
+        self.path = []
+        if self.path_info is not None:
+            path = utils.utf8dec (self.path_info).split ('/')
+            for part in path:
+                if part != '':
+                    self.path.append (part)
+
+        self.query = {}
+        if self.query_string is not None:
+            query = cgi.parse_qs (self.query_string, True)
+            for key in query.keys():
+                self.query[key] = utils.utf8dec (query[key][0])
+
+        self.cookies = Cookie.SimpleCookie ()
+        self.cookies.load (os.getenv ('HTTP_COOKIE') or '')
+
 
 
 class HttpWidget (object):
@@ -61,6 +128,9 @@ class HttpResponse (HttpWidget):
         self.http_content_type = contents.http_content_type or self.http_content_type
         contents.http_response = self
 
+    def has_contents (self):
+        return self._contents is not None
+
     def set_cookie (self, cookie, value):
         self._cookies.append ((cookie, value))
 
@@ -73,7 +143,7 @@ class HttpResponse (HttpWidget):
                 p (fd, 'Status: 500 Internal server error')
             if self.http_status == 301:
                 p (fd, 'Status: 301 Moved permanently')
-                p (fd, 'Location: %s' % (self._location or pulse.config.web_root))
+                p (fd, 'Location: %s' % (self._location or config.web_root))
             else:
                 p (fd, 'Content-type: %s' % self.http_content_type)
                 if self.http_content_disposition is not None:
@@ -83,7 +153,7 @@ class HttpResponse (HttpWidget):
                 for cookie, value in self._cookies:
                     ck[cookie] = value
                     # FIXME: this sucks.  let's change the way we keep stuff in config
-                    nohttp = pulse.config.web_root
+                    nohttp = config.web_root
                     nohttp = nohttp[nohttp.find('://') + 3:]
                     ck[cookie]['domain'] = nohttp[:nohttp.find('/')]
                     ck[cookie]['path'] = nohttp[nohttp.find('/'):]
