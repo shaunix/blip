@@ -22,6 +22,7 @@
 
 import codecs
 from datetime import datetime, timedelta
+import time
 import HTMLParser
 import math
 import os
@@ -39,10 +40,10 @@ def get_token ():
 
 
 def utf8dec (s):
-    if s is not None:
-        return codecs.getdecoder('utf-8')(s, errors='replace')[0]
+    if isinstance(s, str):
+        return codecs.getdecoder('utf-8')(s, 'replace')[0]
     else:
-        return None
+        return s
 
 
 # Just a dummy until we hook up gettext
@@ -57,11 +58,11 @@ def parse_date (datestr):
     """
     Parse a date in the format yyyy-mm-dd hh:mm::ss.
     """
-    dt = datetime.datetime (*time.strptime(datestr[:19], '%Y-%m-%d %H:%M:%S')[:6])
+    dt = datetime (*time.strptime(datestr[:19], '%Y-%m-%d %H:%M:%S')[:6])
     off = datestr[20:25]
     offhours = int(off[:3])
     offmins = int(off[0] + off[3:])
-    delta = datetime.timedelta (hours=offhours, minutes=offmins)
+    delta = timedelta (hours=offhours, minutes=offmins)
     return dt - delta
 
 
@@ -332,9 +333,11 @@ class Logger (object):
             self.log_write ('[%s] %s\n' % (datetime.now().strftime ('%Y-%m-%d %H:%M:%S'), msg))
 
     def log_write (self, str):
+        if isinstance(str, unicode):
+            print 'unicode:', str.strip()
+            str = str.encode('UTF-8')
         self.log_file.write (str)
         self.log_file.flush ()
-        
 
 logger = Logger ()
 
