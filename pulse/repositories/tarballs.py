@@ -1,0 +1,42 @@
+# Copyright (c) 2006-2009  Shaun McCance  <shaunm@gnome.org>
+#
+# This file is part of Pulse, a program for displaying various statistics
+# of questionable relevance about software and the people who make it.
+#
+# Pulse is free software; you can redistribute it and/or modify it under the
+# terms of the GNU General Public License as published by the Free Software
+# Foundation; either version 2 of the License, or (at your option) any later
+# version.
+#
+# Pulse is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with Pulse; if not, write to the Free Software Foundation, 59 Temple Place,
+# Suite 330, Boston, MA  0211-1307  USA.
+#
+
+import pulse.repositories.common as scm
+
+
+class TarballSource(scm.Checkout): # TODO stub
+    """Use a tarball release as repository
+       Need to satisfy jhbuild"""
+
+    scm_type = 'tarball'
+    scm_branch = 'release'
+
+    @property
+    def server_name (self):
+        lst = self.scm_server.split('://')[1].split('/')
+        if lst[1].startswith ('~'):
+            return lst[0] + lst[1]
+        else:
+            return lst[0]
+
+    def read_history (self, since=None):
+        """Tarballs does not carry any history information. 
+           This allways retuns an empty list."""
+        return []
