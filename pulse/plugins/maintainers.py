@@ -51,6 +51,7 @@ class MaintainersHandler (object):
         branch = self.scanner.branch
         rel_scm = utils.relative_path (filename, config.scm_dir)
         mtime = os.stat(filename).st_mtime
+        checkout = scm.Checkout.from_record (branch)
 
         if not kw.get('no_timestamps', False):
             stamp = db.Timestamp.get_timestamp (rel_scm)
@@ -86,7 +87,7 @@ class MaintainersHandler (object):
             elif line.startswith ('Userid:'):
                 userid = line[7:].strip()
         add_maint ()
-        serverid = '.'.join (scm.server_name (branch.scm_type, branch.scm_server).split('.')[-2:])
+        serverid = '.'.join (checkout.server_name.split('.')[-2:])
         rels = []
         for name, userid, email in maints:
             ident = u'/person/%s@%s' % (userid, serverid)
