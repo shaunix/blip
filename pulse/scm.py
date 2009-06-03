@@ -22,20 +22,15 @@
 Read information from a source code repository.
 """
 
-import inspect
-
-import pulse.utils
-import pulse.repositories
-
+from pulse import repositories
 from pulse.repositories.common import Checkout
 
-for tool in pulse.repositories.__all__:
-    if tool in ('__init__', 'common'):
-        continue
-    mod = pulse.utils.import_ ('pulse.repositories.' + tool)
-    for obj in mod.__dict__.values():
-        if not inspect.isclass (obj):
-            continue
-        if not issubclass (obj, Checkout):
-            continue
-        Checkout.register_subclass (obj)
+
+def default_branch(scm_type):
+    return Checkout._get_child(scm_type).scm_branch
+
+
+# load all repository modules
+for module in repositories.__all__:
+    __import__('pulse.repositories.' + module)
+

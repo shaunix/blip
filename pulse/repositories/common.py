@@ -71,45 +71,37 @@ class Checkout (object):
     Checkout or clone of a source code repository.
     """
 
-    @classmethod
-    def default_branch (cls, scm_type):
-        return cls._subclasses.get (scm_type).scm_branch
-
+    def __new__(cls, *args, **kw):
+        if cls == Checkout and 'scm_type'in kw:
+            cls = Checkout._get_child(kw['scm_type'])
+        return object.__new__(cls, *args, **kw)
 
     @classmethod
     def from_record (cls, record, **kw):
         """
         Get a checkout from the information in a database record.
         """
-        return cls.construct (scm_type=record.scm_type,
-                              scm_server=record.scm_server,
-                              scm_module=record.scm_module,
-                              scm_branch=record.scm_branch,
-                              scm_path=record.scm_path,
-                              **kw)
-    @classmethod
-    def construct (cls, **kw):
-        """
-        Construct a Checkout object using the appropriate subclass.
-        """
-        scm_type = kw.get ('scm_type')
-        subclass = cls._subclasses[scm_type]
-        return subclass (**kw)
+        return Checkout (scm_type=record.scm_type,
+                         scm_server=record.scm_server,
+                         scm_module=record.scm_module,
+                         scm_branch=record.scm_branch,
+                         scm_path=record.scm_path,
+                         **kw)
 
-    _subclasses = {}
     @classmethod
-    def register_subclass (cls, subclass):
-        """
-        Register a subclass to use for a particular repository type.
-        """
-        cls._subclasses[subclass.scm_type] = subclass
+    def _get_child(cls, scm_type):
+        classes = filter(lambda c: c.scm_type == scm_type, Checkout.__subclasses__())
+        if not classes:
+            raise NotImplementedError('No Checkout "%s" implementation available.'
+                                      % scm_type)
+        return classes[0]
 
     @property
     def server_name (self):
         """
         Get the name of a repository server, as used in an ident.
         """
-        raise NotImplementedError ('%s does not implement the get_revision method.'
+        raise NotImplementedError ('%s does not implement the server_name property.'
                                    % self.__class__.__name__)
 
     @property
@@ -244,5 +236,6 @@ class Checkout (object):
         """
         raise NotImplementedError ('%s does not implement the read_revision method.'
                                    % self.__class__.__name__)
+
 
 

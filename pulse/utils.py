@@ -255,7 +255,11 @@ class TitleParser (HTMLParser.HTMLParser):
 
 def get_html_title (url):
     parser = TitleParser ()
-    fd = urllib.urlopen (url)
+    try:
+        fd = urllib.urlopen (url)
+    except: # XXX
+        warn('Could not load url "%s"' % url)
+        return None
     for line in fd:
         parser.feed (line)
         if parser.done:
@@ -334,7 +338,6 @@ class Logger (object):
 
     def log_write (self, str):
         if isinstance(str, unicode):
-            print 'unicode:', str.strip()
             str = str.encode('UTF-8')
         self.log_file.write (str)
         self.log_file.flush ()

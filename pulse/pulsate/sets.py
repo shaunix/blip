@@ -110,7 +110,7 @@ class ModuleSet:
                         if child.hasAttribute ('revision'):
                             pkg_data['scm_branch'] = child.getAttribute ('revision')
                         else:
-                            pkg_data['scm_branch'] = pulse.scm.Checkout.default_branch (pkg_data['scm_type'])
+                            pkg_data['scm_branch'] = pulse.scm.default_branch(pkg_data['scm_type'])
                     elif child.tagName == 'dependencies':
                         deps = []
                         for dep in child.childNodes:
@@ -145,9 +145,13 @@ def update_branch (moduleset, key, update=True):
     for k in pkg_data.keys():
         if k[:4] == 'scm_':
             data[k] = pkg_data[k]
-    servername = pulse.scm.server_name (pkg_data['scm_type'], pkg_data['scm_server'])
+
+    checkout = pulse.scm.Checkout(**pkg_data)
+    servername = checkout.server_name
     if servername == None:
         return None
+    if not 'scm_branch' in pkg_data:
+        pkg_data['scm_branch'] = checkout.scm_branch
     ident = u'/'.join (['/mod', servername, pkg_data['scm_module'], pkg_data['scm_branch']])
 
     record = pulse.db.Branch.get_or_create (ident, u'Module')
@@ -186,12 +190,13 @@ def update_set (data, update=True, parent=None):
             mod_data = {}
             for k in xml_data.keys():
                 if k[:4] == 'scm_':
-                    mod_data[k] = xml_data[k]
-            servername = pulse.scm.server_name (mod_data['scm_type'], mod_data['scm_server'])
+                    mod_data[str(k)] = xml_data[k]
+            checkout = pulse.scm.Checkout(**mod_data)
+            servername = checkout.server_name
             if servername == None:
                 continue
             if mod_data.get ('scm_branch', '') == '':
-                mod_data['scm_branch'] = pulse.scm.Checkout.default_branch (mod_data['scm_type'])
+                mod_data['scm_branch'] = checkout.scm_branch
             if mod_data.get ('scm_branch', '') == '':
                 continue
             ident = u'/'.join (['/mod', servername, mod_data['scm_module'], mod_data['scm_branch']])
