@@ -221,7 +221,11 @@ def output_doap_file (response, module, filename, **kw):
         '         http://api.gnome.org/doap-extensions#development\n' +
         '         http://api.gnome.org/doap-extensions#infrastructure\n' +
         '         http://api.gnome.org/doap-extensions#platform\n' +
-        '         http://api.gnome.org/doap-extensions#productivity\n')
+        '         http://api.gnome.org/doap-extensions#productivity\n' +
+        '       NOTE: There is an "Other" categorization on cgit, but we do not have a\n' +
+        '       DOAP category for it.  If your module does not belong to one of these\n' +
+        '       groups, then do not include a category property in your DOAP file.\n'
+        )
     if group is None:
         content.add_text_content (
             '  <category rdf:resource="FIXME" />\n' +
@@ -244,7 +248,7 @@ def output_doap_file (response, module, filename, **kw):
         content.add_text_content ('      <foaf:name>%s</foaf:name>\n'
                                   % pulse.response.esc (rel.pred.title))
         if rel.pred.email is not None:
-            content.add_text_content ('      <foaf:mbox rdf:resource="%s" />\n'
+            content.add_text_content ('      <foaf:mbox rdf:resource="mailto:%s" />\n'
                                       % pulse.response.esc (rel.pred.email))
         match = regexp.match (rel.pred.ident)
         if match:
