@@ -1453,7 +1453,7 @@ def get_tables ():
 
 def create_tables ():
     dbtype = pulse.config.database[:pulse.config.database.find(':')]
-    fieldtypes = {
+    dbtype_map = {
         'Bool':      {'postgres': 'BOOL',      'mysql': 'TINYINT(1)', 'sqlite': 'INT'},
         'Int':       {'postgres': 'INT',       'mysql': 'INT',        'sqlite': 'INTEGER'},
         'Float':     {'postgres': 'FLOAT',     'mysql': 'FLOAT',      'sqlite': 'FLOAT'},
@@ -1466,6 +1466,7 @@ def create_tables ():
         'Time':      {'postgres': 'TIME',      'mysql': 'TIME',       'sqlite': 'TEXT'},
         'TimeDelta': {'postgres': 'INTERVAL',  'mysql': 'TEXT',       'sqlite': 'TEXT'},
         'List':      {'postgres': 'ARRAY[]',   'mysql': None,         'sqlite': 'TEXT'},
+        'AUTOINCREMENT': {'postgres': 'sequenzes_TODO', 'mysql': 'AUTO_INCREMENT', 'sqlite': 'AUTOINCREMENT'},
         }
     store = get_store ('default')
     for cls in get_tables ():
@@ -1474,19 +1475,26 @@ def create_tables ():
         for key, field in cls.get_fields ().items ():
             if not isinstance (field[0], storm.properties.PropertyColumn):
                 continue
-            fieldtype = fieldtypes.get (field[1].__name__, {}).get (dbtype)
+            fieldtype = dbtype_map.get (field[1].__name__, {}).get (dbtype)
             if fieldtype == None:
                 continue
             txt = '%s %s' % (key, fieldtype)
             if field[1].__name__ != 'Pickle':
-                indexes.append ('CREATE INDEX IF NOT EXISTS %s__%s ON %s (%s);'
-                                % (cls.__name__, key, cls.__name__, key))
+                sql = 'CREATE INDEX IF NOT EXISTS %s__%s ON %s (%s);' if dbtype != 'mysql' \
+                        else 'CREATE INDEX %s__%s ON %s (%s);'
+                indexes.append(sql % (cls.__name__, key, cls.__name__, key))
             if field[0].primary:
                 txt += ' PRIMARY KEY'
                 if field[1].__name__ == 'Int':
-                    txt += ' AUTOINCREMENT'
+                    txt += ' ' + dbtype_map['AUTOINCREMENT'][dbtype]
             fields.append (txt)
         cmd = 'CREATE TABLE IF NOT EXISTS %s (%s)' % (cls.__name__, ','.join(fields))
         store.execute (cmd, noresult=True)
         for index in indexes:
-            store.execute (index, noresult=True)
+            try:
+                store.execute (index, noresult=True)
+            except:
+                print 'WARNING: could not create index'
+                print index
+
+
