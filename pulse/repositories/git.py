@@ -91,8 +91,8 @@ class GitClone (scm.Checkout):
         """
         Get the command to clone the Git repository from the server.
         """
-        return ('git clone %s %s && (cd %s && git checkout -b %s origin/%s)' %
-                (self._git_url, self.scm_branch,
+        return ('git clone %s %s && (cd %s && (git checkout -b %s origin/%s || git checkout %s))' %
+                (self._git_url, self.scm_branch, self.scm_branch,
                  self.scm_branch, self.scm_branch, self.scm_branch))
 
 
