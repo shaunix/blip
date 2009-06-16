@@ -11,8 +11,6 @@ Here's some basic instructions for running Pulse on your machine:
    * libxml2 python bindings
    * python imaging library
 
-*) To generate charts and such, you need to have pycairo installed.
-
 *) Edit pulse/config.py.  It's just a bunch of file and URL paths.  The
    necessary edits should be fairly obvious.
 
