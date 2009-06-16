@@ -4,7 +4,12 @@ on Pulse, then Pulse is probably working on you.
 
 Here's some basic instructions for running Pulse on your machine:
 
-*) Install the python ORM "storm".
+*) Install
+   * the ORM storm
+   * python vobject
+   * cairo python bindings
+   * libxml2 python bindings
+   * python imaging library
 
 *) To generate charts and such, you need to have pycairo installed.
 
