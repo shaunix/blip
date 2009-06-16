@@ -243,6 +243,8 @@ class EvolutionQuickRefTranslationHandler (object):
         files = [os.path.join (translation.scm_dir, translation.scm_file)]
         thisrev = db.Revision.get_last_revision (branch=translation.parent.parent, files=files)
 
+        if thisrev is None or origrev is None:
+            return # XXX just a workaround, FIX ME!
         if thisrev.datetime > origrev.datetime:
             db.Statistic.set_statistic (translation, utils.daynum(), u'Messages',
                                         1, 0, 1)

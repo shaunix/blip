@@ -96,7 +96,9 @@ class DocBookHandler (object):
                     elif infonode.name == 'abstract' and infonode.prop('role') == 'description':
                         abstract = infonode.getContent()
                     elif infonode.name == 'releaseinfo':
-                        if infonode.prop ('revision') == document.parent.data.get ('series'):
+                        # XXX workaround, this check raises as in some circumstances document might
+                        #                 not have a parant (== None)
+#                        if infonode.prop ('revision') == document.parent.data.get ('series'):
                             document.data['status'] = infonode.prop ('role')
                             for ch in utils.xmliter (infonode):
                                 if ch.type == 'element' and ch.name == 'ulink':
