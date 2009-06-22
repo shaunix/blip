@@ -595,6 +595,8 @@ class Branch (PulseRecord):
     scm_dir = Unicode ()
     scm_file = Unicode ()
 
+    bug_database = Unicode ()
+
     mod_score = Int ()
     mod_score_diff = Int ()
     mod_datetime = DateTime ()
@@ -896,6 +898,35 @@ class ForumPost (PulseRecord):
 
     def delete (self):
         raise WillNotDelete ('Pulse will not delete forum posts')
+
+
+class Issue(object):
+    __storm_table__ = 'Issue'
+    ident = Unicode (primary=True)
+    bug_id = Int()
+    time = Int()
+    severity = Unicode()
+    priority = Unicode()
+    status = Unicode()
+    resolution = Unicode()
+    component = Unicode()
+    summary = Unicode()
+    owner = Unicode()
+
+    def get_last_change(self):
+        store = get_store()
+        cls = self.__class__
+        query = store.find(cls, cls.bug_id == self.bug_id, cls.time < self.time)
+        return query.order_by(Desc(cls.time)).first()
+
+
+class Compnent(object):
+    __storm_table__ = 'Component'
+    ident = Unicode (primary=True)
+    product = Unicode()
+    title = Unicode()
+    default_owner = Unicode()
+    default_qa = Unicode()
 
 
 ################################################################################

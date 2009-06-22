@@ -94,6 +94,11 @@ class OverviewTab (applications.TabProvider):
         facts.add_fact_divider ()
         facts.add_fact (utils.gettext ('Score'), str(self.handler.record.mod_score))
 
+        facts.add_fact_divider ()
+        facts.add_fact (utils.gettext ('Bug Tracker'), 
+                        html.Link ( self.handler.record.bug_database,
+                                    self.handler.record.bug_database))
+
         if self.handler.record.updated is not None:
             facts.add_fact_divider ()
             facts.add_fact (utils.gettext ('Last Updated'),
