@@ -11,6 +11,7 @@ Here's some basic instructions for running Pulse on your machine:
    * libxml2 python bindings
    * python imaging library
    * imagemagick
+   * intltool
 
 *) Edit pulse/config.py.  It's just a bunch of file and URL paths.  The
    necessary edits should be fairly obvious.
