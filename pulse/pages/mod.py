@@ -264,6 +264,7 @@ def output_doap_file (response, module, filename, **kw):
 
 
 def output_module (response, module, **kw):
+    # TODO this is not used.
     branchable = module.branchable
 
     page = pulse.html.Page (module)
@@ -316,6 +317,7 @@ def output_module (response, module, **kw):
 
 
 def output_ajax_tab (response, module, **kw):
+    # TODO this is not used.
     query = kw.get ('query', {})
     tab = query.get('tab', None)
     if tab == 'info':
@@ -429,35 +431,6 @@ def output_ajax_graphmap (response, module, **kw):
         pass
 
 
-def output_ajax_commits (response, module, **kw):
-    query = kw.get ('query', {})
-    weeknum = query.get('weeknum', None)
-    if weeknum != None:
-        weeknum = int(weeknum)
-        thisweek = pulse.utils.weeknum ()
-        ago = thisweek - weeknum
-        revs = pulse.db.Revision.select_revisions (branch=module, weeknum=weeknum)
-        cnt = revs.count()
-        revs = list(revs[:20])
-    else:
-        revs = pulse.db.Revision.select_revisions (branch=module,
-                                                   week_range=(pulse.utils.weeknum()-52,))
-        cnt = revs.count()
-        revs = list(revs[:10])
-    if weeknum == None:
-        title = (pulse.utils.gettext('Showing %i of %i commits:')
-                 % (len(revs), cnt))
-    elif ago == 0:
-        title = (pulse.utils.gettext('Showing %i of %i commits from this week:')
-                 % (len(revs), cnt))
-    elif ago == 1:
-        title = (pulse.utils.gettext('Showing %i of %i commits from last week:')
-                 % (len(revs), cnt))
-    else:
-        title = (pulse.utils.gettext('Showing %i of %i commits from %i weeks ago:')
-                 % (len(revs), cnt, ago))
-    div = get_commits_div (module, revs, title)
-    response.set_contents (div)
 
 
 def output_ajax_revfiles (response, module, **kw):
@@ -554,28 +527,6 @@ def get_info_tab (module, **kw):
     doapdiv.add_content (doaplink)
 
     return div
-
-
-def get_activity_tab (module, **kw):
-    box = pulse.html.Div ()
-    of = pulse.db.OutputFile.select (type=u'graphs', ident=module.ident, filename=u'commits-0.png')
-    try:
-        of = of[0]
-        graph = pulse.html.Graph.activity_graph (of, module.pulse_url, 'commits',
-                                                 pulse.utils.gettext ('%i commits'))
-        box.add_content (graph)
-    except IndexError:
-        pass
-
-    revs = pulse.db.Revision.select_revisions (branch=module,
-                                               week_range=(pulse.utils.weeknum()-52,))
-    cnt = revs.count()
-    revs = list(revs[:10])
-    title = (pulse.utils.gettext('Showing %i of %i commits:') % (len(revs), cnt))
-    div = get_commits_div (module, revs, title)
-    box.add_content (div)
-
-    return box
 
 
 def get_components_tab (module, **kw):
