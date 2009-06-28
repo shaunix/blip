@@ -1497,6 +1497,7 @@ def create_tables ():
         'Time':      {'postgres': 'TIME',      'mysql': 'TIME',       'sqlite': 'TEXT'},
         'TimeDelta': {'postgres': 'INTERVAL',  'mysql': 'TEXT',       'sqlite': 'TEXT'},
         'List':      {'postgres': 'ARRAY[]',   'mysql': None,         'sqlite': 'TEXT'},
+        'BASE':      {'postgres': '%s %s',     'mysql': '`%s` %s',    'sqlite': '%s %s'},
         'AUTOINCREMENT': {'postgres': 'sequenzes_TODO', 'mysql': 'AUTO_INCREMENT', 'sqlite': 'AUTOINCREMENT'},
         }
     store = get_store ('default')
@@ -1509,7 +1510,9 @@ def create_tables ():
             fieldtype = dbtype_map.get (field[1].__name__, {}).get (dbtype)
             if fieldtype == None:
                 continue
-            txt = '%s %s' % (key, fieldtype)
+            if field[1].__name__ == 'Unicode' and field[0].primary:
+                fieldtype = 'varchar (255)'
+            txt = dbtype_map['BASE'][dbtype] % (key, fieldtype)
             if field[1].__name__ != 'Pickle':
                 sql = 'CREATE INDEX IF NOT EXISTS %s__%s ON %s (%s);' if dbtype != 'mysql' \
                         else 'CREATE INDEX %s__%s ON %s (%s);'
@@ -1518,8 +1521,10 @@ def create_tables ():
                 txt += ' PRIMARY KEY'
                 if field[1].__name__ == 'Int':
                     txt += ' ' + dbtype_map['AUTOINCREMENT'][dbtype]
+
             fields.append (txt)
         cmd = 'CREATE TABLE IF NOT EXISTS %s (%s)' % (cls.__name__, ','.join(fields))
+        print cmd
         store.execute (cmd, noresult=True)
         for index in indexes:
             try:
