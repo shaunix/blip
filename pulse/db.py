@@ -1511,8 +1511,10 @@ def create_tables ():
             if fieldtype == None:
                 continue
             if field[1].__name__ == 'Unicode' and field[0].primary:
-                fieldtype = 'varchar (255)'
+                fieldtype = 'VARCHAR (255)'
             txt = dbtype_map['BASE'][dbtype] % (key, fieldtype)
+            if fieldtype in ('TEXT', 'VARCHAR (255)') and dbtype == 'mysql':
+                txt += ' CHARACTER SET utf8 COLLATE utf8_unicode_ci '
             if field[1].__name__ != 'Pickle':
                 sql = 'CREATE INDEX IF NOT EXISTS %s__%s ON %s (%s);' if dbtype != 'mysql' \
                         else 'CREATE INDEX %s__%s ON %s (%s);'
