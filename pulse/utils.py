@@ -31,6 +31,7 @@ import random
 import sys
 import tempfile
 import urllib
+from urlparse import urlsplit
 
 import pulse.config
 
@@ -231,7 +232,6 @@ def xmliter (node):
         yield child
         child = child.next
 
-
 class TitleParser (HTMLParser.HTMLParser):
     def __init__ (self):
         self.intitle = False
@@ -310,6 +310,126 @@ class PulseException (Exception):
     """Base class for exceptions that Pulse raises"""
     def __init__ (self, msg):
         Exception.__init__ (self, msg)
+
+
+# unquote, parse_qs and parse_qsl are taken from python2.6 module "urlparse"
+def unquote(s):
+    """unquote('abc%20def') -> 'abc def'."""
+    res = s.split('%')
+    for i in xrange(1, len(res)):
+        item = res[i]
+        try:
+            res[i] = _hextochr[item[:2]] + item[2:]
+        except KeyError:
+            res[i] = '%' + item
+        except UnicodeDecodeError:
+            res[i] = unichr(int(item[:2], 16)) + item[2:]
+    return "".join(res)
+
+def parse_qs(qs, keep_blank_values=0, strict_parsing=0):
+    """Parse a query given as a string argument.
+
+        Arguments:
+
+        qs: URL-encoded query string to be parsed
+
+        keep_blank_values: flag indicating whether blank values in
+            URL encoded queries should be treated as blank strings.
+            A true value indicates that blanks should be retained as
+            blank strings.  The default false value indicates that
+            blank values are to be ignored and treated as if they were
+            not included.
+
+        strict_parsing: flag indicating what to do with parsing errors.
+            If false (the default), errors are silently ignored.
+            If true, errors raise a ValueError exception.
+    """
+    dict = {}
+    for name, value in parse_qsl(qs, keep_blank_values, strict_parsing):
+        if name in dict:
+            dict[name].append(value)
+        else:
+            dict[name] = [value]
+    return dict
+
+def parse_qsl(qs, keep_blank_values=0, strict_parsing=0):
+    """Parse a query given as a string argument.
+
+    Arguments:
+
+    qs: URL-encoded query string to be parsed
+
+    keep_blank_values: flag indicating whether blank values in
+        URL encoded queries should be treated as blank strings.  A
+        true value indicates that blanks should be retained as blank
+        strings.  The default false value indicates that blank values
+        are to be ignored and treated as if they were  not included.
+
+    strict_parsing: flag indicating what to do with parsing errors. If
+        false (the default), errors are silently ignored. If true,
+        errors raise a ValueError exception.
+
+    Returns a list, as G-d intended.
+    """
+    pairs = [s2 for s1 in qs.split('&') for s2 in s1.split(';')]
+    r = []
+    for name_value in pairs:
+        if not name_value and not strict_parsing:
+            continue
+        nv = name_value.split('=', 1)
+        if len(nv) != 2:
+            if strict_parsing:
+                raise ValueError, "bad query field: %r" % (name_value,)
+            # Handle case of a control-name with no equal sign
+            if keep_blank_values:
+                nv.append('')
+            else:
+                continue
+        if len(nv[1]) or keep_blank_values:
+            name = unquote(nv[0].replace('+', ' '))
+            value = unquote(nv[1].replace('+', ' '))
+            r.append((name, value))
+
+    return r
+
+class URL(object):
+    """URL representing object. You can manipulate it by editing
+        scheme, netloc, path and query of an instance."""
+    def __init__(self, scheme='http', netloc='example.org', path='', query={}, fragment=''):
+        self.scheme = scheme
+        self.netloc = netloc
+        self.path = path
+        if isinstance(query, basestring):
+            query = parse_qs(query)
+        self.query = query
+        self.fragment = fragment
+
+    @classmethod
+    def from_str(self, string):
+        """Creates an URL object from a string.
+        
+            May u be an URL object than:
+            u == URL.from_str(str(u))"""
+        return URL(*urlsplit(string))
+
+    def __str__(self):
+        query = urllib.urlencode(self.query, True)
+        if query != '':
+            query = '?' + query
+        return '%s://%s%s%s' % (self.scheme, self.netloc, self.path, query)
+
+    def __setitem__(self, attr, value):
+        self.query[attr] = value
+
+    def __getitem__(self, attr):
+        return self.query[attr]
+
+    def _set_path(self, path):
+        """Make sure path starts with a /"""
+        if not path[0] == '/':
+            path = '/' + path
+        self._path = path
+    path = property(lambda self: self._path, _set_path)
 
 
 class Logger (object):
