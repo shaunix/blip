@@ -544,6 +544,14 @@ class PulseRelation (PulseModel):
         return rel
 
     @classmethod
+    def get_or_create (cls, **kw):
+        record = list(cls.select (**kw))
+        print record
+        if record != None:
+            return record
+        return cls (**kw)
+
+    @classmethod
     def select_related (cls, subj=None, pred=None, **kw):
         store = get_store (kw.pop ('__pulse_store__', cls.__pulse_store__))
         if subj != None and pred != None:
@@ -900,7 +908,24 @@ class ForumPost (PulseRecord):
         raise WillNotDelete ('Pulse will not delete forum posts')
 
 
-class Issue(object):
+class Component(PulseModel):
+    __storm_table__ = 'Component'
+    ident = Unicode (primary=True)
+    product = Unicode ()
+    tracker = Unicode ()
+    name = Unicode ()
+    default_owner = Unicode ()
+    default_qa = Unicode ()
+
+    @classmethod
+    def get_or_create (cls, ident, **kw):
+        record = cls.get (ident)
+        if record != None:
+            return record
+        return cls (ident=ident)
+
+
+class Issue(PulseModel):
     __storm_table__ = 'Issue'
     ident = Unicode (primary=True)
     bug_id = Int()
@@ -909,9 +934,17 @@ class Issue(object):
     priority = Unicode()
     status = Unicode()
     resolution = Unicode()
-    component = Unicode()
+    comp_ident = Unicode()
+    comp = Reference (comp_ident, Component.ident)
     summary = Unicode()
     owner = Unicode()
+
+    @classmethod
+    def get_or_create (cls, ident, **kw):
+        record = cls.get (ident)
+        if record != None:
+            return record
+        return cls (ident=ident)
 
     def get_last_change(self):
         store = get_store()
@@ -920,13 +953,10 @@ class Issue(object):
         return query.order_by(Desc(cls.time)).first()
 
 
-class Compnent(object):
-    __storm_table__ = 'Component'
+class Cache(PulseModel):
     ident = Unicode (primary=True)
-    product = Unicode()
-    title = Unicode()
-    default_owner = Unicode()
-    default_qa = Unicode()
+    value = Pickle (default_factory=dict)
+    mtime = Int ()
 
 
 ################################################################################
@@ -947,6 +977,12 @@ class DocumentEntity (PulseRelation):
     author = Bool (default=False)
     editor = Bool (default=False)
     publisher = Bool (default=False)
+
+class ModuleComponents (PulseRelation):
+    subj_ident = Unicode ()
+    pred_ident = Unicode ()
+    subj = Reference (subj_ident, Branch.ident)
+    pred = Reference (pred_ident, Component.ident)
 
 class ModuleDependency (PulseRelation):
     subj_ident = Unicode ()
@@ -1481,6 +1517,7 @@ def get_tables ():
             continue
         tables.append (cls)
     return tables
+
 
 def create_tables ():
     dbtype = pulse.config.database[:pulse.config.database.find(':')]
