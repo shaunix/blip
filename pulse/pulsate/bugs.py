@@ -70,15 +70,10 @@ def update():
     bugzilla['bug_status'] = ['UNCONFIRMED', 'NEW', 'ASSIGNED', 'REOPENED', 'NEEDINFO']
 
     headers = {'Cookie': 'COLUMNLIST=changeddate%20bug_severity%20priority%20bug_status%20resolution%20product%20component%20short_desc'}
-    
-    print str(bugzilla)
-    
-#    req = Request(str(bugzilla), None, headers)
-#    open('/tmp/data.csv', 'w').write(urlopen(req).read())
-#    data = csv.reader(urlopen(req))
-#    data
-    process(csv.reader(open('/tmp/data.csv')))
-#    process(csv.reader(urllib.urlopen(url)))
+
+req = Request(str(bugzilla), None, headers)
+    data = csv.reader(urlopen(req))
+    process(data)
 
 
 ################################################################################
