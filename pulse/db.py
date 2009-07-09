@@ -929,7 +929,7 @@ class Issue(PulseModel):
     __storm_table__ = 'Issue'
     ident = Unicode (primary=True)
     bug_id = Int()
-    time = Int()
+    datetime = DateTime ()
     severity = Unicode()
     priority = Unicode()
     status = Unicode()
@@ -938,6 +938,11 @@ class Issue(PulseModel):
     comp = Reference (comp_ident, Component.ident)
     summary = Unicode()
     owner = Unicode()
+
+    def __cmp__(self, other):
+        if hasattr(other, 'datetime'):
+            return cmp(self.datetime, other.datetime)
+        return 1
 
     @classmethod
     def get_or_create (cls, ident, **kw):
@@ -1173,6 +1178,11 @@ class Revision (PulseModel):
         PulseModel.__init__ (self, **kw)
         Message.make_message (u'commit', self.person_ident, self.branch_ident, self.datetime)
         Message.make_message (u'commit', self.branch_ident, None, self.datetime)
+
+    def __cmp__(self, other):
+        if hasattr(other, 'datetime'):
+            return cmp(self.datetime, other.datetime)
+        return 1
 
     def log_create (self):
         pass
