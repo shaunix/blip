@@ -89,8 +89,7 @@ class HttpRequest (object):
                 self.query[key] = utils.utf8dec (query[key][0])
 
         self.cookies = Cookie.SimpleCookie ()
-        self.cookies.load (os.getenv ('HTTP_COOKIE') or '')
-
+        self.cookies.load(kw.get('HTTP_COOKIE', os.getenv ('HTTP_COOKIE') or ''))
 
 
 class HttpWidget (object):
