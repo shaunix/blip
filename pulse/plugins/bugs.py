@@ -26,7 +26,8 @@ import os
 from rdflib.Graph import Graph
 
 import pulse.pulsate.modules
-
+import pulse.db
+from pulse.utils import URL
 
 class BugHandler(object):
     def __init__ (self, scanner):
@@ -50,6 +51,15 @@ class BugHandler(object):
 
         results = list(g.query(query))
         if len(results) == 1:
-            self.scanner.branch.bug_database =  unicode(results[0][0])
+            bug_database = URL.from_str(results[0][0])
+            self.scanner.branch.bug_database = unicode(bug_database)
+            
+            if bug_database.netloc == 'bugzilla.gnome.org': # TODO
+                product = bug_database['product'][0]
+                components = pulse.db.Component.select(
+                        pulse.db.Component.ident.like('comp/bugzilla.gnome.org/%s/%%' % product))
+                for comp in components:
+                    pulse.db.ModuleComponents.set_related (self.scanner.branch, comp)
+
 
 pulse.pulsate.modules.ModuleScanner.register_plugin (BugHandler)

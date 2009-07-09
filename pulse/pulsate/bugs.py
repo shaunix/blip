@@ -23,6 +23,7 @@ from urllib import urlencode
 from urllib2 import Request, urlopen
 from urlparse import urlparse
 import csv
+import datetime
 import time
 
 import pulse.db
@@ -43,14 +44,13 @@ def process(data):
     for line in data:
         bugtracker = 'bugzilla.gnome.org'
         this = dict(zip(headers, line))
-        this['time'] = time.mktime(time.strptime(this['changeddate'], '%Y-%m-%d %H:%M:%S'))
-        issue_ident = u'issue/%s/%s/%i' % (bugtracker, this['bug_id'], this['time'])
+        this['datetime'] = datetime.datetime.strptime(this['changeddate'], '%Y-%m-%d %H:%M:%S')
+        timestamp = time.mktime(this['datetime'].timetuple())
+        issue_ident = u'issue/%s/%s/%i' % (bugtracker, this['bug_id'], timestamp)
         issue = pulse.db.Issue.get_or_create (issue_ident)
         for key, value in this.items():
-            if key in ('time', 'bug_id'):
-                value = int(value)
-            else:
-                value = utf8dec(value)
+            converter = {'bug_id': int, 'datetime': lambda x: x}
+            value = converter.get(key, utf8dec)(value)
             if hasattr(issue.__class__, key):
                 setattr(issue, key, value)
         # component
@@ -65,15 +65,18 @@ def update():
     bugzilla['query_format'] = 'advanced'
     bugzilla['ctype'] = 'csv'
     # for example: bugzilla['product'] = 'Yelp'
-    bugzilla['chfieldfrom'] = time.strftime('%Y-%m-%d', time.gmtime(time.time() - 7 * 24*60*60)) # TODO since last update
+    bugzilla['chfieldfrom'] = time.strftime('%Y-%m-%d', time.gmtime(time.time() - 14 * 24*60*60)) # TODO since last update
     bugzilla['chfieldto'] = 'Now'
     bugzilla['bug_status'] = ['UNCONFIRMED', 'NEW', 'ASSIGNED', 'REOPENED', 'NEEDINFO']
 
     headers = {'Cookie': 'COLUMNLIST=changeddate%20bug_severity%20priority%20bug_status%20resolution%20product%20component%20short_desc'}
-
-req = Request(str(bugzilla), None, headers)
+    
+    req = Request(str(bugzilla), None, headers)
+    
     data = csv.reader(urlopen(req))
-    process(data)
+
+    data = pickle.load(open('cache'))
+    process((i for i in data))
 
 
 ################################################################################
