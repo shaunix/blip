@@ -313,6 +313,8 @@ class PulseException (Exception):
 
 
 # unquote, parse_qs and parse_qsl are taken from python2.6 module "urlparse"
+_hextochr = dict(('%02x' % i, chr(i)) for i in range(256))
+_hextochr.update(('%02X' % i, chr(i)) for i in range(256))
 def unquote(s):
     """unquote('abc%20def') -> 'abc def'."""
     res = s.split('%')
