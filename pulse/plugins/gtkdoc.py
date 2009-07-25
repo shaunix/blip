@@ -61,6 +61,7 @@ class GtkDocModuleHandler (object):
         doc_module = makefile['DOC_MODULE']
         ident = u'/'.join(['/ref', bserver, bmodule, doc_module, bbranch])
         document = db.Branch.get_or_create (ident, u'Document')
+        document.parent = branch
         relpath = utils.relative_path (dirname, checkout.directory)
 
         data = {}
