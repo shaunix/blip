@@ -146,7 +146,7 @@ def update_branch (moduleset, key, update=True):
         if k[:4] == 'scm_':
             data[k] = pkg_data[k]
 
-    checkout = pulse.scm.Checkout(**pkg_data)
+    checkout = pulse.scm.Checkout(checkout=False, update=False, **pkg_data)
     servername = checkout.server_name
     if servername == None:
         return None
@@ -191,7 +191,7 @@ def update_set (data, update=True, parent=None):
             for k in xml_data.keys():
                 if k[:4] == 'scm_':
                     mod_data[str(k)] = xml_data[k]
-            checkout = pulse.scm.Checkout(**mod_data)
+            checkout = pulse.scm.Checkout(checkout=False, update=False, **mod_data)
             servername = checkout.server_name
             if servername == None:
                 continue
