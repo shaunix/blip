@@ -641,7 +641,7 @@ class Branch (PulseRecord):
 
     @property
     def is_default (self):
-        return self.scm_branch == pulse.scm.Checkout.default_branch (self.scm_type)
+        return self.scm_branch == pulse.scm.default_branch (self.scm_type)
 
     @classmethod
     def count_branchables (cls, type):
