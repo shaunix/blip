@@ -3,10 +3,10 @@
 
 <defaults>
   <set>
-    <jhbuild_scm_type>svn</jhbuild_scm_type>
-    <jhbuild_scm_server>http://svn.gnome.org/svn/</jhbuild_scm_server>
+    <jhbuild_scm_type>git</jhbuild_scm_type>
+    <jhbuild_scm_server>http://git.gnome.org/</jhbuild_scm_server>
     <jhbuild_scm_module>jhbuild</jhbuild_scm_module>
-    <jhbuild_scm_branch>trunk</jhbuild_scm_branch>
+	<jhbuild_scm_branch>master</jhbuild_scm_branch>
     <jhbuild_scm_dir>modulesets</jhbuild_scm_dir>
   </set>
 </defaults>
