@@ -152,7 +152,7 @@ class GitClone (scm.Checkout):
                 line = fd.readline()
                 while line:
                     if line.startswith ('Author: '):
-                        author_email, author_name = parseaddr (line[8:].strip())
+                        author_name, author_email = parseaddr (line[8:].strip())
                     elif line.startswith ('Date: '):
                         revdate = line[8:].strip()
                         revdate = GitClone.parse_date (revdate)
