@@ -61,6 +61,9 @@ class GnomeDocUtilsModuleHandler (object):
         checkout = self.scanner.checkout
         bserver, bmodule, bbranch = branch.ident.split('/')[2:]
 
+        if not 'DOC_MODULE' in makefile:
+            utils.warn ('Not processing "%s" due to missing DOC_MODULE' % filename)
+            return
         doc_module = makefile['DOC_MODULE']
         if doc_module == '@PACKAGE_NAME@':
             doc_module = branch.data.get ('PACKAGE_NAME', '@PACKAGE_NAME@')
