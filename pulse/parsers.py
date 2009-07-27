@@ -78,6 +78,10 @@ class Automake (object):
         """Get the value of an automake variable."""
         return self._variables[key]
 
+    def __contains__ (self, key):
+        """Allow 'x in Automake' checks"""
+        return key in self._variables
+
     def get (self, key, val=None):
         """Get the value of an automake variable, or return a default."""
         return self._variables.get(key, val)
