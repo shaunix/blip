@@ -56,12 +56,6 @@ def get_config (key, default=None):
 
 db_uri = get_config ('db.uri')
 
-# Larger values will result in fewer queries and faster crawl
-# times, but will use more memory.  Note that, unless you set
-# this ridiculously low, the web app won't be affected.
-
-db_cache_size = get_config ('db.cache-size', 5000)
-
 
 ################################################################################
 ## Directories for local stuff
