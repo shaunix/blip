@@ -1,0 +1,200 @@
+#!/usr/bin/env python
+# Copyright (c) 2010  Shaun McCance  <shaunm@gnome.org>
+#
+# This file is part of Blip, a program for displaying various statistics
+# of questionable relevance about software and the people who make it.
+#
+# Blip is free software; you can redistribute it and/or modify it under the
+# terms of the GNU General Public License as published by the Free Software
+# Foundation; either version 2 of the License, or (at your option) any later
+# version.
+#
+# Blip is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with Blip; if not, write to the Free Software Foundation, 59 Temple Place,
+# Suite 330, Boston, MA  0211-1307  USA.
+#
+
+BLIP_SITE_DIR = '@BLIP_SITE_DIR@'
+
+import ConfigParser
+import inspect
+import os
+import os.path
+import sys
+
+
+def usage (fd=sys.stderr, verbose=False):
+    print >>fd, 'Usage: %s <command> [command arguments]' % sys.argv[0]
+    if not verbose:
+        return
+
+    print >>fd, '\nCommands:'
+    cmdlen = 0
+    cmds = []
+    for cmd in sys.modules[__name__].__dict__.values():
+        if not inspect.isclass (cmd):
+            continue
+        if not hasattr (cmd, 'synopsis'):
+            continue
+        cmds.append ((cmd.__name__, cmd.synopsis))
+        cmdlen = max(cmdlen, len(cmd.__name__))
+    cmdfmt = '  %%-%ds   %%s' % cmdlen
+    for cmd, synopsis in cmds:
+        print >>fd, cmdfmt % (cmd, synopsis)
+
+
+class config:
+    synopsis = 'view and set configuration for a site'
+
+    @staticmethod
+    def usage (fd=sys.stderr, verbose=False):
+        print >>fd, 'Usage: %s config <key> [val]' % sys.argv[0]
+        if not verbose:
+            return
+
+    @staticmethod
+    def run (args):
+        if len (sys.argv) not in (3, 4):
+            config.usage ()
+            sys.exit (1)
+        cfgfile = os.path.join (BLIP_SITE_DIR, 'blip.cfg')
+        cfg = ConfigParser.RawConfigParser ()
+        try:
+            fd = open (cfgfile, 'r')
+            cfg.readfp (fd)
+            fd.close ()
+        except:
+            pass
+        try:
+            section, option = sys.argv[2].split ('.', 1)
+        except:
+            print >>sys.stderr, 'Error: configuration keys must be section.option'
+            sys.exit (1)
+
+        if len (sys.argv) == 3:
+            try:
+                print cfg.get (section, option)
+            except:
+                pass
+        else:
+            if not cfg.has_section (section):
+                cfg.add_section (section)
+            cfg.set (section, option, sys.argv[3])
+            if not os.path.exists (BLIP_SITE_DIR):
+                os.makedirs (BLIP_SITE_DIR)
+            fd = open (cfgfile, 'w')
+            cfg.write (fd)
+            fd.close ()
+                    
+
+class db:
+    synopsis = 'initialize the Blip database'
+
+    @staticmethod
+    def usage (fd=sys.stderr, verbose=False):
+        print >>fd, 'Usage: %s db' % sys.argv[0]
+        if not verbose:
+            return
+
+        print >>fd, '\nOptions:'
+        print >>fd, '  --rollback   roll back all changes (dry run)'
+
+    @staticmethod
+    def run (args):
+        import blip.db
+        import storm.properties
+        dbtype = blip.config.db_uri[:blip.config.db_uri.find(':')]
+        dbtype_map = {
+            'Bool':      {'postgres': 'BOOL',      'mysql': 'TINYINT(1)', 'sqlite': 'INT'},
+            'Int':       {'postgres': 'INT',       'mysql': 'INT',        'sqlite': 'INTEGER'},
+            'Float':     {'postgres': 'FLOAT',     'mysql': 'FLOAT',      'sqlite': 'FLOAT'},
+            'Decimal':   {'postgres': 'DECIMAL',   'mysql': 'DECIMAL',    'sqlite': 'TEXT'},
+            'Unicode':   {'postgres': 'TEXT',      'mysql': 'TEXT',       'sqlite': 'TEXT'},
+            'RawStr':    {'postgres': 'BYTEA',     'mysql': 'BLOB',       'sqlite': 'BLOB'},
+            'Pickle':    {'postgres': 'BYTEA',     'mysql': 'BLOB',       'sqlite': 'BLOB'},
+            'DateTime':  {'postgres': 'TIMESTAMP', 'mysql': 'DATETIME',   'sqlite': 'TEXT'},
+            'Date':      {'postgres': 'DATE',      'mysql': 'DATE',       'sqlite': 'TEXT'},
+            'Time':      {'postgres': 'TIME',      'mysql': 'TIME',       'sqlite': 'TEXT'},
+            'TimeDelta': {'postgres': 'INTERVAL',  'mysql': 'TEXT',       'sqlite': 'TEXT'},
+            'List':      {'postgres': 'ARRAY[]',   'mysql': None,         'sqlite': 'TEXT'},
+            'BASE':      {'postgres': '%s %s',     'mysql': '`%s` %s',    'sqlite': '%s %s'},
+            'AUTOINCREMENT': {'postgres': 'sequenzes_TODO', 'mysql': 'AUTO_INCREMENT', 'sqlite': 'AUTOINCREMENT'},
+            }
+        store = blip.db.get_store ('default')
+
+        for cls in blip.db.read_tables ():
+            fields = []
+            indexes = []
+            for key, field in cls.get_fields ().items ():
+                if not isinstance (field[0], storm.properties.PropertyColumn):
+                    continue
+                fieldtype = dbtype_map.get (field[1].__name__, {}).get (dbtype)
+                if fieldtype == None:
+                    continue
+                if field[1].__name__ == 'Unicode' and field[0].primary:
+                    fieldtype = 'VARCHAR (255)'
+                txt = dbtype_map['BASE'][dbtype] % (key, fieldtype)
+                if fieldtype in ('TEXT', 'VARCHAR (255)') and dbtype == 'mysql':
+                    txt += ' CHARACTER SET utf8 COLLATE utf8_unicode_ci '
+                if field[1].__name__ != 'Pickle':
+                    sql = 'CREATE INDEX IF NOT EXISTS %s__%s ON %s (%s);' if dbtype != 'mysql' \
+                            else 'CREATE INDEX %s__%s ON %s (%s);'
+                    indexes.append(sql % (cls.__name__, key, cls.__name__, key))
+                if field[0].primary:
+                    txt += ' PRIMARY KEY'
+                    if field[1].__name__ == 'Int':
+                        txt += ' ' + dbtype_map['AUTOINCREMENT'][dbtype]
+
+                fields.append (txt)
+            cmd = 'CREATE TABLE IF NOT EXISTS %s (%s)' % (cls.__name__, ','.join(fields))
+            print cmd
+            store.execute (cmd, noresult=True)
+            for index in indexes:
+                try:
+                    store.execute (index, noresult=True)
+                except:
+                    print 'WARNING: could not create index'
+                    print index
+        if '--rollback' in args:
+            blip.db.rollback (store)
+        else:
+            blip.db.commit (store)
+
+
+if __name__ == "__main__":
+    if len (sys.argv) < 2:
+        usage (sys.stderr)
+        sys.exit (1)
+    if sys.argv[1] in ('--usage', '--help'):
+        verbose = (sys.argv[1]=='--help')
+        if len (sys.argv) < 3:
+            usage (sys.stderr, verbose=verbose)
+        else:
+            cmd = sys.modules[__name__].__dict__[sys.argv[2]]
+            if not inspect.isclass (cmd):
+                usage (sys.stderr, verbose=verbose)
+                sys.exit (0)
+            if not hasattr (cmd, 'usage'):
+                usage (sys.stderr, verbose=verbose)
+                sys.exit (0)
+            cmd.usage (sys.stderr, verbose=verbose)
+        sys.exit (0)
+
+    try:
+        cmd = sys.modules[__name__].__dict__[sys.argv[1]]
+    except:
+        usage (sys.stderr)
+        sys.exit (1)
+    if not inspect.isclass (cmd):
+        usage (sys.stderr)
+        sys.exit (1)
+    if not hasattr (cmd, 'usage'):
+        usage (sys.stderr)
+        sys.exit (1)
+
+    cmd.run (sys.argv[2:])

@@ -1,0 +1,127 @@
+# Copyright (c) 2006, 2010  Shaun McCance  <shaunm@gnome.org>
+#
+# This file is part of Blip, a program for displaying various statistics
+# of questionable relevance about software and the people who make it.
+#
+# Blip is free software; you can redistribute it and/or modify it under the
+# terms of the GNU General Public License as published by the Free Software
+# Foundation; either version 2 of the License, or (at your option) any later
+# version.
+#
+# Blip is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with Blip; if not, write to the Free Software Foundation, 59 Temple Place,
+# Suite 330, Boston, MA  0211-1307  USA.
+#
+
+"""
+Confinguration settings for Blip
+"""
+
+import os
+import os.path
+import sys
+import ConfigParser
+
+BLIP_SITE_DIR = '@BLIP_SITE_DIR@'
+
+__blip_config = ConfigParser.RawConfigParser ()
+try:
+    __blip_config_fd = open (os.path.join (BLIP_SITE_DIR, 'blip.cfg'))
+    __blip_config.readfp (__blip_config_fd)
+    __blip_config_fd.close ()
+    del __blip_config_fd
+except:
+    pass
+
+
+def get_config (key, default=None):
+    try:
+        section, option = key.split ('.', 1)
+    except:
+        return default
+    try:
+        ret = __blip_config.get (section, option)
+    except:
+        return default
+    return ret
+
+
+################################################################################
+## Database settings
+
+db_uri = get_config ('db.uri')
+
+# Larger values will result in fewer queries and faster crawl
+# times, but will use more memory.  Note that, unless you set
+# this ridiculously low, the web app won't be affected.
+
+db_cache_size = get_config ('db.cache-size', 5000)
+
+
+################################################################################
+## Directories for local stuff
+# These are the local directories where stuff can be found.
+
+# The directory containing input files that are stored in git with Blip
+input_dir = get_config ('blip.input_dir',
+                        os.path.join (BLIP_SITE_DIR, 'input'))
+
+# The directory where Blip checks stuff out from SCM systems
+scm_dir = get_config ('blip.scm_dir',
+                      os.path.join (BLIP_SITE_DIR, 'scm'))
+
+# The directory where Blip puts temporary files
+tmp_dir = get_config ('blip.tmp_dir',
+                      os.path.join (BLIP_SITE_DIR, 'tmp'))
+
+
+################################################################################
+## Directores for web stuff
+# These are the local directories where web-available stuff is located.
+
+# The directory that contains index.cgi, among other things
+web_dir = get_config ('web.dir')
+
+# The directory where Blip puts web-available files it creates
+web_files_dir = get_config ('web.files_dir',
+                            web_dir and os.path.join (web_dir, 'files') or None)
+
+
+################################################################################
+## Web roots
+# These are the root URLs for various things in Blip.
+
+# The root URL for all things Blip
+web_url = get_config ('web.url', 'http://127.0.0.1/')
+
+# The root URL for Blip's CSS, JavaScript, images, etc.
+web_data_url = get_config ('web.data_url', web_url + 'data/')
+
+# The root URL for web-available files Blip creates.
+web_files_url = get_config ('web.files_url', web_url + 'files/')
+
+# If you don't want to use mod_rewrite or something similar, then
+# web_url needs to end with 'index.cgi/'.  But then data_url and
+# files_url won't work, so do something like this:
+#   web.url = 'http://localhost/index.cgi/'
+#   web.data_url = 'http://localhost/data/'
+#   web.files_url = 'http://localhost/files/'
+
+
+################################################################################
+## Other Stuff
+
+mail_host = get_config ('mail.host', 'localhost')
+
+# Username and password for hosts that require authentication.
+# Set mail.username to None if no authentication is required.
+mail_username = get_config ('mail.username', None)
+mail_password = get_config ('mail.password', None)
+
+# The email address from which Blip sends email
+mail_from = get_config ('mail.from', 'webmaster@example.com')

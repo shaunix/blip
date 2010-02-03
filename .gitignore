@@ -1,3 +1,16 @@
+*~
 *.pyc
+Makefile
+Makefile.in
+aclocal.m4
+autom4te.cache
+blip-admin
+config.log
+config.status
+configure
+install-sh
+missing
+py-compile
+blip/config.py
 web/files/
 scratch/
