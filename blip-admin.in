@@ -114,6 +114,7 @@ class db:
             'Int':       {'postgres': 'INT',       'mysql': 'INT',        'sqlite': 'INTEGER'},
             'Float':     {'postgres': 'FLOAT',     'mysql': 'FLOAT',      'sqlite': 'FLOAT'},
             'Decimal':   {'postgres': 'DECIMAL',   'mysql': 'DECIMAL',    'sqlite': 'TEXT'},
+            'ShortText': {'postgres': 'TEXT',      'mysql': 'VARCHAR(255)', 'sqlite': 'TEXT'},
             'Unicode':   {'postgres': 'TEXT',      'mysql': 'TEXT',       'sqlite': 'TEXT'},
             'RawStr':    {'postgres': 'BYTEA',     'mysql': 'BLOB',       'sqlite': 'BLOB'},
             'Pickle':    {'postgres': 'BYTEA',     'mysql': 'BLOB',       'sqlite': 'BLOB'},
@@ -133,17 +134,23 @@ class db:
             for key, field in cls.get_fields ().items ():
                 if not isinstance (field[0], storm.properties.PropertyColumn):
                     continue
-                fieldtype = dbtype_map.get (field[1].__name__, {}).get (dbtype)
+                fieldname = field[1].__name__
+                fieldtype = dbtype_map.get (fieldname, {}).get (dbtype)
                 if fieldtype == None:
                     continue
-                if field[1].__name__ == 'Unicode' and field[0].primary:
-                    fieldtype = 'VARCHAR (255)'
                 txt = dbtype_map['BASE'][dbtype] % (key, fieldtype)
-                if fieldtype in ('TEXT', 'VARCHAR (255)') and dbtype == 'mysql':
+                if fieldname in ('Unicode', 'ShortText') and dbtype == 'mysql':
                     txt += ' CHARACTER SET utf8 COLLATE utf8_unicode_ci '
-                if field[1].__name__ != 'Pickle':
-                    sql = 'CREATE INDEX IF NOT EXISTS %s__%s ON %s (%s);' if dbtype != 'mysql' \
-                            else 'CREATE INDEX %s__%s ON %s (%s);'
+                if fieldname != 'Pickle':
+                    if dbtype == 'mysql':
+                        if fieldname == 'ShortText':
+                            sql = 'CREATE INDEX %s__%s ON %s (%s(255));'
+                        elif fieldname == 'Unicode':
+                            sql = 'CREATE INDEX %s__%s ON %s (%s(1024));'
+                        else:
+                            sql = 'CREATE INDEX %s__%s ON %s (%s);'
+                    else:
+                        sql = 'CREATE INDEX IF NOT EXISTS %s__%s ON %s (%s);'
                     indexes.append(sql % (cls.__name__, key, cls.__name__, key))
                 if field[0].primary:
                     txt += ' PRIMARY KEY'
@@ -152,14 +159,16 @@ class db:
 
                 fields.append (txt)
             cmd = 'CREATE TABLE IF NOT EXISTS %s (%s)' % (cls.__name__, ','.join(fields))
+            if dbtype == 'mysql':
+                cmd += ' DEFAULT CHARACTER SET utf8'
             print cmd
             store.execute (cmd, noresult=True)
             for index in indexes:
+                print index
                 try:
-                    store.execute (index, noresult=True)
+                    store.execute (index)
                 except:
                     print 'WARNING: could not create index'
-                    print index
         if '--rollback' in args:
             blip.db.rollback (store)
         else:

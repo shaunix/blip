@@ -223,6 +223,10 @@ def get_by_ident (ident):
         return None
 
 
+class ShortText (Unicode):
+    pass
+        
+
 class BlipModelType (storm.properties.PropertyPublisherMeta):
     def __new__ (meta, name, bases, attrs):
         cls = super (BlipModelType, meta).__new__ (meta, name, bases, attrs)
@@ -333,14 +337,13 @@ class BlipModel (Storm):
         blip.utils.log ('Deleting %s' % self)
         self.__blip_store__.remove (self)
 
-
 class BlipRecord (BlipModel):
     __abstract__ = True
-    ident = Unicode (primary=True)
+    ident = ShortText (primary=True)
     type = Unicode ()
 
-    name = Pickle (default_factory=dict)
-    desc = Pickle (default_factory=dict)
+    name = Unicode ()
+    desc = Unicode ()
 
     icon_dir = Unicode ()
     icon_name = Unicode ()
@@ -482,39 +485,44 @@ class BlipRelation (BlipModel):
 
 
 class ReleaseSet (BlipRecord):
-    parent_ident = Unicode ()
+    parent_ident = ShortText ()
     parent = Reference (parent_ident, 'ReleaseSet.ident')
 
     subsets = ReferenceSet ('ReleaseSet.ident', parent_ident)
 
 
+class Project (BlipRecord):
+    pass
+
 class Branch (BlipRecord):
-    subtype = Unicode ()
-    parent_ident = Unicode ()
+    subtype = ShortText ()
+    parent_ident = ShortText ()
     parent = Reference (parent_ident, 'Branch.ident')
-    branchable = Unicode ()
+    project_ident = ShortText ()
+    project = Reference (project_ident, 'Project.ident')
     error = Unicode ()
 
-    scm_type = Unicode ()
-    scm_server = Unicode ()
-    scm_module = Unicode ()
-    scm_branch = Unicode ()
-    scm_path = Unicode ()
-    scm_dir = Unicode ()
-    scm_file = Unicode ()
+    scm_type = ShortText ()
+    scm_server = ShortText ()
+    scm_module = ShortText ()
+    scm_branch = ShortText ()
+    scm_path = ShortText ()
+    scm_dir = ShortText ()
+    scm_file = ShortText ()
 
-    bug_database = Unicode ()
+    bug_database = ShortText ()
 
     mod_score = Int ()
     mod_score_diff = Int ()
     mod_datetime = DateTime ()
-    mod_person_ident = Unicode ()
+    mod_person_ident = ShortText ()
     mod_person = Reference (mod_person_ident, 'Entity.ident')
     post_score = Int ()
     post_score_diff = Int ()
 
     def __init__ (self, ident, type, **kw):
-        kw['branchable'] = u'/'.join (ident.split('/')[:-1])
+        kw['project_ident'] = u'/'.join (ident.split('/')[:-1])
+        Project.get_or_create (kw['project_ident'], type)
         BlipRecord.__init__ (self, ident, type, **kw)
 
     @property
@@ -542,10 +550,6 @@ class Branch (BlipRecord):
     @property
     def is_default (self):
         return self.scm_branch == blip.scm.default_branch (self.scm_type)
-
-    @classmethod
-    def count_branchables (cls, type):
-        return cls.__blip_store__.find (cls, type=type).count (cls.branchable, distinct=True)
 
     @classmethod
     def _select_args (cls, *args, **kw):
@@ -642,7 +646,7 @@ class Branch (BlipRecord):
 
 
 class Entity (BlipRecord):
-    parent_ident = Unicode ()
+    parent_ident = ShortText ()
     parent = Reference (parent_ident, 'Entity.ident')
     nick = Unicode ()
     mod_score = Int ()
@@ -689,7 +693,7 @@ class Entity (BlipRecord):
 
 
 class Alias (BlipRecord):
-    entity_ident = Unicode ()
+    entity_ident = ShortText ()
     entity = Reference (entity_ident, 'Entity.ident')
 
     def delete (self):
@@ -781,16 +785,16 @@ class Forum (BlipRecord):
 
 
 class ForumPost (BlipRecord):
-    forum_ident = Unicode ()
+    forum_ident = ShortText ()
     forum = Reference (forum_ident, 'Forum.ident')
 
-    author_ident = Unicode ()
+    author_ident = ShortText ()
     author = Reference (author_ident, 'Entity.ident')
 
-    alias_ident = Unicode ()
+    alias_ident = ShortText ()
     alias = Reference (alias_ident, 'Alias.ident')
 
-    parent_ident = Unicode ()
+    parent_ident = ShortText ()
     parent = Reference (parent_ident, 'ForumPost.ident')
 
     datetime = DateTime ()
@@ -810,7 +814,7 @@ class ForumPost (BlipRecord):
 
 class Component(BlipModel):
     __storm_table__ = 'Component'
-    ident = Unicode (primary=True)
+    ident = ShortText (primary=True)
     product = Unicode ()
     tracker = Unicode ()
     name = Unicode ()
@@ -827,7 +831,7 @@ class Component(BlipModel):
 
 class Issue(BlipModel):
     __storm_table__ = 'Issue'
-    ident = Unicode (primary=True)
+    ident = ShortText (primary=True)
     bug_id = Int()
     datetime = DateTime ()
     severity = Unicode()
@@ -859,7 +863,7 @@ class Issue(BlipModel):
 
 
 class Cache(BlipModel):
-    ident = Unicode (primary=True)
+    ident = ShortText (primary=True)
     value = Pickle (default_factory=dict)
     mtime = Int ()
 
@@ -868,14 +872,14 @@ class Cache(BlipModel):
 ## Relations
 
 class Documentation (BlipRelation):
-    subj_ident = Unicode ()
-    pred_ident = Unicode ()
+    subj_ident = ShortText ()
+    pred_ident = ShortText ()
     subj = Reference (subj_ident, Branch.ident)
     pred = Reference (pred_ident, Branch.ident)
 
 class DocumentEntity (BlipRelation):
-    subj_ident = Unicode ()
-    pred_ident = Unicode ()
+    subj_ident = ShortText ()
+    pred_ident = ShortText ()
     subj = Reference (subj_ident, Branch.ident)
     pred = Reference (pred_ident, Entity.ident)
     maintainer = Bool (default=False)
@@ -884,34 +888,34 @@ class DocumentEntity (BlipRelation):
     publisher = Bool (default=False)
 
 class ModuleComponents (BlipRelation):
-    subj_ident = Unicode ()
-    pred_ident = Unicode ()
+    subj_ident = ShortText ()
+    pred_ident = ShortText ()
     subj = Reference (subj_ident, Branch.ident)
     pred = Reference (pred_ident, Component.ident)
 
 class ModuleDependency (BlipRelation):
-    subj_ident = Unicode ()
-    pred_ident = Unicode ()
+    subj_ident = ShortText ()
+    pred_ident = ShortText ()
     subj = Reference (subj_ident, Branch.ident)
     pred = Reference (pred_ident, Branch.ident)
     direct = Bool ()
 
 class ModuleEntity (BlipRelation):
-    subj_ident = Unicode ()
-    pred_ident = Unicode ()
+    subj_ident = ShortText ()
+    pred_ident = ShortText ()
     subj = Reference (subj_ident, Branch.ident)
     pred = Reference (pred_ident, Entity.ident)
     maintainer = Bool (default=False)
 
 class SetModule (BlipRelation):
-    subj_ident = Unicode ()
-    pred_ident = Unicode ()
+    subj_ident = ShortText ()
+    pred_ident = ShortText ()
     subj = Reference (subj_ident, ReleaseSet.ident)
     pred = Reference (pred_ident, Branch.ident)
 
 class TeamMember (BlipRelation):
-    subj_ident = Unicode ()
-    pred_ident = Unicode ()
+    subj_ident = ShortText ()
+    pred_ident = ShortText ()
     subj = Reference (subj_ident, Entity.ident)
     pred = Reference (pred_ident, Entity.ident)
     coordinator = Bool (default=False)
@@ -923,17 +927,17 @@ class TeamMember (BlipRelation):
 class Account (BlipModel):
     __blip_store__ = get_store ('account')
 
-    username = Unicode (primary=True)
-    password = Unicode ()
+    username = ShortText (primary=True)
+    password = ShortText ()
 
-    person_ident = Unicode ()
+    person_ident = ShortText ()
     person = Reference (person_ident, Entity.ident)
 
-    email = Unicode ()
+    email = ShortText ()
 
     check_time = DateTime ()
-    check_type = Unicode ()
-    check_hash = Unicode ()
+    check_type = ShortText ()
+    check_hash = ShortText ()
 
     data = Pickle (default_factory=dict)
 
@@ -942,12 +946,12 @@ class Login (BlipModel):
     __storm_primary__ = 'username', 'ipaddress'
     __blip_store__ = get_store ('account')
 
-    username = Unicode ()
+    username = ShortText ()
     account = Reference (username, Account.username)
 
-    token = Unicode ()
+    token = ShortText ()
     datetime = DateTime ()
-    ipaddress = Unicode ()
+    ipaddress = ShortText ()
 
     @classmethod
     def set_login (cls, account, token, ipaddress):
@@ -989,9 +993,9 @@ class AccountWatch (BlipModel):
     __storm_primary__ = 'username', 'ident'
     __blip_store__ = get_store ('account')
 
-    username = Unicode ()
+    username = ShortText ()
     account = Reference (username, Account.username)
-    ident = Unicode ()
+    ident = ShortText ()
 
     @classmethod
     def add_watch (cls, username, ident):
@@ -1008,9 +1012,9 @@ class AccountWatch (BlipModel):
 class Message (BlipModel):
     id = Int (primary=True)
 
-    type = Unicode ()
-    subj = Unicode ()
-    pred = Unicode ()
+    type = ShortText ()
+    subj = ShortText ()
+    pred = ShortText ()
     count = Int ()
 
     datetime = DateTime ()
@@ -1055,18 +1059,18 @@ class Message (BlipModel):
 ## Other Tables
 
 class Revision (BlipModel):
-    ident = Unicode (primary=True)
+    ident = ShortText (primary=True)
 
-    branch_ident = Unicode ()
+    branch_ident = ShortText ()
     branch = Reference (branch_ident, Branch.ident)
 
-    person_ident = Unicode ()
+    person_ident = ShortText ()
     person = Reference (person_ident, Entity.ident)
 
-    alias_ident = Unicode ()
+    alias_ident = ShortText ()
     alias = Reference (alias_ident, Alias.ident)
 
-    revision = Unicode ()
+    revision = Unicode(varchar=True)
     datetime = DateTime ()
     weeknum = Int ()
     comment = Unicode ()
@@ -1220,12 +1224,12 @@ class Revision (BlipModel):
 class RevisionFile (BlipModel):
     __storm_primary__ = 'revision_ident', 'filename'
 
-    revision_ident = Unicode ()
+    revision_ident = ShortText ()
     revision = Reference (revision_ident, Revision.ident)
 
     filename = Unicode ()
-    filerev = Unicode ()
-    prevrev = Unicode ()
+    filerev = ShortText ()
+    prevrev = ShortText ()
 
     def log_create (self):
         pass
@@ -1234,10 +1238,10 @@ class RevisionFile (BlipModel):
 class RevisionFileCache (BlipModel):
     __storm_primary__ = 'branch_ident', 'filename'
 
-    branch_ident = Unicode ()
+    branch_ident = ShortText ()
     filename = Unicode ()
 
-    revision_ident = Unicode ()
+    revision_ident = ShortText ()
     revision = Reference (revision_ident, Revision.ident)
 
     def log_create (self):
@@ -1267,10 +1271,10 @@ class RevisionFileCache (BlipModel):
 class Statistic (BlipModel):
     __storm_primary__ = 'branch_ident', 'daynum', 'type'
 
-    branch_ident = Unicode ()
+    branch_ident = ShortText ()
     branch = Reference (branch_ident, Branch.ident)
     daynum = Int ()
-    type = Unicode ()
+    type = ShortText ()
     stat1 = Int ()
     stat2 = Int ()
     total = Int ()
@@ -1300,8 +1304,8 @@ class Statistic (BlipModel):
 class OutputFile (BlipModel):
     id = Int (primary=True)
 
-    type = Unicode ()
-    ident = Unicode ()
+    type = ShortText ()
+    ident = ShortText ()
     subdir = Unicode ()
     filename = Unicode ()
     source = Unicode ()
@@ -1373,8 +1377,8 @@ class Timestamp (BlipModel):
 
 class Queue (BlipModel):
     __storm_primary__ = 'module', 'ident'
-    module = Unicode ()
-    ident = Unicode ()
+    module = ShortText ()
+    ident = ShortText ()
     cache = {}
 
     def log_create (self):
