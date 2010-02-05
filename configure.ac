@@ -3,16 +3,20 @@ AM_INIT_AUTOMAKE([1.9])
 
 AC_CONFIG_MACRO_DIR([m4])
 
-AM_PATH_PYTHON
+AM_PATH_PYTHON([2.3])
 
 BLIP_SITE_DIR="${localstatedir}/blip"
 AC_SUBST(BLIP_SITE_DIR)
+
+BLIP_PLUGINS_DIR="${pkgpythondir}/plugins"
 
 AC_CONFIG_FILES([
 Makefile
 blip-admin
 blip/Makefile
 blip/config.py
+blip/plugins/Makefile
+blip/plugins/sets/Makefile
 ])
 
 AC_OUTPUT

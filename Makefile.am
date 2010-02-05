@@ -1,3 +1,3 @@
 SUBDIRS = blip
 
-bin_SCRIPTS = blip-admin
+bin_SCRIPTS = blip-admin blip-sweep
