@@ -16,7 +16,10 @@ blip-admin
 blip/Makefile
 blip/config.py
 blip/plugins/Makefile
+blip/plugins/cvs/Makefile
+blip/plugins/git/Makefile
 blip/plugins/sets/Makefile
+blip/plugins/svn/Makefile
 ])
 
 AC_OUTPUT

@@ -1,4 +1,8 @@
-SUBDIRS = sets
+SUBDIRS = 	\
+	cvs	\
+	git	\
+	sets	\
+	svn
 
 blipdir=${pkgpythondir}/plugins
 
