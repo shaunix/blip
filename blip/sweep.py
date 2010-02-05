@@ -37,7 +37,7 @@ class OptionParser (optparse.OptionParser):
             self.set_usage ('%prog [common options] <command> [command options]')
             optparse.OptionParser.print_help (self, formatter)
             print '\nCommands:'
-            for cmd in SweepResponder.get_responders ():
+            for cmd in SweepResponder.get_extensions ():
                 if cmd.command is None:
                     continue
                 line = '  ' + cmd.command
@@ -174,7 +174,7 @@ class SweepResponder (blip.core.Responder):
 
         responder = None
         if tool is not None:
-            for cmd in SweepResponder.get_responders ():
+            for cmd in SweepResponder.get_extensions ():
                 if cmd.command == tool:
                     responder = cmd
                     break

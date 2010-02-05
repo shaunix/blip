@@ -32,6 +32,14 @@ def import_plugins (domain):
             except ImportError:
                 pass
 
+class ExtensionPoint (object):
+    @classmethod
+    def get_extensions (cls):
+        extensions = []
+        for subcls in cls.__subclasses__():
+            extensions = extensions + [subcls] + subcls.get_extensions()
+        return extensions
+
 
 class Request (object):
     pass
@@ -48,15 +56,9 @@ class Response (object):
         self._return_code = code
 
 
-class Responder (object):
+class Responder (ExtensionPoint):
     @classmethod
     def respond (cls, request, **kw):
         raise NotImplementedError ('%s does not provide the respond method.'
                                    % cls.__name__)
 
-    @classmethod
-    def get_responders (cls):
-        responders = []
-        for subcls in cls.__subclasses__():
-            responders = responders + [subcls] + subcls.get_responders()
-        return responders
