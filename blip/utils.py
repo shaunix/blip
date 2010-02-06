@@ -232,16 +232,6 @@ def relative_path (path, base):
     return os.path.join (*newpath)
 
 
-def xmliter (node):
-    """
-    An iterator for libxml2 child nodes
-    """
-    child = node.children
-    while child:
-        yield child
-        child = child.next
-
-
 class TitleParser (HTMLParser.HTMLParser):
     def __init__ (self):
         self.intitle = False
