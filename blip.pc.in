@@ -1,0 +1,7 @@
+prefix=@prefix@
+pluginsdir=@BLIP_PLUGINS_DIR@
+sitedir=@BLIP_SITE_DIR@
+
+Name: Blip
+Description: Universal Project Tracker
+Version: @VERSION@

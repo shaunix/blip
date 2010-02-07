@@ -4,6 +4,7 @@ Makefile
 Makefile.in
 aclocal.m4
 autom4te.cache
+blip.pc
 blip-admin
 config.log
 config.status
