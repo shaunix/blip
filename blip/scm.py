@@ -78,7 +78,9 @@ class Repository (blip.core.ExtensionPoint):
     def __new__(cls, *args, **kw):
         if cls == Repository and 'scm_type' in kw:
             cls = Repository.get_repository_class (kw['scm_type'])
-        return object.__new__(cls, *args, **kw)
+        obj = object.__new__(cls)
+        obj.__init__(*args, **kw)
+        return obj
 
     @staticmethod
     def get_default_branch (scm_type):
