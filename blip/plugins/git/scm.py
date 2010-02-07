@@ -25,14 +25,14 @@ Read information from a Git repository.
 import codecs
 import datetime
 import os
+import sys
+
+import blip.scm
 
 try:
     from email.utils import parseaddr
 except:
     from email.Utils import parseaddr
-
-import blip
-import sys
 
 
 class GitClone (blip.scm.Repository):
@@ -58,7 +58,7 @@ class GitClone (blip.scm.Repository):
         if self._git_url[-1] != '/':
             self._git_url += '/'
 
-        blip.Repository.initialize (self, **kw)
+        blip.scm.Repository.initialize (self, **kw)
 
 
     def get_location (self, scm_dir=None, scm_file=None):

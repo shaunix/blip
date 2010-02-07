@@ -8,6 +8,7 @@ blip_PYTHON =			\
 	data.py			\
 	db.py			\
 	html.py			\
+	scm.py			\
 	sweep.py		\
 	utils.py		\
 	web.py			\
