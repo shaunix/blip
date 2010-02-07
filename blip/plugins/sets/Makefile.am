@@ -1,3 +1,6 @@
 blipdir=${pkgpythondir}/plugins/sets
 
-blip_PYTHON = sweep.py __init__.py
+blip_PYTHON =		\
+	sweep.py	\
+	web.py		\
+	__init__.py

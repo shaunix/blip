@@ -162,17 +162,17 @@ class WebResponse (blip.core.Response):
 
 class WebResponder (blip.core.Responder):
     @classmethod
-    def respond (cls, request):
+    def respond (cls, request, **kw):
         try:
             blip.core.import_plugins ('web')
             if request.query.has_key ('q'):
-                handlerbase = ContentHandler
+                responderbase = ContentResponder
             elif request.query.has_key ('d'):
-                handlerbase = DataHandler
+                responderbase = DataResponder
             else:
-                handlerbase = PageHandler
-            for handler in handlerbase.get_extensions ():
-                response = handler.handle_request (request)
+                responderbase = PageResponder
+            for responder in responderbase.get_extensions ():
+                response = responder.respond (request)
                 if response is not None:
                     break
             if response is None:
@@ -199,18 +199,13 @@ class WebResponder (blip.core.Responder):
 
 ################################################################################
         
-class WebHandler (blip.core.ExtensionPoint):
-    @classmethod
-    def handle_request (cls, request):
-        return None
-
-class PageHandler (WebHandler):
+class PageResponder (blip.core.Responder):
     pass
 
-class ContentHandler (WebHandler):
+class ContentResponder (blip.core.Responder):
     pass
 
-class DataHander (WebHandler):
+class DataResponder (blip.core.Responder):
     pass
 
 ################################################################################

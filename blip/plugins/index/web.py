@@ -18,36 +18,31 @@
 # Suite 330, Boston, MA  0211-1307  USA.
 #
 
+import blip.core
 import blip.html
 import blip.web
 import blip.utils
 
-class IndexHandler (blip.web.PageHandler):
+class IndexResponder (blip.web.PageResponder):
     @classmethod
-    def handle_request (cls, request):
+    def respond (cls, request, **kw):
+        if len(request.path) != 0:
+            return None
+
+        response = blip.web.WebResponse (request)
+
         page = blip.html.Page ()
         page.set_title (blip.utils.gettext ('Blip'))
         cont = blip.html.PaddingBox ()
         page.add_content (cont)
 
-        # FIXME: instead of this old stuff, we'll provide an extension
-        # point for index page boxes.
-        #types = pages.__all__
-        #mods = [utils.import_ ('blip.pages.' + t) for t in types]
-        #for mod in mods:
-        #    if not hasattr(mod, 'synopsis_sort'):
-        #        setattr (mod, 'synopsis_sort', 0)
-        #for mod in sorted (mods,
-        #                   cmp=(lambda x, y:
-        #                        cmp(x.synopsis_sort, y.synopsis_sort) or
-        #                        cmp(x.__name__, y.__name__))):
-        #    if hasattr (mod, 'synopsis'):
-        #        box = mod.synopsis ()
-        #        if isinstance (box, html.SidebarBox):
-        #            page.add_sidebar_content (box)
-        #        else:
-        #            cont.add_content (box)
+        for provider in IndexContentProvider.get_extensions ():
+            provider.provide_content (page, response)
 
-        response = blip.web.WebResponse (request)
         response.set_widget (page)
         return response
+
+class IndexContentProvider (blip.core.ExtensionPoint):
+    @classmethod
+    def provide_content (cls, page, response, **kw):
+        pass

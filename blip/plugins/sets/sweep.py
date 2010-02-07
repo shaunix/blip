@@ -44,7 +44,7 @@ class SetsResponder (blip.sweep.SweepResponder):
     records = {}
 
     @classmethod
-    def respond (cls, request):
+    def respond (cls, request, **kw):
         response = blip.sweep.SweepResponse (request)
         update = request.get_tool_option ('update_scm')
 
