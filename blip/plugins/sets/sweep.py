@@ -23,8 +23,9 @@ import sys
 
 import xml.dom.minidom
 
+import blip.data
 import blip.db
-#import blip.xmldata
+import blip.scm
 import blip.sweep
 
 
@@ -48,17 +49,110 @@ class SetsResponder (blip.sweep.SweepResponder):
         response = blip.sweep.SweepResponse (request)
         update = request.get_tool_option ('update_scm')
 
-        data = pulse.xmldata.get_data (os.path.join (pulse.config.input_dir, 'xml', 'sets.xml'))
+        data = blip.data.Data (os.path.join (blip.config.input_dir, 'sets.xml'))
 
-        for key in data.keys():
-            if data[key]['__type__'] == 'set':
-                update_set (data[key], update=update)
+        for key in data.data.keys():
+            if data.data[key]['blip:type'] == 'set':
+                cls.update_set (data.data[key], update=update)
 
-        if False:
-            update_deps ()
+        #if False:
+        #    update_deps ()
 
-        pulse.db.commit ()
+        blip.db.commit ()
         return response
+
+    @classmethod
+    def update_set (cls, data, update=True, parent=None):
+        ident = u'/set/' + data['blip:id']
+        record = blip.db.ReleaseSet.get_or_create (ident, u'Set')
+        if parent:
+            record.parent = parent
+
+        if data.has_key ('name'):
+            record.update (name=data['name'])
+
+        #if data.has_key ('links'):
+        #    pulse.pulsate.update_links (record, data['links'])
+
+        #if data.has_key ('schedule'):
+        #    pulse.pulsate.update_schedule (record, data['schedule'])
+
+        # Sets may contain either other sets or modules, not both
+        if data.has_key ('set'):
+            rels = []
+            for subset in data['set'].keys():
+                subrecord = cls.update_set (data['set'][subset], update=update, parent=record)
+        elif (data.has_key ('module')):
+            rels = []
+            for xml_data in data['module'].values():
+                mod_data = {}
+                for k in xml_data.keys():
+                    if k[:4] == 'scm_':
+                        mod_data[str(k)] = xml_data[k]
+                checkout = blip.scm.Repository (checkout=False, update=False, **mod_data)
+                servername = checkout.server_name
+                if servername == None:
+                    continue
+                if mod_data.get ('scm_branch', '') == '':
+                    mod_data['scm_branch'] = checkout.scm_branch
+                if mod_data.get ('scm_branch', '') == '':
+                    continue
+                ident = u'/'.join (['/mod', servername, mod_data['scm_module'], mod_data['scm_branch']])
+                branch = blip.db.Branch.get_or_create (ident, u'Module')
+                branch.update (mod_data)
+                rels.append (blip.db.SetModule.set_related (record, branch))
+            record.set_relations (blip.db.SetModule, rels)
+        elif (data.has_key ('jhbuild_scm_type')   and
+              data.has_key ('jhbuild_scm_server') and
+              data.has_key ('jhbuild_scm_module') and
+              data.has_key ('jhbuild_scm_dir')    and
+              data.has_key ('jhbuild_scm_file')):
+            # FIXME: move jhbuild stuff to
+            if False:
+                update_jhbuild_stuff (data)
+        return record
+
+
+def update_jhbuild_stuff (data):
+    coid = '/'.join (['jhbuild',
+                      data['jhbuild_scm_type'],
+                      data['jhbuild_scm_server'],
+                      data['jhbuild_scm_module'],
+                      data['jhbuild_scm_branch']])
+    if checkouts.has_key (coid):
+        checkout = checkouts[coid]
+    else:
+        checkout = blip.scm.Repository (scm_type=data['jhbuild_scm_type'],
+                                        scm_server=data['jhbuild_scm_server'],
+                                        scm_module=data['jhbuild_scm_module'],
+                                        scm_branch=data.get('jhbuild_scm_branch'),
+                                        scm_path=data.get('jhbuild_scm_path'),
+                                        update=update)
+        checkouts[coid] = checkout
+    filename = os.path.join (checkout.directory,
+                             data['jhbuild_scm_dir'],
+                             data['jhbuild_scm_file'])
+    moduleset = get_moduleset (filename)
+
+    packages = []
+    if not data.has_key ('jhbuild_metamodule'):
+        packages = moduleset.get_metamodule (os.path.basename (filename))
+    else:
+        modules = data['jhbuild_metamodule']
+        if isinstance (modules, basestring):
+            modules = [modules]
+
+        for module in modules:
+            if not moduleset.has_metamodule (module):
+                continue
+            packages += moduleset.get_metamodule (module)
+
+    rels = []
+    for pkg in packages:
+        branch = update_branch (moduleset, pkg, update=update)
+        if branch != None:
+            rels.append (pulse.db.SetModule.set_related (record, branch))
+    record.set_relations (pulse.db.SetModule, rels)
 
 
 class ModuleSet:
@@ -184,93 +278,6 @@ def update_branch (moduleset, key, update=True):
     return record
 
 
-def update_set (data, update=True, parent=None):
-    ident = u'/set/' + data['id']
-    record = pulse.db.ReleaseSet.get_or_create (ident, u'Set')
-    if parent:
-        record.parent = parent
-
-    if data.has_key ('name'):
-        record.update (name=data['name'])
-
-    if data.has_key ('links'):
-        pulse.pulsate.update_links (record, data['links'])
-
-    if data.has_key ('schedule'):
-        pulse.pulsate.update_schedule (record, data['schedule'])
-
-    # Sets may contain either other sets or modules, not both
-    if data.has_key ('set'):
-        rels = []
-        for subset in data['set'].keys():
-            subrecord = update_set (data['set'][subset], update=update, parent=record)
-    elif (data.has_key ('module')):
-        rels = []
-        for xml_data in data['module'].values():
-            mod_data = {}
-            for k in xml_data.keys():
-                if k[:4] == 'scm_':
-                    mod_data[str(k)] = xml_data[k]
-            checkout = pulse.scm.Checkout(checkout=False, update=False, **mod_data)
-            servername = checkout.server_name
-            if servername == None:
-                continue
-            if mod_data.get ('scm_branch', '') == '':
-                mod_data['scm_branch'] = checkout.scm_branch
-            if mod_data.get ('scm_branch', '') == '':
-                continue
-            ident = u'/'.join (['/mod', servername, mod_data['scm_module'], mod_data['scm_branch']])
-            branch = pulse.db.Branch.get_or_create (ident, u'Module')
-            branch.update (mod_data)
-            rels.append (pulse.db.SetModule.set_related (record, branch))
-        record.set_relations (pulse.db.SetModule, rels)
-    elif (data.has_key ('jhbuild_scm_type')   and
-          data.has_key ('jhbuild_scm_server') and
-          data.has_key ('jhbuild_scm_module') and
-          data.has_key ('jhbuild_scm_dir')    and
-          data.has_key ('jhbuild_scm_file')):
-
-        coid = '/'.join (['jhbuild',
-                          data['jhbuild_scm_type'],
-                          data['jhbuild_scm_server'],
-                          data['jhbuild_scm_module'],
-                          data['jhbuild_scm_branch']])
-        if checkouts.has_key (coid):
-            checkout = checkouts[coid]
-        else:
-            checkout = pulse.scm.Checkout (scm_type=data['jhbuild_scm_type'],
-                                           scm_server=data['jhbuild_scm_server'],
-                                           scm_module=data['jhbuild_scm_module'],
-                                           scm_branch=data.get('jhbuild_scm_branch'),
-                                           scm_path=data.get('jhbuild_scm_path'),
-                                           update=update)
-            checkouts[coid] = checkout
-        filename = os.path.join (checkout.directory,
-                                 data['jhbuild_scm_dir'],
-                                 data['jhbuild_scm_file'])
-        moduleset = get_moduleset (filename)
-
-        packages = []
-        if not data.has_key ('jhbuild_metamodule'):
-            packages = moduleset.get_metamodule (os.path.basename (filename))
-        else:
-            modules = data['jhbuild_metamodule']
-            if isinstance (modules, basestring):
-                modules = [modules]
-
-            for module in modules:
-                if not moduleset.has_metamodule (module):
-                    continue
-                packages += moduleset.get_metamodule (module)
-
-        rels = []
-        for pkg in packages:
-            branch = update_branch (moduleset, pkg, update=update)
-            if branch != None:
-                rels.append (pulse.db.SetModule.set_related (record, branch))
-        record.set_relations (pulse.db.SetModule, rels)
-
-    return record
 
 
 def update_deps ():

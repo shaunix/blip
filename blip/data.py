@@ -30,10 +30,10 @@ class Data (object):
         ctxt = libxml2.newParserCtxt ()
         self._doc = ctxt.ctxtReadFile (filename, None, 0)
         self._defaults = ()
-        self._data = self._read_group (self._doc.getRootElement ())
+        self.data = self._read_group (self._doc.getRootElement ())
 
     def print_data (self):
-        self._print_data (self._data)
+        self._print_data (self.data)
 
     def _print_data (self, data, indent=0):
         if isinstance (data, dict):
