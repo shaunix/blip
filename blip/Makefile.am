@@ -7,8 +7,10 @@ blip_PYTHON =			\
 	core.py			\
 	data.py			\
 	db.py			\
+	html.py			\
 	sweep.py		\
 	utils.py		\
+	web.py			\
 	__init__.py
 
 EXTRA_DIST = config.py.in

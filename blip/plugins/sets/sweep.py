@@ -23,11 +23,10 @@ import sys
 
 import xml.dom.minidom
 
-import pulse.db
-import pulse.scm
-import pulse.xmldata
-
+import blip.db
+#import blip.xmldata
 import blip.sweep
+
 
 class SetsResponder (blip.sweep.SweepResponder):
     command = 'sets'
@@ -41,20 +40,26 @@ class SetsResponder (blip.sweep.SweepResponder):
                                  default=True,
                                  help='do not update SCM checkouts')
 
+    checkouts = {}
+    records = {}
+
     @classmethod
     def respond (cls, request):
-        response = blip.sweep.SweepResponse ()
+        response = blip.sweep.SweepResponse (request)
+        update = request.get_tool_option ('update_scm')
+
+        data = pulse.xmldata.get_data (os.path.join (pulse.config.input_dir, 'xml', 'sets.xml'))
+
+        for key in data.keys():
+            if data[key]['__type__'] == 'set':
+                update_set (data[key], update=update)
+
+        if False:
+            update_deps ()
+
+        pulse.db.commit ()
         return response
 
-
-modulesets = {}
-checkouts = {}
-records = {}
-
-def get_moduleset (filename):
-    if not modulesets.has_key (filename):
-        modulesets[filename] = ModuleSet (filename)
-    return modulesets[filename]
 
 class ModuleSet:
     def __init__ (self, filename):
@@ -321,19 +326,3 @@ def get_deps (moduleset, pkg, seen=[]):
     return deps
 
 
-def main (argv, options=None):
-    if options is None:
-        options = {}
-    update = not options.get ('--no-update', False)
-
-    data = pulse.xmldata.get_data (os.path.join (pulse.config.input_dir, 'xml', 'sets.xml'))
-
-    for key in data.keys():
-        if data[key]['__type__'] == 'set':
-            update_set (data[key], update=update)
-
-    if not options.get ('--no-deps', False):
-        update_deps ()
-
-    pulse.db.commit ()
-    return 0

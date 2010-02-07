@@ -1,109 +1,109 @@
 #!/usr/bin/env python
+# Copyright (c) 2006-2010  Shaun McCance  <shaunm@gnome.org>
+#
+# This file is part of Blip, a program for displaying various statistics
+# of questionable relevance about software and the people who make it.
+#
+# Blip is free software; you can redistribute it and/or modify it under the
+# terms of the GNU General Public License as published by the Free Software
+# Foundation; either version 2 of the License, or (at your option) any later
+# version.
+#
+# Blip is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with Blip; if not, write to the Free Software Foundation, 59 Temple Place,
+# Suite 330, Boston, MA  0211-1307  USA.
+#
 
-import Cookie
-import getopt
-import os
+import optparse
 import sys
-import cgi
 
-from pulse import config, core, db, html, pages, utils
+import blip.db
+import blip.html
+import blip.utils
+import blip.web
 
-def usage ():
-    print >>sys.stderr, ('Usage: %s [options] [PATHINFO [QUERYSTRING]]' % sys.argv[0])
 
 def main ():
-    fd = None
-    db.block_implicit_flushes ()
-    utils.set_log_level (None)
-    try:
-        (opts, args) = getopt.gnu_getopt (sys.argv[1:], 'o:',
-                                          ['output=', 'debug-db', 'log-level=', 'webroot='])
-    except getopt.GetoptError:
-        usage ()
-        sys.exit (1)
-    debug = False
-    for (opt, arg) in opts:
-        if opt in ('-o', '--output'):
-            fd = file (arg, 'w')
-        elif opt == '--debug-db':
-            debug = True
-            db.debug ()
-        elif opt == '--log-level':
-            utils.set_log_level (arg)
-        elif opt == '--webroot':
-            config.web_root = arg
+    blip.db.block_implicit_flushes ()
+    blip.utils.set_log_level (None)
+
+    parser = optparse.OptionParser ()
+    parser.set_usage ('Usage: %prog [options] [PATHINFO [QUERYSTRING]]')
+    parser.add_option ('-o', '--output',
+                       dest='output',
+                       action='store',
+                       default=None,
+                       metavar='FILE',
+                       help='output to the file FILE')
+    parser.add_option ('--log-file',
+                       dest='log_file',
+                       action='store',
+                       default=None,
+                       metavar='FILE',
+                       help='append log messages to FILE')
+    parser.add_option ('--log-level',
+                       dest='log_level',
+                       action='store',
+                       default='log',
+                       metavar='LEVEL',
+                       help='minimum log level to print; one of warn, log, or none [default=log]')
+    parser.add_option ('--debug-db',
+                       dest='debug_db',
+                       action='store_true',
+                       default=False,
+                       help='print database queries to stdout')
+    parser.add_option ('--debug-db-summary',
+                       dest='debug_db_summary',
+                       action='store_true',
+                       default=False,
+                       help='print summary of database queries to stdout')
+    (options, args) = parser.parse_args ()
+
+    if options.debug_db:
+        blip.db.debug ()
 
     kw = {}
-    http = True
     if len(args) > 0:
-        http = False
+        kw['http'] = False
         kw['path_info'] = args[0]
         if len(args) > 1:
             kw['query_string'] = args[1]
 
-    request = core.HttpRequest (**kw)
-    response = core.HttpResponse (http=http)
-
-    try:
-        token = request.cookies.get ('pulse_auth')
-        token = utils.utf8dec (token.value)
-        response.http_login = db.Login.get_login (token, os.getenv ('REMOTE_ADDR'))
-        response.http_account = response.http_login.account
-    except:
-        pass
-
-    try:
-        if len (request.path) == 0:
-            mod = utils.import_ ('pulse.pages.__index__')
-        else:
-            mod = utils.import_ ('pulse.pages.' + request.path[0])
-        handler = mod.get_request_handler (request, response)
-        import pulse.applications
-        appreq = request.query.get ('application')
-        for app in pulse.applications.__all__:
-            app = pulse.utils.import_ ('pulse.applications.' + app)
-            if appreq is None:
-                if hasattr (app, 'initialize'):
-                    app.initialize (handler)
-            else:
-                if hasattr (app, 'initialize_application'):
-                    app.initialize_application (handler, appreq)
-        app = None
-        if appreq is not None:
-            app = handler.get_application (appreq)
-        if app is not None:
-            app.handle_request ()
-        else:
-            handler.handle_request ()
-        if not response.has_contents ():
-            raise utils.PulseException ('No response contents')
-    except Exception, err:
-        if not http:
-            raise
-        if request.query.has_key ('action'):
-            page = html.AdmonBox (
-                html.AdmonBox.error,
-                utils.gettext (
-                'Pulse does not know how to construct this page.  This is' +
-                ' probably because some naughty little monkeys didn\'t finish' +
-                ' their programming assignment.'))
-        else:
-            page = html.PageError (utils.gettext (
-                'Pulse does not know how to construct this page.  This is' +
-                ' probably because some naughty little monkeys didn\'t finish' +
-                ' their programming assignment.'))
-        response.set_contents (page)
-
-    if debug:
-        db.debug_summary ()
-
-    status = response.http_status
-    response.output (fd=fd)
-    db.rollback ()
-    if status == 200:
-        return 0
+    if kw.get ('http', True):
+        blip.utils.set_log_level (None)
     else:
-        return status
+        blip.utils.set_log_level (options.log_level)
+        if options.log_file is not None:
+            blip.utils.set_log_file (options.log_file)
+        
+    request = blip.web.WebRequest (**kw)
+
+    #try:
+    #    token = request.cookies.get ('pulse_auth')
+    #    token = utils.utf8dec (token.value)
+    #    response.http_login = db.Login.get_login (token, os.getenv ('REMOTE_ADDR'))
+    #    response.http_account = response.http_login.account
+    #except:
+    #    pass
+
+    response = blip.web.WebResponder.respond (request)
+
+    if options.debug_db_summary:
+        blip.db.debug_summary ()
+
+    if options.output is not None:
+        fd = open (options.output, 'w')
+    else:
+        fd = None
+    response.output (fd=fd)
+
+    blip.db.rollback ()
+    sys.exit (response.get_return_code ())
 
 
 if __name__ == "__main__":

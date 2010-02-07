@@ -46,7 +46,8 @@ class Request (object):
 
 
 class Response (object):
-    def __init__ (self):
+    def __init__ (self, request):
+        self.request = request
         self._return_code = 0
 
     def get_return_code (self):

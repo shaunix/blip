@@ -20,6 +20,8 @@ blip/plugins/cvs/Makefile
 blip/plugins/git/Makefile
 blip/plugins/sets/Makefile
 blip/plugins/svn/Makefile
+web/Makefile
+web/data/Makefile
 ])
 
 AC_OUTPUT

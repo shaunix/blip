@@ -115,8 +115,8 @@ class SweepRequest (blip.core.Request):
 
 
 class SweepResponse (blip.core.Response):
-    def __init__ (self):
-        blip.core.Response.__init__ (self)
+    def __init__ (self, request):
+        blip.core.Response.__init__ (self, request)
         self._error_text = None
 
     def get_error_text (self):
