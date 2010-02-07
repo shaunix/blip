@@ -18,6 +18,7 @@ blip/config.py
 blip/plugins/Makefile
 blip/plugins/cvs/Makefile
 blip/plugins/git/Makefile
+blip/plugins/index/Makefile
 blip/plugins/sets/Makefile
 blip/plugins/svn/Makefile
 web/Makefile

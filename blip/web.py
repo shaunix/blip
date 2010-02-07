@@ -175,7 +175,7 @@ class WebResponder (blip.core.Responder):
                 response = handler.handle_request (request)
                 if response is not None:
                     break
-            if not response is None:
+            if response is None:
                 raise blip.utils.BlipException ('No responder found')
         except Exception, err:
             if not request.http:

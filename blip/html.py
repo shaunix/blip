@@ -88,7 +88,7 @@ class Component (blip.web.WebWidget):
     widget's output method to create a portion of that widget's HTML.
     """
     def __init__ (self, **kw):
-        pass
+        super (Component, self).__init__ (**kw)
 
 
 ################################################################################

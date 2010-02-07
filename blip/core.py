@@ -42,11 +42,12 @@ class ExtensionPoint (object):
 
 
 class Request (object):
-    pass
+    def __init__ (self, **kw):
+        pass
 
 
 class Response (object):
-    def __init__ (self, request):
+    def __init__ (self, request, **kw):
         self.request = request
         self._return_code = 0
 
