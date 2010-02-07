@@ -49,9 +49,9 @@ def main ():
     parser.add_option ('--log-level',
                        dest='log_level',
                        action='store',
-                       default='log',
+                       default='none',
                        metavar='LEVEL',
-                       help='minimum log level to print; one of warn, log, or none [default=log]')
+                       help='minimum log level to print; one of warn, log, or none [default=none]')
     parser.add_option ('--debug-db',
                        dest='debug_db',
                        action='store_true',
@@ -74,12 +74,9 @@ def main ():
         if len(args) > 1:
             kw['query_string'] = args[1]
 
-    if kw.get ('http', True):
-        blip.utils.set_log_level (None)
-    else:
-        blip.utils.set_log_level (options.log_level)
-        if options.log_file is not None:
-            blip.utils.set_log_file (options.log_file)
+    blip.utils.set_log_level (options.log_level)
+    if options.log_file is not None:
+        blip.utils.set_log_file (options.log_file)
         
     request = blip.web.WebRequest (**kw)
 

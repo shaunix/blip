@@ -434,7 +434,7 @@ class Page (HtmlWidget, ContentComponent, SublinksComponent, FactsComponent):
                 record = args[0].record
         if record is not None:
             self._title = record.title
-            self._desc = record.localized_desc
+            self._desc = record.desc
             self._icon = record.icon_url
             self._url = record.blip_url
             if record.watchable:
@@ -863,7 +863,7 @@ class LinkBox (HtmlWidget, FactsComponent, ContentComponent):
             if args[0].linkable:
                 self._url = args[0].blip_url
             self._title = args[0].title
-            self._desc = args[0].localized_desc
+            self._desc = args[0].desc
             self._icon = args[0].icon_url
             if isinstance (args[0], blip.db.Entity):
                 self._icon_size = 36

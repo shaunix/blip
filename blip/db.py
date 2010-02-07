@@ -389,24 +389,14 @@ class BlipRecord (BlipModel):
             return blip.config.web_icons_url + self.icon_dir + '/' + self.icon_name + '.png'
 
     @property
-    def localized_name (self):
-        # FIXME: i18n
-        return self.name.get ('C')
-
-    @property
-    def localized_desc (self):
-        # FIXME: i18n
-        return self.desc.get ('C')
-
-    @property
     def title_default (self):
         return self.ident.split('/')[-1]
 
     @property
     def title (self):
-        if self.name == {}:
+        if self.name == '':
             return self.title_default
-        return self.localized_name
+        return self.name
 
     @classmethod
     def get_or_create (cls, ident, type, **kw):
