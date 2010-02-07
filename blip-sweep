@@ -157,7 +157,8 @@ if __name__ == "__main__":
             retcode = mod.main (argv[1:])
         if retcode != 0:
             raise ReturnCodeException ('Return code not 0')
-    except ReturnCodeException:
+    except:
+        blip.db.rollback ()
         if retcode == 0:
             retcode = -1
 
