@@ -2,6 +2,7 @@ SUBDIRS = 	\
 	cvs	\
 	git	\
 	index	\
+	modules \
 	sets	\
 	svn
 

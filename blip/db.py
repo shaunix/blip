@@ -34,6 +34,7 @@ import storm.store
 
 import blip.config
 import blip.utils
+import blip.scm
 
 database = create_database (blip.config.db_uri)
 stores = {}
@@ -394,7 +395,7 @@ class BlipRecord (BlipModel):
 
     @property
     def title (self):
-        if self.name == '':
+        if self.name is None or self.name == '':
             return self.title_default
         return self.name
 
@@ -539,7 +540,7 @@ class Branch (BlipRecord):
 
     @property
     def is_default (self):
-        return self.scm_branch == blip.scm.default_branch (self.scm_type)
+        return self.scm_branch == blip.scm.Repository.get_default_branch (self.scm_type)
 
     @classmethod
     def _select_args (cls, *args, **kw):
