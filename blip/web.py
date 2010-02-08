@@ -60,6 +60,8 @@ class WebRequest (blip.core.Request):
 
         self.http = kw.get ('http', True)
 
+        self.record = None
+
 
 class WebResponse (blip.core.Response):
     def __init__ (self, request, **kw):
@@ -172,7 +174,13 @@ class WebResponder (blip.core.Responder):
             else:
                 responderbase = PageResponder
             for responder in responderbase.get_extensions ():
-                response = responder.respond (request)
+                try:
+                    response = responder.respond (request)
+                except:
+                    if request.http:
+                        response = None
+                    else:
+                        raise
                 if response is not None:
                     break
             if response is None:
@@ -184,14 +192,12 @@ class WebResponder (blip.core.Responder):
                 page = blip.html.AdmonBox (
                     blip.html.AdmonBox.error,
                     blip.utils.gettext (
+                    'Blip does not know how to construct this content.'))
+            else:
+                page = blip.html.PageError (blip.utils.gettext (
                         'Blip does not know how to construct this page.  This is' +
                         ' probably because some naughty little monkeys didn\'t finish' +
                         ' their programming assignment.'))
-            else:
-                page = blip.html.PageError (blip.utils.gettext (
-                    'Blip does not know how to construct this page.  This is' +
-                    ' probably because some naughty little monkeys didn\'t finish' +
-                    ' their programming assignment.'))
             response = WebResponse (request)
             response.set_widget (page)
 

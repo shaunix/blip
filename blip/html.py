@@ -404,6 +404,22 @@ class LinkBoxesComponent (Component):
 ################################################################################
 ## Pages
 
+class TabProvider (blip.web.ContentResponder):
+    @classmethod
+    def add_tabs (cls, page, request):
+        pass
+
+    @classmethod
+    def match_tab (cls, request, tabid):
+        if request.query.get ('q', None) != 'tab':
+            return False
+        return (request.query.get ('tab', None) == tabid)
+
+    @classmethod
+    def respond (cls, request):
+        return None
+
+
 class Page (HtmlWidget, ContentComponent, SublinksComponent, FactsComponent):
     """
     Complete web page.
@@ -417,21 +433,17 @@ class Page (HtmlWidget, ContentComponent, SublinksComponent, FactsComponent):
     icon  -- The URL of an icon for the page.
     """
 
-    def __init__ (self, *args, **kw):
+    def __init__ (self, **kw):
         super (Page, self).__init__ (**kw)
         self._ident = None
         self._title = None
         self._desc = None
         self._icon = None
         self._url = None
-        handler = None
-        record = None
-        if len(args) > 0 and isinstance (args[0], blip.db.BlipRecord):
-            record = args[0]
-        elif len(args) > 0 and isinstance (args[0], pulse.core.RequestHandler):
-            handler = args[0]
-            if getattr (handler, 'record', None) is not None:
-                record = args[0].record
+        request = kw.get ('request', None)
+        record = kw.get ('record', None)
+        if record is None and request is not None:
+            record = request.record
         if record is not None:
             self._title = record.title
             self._desc = record.desc
@@ -448,7 +460,11 @@ class Page (HtmlWidget, ContentComponent, SublinksComponent, FactsComponent):
         self._tabs = []
         self._panes = {}
 
-        if handler is not None:
+        if request is not None:
+            for provider in TabProvider.get_extensions ():
+                provider.add_tabs (self, request)
+        if False:
+            # FIXME
             tabs = []
             tabs = [app for app in handler.applications
                     if isinstance (app, pulse.applications.TabProvider)]
@@ -473,11 +489,11 @@ class Page (HtmlWidget, ContentComponent, SublinksComponent, FactsComponent):
     def add_tab (self, tabid, title):
         self._tabs.append ((tabid, title))
 
-    def add_to_tab (self, id, content):
-        pane = self._panes.get(id, None)
-        if pane == None:
+    def add_to_tab (self, tabid, content):
+        pane = self._panes.get(tabid, None)
+        if pane is None:
             pane = ContentComponent()
-            self._panes[id] = pane
+            self._panes[tabid] = pane
         pane.add_content (content)
 
     def add_screenshot (self, screenshot):
