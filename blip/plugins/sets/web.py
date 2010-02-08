@@ -564,22 +564,6 @@ class ModulesTab (blip.html.TabProvider):
 #         cont.add_sort_link ('module', utils.gettext ('module'))
 #         return cont
 
-class SetHandler (object): #(core.RequestHandler):
-    def handle_request (self):
-        contents = None
-        if self.record is None:
-            contents = self.get_top_page ()
-        else:
-            contents = self.get_set_page ()
-        if contents is not None:
-            self.response.set_contents (contents)
-            
-
-
-
-        return page
-
-
 
 ################################################################################
 ## Index Content
