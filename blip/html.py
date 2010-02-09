@@ -463,16 +463,6 @@ class Page (HtmlWidget, ContentComponent, SublinksComponent, FactsComponent):
         if request is not None:
             for provider in TabProvider.get_extensions ():
                 provider.add_tabs (self, request)
-        if False:
-            # FIXME
-            tabs = []
-            tabs = [app for app in handler.applications
-                    if isinstance (app, pulse.applications.TabProvider)]
-            for tab in blip.utils.attrsorted (tabs, 'tab_group', 'tab_sort', 'application_id'):
-                self.add_tab (tab.application_id, tab.get_tab_title ())
-                if tab.tab_group == pulse.applications.TabProvider.FIRST_TAB:
-                    self.add_to_tab (tab.application_id, tab.get_tab())
-
 
     def set_title (self, title):
         """Set the title of the page."""
@@ -525,7 +515,7 @@ class Page (HtmlWidget, ContentComponent, SublinksComponent, FactsComponent):
         res.out ('<html><head>')
         res.out ('<title>%s</title>', self._title)
         res.out ('<meta http-equiv="Content-type" content="text/html; charset=utf-8">')
-        res.out ('<link rel="stylesheet" href="%spulse.css">', blip.config.web_data_url)
+        res.out ('<link rel="stylesheet" href="%sblip.css">', blip.config.web_data_url)
         res.out ('<script language="javascript" type="text/javascript">')
         res.out ('pulse_root="%s"', blip.config.web_url)
         res.out ('pulse_data="%s"', blip.config.web_data_url)
@@ -534,13 +524,13 @@ class Page (HtmlWidget, ContentComponent, SublinksComponent, FactsComponent):
         res.out ('</script>')
         res.out ('<script language="javascript" type="text/javascript" src="%sjquery.js"></script>',
            blip.config.web_data_url)
-        res.out ('<script language="javascript" type="text/javascript" src="%spulse.js"></script>',
+        res.out ('<script language="javascript" type="text/javascript" src="%sblip.js"></script>',
            blip.config.web_data_url)
         res.out ('</head><body>')
 
         res.out ('<div id="header"><table><tr>')
-        res.out ('<td class="headerpulse"><a href="%s" id="headerlink"><img src="%s" alt="Pulse">Pulse</a></td>',
-           (blip.config.web_url, blip.config.web_data_url + 'pulse-logo-small.png'))
+        res.out ('<td class="headerlogo"><a href="%s" id="headerlink"><img src="%s" alt="Blip"></a></td>',
+           (blip.config.web_url, blip.config.web_data_url + 'header-logo.png'))
         res.out ('<td class="headerlinks">')
         if res.http_account == None:
             res.out ('<a href="%saccount/login">%s</a>',

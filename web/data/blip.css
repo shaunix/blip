@@ -12,38 +12,37 @@ body {
 /** Header and Subheader **/
 
 #header {
-  background: #555753 url(header-bg.png) 0 0 repeat-x;
+  background: url(header-bg.png) 0 0 repeat-x;
   height: 36px;
-  padding: 0 0 0 2.4em;
+  padding: 0;
 }
 #header table {
   width: 100%;
 }
 #header table td {
   vertical-align: bottom;
-  padding-top: 6px;
-  padding-bottom: 2px;
+  padding: 0;
 }
 #header a {
-  color: white;
+  color: #eeeeec;
 }
-#header a:hover { text-decoration: none; }
-td.headerpulse img {
+#header a:hover {
+  color: white;
+  text-decoration: none;
+}
+td.headerlogo img {
   float: left;
+  margin-left: 10px;
   margin-right: 6px;
 }
-
-td.headerpulse a {
+td.headerlogo a {
   font-weight: bold;
-  font-variant: small-caps;
-  font-size: 1.2em;
 }
 td.headerlinks {
   text-align: right;
-  padding-right: 1.2em;
+  padding-right: 20em;
   color: #888a85;
 }
-td.headerlinks a { color: white; }
 #subheader {
   background-color: #f7f7f5;
   border-top: solid 1px #f7f7f5;
@@ -59,7 +58,7 @@ h1 {
   background-color: #f7f7f5;
   color: #555753;
   margin: 0;
-  padding: 0.2em 0 0.2em 2.4em;
+  padding: 0.2em 0 0.2em 20px;
 }
 h1 img.icon {
   margin: 0.83em 0.5em 0 0;
