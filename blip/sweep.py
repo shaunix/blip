@@ -179,7 +179,7 @@ class SweepResponder (blip.core.Responder):
                     responder = cmd
                     break
         if responder is None and tool is not None:
-            response = SweepResponse ()
+            response = SweepResponse (request)
             response.set_error_text ('%s is not a blip-sweep command.' % tool)
             response.set_return_code (1)
             return response
@@ -192,18 +192,18 @@ class SweepResponder (blip.core.Responder):
 
         if help:
             request.print_help ()
-            return SweepResponse ()
+            return SweepResponse (request)
 
         if responder is None:
             request.print_help ()
-            response = SweepResponse ()
+            response = SweepResponse (request)
             response.set_error_text ('No blip-sweep command supplied.')
             response.set_return_code (1)
             return response
 
         if request.is_help_request():
             request.print_help ()
-            return SweepResponse ()
+            return SweepResponse (request)
 
         response = responder.respond (request)
         return response
