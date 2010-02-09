@@ -61,7 +61,21 @@ class AllSetsResponder (blip.web.PageResponder):
         return response
 
 
-class SetResponder (blip.web.PageResponder):
+class SetResponder (blip.web.RecordLocator, blip.web.PageResponder):
+    @classmethod
+    def locate_record (cls, request):
+        if len(request.path) < 2 or request.path[0] != 'set':
+            return False
+        ident = '/' + '/'.join(request.path)
+        request.record = blip.db.ReleaseSet.get (ident)
+        if request.record is None:
+            exception = blip.web.WebException (
+                blip.utils.gettext ('Set Not Found'),
+                blip.utils.gettext ('Blip could not find the set %s')
+                % '/'.join(request.path[1:]))
+            request.set_data ('exception', exception)
+        return True
+
     @classmethod
     def respond (cls, request, **kw):
         if len(request.path) != 2 or request.path[0] != 'set':
@@ -69,13 +83,9 @@ class SetResponder (blip.web.PageResponder):
 
         response = blip.web.WebResponse (request)
 
-        ident = '/' + '/'.join(request.path)
-        request.record = blip.db.ReleaseSet.get (ident)
-        if request.record is None:
-            page = blip.html.PageNotFound (
-                blip.utils.gettext ('Blip could not find the set %s')
-                % '/'.join(request.path[1:]),
-                title=blip.utils.gettext ('Set Not Found'))
+        exception = request.get_data ('exception')
+        if exception:
+            page = blip.html.PageNotFound (exception.desc, title=exception.title)
             response.set_widget (page)
             return response
 
@@ -191,17 +201,6 @@ class OverviewTab (blip.html.TabProvider):
             return None
 
         response = blip.web.WebResponse (request)
-
-        ident = '/' + '/'.join(request.path)
-        request.record = blip.db.ReleaseSet.get (ident)
-        if request.record is None:
-            cont = blip.html.AdmonBox (
-                blip.html.AdmonBox.error,
-                blip.utils.gettext ('Blip could not find the set %s')
-                % '/'.join(request.path[1:]))
-            response.set_widget (cont)
-            return response
-
         response.set_widget (cls.get_tab (request))
         return response
 
@@ -224,16 +223,6 @@ class SubsetsTab (blip.html.TabProvider):
             return None
 
         response = blip.web.WebResponse (request)
-
-        ident = '/' + '/'.join(request.path)
-        request.record = blip.db.ReleaseSet.get (ident)
-        if request.record is None:
-            cont = blip.html.AdmonBox (
-                blip.html.AdmonBox.error,
-                blip.utils.gettext ('Blip could not find the set %s')
-                % '/'.join(request.path[1:]))
-            response.set_widget (cont)
-            return response
 
         subsets = blip.utils.attrsorted (list(request.record.subsets), ['title'])
         cont = blip.html.ContainerBox ()

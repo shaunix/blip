@@ -29,51 +29,58 @@ import blip.plugins.index.web
 ################################################################################
 ## Pages
 
-class BranchResponder (blip.web.PageResponder):
-    @staticmethod
-    def get_record_and_branches (request):
+class BranchResponder (blip.web.RecordLocator, blip.web.PageResponder):
+    @classmethod
+    def locate_record (cls, request):
+        if len(request.path) not in (3, 4) or request.path[0] != 'mod':
+            return False
         ident = u'/' + u'/'.join(request.path)
         if len(request.path) == 3:
             branches = list(blip.db.Branch.select (project_ident=ident))
             if len(branches) == 0:
-                raise blip.web.WebException (
+                exception = blip.web.WebException (
                     blip.utils.gettext ('Project Not Found'),
                     blip.utils.gettext ('Blip could not find the project %s on %s')
                     % (request.path[2], request.path[1]))
+                request.set_data ('exception', exception)
+                return True
             branch = [branch for branch in branches if branch.is_default]
             if len(branch) == 0:
-                raise blip.web.WebException (
+                exception = blip.web.WebException (
                     blip.utils.gettext ('Default Branch Not Found'),
                     blip.utils.gettext ('Blip could not find a default branch for the project %s on %s')
                     % (request.path[2], request.path[1]))
+                request.set_data ('exception', exception)
+                return True
             request.record = branch[0]
         else:
             branch = blip.db.Branch.get (ident)
             if branch is None:
-                raise blip.web.WebException (
+                exception = blip.web.WebException (
                     blip.utils.gettext ('Branch Not Found'),
                     blip.utils.gettext ('Blip could not find the branch %s for the project %s on %s')
                     % (request.path[3], request.path[2], request.path[1]))
+                request.set_data ('exception', exception)
+                return True
             request.record = branch
             branches = list(blip.db.Branch.select (project_ident=branch.project_ident))
-        return branches
+        request.set_data ('branches', branches)
+        return True
 
     @classmethod
     def respond (cls, request, **kw):
-        if len(request.path) not in (3, 4):
-            return None
-        if request.path[0] != 'mod':
+        if len(request.path) not in (3, 4) or request.path[0] != 'mod':
             return None
 
         response = blip.web.WebResponse (request)
 
-        try:
-            branches = cls.get_record_and_branches (request)
-        except blip.web.WebException, err:
-            page = blip.html.PageNotFound (err.desc, title=err.title)
+        exception = request.get_data ('exception')
+        if exception:
+            page = blip.html.PageNotFound (exception.desc, title=exception.title)
             response.set_widget (page)
             return response
 
+        branches = request.get_data ('branches', [])
         page = blip.html.Page (request=request)
         response.set_widget (page)
 
@@ -198,13 +205,6 @@ class OverviewTab (blip.html.TabProvider):
             return None
 
         response = blip.web.WebResponse (request)
-
-        try:
-            branches = BranchResponder.get_record_and_branches (request)
-        except blip.web.WebException, err:
-            cont = blip.html.AdmonBox (blip.html.AdmonBox.error, err.desc)
-            response.set_widget (cont)
-            return response
 
         response.set_widget (cls.get_tab (request))
         return response

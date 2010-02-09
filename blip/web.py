@@ -62,6 +62,14 @@ class WebRequest (blip.core.Request):
 
         self.record = None
 
+        self._data = {}
+
+    def set_data (self, key, val):
+        self._data[key] = val
+
+    def get_data (self, key, default=None):
+        return self._data.get (key, default)
+
 
 class WebResponse (blip.core.Response):
     def __init__ (self, request, **kw):
@@ -167,22 +175,54 @@ class WebResponder (blip.core.Responder):
     def respond (cls, request, **kw):
         try:
             blip.core.import_plugins ('web')
+
+            # First, let a RecordLocator set request.record based on request.
+            # Usually, this involves matching PATH_INFO against an ident, but
+            # locate_record returns a boolean, so record locators can claim
+            # they've located something even when there's no database entry.
+            locator = None
+            for loc in RecordLocator.get_extensions ():
+                if loc.locate_record (request):
+                    locator = loc
+                    break
+
+            # Find the base class to search for a responder.  Things that
+            # match on a query string are expected to use q= for normal page
+            # content or d= for other data.
             if request.query.has_key ('q'):
                 responderbase = ContentResponder
             elif request.query.has_key ('d'):
                 responderbase = DataResponder
             else:
                 responderbase = PageResponder
-            for responder in responderbase.get_extensions ():
+
+            # Usually, the RecordLocator and PageResponder will be the same
+            # class.  So for normal page requests, we give locator the first
+            # crack at responding.
+            response = None
+            if responderbase is PageResponder and locator is not None and issubclass (locator, PageResponder):
                 try:
-                    response = responder.respond (request)
+                    response = locator.respond (request)
                 except:
                     if request.http:
                         response = None
                     else:
                         raise
-                if response is not None:
-                    break
+
+            # If locator didn't pan out, give other responders a shot.
+            if response is None:
+                for responder in responderbase.get_extensions ():
+                    try:
+                        response = responder.respond (request)
+                    except:
+                        if request.http:
+                            response = None
+                        else:
+                            raise
+                    if response is not None:
+                        break
+
+            # Finally, if we didn't get any response, raise and exception.
             if response is None:
                 raise blip.utils.BlipException ('No responder found')
         except Exception, err:
@@ -204,6 +244,12 @@ class WebResponder (blip.core.Responder):
         return response
 
 ################################################################################
+## Extension Points
+
+class RecordLocator (blip.core.ExtensionPoint):
+    @classmethod
+    def locate_record (cls, request):
+        return False
         
 class PageResponder (blip.core.Responder):
     pass
