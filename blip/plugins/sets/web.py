@@ -285,7 +285,7 @@ class ModulesTab (blip.html.TabProvider):
             span.add_class ('module')
             lbox.add_fact (blip.utils.gettext ('module'), blip.html.Link (mod.blip_url, span))
             if mod.mod_datetime != None:
-                span = blip.html.Span (divider=html.SPACE)
+                span = blip.html.Span (divider=blip.html.SPACE)
                 # FIXME: i18n, word order, but we want to link person
                 span.add_content (blip.html.Span(mod.mod_datetime.strftime('%Y-%m-%d %T')))
                 span.add_class ('mtime')
