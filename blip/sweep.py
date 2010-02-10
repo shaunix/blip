@@ -34,7 +34,7 @@ class OptionParser (optparse.OptionParser):
     def print_help (self, request, formatter=None):
         tool = request.get_tool_name()
         if tool is None:
-            self.set_usage ('%prog [common options] <command> [command options]')
+            self.set_usage ('%prog [common options] <command> [command arguments]')
             optparse.OptionParser.print_help (self, formatter)
             print '\nCommands:'
             for cmd in SweepResponder.get_extensions ():
@@ -45,7 +45,6 @@ class OptionParser (optparse.OptionParser):
                     line += '    ' + cmd.synopsis
                 print line
         else:
-            self.set_usage ('%prog [common options] ' + tool + ' [command options]')
             optparse.OptionParser.print_help (self, formatter)
 
 class CommonFormatter (optparse.IndentedHelpFormatter):
@@ -78,6 +77,9 @@ class SweepRequest (blip.core.Request):
         self._tool_options = {}
         self._tool_args = []
 
+    def set_usage (self, usage):
+        self._common_parser.set_usage (usage)
+
     def add_common_option (self, *args, **kw):
         self._common_parser.add_option (*args, **kw)
 
@@ -108,10 +110,19 @@ class SweepRequest (blip.core.Request):
         return self._tool
 
     def get_common_option (self, option, default=None):
-        pass
+        try:
+            return getattr (self._common_options, option)
+        except:
+            return default
 
     def get_tool_option (self, option, default=None):
-        pass
+        try:
+            return getattr (self._tool_options, option)
+        except:
+            return default
+
+    def get_tool_args (self):
+        return self._tool_args
 
 
 class SweepResponse (blip.core.Response):
@@ -186,6 +197,7 @@ class SweepResponder (blip.core.Responder):
 
         if responder is not None:
             try:
+                responder.set_usage (request)
                 responder.add_tool_options (request)
             except NotImplementedError:
                 pass
@@ -205,8 +217,13 @@ class SweepResponder (blip.core.Responder):
             request.print_help ()
             return SweepResponse (request)
 
+        request.parse_tool_options ()
         response = responder.respond (request)
         return response
+
+    @classmethod
+    def set_usage (cls, request):
+        request.set_usage ('%prog [common options] ' + cls.command + ' [command options]')
 
     @classmethod
     def add_tool_options (cls, request):

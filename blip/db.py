@@ -1119,10 +1119,10 @@ class Revision (BlipModel):
         rfiles = RevisionFile.select (revision_ident=self.ident)
         for rfile in rfiles:
             Revision._file_cache.setdefault (branch.ident, {})
-        if not Revision._file_cache[branchident].has_key (filename):
-            Revision._file_cache[branchident][filename] = self
-        elif Revision._file_cache[branchident][filename].datetime < self.datetime:
-            Revision._file_cache[branchident][filename] = self
+            if not Revision._file_cache[branch.ident].has_key (rfile.filename):
+                Revision._file_cache[branch.ident][rfile.filename] = self
+            elif Revision._file_cache[branch.ident][rfile.filename].datetime < self.datetime:
+                Revision._file_cache[branch.ident][rfile.filename] = self
 
     def display_revision (self, branch=None):
         if branch == None:
@@ -1217,7 +1217,14 @@ class Revision (BlipModel):
             args.append (Revision.weeknum >= range[0])
             if len(range) > 1 and range[1] is not None:
                 args.append (Revision.weeknum <= range[1])
-        # FIXME: branch
+        branch_ident = kw.pop ('branch_ident', None)
+        if branch_ident is None:
+            branch = kw.pop ('branch', None)
+            if branch is not None:
+                branch_ident = branch.ident
+        if branch_ident is not None:
+            args.append (RevisionBranch.revision_ident == cls.ident)
+            args.append (RevisionBranch.branch_ident == branch_ident)
         sel = store.find (cls, *args, **kw)
         if files != None:
             sel = sel.group_by (Revision.ident)
@@ -1251,6 +1258,9 @@ class RevisionBranch (BlipModel):
 
     branch_ident = ShortText ()
     branch = Reference (branch_ident, Branch.ident)
+
+    def log_create (self):
+        pass
 
 
 class RevisionFile (BlipModel):
@@ -1411,22 +1421,19 @@ class Timestamp (BlipModel):
 
 
 class Queue (BlipModel):
-    __storm_primary__ = 'module', 'ident'
-    module = ShortText ()
-    ident = ShortText ()
+    ident = ShortText (primary=True)
     cache = {}
 
     def log_create (self):
         pass
 
     @classmethod
-    def push (cls, module, ident, **kw):
-        if not cls.cache.get(module, {}).get(ident, False):
+    def push (cls, ident, **kw):
+        if not cls.cache.get (ident, False):
             store = get_store (kw.pop ('__blip_store__', cls.__blip_store__))
-            if cls.select (cls.module == module, cls.ident == ident).count () == 0:
-                cls (module=module, ident=ident, __blip_store__=store)
-            cls.cache.setdefault (module, {})
-            cls.cache[module][ident] = True
+            if cls.select (cls.ident == ident).count () == 0:
+                cls (ident=ident, __blip_store__=store)
+            cls.cache[ident] = True
 
     @classmethod
     def pop (cls, ident=None, **kw):
@@ -1436,18 +1443,17 @@ class Queue (BlipModel):
                 sel = cls.select(cls.ident.like (ident))[0]
             else:
                 sel = cls.select()[0]
-            module = sel.module
             ident = sel.ident
             store.remove (sel)
-            return {'module': module, 'ident': ident}
+            return ident
         except:
             return None
 
     @classmethod
-    def remove (cls, module, ident, **kw):
+    def remove (cls, ident, **kw):
         store = get_store (kw.pop ('__blip_store__', cls.__blip_store__))
         try:
-            rec = cls.select (module=module, ident=ident)
+            rec = cls.select (ident=ident)
             store.remove (rec)
         except:
             pass
