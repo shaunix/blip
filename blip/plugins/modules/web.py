@@ -113,7 +113,7 @@ class OverviewTab (blip.html.TabProvider):
     def get_tab (cls, request):
         tab = blip.html.PaddingBox()
 
-        if request.record.error != None:
+        if request.record.error is not None:
             tab.add_content (blip.html.AdmonBox (blip.html.AdmonBox.error, request.record.error))
 
         facts = blip.html.FactsTable()
@@ -141,11 +141,11 @@ class OverviewTab (blip.html.TabProvider):
         checkout = blip.scm.Repository.from_record (request.record, checkout=False, update=False)
         facts.add_fact (blip.utils.gettext ('Location'), checkout.location)
 
-        if request.record.mod_datetime != None:
-            span = blip.html.Span(divider=html.SPACE)
+        if request.record.mod_datetime is not None:
+            span = blip.html.Span(divider=blip.html.SPACE)
             # FIXME: i18n, word order, but we want to link person
             span.add_content (request.record.mod_datetime.strftime('%Y-%m-%d %T'))
-            if reqeust.record.mod_person_ident != None:
+            if request.record.mod_person_ident is not None:
                 span.add_content (' by ')
                 span.add_content (blip.html.Link (request.record.mod_person))
             facts.add_fact (blip.utils.gettext ('Last Modified'), span)
@@ -159,7 +159,7 @@ class OverviewTab (blip.html.TabProvider):
             facts.add_fact (blip.utils.gettext ('Version'), request.record.data['tarversion'])
 
         facts.add_fact_divider ()
-        facts.add_fact (blip.utils.gettext ('Score'), str(request.record.mod_score))
+        facts.add_fact (blip.utils.gettext ('Score'), str(request.record.project.score))
 
         if request.record.bug_database is not None:
             facts.add_fact_divider ()
@@ -227,32 +227,23 @@ class SetIndexContentProvider (blip.plugins.index.web.IndexContentProvider):
 
         columns = blip.html.ColumnBox (2)
         box.add_content (columns)
-        modules = blip.db.Branch.select (type=u'Module').order_by (blip.db.Desc (blip.db.Branch.mod_score))
+
+        modules = blip.db.Branch.select (blip.db.Branch.type == u'Module',
+                                         blip.db.Branch.project_ident == blip.db.Project.ident)
+        modules = modules.order_by (blip.db.Desc (blip.db.Project.score))
         bl = blip.html.BulletList ()
         bl.set_title (blip.utils.gettext ('Active projects:'))
         columns.add_to_column (0, bl)
         modules = modules[:6]
-        scm_mods = {}
         for module in modules:
-            scm_mods.setdefault (module.scm_module, 0)
-            scm_mods[module.scm_module] += 1
-        for module in modules:
-            if scm_mods[module.scm_module] > 1:
-                bl.add_link (module.blip_url, module.branch_title)
-            else:
-                bl.add_link (module)
+            bl.add_link (module.blip_url, module.title)
 
-        modules = blip.db.Branch.select (type=u'Module').order_by (blip.db.Desc (blip.db.Branch.mod_score_diff))
+        modules = blip.db.Branch.select (blip.db.Branch.type == u'Module',
+                                         blip.db.Branch.project_ident == blip.db.Project.ident)
+        modules = modules.order_by (blip.db.Desc (blip.db.Project.score_diff))
         bl = blip.html.BulletList ()
         bl.set_title (blip.utils.gettext ('Recently active:'))
         columns.add_to_column (1, bl)
         modules = modules[:6]
-        scm_mods = {}
         for module in modules:
-            scm_mods.setdefault (module.scm_module, 0)
-            scm_mods[module.scm_module] += 1
-        for module in modules:
-            if scm_mods[module.scm_module] > 1:
-                bl.add_link (module.pulse_url, module.branch_title)
-            else:
-                bl.add_link (module)
+            bl.add_link (module.blip_url, module.title)

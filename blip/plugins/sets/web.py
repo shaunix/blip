@@ -564,7 +564,7 @@ class SetIndexContentProvider (blip.plugins.index.web.IndexContentProvider):
         box = blip.html.SidebarBox (blip.utils.gettext ('Sets'))
         bl = blip.html.BulletList ()
         box.add_content (bl)
-        sets = blip.db.ReleaseSet.find (blip.db.ReleaseSet.parent_ident == None)
+        sets = blip.db.ReleaseSet.select (blip.db.ReleaseSet.parent_ident == None)
         sets = blip.utils.attrsorted (list(sets), 'title')
         for rset in sets:
             bl.add_link (rset)
