@@ -42,10 +42,7 @@ class SetsResponder (blip.sweep.SweepResponder):
                                  dest='update_scm',
                                  action='store_false',
                                  default=True,
-                                 help='do not update SCM checkouts')
-
-    checkouts = {}
-    records = {}
+                                 help='do not update SCM repositories')
 
     @classmethod
     def respond (cls, request, **kw):

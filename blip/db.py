@@ -36,6 +36,11 @@ import blip.config
 import blip.utils
 import blip.scm
 
+
+################################################################################
+## Basics
+
+
 database = create_database (blip.config.db_uri)
 stores = {}
 def get_store (store):
@@ -48,9 +53,11 @@ def get_store (store):
     return stores[store]
 store_options = {'rollback' : False}
 
+
 def flush (store='default'):
     store = get_store (store)
     store.flush()
+
 
 def commit (store='default'):
     store = get_store (store)
@@ -60,6 +67,7 @@ def commit (store='default'):
         blip.utils.log ('Committing changes')
         store.commit ()
 
+
 def rollback (store='default'):
     store = get_store (store)
     blip.utils.log ('Rolling back changes')
@@ -68,12 +76,15 @@ def rollback (store='default'):
     except:
         blip.utils.warn ('Could not roll back changes')
 
+
 def rollback_all ():
     store_options['rollback'] = True
+
 
 def block_implicit_flushes (store='default'):
     store = get_store (store)
     store.block_implicit_flushes ()
+
 
 def read_tables ():
     for cls in blip.utils.read_subclasses (blip.db.BlipModel):
@@ -84,6 +95,7 @@ def read_tables ():
 
 ################################################################################
 ## Debugging
+
 
 class BlipTracer (object):
     select_count = 0
@@ -172,9 +184,11 @@ class BlipTracer (object):
                                         statement, params):
         self.print_command (statement, params)
 
+
 def debug (log=True):
     import storm.tracer
     storm.tracer.install_tracer (BlipTracer (log=log))
+
 
 def debug_summary ():
     blip.utils.log_write ('---------\n')
@@ -192,14 +206,15 @@ def debug_summary ():
         timing = BlipTracer.timing_string (BlipTracer.other_total)
         blip.utils.log_write ('%i other statements in %sms\n'
                                % (BlipTracer.other_count, timing))
-    
 
 
 ################################################################################
 ## Exceptions
 
+
 class NoSuchFieldError (Exception):
     pass
+
 
 class WillNotDelete (Exception):
     pass
@@ -208,6 +223,8 @@ class WillNotDelete (Exception):
 ################################################################################
 ## Base Classes
 
+
+# FIXME
 def get_by_ident (ident):
     first = ident.split('/')[1]
     try:
@@ -261,17 +278,12 @@ class BlipModel (Storm):
     def decache (self):
         storm.store.Store.of(self)._cache.remove (self)
 
-    @ classmethod
-    def find (cls, *args, **kw):
-        # let's remove this in favor of select
-        return cls.select (*args, **kw)
-
     @classmethod
     def get (cls, key, **kw):
         store = get_store (kw.pop ('__blip_store__', cls.__blip_store__))
         return store.get (cls, key)
 
-    @ classmethod
+    @classmethod
     def select (cls, *args, **kw):
         store = get_store (kw.pop ('__blip_store__', cls.__blip_store__))
         return store.find (cls, *args, **kw)
@@ -338,10 +350,11 @@ class BlipModel (Storm):
         blip.utils.log ('Deleting %s' % self)
         self.__blip_store__.remove (self)
 
+
 class BlipRecord (BlipModel):
     __abstract__ = True
     ident = ShortText (primary=True)
-    type = Unicode ()
+    type = ShortText ()
 
     name = Unicode ()
     desc = Unicode ()
@@ -385,9 +398,9 @@ class BlipRecord (BlipModel):
         if self.icon_name == None or self.icon_dir.startswith ('__icon__'):
             return None
         elif self.icon_dir == None:
-            return blip.config.web_icons_url + self.icon_name + '.png'
+            return blip.config.web_files_url + 'icons/' + self.icon_name + '.png'
         else:
-            return blip.config.web_icons_url + self.icon_dir + '/' + self.icon_name + '.png'
+            return blip.config.web_files_url + 'icons/' + self.icon_dir + '/' + self.icon_name + '.png'
 
     @property
     def title_default (self):
@@ -483,7 +496,9 @@ class ReleaseSet (BlipRecord):
 
 
 class Project (BlipRecord):
-    pass
+    score = Int ()
+    score_diff = Int ()
+
 
 class Branch (BlipRecord):
     subtype = ShortText ()
@@ -503,17 +518,13 @@ class Branch (BlipRecord):
 
     bug_database = ShortText ()
 
-    mod_score = Int ()
-    mod_score_diff = Int ()
     mod_datetime = DateTime ()
     mod_person_ident = ShortText ()
     mod_person = Reference (mod_person_ident, 'Entity.ident')
-    post_score = Int ()
-    post_score_diff = Int ()
 
     def __init__ (self, ident, type, **kw):
         kw['project_ident'] = u'/'.join (ident.split('/')[:-1])
-        Project.get_or_create (kw['project_ident'], type)
+        proj = Project.get_or_create (kw['project_ident'], type)
         BlipRecord.__init__ (self, ident, type, **kw)
 
     @property
@@ -551,13 +562,13 @@ class Branch (BlipRecord):
             args.append (SetModule.subj_ident == rset.ident)
         return (args, kw)
 
-    @ classmethod
+    @classmethod
     def select (cls, *args, **kw):
         store = get_store (kw.pop ('__blip_store__', cls.__blip_store__))
         args, kw = cls._select_args (*args, **kw)
         return store.find (cls, *args, **kw)
 
-    @ classmethod
+    @classmethod
     def select_with_mod_person (cls, *args, **kw):
         store = get_store (kw.pop ('__blip_store__', cls.__blip_store__))
         join = LeftJoin (cls, Entity, cls.mod_person_ident == Entity.ident)
@@ -640,10 +651,8 @@ class Entity (BlipRecord):
     parent_ident = ShortText ()
     parent = Reference (parent_ident, 'Entity.ident')
     nick = Unicode ()
-    mod_score = Int ()
-    mod_score_diff = Int ()
-    post_score = Int ()
-    post_score_diff = Int ()
+    score = Int ()
+    score_diff = Int ()
 
     @classmethod
     def get (cls, ident, alias=True, **kw):
@@ -768,8 +777,8 @@ class Alias (BlipRecord):
 
 
 class Forum (BlipRecord):
-    post_score = Int ()
-    post_score_diff = Int ()
+    score = Int ()
+    score_diff = Int ()
 
     def delete (self):
         raise WillNotDelete ('Blip will not delete forums')
@@ -803,7 +812,8 @@ class ForumPost (BlipRecord):
         raise WillNotDelete ('Blip will not delete forum posts')
 
 
-class Component(BlipModel):
+# FIXME
+class Component (BlipModel):
     __storm_table__ = 'Component'
     ident = ShortText (primary=True)
     product = Unicode ()
@@ -820,7 +830,8 @@ class Component(BlipModel):
         return cls (ident=ident)
 
 
-class Issue(BlipModel):
+# FIXME
+class Issue (BlipModel):
     __storm_table__ = 'Issue'
     ident = ShortText (primary=True)
     bug_id = Int()
@@ -853,6 +864,7 @@ class Issue(BlipModel):
         return query.order_by(Desc(cls.time)).first()
 
 
+# FIXME
 class Cache(BlipModel):
     ident = ShortText (primary=True)
     value = Pickle (default_factory=dict)
@@ -862,11 +874,13 @@ class Cache(BlipModel):
 ################################################################################
 ## Relations
 
+
 class Documentation (BlipRelation):
     subj_ident = ShortText ()
     pred_ident = ShortText ()
     subj = Reference (subj_ident, Branch.ident)
     pred = Reference (pred_ident, Branch.ident)
+
 
 class DocumentEntity (BlipRelation):
     subj_ident = ShortText ()
@@ -878,11 +892,13 @@ class DocumentEntity (BlipRelation):
     editor = Bool (default=False)
     publisher = Bool (default=False)
 
+
 class ModuleComponents (BlipRelation):
     subj_ident = ShortText ()
     pred_ident = ShortText ()
     subj = Reference (subj_ident, Branch.ident)
     pred = Reference (pred_ident, Component.ident)
+
 
 class ModuleDependency (BlipRelation):
     subj_ident = ShortText ()
@@ -891,6 +907,7 @@ class ModuleDependency (BlipRelation):
     pred = Reference (pred_ident, Branch.ident)
     direct = Bool ()
 
+
 class ModuleEntity (BlipRelation):
     subj_ident = ShortText ()
     pred_ident = ShortText ()
@@ -898,11 +915,13 @@ class ModuleEntity (BlipRelation):
     pred = Reference (pred_ident, Entity.ident)
     maintainer = Bool (default=False)
 
+
 class SetModule (BlipRelation):
     subj_ident = ShortText ()
     pred_ident = ShortText ()
     subj = Reference (subj_ident, ReleaseSet.ident)
     pred = Reference (pred_ident, Branch.ident)
+
 
 class TeamMember (BlipRelation):
     subj_ident = ShortText ()
@@ -914,6 +933,7 @@ class TeamMember (BlipRelation):
 
 ################################################################################
 ## User Accounts
+
 
 class Account (BlipModel):
     __blip_store__ = get_store ('account')
@@ -1000,6 +1020,7 @@ class AccountWatch (BlipModel):
         return cls.select (account=account, ident=ident).count() > 0
 
 
+# FIXME
 class Message (BlipModel):
     id = Int (primary=True)
 
@@ -1047,13 +1068,14 @@ class Message (BlipModel):
 
 
 ################################################################################
-## Other Tables
+## Revisions
+
 
 class Revision (BlipModel):
     ident = ShortText (primary=True)
 
-    branch_ident = ShortText ()
-    branch = Reference (branch_ident, Branch.ident)
+    project_ident = ShortText ()
+    project = Reference (project_ident, Project.ident)
 
     person_ident = ShortText ()
     person = Reference (person_ident, Entity.ident)
@@ -1061,18 +1083,19 @@ class Revision (BlipModel):
     alias_ident = ShortText ()
     alias = Reference (alias_ident, Alias.ident)
 
-    revision = Unicode(varchar=True)
+    revision = ShortText ()
     datetime = DateTime ()
     weeknum = Int ()
     comment = Unicode ()
 
     _file_cache = {}
 
+    # FIXME BELOW
     def __init__ (self, **kw):
         kw['weeknum'] = blip.utils.weeknum (kw['datetime'])
         BlipModel.__init__ (self, **kw)
-        Message.make_message (u'commit', self.person_ident, self.branch_ident, self.datetime)
-        Message.make_message (u'commit', self.branch_ident, None, self.datetime)
+        Message.make_message (u'commit', self.person_ident, self.project_ident, self.datetime)
+        Message.make_message (u'commit', self.project_ident, None, self.datetime)
 
     def __cmp__(self, other):
         if hasattr(other, 'datetime'):
@@ -1087,12 +1110,19 @@ class Revision (BlipModel):
                               filename=filename,
                               filerev=filerev,
                               prevrev=prevrev)
-        Revision._file_cache.setdefault (self.branch_ident, {})
-        if not Revision._file_cache[self.branch_ident].has_key (filename):
-            Revision._file_cache[self.branch_ident][filename] = self
-        elif Revision._file_cache[self.branch_ident][filename].datetime < self.datetime:
-            Revision._file_cache[self.branch_ident][filename] = self
         return rfile
+
+    def add_branch (self, branch):
+        cnt = RevisionBranch.select (revision_ident=self.ident, branch_ident=branch.ident).count ()
+        if cnt == 0:
+            RevisionBranch (revision_ident=self.ident, branch_ident=branch.ident)
+        rfiles = RevisionFile.select (revision_ident=self.ident)
+        for rfile in rfiles:
+            Revision._file_cache.setdefault (branch.ident, {})
+        if not Revision._file_cache[branchident].has_key (filename):
+            Revision._file_cache[branchident][filename] = self
+        elif Revision._file_cache[branchident][filename].datetime < self.datetime:
+            Revision._file_cache[branchident][filename] = self
 
     def display_revision (self, branch=None):
         if branch == None:
@@ -1171,7 +1201,6 @@ class Revision (BlipModel):
                 ret = None
         return ret
                 
-
     @classmethod
     def select_revisions (cls, *args, **kw):
         store = get_store (kw.pop ('__blip_store__', cls.__blip_store__))
@@ -1188,6 +1217,7 @@ class Revision (BlipModel):
             args.append (Revision.weeknum >= range[0])
             if len(range) > 1 and range[1] is not None:
                 args.append (Revision.weeknum <= range[1])
+        # FIXME: branch
         sel = store.find (cls, *args, **kw)
         if files != None:
             sel = sel.group_by (Revision.ident)
@@ -1208,8 +1238,19 @@ class Revision (BlipModel):
         if range is not None:
             args.append (And (Revision.weeknum >= range[0],
                               Revision.weeknum <= range[1]))
+        # FIXME: branch
         sel = store.find (cls, *args, **kw)
         return sel.count (Revision.ident, distinct=True)
+
+
+class RevisionBranch (BlipModel):
+    __storm_primary__ = 'revision_ident', 'branch_ident'
+
+    revision_ident = ShortText ()
+    revision = Reference (revision_ident, Revision.ident)
+
+    branch_ident = ShortText ()
+    branch = Reference (branch_ident, Branch.ident)
 
 
 class RevisionFile (BlipModel):
@@ -1258,6 +1299,9 @@ class RevisionFileCache (BlipModel):
         sel = store.find ((cls, Revision), *args)
         return sel
 
+
+################################################################################
+## Other Tables
 
 class Statistic (BlipModel):
     __storm_primary__ = 'branch_ident', 'daynum', 'type'

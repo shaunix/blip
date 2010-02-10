@@ -293,8 +293,8 @@ class ModulesTab (blip.html.TabProvider):
                     span.add_content (blip.utils.gettext ('by'))
                     span.add_content (blip.html.Link (mod.mod_person))
                 lbox.add_fact (blip.utils.gettext ('modified'), span)
-            if mod.mod_score != None:
-                span = blip.html.Span(str(mod.mod_score))
+            if mod.project.score != None:
+                span = blip.html.Span(str(mod.project.score))
                 span.add_class ('score')
                 lbox.add_fact (blip.utils.gettext ('score'), span)
         response.set_widget (cont)
