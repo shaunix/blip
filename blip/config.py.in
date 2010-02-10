@@ -85,6 +85,9 @@ web_dir = get_config ('web.dir')
 web_files_dir = get_config ('web.files_dir',
                             web_dir and os.path.join (web_dir, 'files') or None)
 
+# The name of this Blip site, to display in the header
+web_site_name = get_config ('web.site_name', 'Blip')
+
 
 ################################################################################
 ## Web roots
