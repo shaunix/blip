@@ -529,19 +529,22 @@ class Page (HtmlWidget, ContentComponent, SublinksComponent, FactsComponent):
         res.out ('</head><body>')
 
         res.out ('<div id="header"><table><tr>')
-        res.out ('<td class="headerlogo"><a href="%s" id="headerlink"><img src="%s" alt="Blip"></a></td>',
-           (blip.config.web_url, blip.config.web_data_url + 'header-logo.png'))
+        res.out ('<td class="headerlogo"><a href="%s" id="headerlink"><img src="%s" alt="Blip">%s</a></td>',
+           (blip.config.web_url,
+            blip.config.web_data_url + 'header-logo.png',
+            blip.config.web_site_name
+            ))
         res.out ('<td class="headerlinks">')
         if res.http_account == None:
             res.out ('<a href="%saccount/login">%s</a>',
                (blip.config.web_url, blip.utils.gettext ('Log in')))
-            res.out (' | ')
+            res.out (BULLET)
             res.out ('<a href="%saccount/new">%s</a>',
                (blip.config.web_url, blip.utils.gettext ('Register')))
         else:
             res.out ('<a href="%shome">%s</a>',
                (blip.config.web_url, blip.utils.gettext ('Home')))
-            res.out (' | ')
+            res.out (BULLET)
             res.out ('<a href="%saccount/logout">%s</a>',
                (blip.config.web_url, blip.utils.gettext ('Log out')))
         res.out ('</td></tr></table></div>')
