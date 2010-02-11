@@ -33,6 +33,7 @@ blip-admin
 blip/Makefile
 blip/config.py
 blip/plugins/Makefile
+blip/plugins/commits/Makefile
 blip/plugins/cvs/Makefile
 blip/plugins/git/Makefile
 blip/plugins/index/Makefile

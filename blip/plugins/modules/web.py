@@ -106,7 +106,8 @@ class OverviewTab (blip.html.TabProvider):
         if len(request.path) < 1 or request.path[0] != 'mod':
             return None
         page.add_tab ('overview',
-                      blip.utils.gettext ('Overview'))
+                      blip.utils.gettext ('Overview'),
+                      blip.html.TabProvider.FIRST_TAB)
         page.add_to_tab ('overview', cls.get_tab (request))
 
     @classmethod
@@ -119,13 +120,13 @@ class OverviewTab (blip.html.TabProvider):
         facts = blip.html.FactsTable()
         tab.add_content (facts)
 
-        sep = False
-        try:
-            facts.add_fact (utils.gettext ('Description'),
+        facts.add_fact (blip.utils.gettext ('Name'), request.record.title)
+        facts.add_fact_divider ()
+
+        if request.record.desc != '':
+            facts.add_fact (blip.utils.gettext ('Description'),
                             request.record.desc)
-            sep = True
-        except:
-            pass
+            facts.add_fact_divider ()
 
         rels = blip.db.SetModule.get_related (pred=request.record)
         if len(rels) > 0:
@@ -133,13 +134,11 @@ class OverviewTab (blip.html.TabProvider):
             span = blip.html.Span (*[blip.html.Link(rset) for rset in sets])
             span.set_divider (blip.html.BULLET)
             facts.add_fact (blip.utils.gettext ('Release Sets'), span)
-            sep = True
-
-        if sep:
             facts.add_fact_divider ()
 
         checkout = blip.scm.Repository.from_record (request.record, checkout=False, update=False)
         facts.add_fact (blip.utils.gettext ('Location'), checkout.location)
+        facts.add_fact_divider ()
 
         if request.record.mod_datetime is not None:
             span = blip.html.Span(divider=blip.html.SPACE)

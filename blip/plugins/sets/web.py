@@ -184,7 +184,8 @@ class OverviewTab (blip.html.TabProvider):
         if len(request.path) < 1 or request.path[0] != 'set':
             return None
         page.add_tab ('overview',
-                      blip.utils.gettext ('Overview'))
+                      blip.utils.gettext ('Overview'),
+                      blip.html.TabProvider.FIRST_TAB)
         page.add_to_tab ('overview', cls.get_tab (request))
 
     @classmethod

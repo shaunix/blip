@@ -45,7 +45,7 @@ td.headerlogo img {
 }
 #subheader {
   background-color: #eeeeec;
-  background: -webkit-gradient(linear, left top, left bottom, from(#d4d4d2), to(#eeeeec));
+  background: -webkit-gradient(linear, left top, left bottom, from(#e0e0de), to(#eeeeec));
   padding: 0 16em 0 0 ;
 }
 #subheaderbar {
@@ -79,8 +79,8 @@ div.watch {
 div.watch a { font-size: 0.83em; }
 h1 img { vertical-align: middle; }
 .sublinks {
-  padding: 0 2.89em 0 2.89em;
-  margin: 0 0 1.2em 0;
+  margin: 0;
+  padding: 0 2.4em 0.2em 20px;
   font-size: 0.83em;
 }
 
@@ -89,12 +89,12 @@ h1 img { vertical-align: middle; }
 /** Main Content **/
 
 #body {
-  margin: 0 17em 0 0;
-  padding: 1em 0 0 0;
+  margin: 0 16em 0 0;
+  padding: 1em 1em 0 0;
+  background: white;
 }
 #panes {
-  padding: 0 2.4em 2.4em 2.4em;
-  background-color: white;
+  padding: 0 2.4em 2.4em 20px;
 }
 .pane { display: none; }
 

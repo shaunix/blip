@@ -1,9 +1,10 @@
-SUBDIRS = 	\
-	cvs	\
-	git	\
-	index	\
-	modules \
-	sets	\
+SUBDIRS = 		\
+	commits		\
+	cvs		\
+	git		\
+	index		\
+	modules 	\
+	sets		\
 	svn
 
 blipdir=${pkgpythondir}/plugins

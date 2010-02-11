@@ -405,6 +405,10 @@ class LinkBoxesComponent (Component):
 ## Pages
 
 class TabProvider (blip.web.ContentResponder):
+    FIRST_TAB = 0
+    CORE_TAB = 10
+    EXTRA_TAB = 20
+
     @classmethod
     def add_tabs (cls, page, request):
         pass
@@ -457,7 +461,7 @@ class Page (HtmlWidget, ContentComponent, SublinksComponent, FactsComponent):
         self._url = kw.get ('url') or self._url
         self._screenshot_file = None
         self._sidebar = None
-        self._tabs = []
+        self._tabs = {}
         self._panes = {}
 
         if request is not None:
@@ -476,8 +480,9 @@ class Page (HtmlWidget, ContentComponent, SublinksComponent, FactsComponent):
         """Set the URL of an icon for the page."""
         self._icon = icon
 
-    def add_tab (self, tabid, title):
-        self._tabs.append ((tabid, title))
+    def add_tab (self, tabid, title, group=TabProvider.EXTRA_TAB):
+        self._tabs.setdefault (group, [])
+        self._tabs[group].append ((tabid, title))
 
     def add_to_tab (self, tabid, content):
         pane = self._panes.get(tabid, None)
@@ -572,10 +577,11 @@ class Page (HtmlWidget, ContentComponent, SublinksComponent, FactsComponent):
 
         if len(self._tabs) > 0:
             res.out ('<ul id="tabs">')
-            for tabid, title in self._tabs:
-                title = esc (title).replace(' ', '&nbsp;')
-                res.out ('<li class="tab" id="tab-%s">', tabid, False)
-                res.out ('<a href="javascript:tab(\'%s\')"><div>' + title + '</div></a></li>', tabid)
+            for tabgroup in sorted (self._tabs.keys()):
+                for tabid, title in self._tabs[tabgroup]:
+                    title = esc (title).replace(' ', '&nbsp;')
+                    res.out ('<li class="tab" id="tab-%s">', tabid, False)
+                    res.out ('<a href="javascript:tab(\'%s\')"><div>' + title + '</div></a></li>', tabid)
             res.out ('</ul>')
 
         if self._screenshot_file != None:
