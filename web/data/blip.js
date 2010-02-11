@@ -672,7 +672,7 @@ function slide (app, id, dir) {
     $.ajax ({
       type: 'GET',
       url: pulse_url,
-      data: {'application': app, 'action': 'graphmap', 'id': id,
+      data: {'q': 'graphmap', 'graphmap': app, 'id': id,
              'num' : newdata.num, 'filename': newdata.filename},
       complete: function (req, status) {
         if (status == 'success') {

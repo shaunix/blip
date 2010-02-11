@@ -1379,7 +1379,7 @@ class Graph (HtmlWidget):
     def __init__ (self, url, **kw):
         super (Graph, self).__init__ (**kw)
         self._url = url
-        self._application = kw.get('application')
+        self._graph_id = kw.get('graph_id')
         self._count = kw.get('count', None)
         self._num = kw.get('num', 0)
         self._links = kw.get('links', False)
@@ -1431,28 +1431,26 @@ class Graph (HtmlWidget):
                 res.out ('</td></tr><tr>')
                 res.out ('<td class="graphprev">', None, False)
                 res.out ('<a class="graphprev" id="graphprev-%i" href="javascript:slide(\'%s\', %i, -1)"',
-                   (self._count, self._application, self._count), False)
+                   (self._count, self._graph_id, self._count), False)
                 res.out ('<img src="%sgo-prev.png" height="12" width="12"></a>',
                    blip.config.web_data_url, False)
                 res.out ('</td><td class="graphnext">', None, False)
                 res.out ('<a class="graphnext" id="graphnext-%i" href="javascript:slide(\'%s\', %i, 1)">',
-                   (self._count, self._application, self._count), False)
+                   (self._count, self._graph_id, self._count), False)
                 res.out ('<img src="%sgo-next.png" height="12" width="12"></a>',
                    blip.config.web_data_url, False)
                 res.out ('</td></tr></table>')
 
     @classmethod
-    def activity_graph (cls, outfile, url, boxid, title, application, data, **kw):
+    def activity_graph (cls, outfile, boxid, title, **kw):
         """A convenience constructor to make an activity graph from an OutputFile."""
         kw.setdefault ('links', True)
         kw.setdefault ('width', outfile.data.get('width'))
         kw.setdefault ('height', outfile.data.get('height'))
-        kw['application'] = application
+        kw['graph_id'] = boxid
         graph = cls (outfile.blip_url, **kw)
         thisweek = blip.utils.weeknum (datetime.datetime.now())
-        qs = '?application=%s&' % application
-        for key in data.keys():
-            qs += '%s=%s&' % (key, data[key])
+        qs = '?q=%s&' % boxid
         for (coords, tot, weeknum) in outfile.data.get ('coords', []):
             ago = thisweek - weeknum
             if ago == 0:
@@ -1464,7 +1462,7 @@ class Graph (HtmlWidget):
                          blip.utils.weeknumday(weeknum).strftime('%Y-%m-%d'))
             cmt = title % tot
             jslink = 'javascript:replace(\'' + boxid + '\', '
-            jslink += ('\'%s%sweeknum=%i\')') % (url, qs, weeknum)
+            jslink += ('pulse_url + \'%sweeknum=%i\')') % (qs, weeknum)
             graph.add_comment (coords, label, cmt, jslink)
         return graph
 

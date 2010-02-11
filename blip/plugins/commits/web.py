@@ -49,17 +49,17 @@ class CommitsTab (blip.html.TabProvider):
                                         filename=u'commits-0.png')
         try:
             of = of[0] 
-            graph = blip.html.Graph.activity_graph (of,
-                                                    request.record.blip_url,
-                                                    'commits', blip.utils.gettext ('%i commits'),
-                                                    'activity', {'action': 'commits'})
+            graph = blip.html.Graph.activity_graph (of, 'commits',
+                                                    blip.utils.gettext ('%i commits'))
             tab.add_content (graph)
         except IndexError:
             pass
 
+        cnt = blip.db.RevisionBranch.select (branch=request.record).count ()
+        # FIXME: This SELECT is too slow.  Limiting it to 26 weeks to
+        # keep the time somewhat sane for now.
         revs = blip.db.Revision.select_revisions (branch=request.record,
-                                                  week_range=(blip.utils.weeknum()-52,))
-        cnt = revs.count()
+                                                  week_range=(blip.utils.weeknum()-26,))
         revs = list(revs[:10])
         title = (blip.utils.gettext('Showing %i of %i commits:') % (len(revs), cnt))
         div = cls.get_commits_div (request, revs, title)
@@ -91,92 +91,104 @@ class CommitsTab (blip.html.TabProvider):
                                                              branch=request.record))
         return div
 
-    def handle_request (self):
-        contents = None
-        action = self.handler.request.query.get ('action')
-        if action == 'commits':
-            contents = self.get_commits_action ()
-        elif action == 'graphmap':
-            contents = self.get_graphmap_action ()
-        elif action == 'revfiles':
-            contents = self.get_revfiles_action ()
-        elif action == 'tab':
-            contents = self.get_tab ()
-        if contents is not None:
-            self.handler.response.set_contents (contents)
 
+class CommitsGraphMap (blip.web.ContentResponder):
+    @classmethod
+    def respond (cls, request):
+        if request.record is None:
+            return None
+        if not isinstance (request.record, blip.db.Branch):
+            return None
+        if request.query.get ('q', None) != 'graphmap':
+            return None
+        if request.query.get ('graphmap', None) != 'commits':
+            return None
 
-    def get_commits_action (self):
-        weeknum = self.handler.request.query.get('weeknum', None)
-        if weeknum != None:
-            weeknum = int(weeknum)
-            thisweek = utils.weeknum ()
-            ago = thisweek - weeknum
-            revs = db.Revision.select_revisions (branch=self.handler.record,
-                                                 weeknum=weeknum)
-            cnt = revs.count()
-            revs = list(revs[:20])
-        else:
-            revs = db.Revision.select_revisions (branch=self.handler.record,
-                                                 week_range=(utils.weeknum()-52,))
-            cnt = revs.count()
-            revs = list(revs[:10])
-        if weeknum == None:
-            title = (utils.gettext('Showing %i of %i commits:')
-                     % (len(revs), cnt))
-        elif ago == 0:
-            title = (utils.gettext('Showing %i of %i commits from this week:')
-                     % (len(revs), cnt))
-        elif ago == 1:
-            title = (utils.gettext('Showing %i of %i commits from last week:')
-                     % (len(revs), cnt))
-        else:
-            title = (utils.gettext('Showing %i of %i commits from %i weeks ago:')
-                     % (len(revs), cnt, ago))
-        return self.get_commits_div (revs, title)
-
-    def get_graphmap_action (self):
-        id = self.handler.request.query.get ('id')
-        num = self.handler.request.query.get ('num')
-        filename = self.handler.request.query.get ('filename')
+        response = blip.web.WebResponse (request)
+        graphid = request.query.get ('id')
+        num = request.query.get ('num')
+        filename = request.query.get ('filename')
 
         graph = None
-        of = db.OutputFile.select (type=u'graphs', ident=self.handler.record.ident, filename=filename)
+        of = blip.db.OutputFile.select (type=u'graphs', ident=request.record.ident, filename=filename)
         try:
             of = of[0]
-            graph = html.Graph.activity_graph (of, self.handler.record.pulse_url,
-                                               'commits', utils.gettext ('%i commits'),
-                                               'activity', {'action': 'commits'},
-                                               count=int(id), num=int(num), map_only=True)
+            graph = blip.html.Graph.activity_graph (of, 'commits',
+                                                    blip.utils.gettext ('%i commits'),
+                                                    count=int(graphid), num=int(num),
+                                                    map_only=True)
+            response.set_widget (graph)
+            return response
         except:
             pass
-        return graph
 
-    def get_revfiles_action (self):
-        module = self.handler.record
-        if module.scm_server.endswith ('/svn/'):
-            base = module.scm_server[:-4] + 'viewvc/'
-            colon = base.find (':')
-            if colon < 0:
-                response.http_status = 404
-                return
-            if base[:colon] != 'http':
-                base = 'http' + base[colon:]
-            if module.scm_path != None:
-                base += module.scm_path
-            elif module.scm_branch == 'trunk':
-                base += module.scm_module + '/trunk/'
-            else:
-                base += module.scm_module + '/branches/' + module.scm_branch + '/'
 
-        revid = self.handler.request.query.get('revid', None)
-        revision = db.Revision.get (revid)
-        files = db.RevisionFile.select (revision=revision)
+class CommitsDiv (blip.web.ContentResponder):
+    @classmethod
+    def respond (cls, request):
+        if request.record is None:
+            return None
+        if not isinstance (request.record, blip.db.Branch):
+            return None
+        if request.query.get ('q', None) != 'commits':
+            return None
 
-        mlink = html.MenuLink (revision.revision, menu_only=True)
-        for file in files:
-            url = base + file.filename
-            url += '?r1=%s&r2=%s' % (file.prevrev, file.filerev)
-            mlink.add_link (url, file.filename)
+        response = blip.web.WebResponse (request)
 
-        return mlink
+        weeknum = request.query.get('weeknum', None)
+        if weeknum != None:
+            weeknum = int(weeknum)
+            thisweek = blip.utils.weeknum ()
+            ago = thisweek - weeknum
+            revs = blip.db.Revision.select_revisions (branch=request.record,
+                                                      weeknum=weeknum)
+            cnt = revs.count()
+            revs = list(revs[:100])
+        else:
+            revs = blip.db.Revision.select_revisions (branch=request.record,
+                                                      week_range=(utils.weeknum()-52,))
+            cnt = revs.count()
+            revs = list(revs[:10])
+        if weeknum is None:
+            title = (blip.utils.gettext('Showing %i of %i commits:')
+                     % (len(revs), cnt))
+        elif ago == 0:
+            title = (blip.utils.gettext('Showing %i of %i commits from this week:')
+                     % (len(revs), cnt))
+        elif ago == 1:
+            title = (blip.utils.gettext('Showing %i of %i commits from last week:')
+                     % (len(revs), cnt))
+        else:
+            title = (blip.utils.gettext('Showing %i of %i commits from %i weeks ago:')
+                     % (len(revs), cnt, ago))
+
+        div = CommitsTab.get_commits_div (request, revs, title)
+        response.set_widget (div)
+        return response
+
+
+# def get_revfiles_action (self):
+#     module = self.handler.record
+#     if module.scm_server.endswith ('/svn/'):
+#         base = module.scm_server[:-4] + 'viewvc/'
+#         colon = base.find (':')
+#         if colon < 0:
+#             response.http_status = 404
+#             return
+#         if base[:colon] != 'http':
+#             base = 'http' + base[colon:]
+#         if module.scm_path != None:
+#             base += module.scm_path
+#         elif module.scm_branch == 'trunk':
+#             base += module.scm_module + '/trunk/'
+#         else:
+#             base += module.scm_module + '/branches/' + module.scm_branch + '/'
+#     revid = self.handler.request.query.get('revid', None)
+#     revision = db.Revision.get (revid)
+#     files = db.RevisionFile.select (revision=revision)
+#     mlink = html.MenuLink (revision.revision, menu_only=True)
+#     for file in files:
+#         url = base + file.filename
+#         url += '?r1=%s&r2=%s' % (file.prevrev, file.filerev)
+#         mlink.add_link (url, file.filename)
+#     return mlink
