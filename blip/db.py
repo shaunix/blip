@@ -1245,7 +1245,14 @@ class Revision (BlipModel):
         if range is not None:
             args.append (And (Revision.weeknum >= range[0],
                               Revision.weeknum <= range[1]))
-        # FIXME: branch
+        branch_ident = kw.pop ('branch_ident', None)
+        if branch_ident is None:
+            branch = kw.pop ('branch', None)
+            if branch is not None:
+                branch_ident = branch.ident
+        if branch_ident is not None:
+            args.append (RevisionBranch.revision_ident == cls.ident)
+            args.append (RevisionBranch.branch_ident == branch_ident)
         sel = store.find (cls, *args, **kw)
         return sel.count (Revision.ident, distinct=True)
 
@@ -1368,10 +1375,7 @@ class OutputFile (BlipModel):
         if subsub != None:
             lst.append (subsub)
         lst.append (self.filename)
-        rootdir = getattr (blip.config, self.type + '_root', None)
-        if rootdir == None:
-            lst.insert (0, self.type)
-            rootdir = blip.config.web_url
+        rootdir = blip.config.web_files_url + self.type + '/'
         return rootdir + '/'.join(lst)
     blip_url = property (get_blip_url)
 

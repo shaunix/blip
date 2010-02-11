@@ -7,6 +7,7 @@ blip_PYTHON =			\
 	core.py			\
 	data.py			\
 	db.py			\
+	graphs.py		\
 	html.py			\
 	scm.py			\
 	sweep.py		\

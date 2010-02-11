@@ -27,9 +27,8 @@ import os
 
 import blip.core
 import blip.db
-#import blip.graphs
+import blip.graphs
 import blip.scm
-#import blip.parsers
 import blip.sweep
 import blip.utils
 
@@ -136,8 +135,7 @@ class ModuleScanner (object):
         if self.request.get_tool_option ('read_history', True):
             self.check_history ()
 
-        # FIXME
-        #pulse.pulsate.update_graphs (self.branch, {'branch' : self.branch}, 80, **kw)
+        self.update_commit_graphs ()
 
         def visit (arg, dirname, names):
             ignore = self.repository.ignoredir
@@ -212,6 +210,88 @@ class ModuleScanner (object):
         if revision != None:
             self.branch.mod_datetime = revision.datetime
             self.branch.mod_person = revision.person
+
+    def update_commit_graphs (self):
+        now = datetime.datetime.utcnow ()
+        thisweek = blip.utils.weeknum ()
+        numweeks = 104
+        i = 0
+        finalrev = blip.db.Revision.select_revisions (branch=self.branch)
+        finalrev = finalrev.order_by ('datetime')
+        outpath = None
+        try:
+            finalrev = finalrev[0].ident
+            stillrev = True
+        except IndexError:
+            finalrev = None
+            stillrev = False
+        while stillrev or i < 2:
+            topweek = thisweek - (i * numweeks)
+            revstot = blip.db.Revision.count_revisions (branch=self.branch)
+            revs = blip.db.Revision.select_revisions (week_range=((topweek - numweeks + 1), topweek),
+                                                      branch=self.branch)
+            if stillrev:
+                fname = u'commits-' + str(i) + '.png'
+                of = blip.db.OutputFile.select (type=u'graphs', ident=self.branch.ident, filename=fname)
+                try:
+                    of = of[0]
+                except IndexError:
+                    of = None
+                if i == 0 and of != None:
+                    if self.request.get_tool_option ('timestamps', True):
+                        revcount = of.data.get ('revcount', 0)
+                        weeknum = of.data.get ('weeknum', None)
+                        if weeknum == thisweek:
+                            rev = None
+                            if revcount == revstot:
+                                blip.utils.log ('Skipping commit graph for %s' % self.branch.ident)
+                                return
+                elif of == None:
+                    of = blip.db.OutputFile (type=u'graphs', ident=self.branch.ident,
+                                             filename=fname, datetime=now)
+                outpath = of.get_file_path()
+            else:
+                of = None
+
+            if i == 0:
+                blip.utils.log ('Creating commit graphs for %s' % self.branch.ident)
+
+            stats = [0] * numweeks
+            revs = list(revs)
+            for rev in revs:
+                if rev.ident == finalrev:
+                    stillrev = False
+                idx = rev.weeknum - topweek + numweeks - 1
+                stats[idx] += 1
+
+            if i == 0:
+                scorestats = stats[numweeks - 26:]
+                score = blip.utils.score (scorestats)
+                #record.score = score
+                scorestats = scorestats[:-3]
+                avg = int(round(sum(scorestats) / (len(scorestats) * 1.0)))
+                scorestats = scorestats + [avg, avg, avg]
+                old = blip.utils.score (scorestats)
+                #record.mod_score_diff = score - old
+                print '%i (%i)' % (score, score - old)
+
+            if of != None:
+                graph = blip.graphs.BarGraph (stats, 80, height=40)
+                graph.save (of.get_file_path())
+
+            if i == 0:
+                stats0 = stats
+            elif i == 1 and outpath != None:
+                graph_t = blip.graphs.BarGraph (stats + stats0, 80, height=40, tight=True)
+                graph_t.save (os.path.join (os.path.dirname (outpath), 'commits-tight.png'))
+
+            if of != None:
+                of.data['coords'] = zip (graph.get_coords(), stats, range(topweek - numweeks + 1, topweek + 1))
+                if len(revs) > 0:
+                    of.data['revcount'] = revstot
+                of.data['weeknum'] = topweek
+
+            i += 1
 
 
     def set_default_child (self):

@@ -51,7 +51,7 @@ class CommitsTab (blip.html.TabProvider):
             of = of[0] 
             graph = blip.html.Graph.activity_graph (of,
                                                     request.record.blip_url,
-                                                    'commits', utils.gettext ('%i commits'),
+                                                    'commits', blip.utils.gettext ('%i commits'),
                                                     'activity', {'action': 'commits'})
             tab.add_content (graph)
         except IndexError:
