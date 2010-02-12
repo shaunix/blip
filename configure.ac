@@ -3,33 +3,33 @@ AM_INIT_AUTOMAKE([1.9])
 
 AC_CONFIG_MACRO_DIR([m4])
 
-AM_PATH_PYTHON([2.3])
+AM_PATH_PYTHON([2.4])
 
-BLIP_SITE_DIR=$( (
+BLIP_SITE_DIR=`(
 	case $prefix in
 	     NONE) prefix=$ac_default_prefix ;;
 	     *) ;;
 	esac
 	eval echo $(eval echo $localstatedir)/blip
-))
+)`
 AC_SUBST(BLIP_SITE_DIR)
 
-BLIP_MODULES_DIR=$( (
+BLIP_MODULES_DIR=`(
 	case $prefix in
 	     NONE) prefix=$ac_default_prefix ;;
 	     *) ;;
 	esac
 	eval echo $(eval echo $pkgpythondir)
-))
+)`
 AC_SUBST(BLIP_MODULES_DIR)
 
-BLIP_DATA_DIR=$( (
+BLIP_DATA_DIR=`(
 	case $prefix in
 	     NONE) prefix=$ac_default_prefix ;;
 	     *) ;;
 	esac
 	eval echo $(eval echo $datadir)/blip
-))
+)`
 AC_SUBST(BLIP_DATA_DIR)
 
 BLIP_PLUGINS_DIR="${BLIP_MODULES_DIR}/plugins"
