@@ -27,7 +27,9 @@ class CommitsTab (blip.html.TabProvider):
     def add_tabs (cls, page, request):
         if request.record is None:
             return
-        if not isinstance (request.record, blip.db.Branch):
+        if not (isinstance (request.record, blip.db.Branch) or
+                (isinstance (request.record, blip.db.Entity) and
+                 request.record.type == u'Person')):
             return
         page.add_tab ('commits',
                       blip.utils.gettext ('Commits'),
@@ -37,8 +39,10 @@ class CommitsTab (blip.html.TabProvider):
     def respond (cls, request):
         if request.record is None:
             return None
-        if not isinstance (request.record, blip.db.Branch):
-            return None
+        if not (isinstance (request.record, blip.db.Branch) or
+                (isinstance (request.record, blip.db.Entity) and
+                 request.record.type == u'Person')):
+            return
         if not blip.html.TabProvider.match_tab (request, 'commits'):
             return None
 
@@ -55,11 +59,18 @@ class CommitsTab (blip.html.TabProvider):
         except IndexError:
             pass
 
-        cnt = blip.db.RevisionBranch.select (branch=request.record).count ()
+        if isinstance (request.record, blip.db.Branch):
+            cnt = blip.db.RevisionBranch.select (branch=request.record).count ()
+        else:
+            cnt = blip.db.Revision.select (person=request.record).count ()
         # FIXME: This SELECT is too slow.  Limiting it to 26 weeks to
         # keep the time somewhat sane for now.
-        revs = blip.db.Revision.select_revisions (branch=request.record,
-                                                  week_range=(blip.utils.weeknum()-26,))
+        if isinstance (request.record, blip.db.Branch):
+            revs = blip.db.Revision.select_revisions (branch=request.record,
+                                                      week_range=(blip.utils.weeknum()-26,))
+        else:
+            revs = blip.db.Revision.select_revisions (person=request.record,
+                                                      week_range=(blip.utils.weeknum()-26,))
         revs = list(revs[:10])
         title = (blip.utils.gettext('Showing %i of %i commits:') % (len(revs), cnt))
         div = cls.get_commits_div (request, revs, title)
@@ -81,14 +92,21 @@ class CommitsTab (blip.html.TabProvider):
             curweek = rev.weeknum
             # FIXME: i18n word order
             span = blip.html.Span (divider=blip.html.SPACE)
-            span.add_content (rev.display_revision (request.record))
-            span.add_content ('on')
-            span.add_content (rev.datetime.strftime('%Y-%m-%d %T'))
-            span.add_content ('by')
-            span.add_content (blip.html.Link (rev.person))
+            if isinstance (request.record, blip.db.Branch):
+                span.add_content (rev.display_revision (request.record))
+                span.add_content ('on')
+                span.add_content (rev.datetime.strftime('%Y-%m-%d %T'))
+                span.add_content ('by')
+                span.add_content (blip.html.Link (rev.person))
+                branch = request.record
+            else:
+                span.add_content (blip.html.Link (rev.project.blip_url, rev.project.title))
+                span.add_content ('on')
+                span.add_content (rev.datetime.strftime('%Y-%m-%d %T'))
+                branch = rev.project.default
             dl.add_term (span)
-            dl.add_entry (blip.html.PopupLink.from_revision (rev, 'activity',
-                                                             branch=request.record))
+            # FIXME: branch=request.record or...
+            dl.add_entry (blip.html.PopupLink.from_revision (rev, 'activity', branch=branch))
         return div
 
 
@@ -97,7 +115,9 @@ class CommitsGraphMap (blip.web.ContentResponder):
     def respond (cls, request):
         if request.record is None:
             return None
-        if not isinstance (request.record, blip.db.Branch):
+        if not (isinstance (request.record, blip.db.Branch) or
+                (isinstance (request.record, blip.db.Entity) and
+                 request.record.type == u'Person')):
             return None
         if request.query.get ('q', None) != 'graphmap':
             return None
@@ -128,7 +148,9 @@ class CommitsDiv (blip.web.ContentResponder):
     def respond (cls, request):
         if request.record is None:
             return None
-        if not isinstance (request.record, blip.db.Branch):
+        if not (isinstance (request.record, blip.db.Branch) or
+                (isinstance (request.record, blip.db.Entity) and
+                 request.record.type == u'Person')):
             return None
         if request.query.get ('q', None) != 'commits':
             return None
@@ -140,13 +162,21 @@ class CommitsDiv (blip.web.ContentResponder):
             weeknum = int(weeknum)
             thisweek = blip.utils.weeknum ()
             ago = thisweek - weeknum
-            revs = blip.db.Revision.select_revisions (branch=request.record,
-                                                      weeknum=weeknum)
+            if isinstance (request.record, blip.db.Branch):
+                revs = blip.db.Revision.select_revisions (branch=request.record,
+                                                          weeknum=weeknum)
+            else:
+                revs = blip.db.Revision.select_revisions (person=request.record,
+                                                          weeknum=weeknum)
             cnt = revs.count()
             revs = list(revs[:100])
         else:
-            revs = blip.db.Revision.select_revisions (branch=request.record,
-                                                      week_range=(utils.weeknum()-52,))
+            if isinstance (request.record, blip.db.Branch):
+                revs = blip.db.Revision.select_revisions (branch=request.record,
+                                                          week_range=(utils.weeknum()-52,))
+            else:
+                revs = blip.db.Revision.select_revisions (person=request.record,
+                                                          week_range=(utils.weeknum()-52,))
             cnt = revs.count()
             revs = list(revs[:10])
         if weeknum is None:

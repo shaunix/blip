@@ -4,6 +4,7 @@ SUBDIRS = 		\
 	git		\
 	index		\
 	modules 	\
+	people		\
 	sets		\
 	svn
 
