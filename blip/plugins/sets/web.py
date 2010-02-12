@@ -183,79 +183,30 @@ class OverviewTab (blip.html.TabProvider):
     def add_tabs (cls, page, request):
         if len(request.path) < 1 or request.path[0] != 'set':
             return None
-        page.add_tab ('overview',
-                      blip.utils.gettext ('Overview'),
-                      blip.html.TabProvider.FIRST_TAB)
+        cnt = request.record.subsets.count ()
+        if cnt > 0:
+            page.add_tab ('overview',
+                          blip.utils.gettext ('Subsets (%i)' % cnt),
+                          blip.html.TabProvider.FIRST_TAB)
+        else:
+            cnt = blip.db.SetModule.count_related (subj=request.record)
+            page.add_tab ('overview',
+                          blip.utils.gettext ('Modules (%i)' % cnt),
+                          blip.html.TabProvider.FIRST_TAB)
         page.add_to_tab ('overview', cls.get_tab (request))
 
     @classmethod
     def get_tab (cls, request):
-        cont = blip.html.FactsTable ()
-        cont.add_fact ('foo', 'bar')
-        return cont
-
-    @classmethod
-    def respond (cls, request, **kw):
-        if len(request.path) < 1 or request.path[0] != 'set':
-            return None
-        if not blip.html.TabProvider.match_tab (request, 'overview'):
-            return None
-
-        response = blip.web.WebResponse (request)
-        response.set_widget (cls.get_tab (request))
-        return response
-
-
-class SubsetsTab (blip.html.TabProvider):
-    @classmethod
-    def add_tabs (cls, page, request):
-        if len(request.path) < 1 or request.path[0] != 'set':
-            return None
-        cnt = request.record.subsets.count ()
-        if cnt > 0:
-            page.add_tab ('subsets',
-                          blip.utils.gettext ('Subsets (%i)' % cnt))
-
-    @classmethod
-    def respond (cls, request):
-        if len(request.path) < 1 or request.path[0] != 'set':
-            return None
-        if not blip.html.TabProvider.match_tab (request, 'subsets'):
-            return None
-
-        response = blip.web.WebResponse (request)
-
         subsets = blip.utils.attrsorted (list(request.record.subsets), ['title'])
-        cont = blip.html.ContainerBox ()
-        cont.set_show_icons (False)
-        cont.set_columns (2)
-        for subset in subsets:
-            lbox = cont.add_link_box (subset)
-            SetResponder.add_set_info (subset, lbox)
-        response.set_widget (cont)
-        return response
+        if len(subsets) > 0:
+            cont = blip.html.ContainerBox ()
+            cont.set_show_icons (False)
+            cont.set_columns (2)
+            for subset in subsets:
+                lbox = cont.add_link_box (subset)
+                SetResponder.add_set_info (subset, lbox)
+            return cont
 
-class ModulesTab (blip.html.TabProvider):
-    @classmethod
-    def add_tabs (cls, page, request):
-        if len(request.path) < 1 or request.path[0] != 'set':
-            return None
-        cnt = blip.db.SetModule.count_related (subj=request.record)
-        if cnt > 0:
-            page.add_tab ('modules',
-                          blip.utils.gettext ('Modules (%i)' % cnt))
-
-    @classmethod
-    def respond (cls, request):
-        if len(request.path) < 1 or request.path[0] != 'set':
-            return None
-        if not blip.html.TabProvider.match_tab (request, 'modules'):
-            return None
-
-        response = blip.web.WebResponse (request)
-
-        ident = '/' + '/'.join(request.path)
-        request.record = blip.db.ReleaseSet.get (ident)
         if request.record is None:
             cont = blip.html.AdmonBox (
                 blip.html.AdmonBox.error,
@@ -298,8 +249,19 @@ class ModulesTab (blip.html.TabProvider):
                 span = blip.html.Span(str(mod.project.score))
                 span.add_class ('score')
                 lbox.add_fact (blip.utils.gettext ('score'), span)
-        response.set_widget (cont)
+        return cont
+
+    @classmethod
+    def respond (cls, request, **kw):
+        if len(request.path) < 1 or request.path[0] != 'set':
+            return None
+        if not blip.html.TabProvider.match_tab (request, 'overview'):
+            return None
+
+        response = blip.web.WebResponse (request)
+        response.set_widget (cls.get_tab (request))
         return response
+
 
 # class DocumentsTab (applications.TabProvider):
 #     application_id = 'documents'
