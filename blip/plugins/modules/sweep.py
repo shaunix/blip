@@ -267,13 +267,20 @@ class ModuleScanner (object):
             if i == 0:
                 scorestats = stats[numweeks - 26:]
                 score = blip.utils.score (scorestats)
-                #record.score = score
+                self.branch.score = score
+
                 scorestats = scorestats[:-3]
                 avg = int(round(sum(scorestats) / (len(scorestats) * 1.0)))
                 scorestats = scorestats + [avg, avg, avg]
                 old = blip.utils.score (scorestats)
-                #record.mod_score_diff = score - old
-                print '%i (%i)' % (score, score - old)
+                score_diff = score - old
+                self.branch.score_diff = score_diff
+
+                project = self.branch.project
+                if score > project.score:
+                    project.score = score
+                if score_diff > project.score_diff:
+                    project.score_diff = score_diff
 
             if of != None:
                 graph = blip.graphs.BarGraph (stats, 80, height=40)

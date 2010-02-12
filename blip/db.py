@@ -499,6 +499,9 @@ class Project (BlipRecord):
     score = Int ()
     score_diff = Int ()
 
+    default_ident = ShortText ()
+    default = Reference (default_ident, 'Branch.ident')
+
 
 class Branch (BlipRecord):
     subtype = ShortText ()
@@ -518,6 +521,9 @@ class Branch (BlipRecord):
 
     bug_database = ShortText ()
 
+    score = Int ()
+    score_diff = Int ()
+
     mod_datetime = DateTime ()
     mod_person_ident = ShortText ()
     mod_person = Reference (mod_person_ident, 'Entity.ident')
@@ -526,6 +532,8 @@ class Branch (BlipRecord):
         kw['project_ident'] = u'/'.join (ident.split('/')[:-1])
         proj = Project.get_or_create (kw['project_ident'], type)
         BlipRecord.__init__ (self, ident, type, **kw)
+        if self.is_default:
+            proj.default = self
 
     @property
     def title_default (self):

@@ -212,6 +212,7 @@ class OverviewTab (blip.html.TabProvider):
 ################################################################################
 ## Index Content
 
+
 class SetIndexContentProvider (blip.plugins.index.web.IndexContentProvider):
     @classmethod
     def provide_content (cls, page, response, **kw):
@@ -227,22 +228,23 @@ class SetIndexContentProvider (blip.plugins.index.web.IndexContentProvider):
         columns = blip.html.ColumnBox (2)
         box.add_content (columns)
 
-        modules = blip.db.Branch.select (blip.db.Branch.type == u'Module',
-                                         blip.db.Branch.project_ident == blip.db.Project.ident)
+        # FIXME: should JOIN to avoid SELECTS in for loop below
+        modules = blip.db.Project.select (blip.db.Project.type == u'Module',
+                                          blip.db.Project.default != None)
         modules = modules.order_by (blip.db.Desc (blip.db.Project.score))
         bl = blip.html.BulletList ()
         bl.set_title (blip.utils.gettext ('Active projects:'))
         columns.add_to_column (0, bl)
         modules = modules[:6]
         for module in modules:
-            bl.add_link (module.blip_url, module.title)
+            bl.add_link (module.default.blip_url, module.default.title)
 
-        modules = blip.db.Branch.select (blip.db.Branch.type == u'Module',
-                                         blip.db.Branch.project_ident == blip.db.Project.ident)
+        modules = blip.db.Project.select (blip.db.Project.type == u'Module',
+                                          blip.db.Project.default_ident != None)
         modules = modules.order_by (blip.db.Desc (blip.db.Project.score_diff))
         bl = blip.html.BulletList ()
         bl.set_title (blip.utils.gettext ('Recently active:'))
         columns.add_to_column (1, bl)
         modules = modules[:6]
         for module in modules:
-            bl.add_link (module.blip_url, module.title)
+            bl.add_link (module.default.blip_url, module.default.title)
