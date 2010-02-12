@@ -19,12 +19,15 @@
 # Suite 330, Boston, MA  0211-1307  USA.
 #
 
+BLIP_DATA_DIR = '@BLIP_DATA_DIR@'
 BLIP_SITE_DIR = '@BLIP_SITE_DIR@'
 
 import ConfigParser
 import inspect
 import os
 import os.path
+import shutil
+import stat
 import sys
 
 
@@ -173,6 +176,40 @@ class db:
             blip.db.rollback (store)
         else:
             blip.db.commit (store)
+
+
+class web:
+    synopsis = 'copy web files into the web directory'
+
+    @staticmethod
+    def usage (fd=sys.stderr, verbose=False):
+        print >>fd, 'Usage: %s web' % sys.argv[0]
+        if not verbose:
+            return
+
+        print >>fd, '\nOptions:'
+        print >>fd, '  --rollback   roll back all changes (dry run)'
+
+    @staticmethod
+    def run (args):
+        import blip.config
+
+        cgi = os.path.join (blip.config.web_dir, 'index.cgi')
+        if not os.path.exists (cgi):
+            shutil.copyfile (os.path.join (BLIP_DATA_DIR, 'web', 'index.cgi'), cgi)
+            os.chmod (cgi,
+                      stat.S_IRUSR | stat.S_IRGRP | stat.S_IROTH |
+                      stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH |
+                      stat.S_IWUSR )
+
+        htaccess = os.path.join (blip.config.web_dir, '.htaccess')
+        if not os.path.exists (htaccess):
+            shutil.copyfile (os.path.join (BLIP_DATA_DIR, 'web', 'htaccess'), htaccess)
+                         
+        data = os.path.join (blip.config.web_dir, 'data')
+        # FIXME: descend into directory, in case there's new stuff
+        if not os.path.exists (data):
+            shutil.copytree (os.path.join (BLIP_DATA_DIR, 'web', 'data'), data)
 
 
 if __name__ == "__main__":

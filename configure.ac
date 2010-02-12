@@ -23,6 +23,15 @@ BLIP_MODULES_DIR=$( (
 ))
 AC_SUBST(BLIP_MODULES_DIR)
 
+BLIP_DATA_DIR=$( (
+	case $prefix in
+	     NONE) prefix=$ac_default_prefix ;;
+	     *) ;;
+	esac
+	eval echo $(eval echo $datadir)/blip
+))
+AC_SUBST(BLIP_DATA_DIR)
+
 BLIP_PLUGINS_DIR="${BLIP_MODULES_DIR}/plugins"
 AC_SUBST(BLIP_PLUGINS_DIR)
 
@@ -52,5 +61,6 @@ blip-$VERSION:
 	Prefix:     ${prefix}
 	Modules:    ${BLIP_MODULES_DIR}
 	Plugins:    ${BLIP_PLUGINS_DIR}
+	Data files: ${BLIP_DATA_DIR}
 	Site data:  ${BLIP_SITE_DIR}
 "
