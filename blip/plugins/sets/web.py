@@ -139,7 +139,7 @@ class SetResponder (blip.web.RecordLocator, blip.web.PageResponder):
         if cnt > 0:
             bl = blip.html.BulletList ()
             lbox.add_content (bl)
-            bl.add_link (record.blip_url + '#modules',
+            bl.add_link (record.blip_url, # + '#modules',
                          blip.utils.gettext ('%i modules') % cnt)
         else:
             return
