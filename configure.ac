@@ -1,4 +1,4 @@
-AC_INIT([blip], [0.9], [])
+AC_INIT([blip], [0.9.1], [])
 AM_INIT_AUTOMAKE([1.9])
 
 AC_CONFIG_MACRO_DIR([m4])
