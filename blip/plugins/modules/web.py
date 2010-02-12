@@ -1,20 +1,20 @@
 # Copyright (c) 2006, 2010  Shaun McCance  <shaunm@gnome.org>
 #
-# This file is part of Pulse, a program for displaying various statistics
+# This file is part of Blip, a program for displaying various statistics
 # of questionable relevance about software and the people who make it.
 #
-# Pulse is free software; you can redistribute it and/or modify it under the
+# Blip is free software; you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software
 # Foundation; either version 2 of the License, or (at your option) any later
 # version.
 #
-# Pulse is distributed in the hope that it will be useful, but WITHOUT ANY
+# Blip is distributed in the hope that it will be useful, but WITHOUT ANY
 # WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
 # FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
 # details.
 #
 # You should have received a copy of the GNU General Public License along
-# with Pulse; if not, write to the Free Software Foundation, 59 Temple Place,
+# with Blip; if not, write to the Free Software Foundation, 59 Temple Place,
 # Suite 330, Boston, MA  0211-1307  USA.
 #
 
@@ -220,7 +220,7 @@ class SetIndexContentProvider (blip.plugins.index.web.IndexContentProvider):
         box = blip.html.SectionBox (blip.utils.gettext ('Modules'))
         page.add_content (box)
 
-        txt = (blip.utils.gettext ('Pulse is watching %i branches in %i projects.') %
+        txt = (blip.utils.gettext ('Blip is watching %i branches in %i projects.') %
                (blip.db.Branch.select (type=u'Module').count(),
                 blip.db.Project.select (type=u'Module').count()))
         box.add_content (blip.html.Div (txt))
