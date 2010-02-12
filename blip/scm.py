@@ -75,11 +75,21 @@ class Repository (blip.core.ExtensionPoint):
     scm_type = None
     scm_branch = None
 
+    _cached_repos = {}
+
     def __new__(cls, *args, **kw):
         if cls == Repository and 'scm_type' in kw:
-            cls = Repository.get_repository_class (kw['scm_type'])
-        obj = object.__new__(cls)
-        obj.__init__(*args, **kw)
+            subcls = Repository.get_repository_class (kw['scm_type'])
+        repoid = ':::'.join ([kw.get('scm_type') or '__none__',
+                              kw.get('scm_server') or '__none__',
+                              kw.get('scm_module') or '__none__',
+                              kw.get('scm_path') or '__none__',
+                              kw.get('scm_branch') or subcls.scm_branch])
+        if cls._cached_repos.has_key (repoid):
+            return cls._cached_repos[repoid]
+        obj = object.__new__(subcls)
+        obj._initialized = False
+        cls._cached_repos[repoid] = obj
         return obj
 
     @staticmethod
@@ -107,6 +117,7 @@ class Repository (blip.core.ExtensionPoint):
                            scm_branch=record.scm_branch,
                            scm_path=record.scm_path,
                            **kw)
+    
 
     @property
     def server_name (self):
@@ -154,6 +165,9 @@ class Repository (blip.core.ExtensionPoint):
         """
         Perform an update or checkout on __init__.
         """
+        if self._initialized:
+            return
+        self._initialized = True
         if os.path.exists (self.directory):
             if kw.get ('update', False):
                 self.update ()
