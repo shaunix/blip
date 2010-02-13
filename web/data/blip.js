@@ -407,15 +407,15 @@ $.fn.pulse_init = function () {
       if (comment.is (':hidden')) {
         div.find ('.comment').css ('display', 'none');
         comment.css ({
-          left: offset.left + i,
-          top: offset.top + graphmap.height() + 1,
+          left: offset.left + i - 1,
+          top: offset.top + graphmap.height(),
           zIndex: 20,
           display: 'block'
         });
         target.attr ('href', comment.attr('href'));
         target.css ({
           top: offset.top,
-          left: offset.left + i,
+          left: offset.left + i - 1,
           height: graphmap.height(),
           lineHeight: graphmap.height(),
           width: 4,

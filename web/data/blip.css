@@ -13,7 +13,7 @@ body {
 
 #header {
   background-color: #5574a2;
-  background: -webkit-gradient(linear, left top, left bottom, from(#7c94b8), to(#365c92));
+  background: -webkit-gradient(linear, left -60, left 40, from(white), to(#204a87));
   height: 36px;
   padding: 0;
   color: #fcf197;
@@ -574,10 +574,9 @@ a.comment {
   display: none;
   position: absolute;
   text-align: center;
-  background-color: #fce94f;
+  background-color: #fcf197;
+  background: -webkit-gradient(linear, left top, left 60, from(#fcf197), to(white));
   border-left: solid 1px #204a87;
-  border-right: solid 1px #204a87;
-  border-bottom: solid 1px #204a87;
   padding: 2px 6px 6px 6px;
   z-index: 100;
 }
@@ -637,9 +636,10 @@ div.zoom {
 }
 .throbberbar div {
   background-color: #729fcf;
+  background: -webkit-gradient(linear, right top, -20 top, from(#729fcf), to(white));
   line-height: 6px;
   height: 6px;
-  width: 36px;
+  width: 40px;
 }
 
 .vbox-el { margin-top: 1em; }
