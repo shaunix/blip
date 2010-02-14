@@ -12,14 +12,18 @@ body {
 /** Header and Subheader **/
 
 #header {
+  height: 36px;
+  margin: 0;
+  padding: 0 0 0 40px;
   background-color: #5574a2;
   background: -webkit-gradient(linear, left -60, left 40, from(white), to(#204a87));
-  height: 36px;
-  padding: 0;
+  background: -moz-linear-gradient(top, white -60px, #204a87 40px);
   color: #fcf197;
   text-shadow: -1px 0 2px #204a87;
 }
-#header table { width: 100%; }
+#header table {
+  width: 820px;
+}
 #header table td {
   vertical-align: middle;
   padding: 0;
@@ -33,7 +37,7 @@ body {
 }
 #header td.headerlogo { padding: 0; }
 td.headerlogo img {
-  margin: 0 10px 0 20px;
+  margin: 0 10px 0 0;
 }
 #header td.headerlogo a {
   font-weight: bold;
@@ -41,14 +45,11 @@ td.headerlogo img {
 }
 #header td.headerlinks {
   text-align: right;
-  padding-right: 20px;
+  padding-right: 0.5em;
 }
 #subheader {
-  background-color: #eeeeec;
-  background: -webkit-gradient(linear, left top, left bottom, from(#e0e0de), to(#eeeeec));
-  padding: 0 16em 0 0 ;
-}
-#subheaderbar {
+  width: 600px;
+  padding: 0 0 0 40px;
   border-bottom: solid 1px #d3d7cf;
 }
 h1 {
@@ -56,7 +57,7 @@ h1 {
   font-weight: normal;
   color: #555753;
   margin: 0;
-  padding: 0.2em 0 0.2em 20px;
+  padding: 0.2em 0 0.2em 0;
 }
 h1 img.icon {
   margin: 0.83em 0.5em 0 0;
@@ -88,28 +89,34 @@ h1 img { vertical-align: middle; }
 /******************************************************************************/
 /** Main Content **/
 
+div#all {
+  width: 860px;
+  background-color: #eeeeec;
+  background: -webkit-gradient(linear, left 40, left 150, from(#eeeeec), to(white));
+  background: -moz-linear-gradient(top, #eeeeec, white 150px);
+  border-right: solid 1px #d3d7cf;
+}
 #body {
-  margin: 0 16em 0 0;
-  padding: 1em 1em 0 0;
+  padding: 1em 20px 0 40px;
   background: white;
+  border-right: solid 1px #d3d7cf;
+  width: 580px;
+  min-height: 200px;
 }
 #panes {
-  padding: 0 2.4em 2.4em 20px;
 }
 .pane { display: none; }
 
 #sidebar {
   margin-top: -1px;
+  padding: 0;;
   position: absolute;
-  right: 0;
-  background-color: #eeeeec;
-  background: -webkit-gradient(linear, left top, left bottom, from(#eeeeec), to(#fafaf7));
-  border-left: solid 1px #d3d7cf;
-  border-bottom: solid 1px #d3d7cf;
-  width: 16em;
+  left: 640px;
+  width: 180px;
+  min-height: 80%;
 }
 ul#tabs {
-  margin: 0 0 1.2em -1px; padding: 0;
+  margin: 0 0 1.2em 0; padding: 0;
   width: 12em;
   list-style-type: none;
   list-style-image: none;
@@ -576,6 +583,7 @@ a.comment {
   text-align: center;
   background-color: #fcf197;
   background: -webkit-gradient(linear, left top, left 60, from(#fcf197), to(white));
+  background: -moz-linear-gradient(top, #fcf197, white 60px);
   border-left: solid 1px #204a87;
   padding: 2px 6px 6px 6px;
   z-index: 100;
@@ -637,6 +645,7 @@ div.zoom {
 .throbberbar div {
   background-color: #729fcf;
   background: -webkit-gradient(linear, right top, -20 top, from(#729fcf), to(white));
+  background: -moz-linear-gradient(left, white -20px, #729fcf 40px);
   line-height: 6px;
   height: 6px;
   width: 40px;

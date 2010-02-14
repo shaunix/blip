@@ -32,7 +32,7 @@ class IndexResponder (blip.web.PageResponder):
         response = blip.web.WebResponse (request)
 
         page = blip.html.Page ()
-        page.set_title (blip.utils.gettext ('Blip'))
+        page.set_title (blip.utils.gettext (''))
         cont = blip.html.PaddingBox ()
         page.add_content (cont)
 

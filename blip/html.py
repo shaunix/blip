@@ -554,7 +554,7 @@ class Page (HtmlWidget, ContentComponent, SublinksComponent, FactsComponent):
                (blip.config.web_url, blip.utils.gettext ('Log out')))
         res.out ('</td></tr></table></div>')
 
-        res.out ('<div id="subheader"><div id="subheaderbar">', None, False)
+        res.out ('<div id="all"><div id="subheader">', None, False)
         if res.http_account != None and self._ident != None:
             # FIXME STORM
             if not blip.db.AccountWatch.has_watch (res.http_account, self._ident):
@@ -571,7 +571,7 @@ class Page (HtmlWidget, ContentComponent, SublinksComponent, FactsComponent):
             res.out ('</td></tr></table>', None, False)
         res.out ('</h1>')
         SublinksComponent.output (self, res)
-        res.out ('</div></div>')
+        res.out ('</div>')
 
         res.out ('<div id="sidebar">')
 
@@ -608,7 +608,7 @@ class Page (HtmlWidget, ContentComponent, SublinksComponent, FactsComponent):
                 res.out ('</div>')
         res.out ('</div></div>')
 
-        res.out ('</body></html>')
+        res.out ('</div></body></html>')
         
     def output_page_content (self, res):
         """Output the contents of the page."""
