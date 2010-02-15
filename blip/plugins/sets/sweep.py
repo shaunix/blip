@@ -28,7 +28,7 @@ import blip.sweep
 
 class SetSweeper (blip.core.ExtensionPoint):
     @classmethod
-    def sweep_set (cls, record, data, **kw):
+    def sweep_set (cls, record, data, request):
         return False
 
 
@@ -47,13 +47,12 @@ class SetsResponder (blip.sweep.SweepResponder):
     @classmethod
     def respond (cls, request, **kw):
         response = blip.sweep.SweepResponse (request)
-        update = request.get_tool_option ('update_scm')
 
         data = blip.data.Data (os.path.join (blip.config.input_dir, 'sets.xml'))
 
         for key in data.data.keys():
             if data.data[key]['blip:type'] == 'set':
-                cls.update_set (data.data[key], update=update)
+                cls.update_set (data.data[key], request)
 
         #if False:
         #    update_deps ()
@@ -62,7 +61,7 @@ class SetsResponder (blip.sweep.SweepResponder):
         return response
 
     @classmethod
-    def update_set (cls, data, update=True, parent=None):
+    def update_set (cls, data, request, parent=None):
         ident = u'/set/' + data['blip:id']
         record = blip.db.ReleaseSet.get_or_create (ident, u'Set')
         if parent:
@@ -81,7 +80,7 @@ class SetsResponder (blip.sweep.SweepResponder):
         if data.has_key ('set'):
             rels = []
             for subset in data['set'].keys():
-                subrecord = cls.update_set (data['set'][subset], update=update, parent=record)
+                subrecord = cls.update_set (data['set'][subset], request, parent=record)
         elif (data.has_key ('module')):
             rels = []
             for xml_data in data['module'].values():
@@ -104,6 +103,6 @@ class SetsResponder (blip.sweep.SweepResponder):
             record.set_relations (blip.db.SetModule, rels)
 
         for sweeper in SetSweeper.get_extensions ():
-            sweeper.sweep_set (record, data, update=update)
+            sweeper.sweep_set (record, data, request)
 
         return record

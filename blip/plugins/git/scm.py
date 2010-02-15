@@ -83,7 +83,7 @@ class GitClone (blip.scm.Repository):
         Get the name of a Git server, as used in an ident.
         """
         lst = self.scm_server.split('://')[1].split('/')
-        if lst[1].startswith ('~'):
+        if len(lst) > 1 and lst[1].startswith ('~'):
             return lst[0] + lst[1]
         else:
             return lst[0]

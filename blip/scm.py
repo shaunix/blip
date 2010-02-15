@@ -80,6 +80,8 @@ class Repository (blip.core.ExtensionPoint):
     def __new__(cls, *args, **kw):
         if cls == Repository and 'scm_type' in kw:
             subcls = Repository.get_repository_class (kw['scm_type'])
+        if subcls is None:
+            raise RepositoryError (blip.utils.gettext ('No plugin found for %s repositories') % kw['scm_type'])
         repoid = ':::'.join ([kw.get('scm_type') or '__none__',
                               kw.get('scm_server') or '__none__',
                               kw.get('scm_module') or '__none__',
