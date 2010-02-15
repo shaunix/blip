@@ -237,7 +237,7 @@ class ModuleScanner (object):
                     of = of[0]
                 except IndexError:
                     of = None
-                if i == 0 and of != None:
+                if i == 0 and of is not None:
                     if self.request.get_tool_option ('timestamps', True):
                         revcount = of.data.get ('revcount', 0)
                         weeknum = of.data.get ('weeknum', None)
@@ -246,7 +246,7 @@ class ModuleScanner (object):
                             if revcount == revstot:
                                 blip.utils.log ('Skipping commit graph for %s' % self.branch.ident)
                                 return
-                elif of == None:
+                elif of is None:
                     of = blip.db.OutputFile (type=u'graphs', ident=self.branch.ident,
                                              filename=fname, datetime=now)
                 outpath = of.get_file_path()
@@ -282,18 +282,19 @@ class ModuleScanner (object):
                 if score_diff > project.score_diff:
                     project.score_diff = score_diff
 
-            if of != None:
+            if of is not None:
                 graph = blip.graphs.BarGraph (stats, 80, height=40)
                 graph.save (of.get_file_path())
 
             if i == 0:
                 stats0 = stats
-            elif i == 1 and outpath != None:
+            elif i == 1 and outpath is not None:
                 graph_t = blip.graphs.BarGraph (stats + stats0, 80, height=40, tight=True)
                 graph_t.save (os.path.join (os.path.dirname (outpath), 'commits-tight.png'))
 
-            if of != None:
-                of.data['coords'] = zip (graph.get_coords(), stats, range(topweek - numweeks + 1, topweek + 1))
+            if of is not None:
+                of.data['coords'] = zip (graph.get_coords(), stats,
+                                         range(topweek - numweeks + 1, topweek + 1))
                 if len(revs) > 0:
                     of.data['revcount'] = revstot
                 of.data['weeknum'] = topweek
