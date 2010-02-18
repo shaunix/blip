@@ -49,7 +49,7 @@ class CvsCheckout (blip.scm.Repository):
         """
         Get the location of a resource in a CVS repository, in display form.
         """
-        ret = '%s %s' % (self.scm_server, self.scm_module)
+        ret = '%s %s' % (self.scm_server, self.scm_path or self.scm_module)
         if self.scm_branch != 'HEAD':
             ret = '%s (%s)' % (ret, self.scm_branch)
         if scm_dir is not None:
@@ -80,7 +80,7 @@ class CvsCheckout (blip.scm.Repository):
             self.scm_server,
             self.scm_branch,
             self.scm_branch,
-            self.scm_module)
+            self.scm_path or self.scm_module)
 
 
     def get_update_command (self):
