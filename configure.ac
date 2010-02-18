@@ -14,6 +14,15 @@ BLIP_SITE_DIR=`(
 )`
 AC_SUBST(BLIP_SITE_DIR)
 
+BLIP_PYTHON_DIR=`(
+	case $prefix in
+	     NONE) prefix=$ac_default_prefix ;;
+	     *) ;;
+	esac
+	eval echo $(eval echo $pythondir)
+)`
+AC_SUBST(BLIP_PYTHON_DIR)
+
 BLIP_MODULES_DIR=`(
 	case $prefix in
 	     NONE) prefix=$ac_default_prefix ;;
@@ -39,6 +48,7 @@ AC_CONFIG_FILES([
 Makefile
 blip.pc
 blip-admin
+blip-sweep
 blip/Makefile
 blip/config.py
 blip/plugins/Makefile
@@ -51,6 +61,7 @@ blip/plugins/people/Makefile
 blip/plugins/sets/Makefile
 blip/plugins/svn/Makefile
 web/Makefile
+web/index.cgi
 web/data/Makefile
 ])
 
@@ -60,6 +71,7 @@ echo "
 blip-$VERSION:
 
 	Prefix:     ${prefix}
+	Python:     ${BLIP_PYTHON_DIR}
 	Modules:    ${BLIP_MODULES_DIR}
 	Plugins:    ${BLIP_PLUGINS_DIR}
 	Data files: ${BLIP_DATA_DIR}

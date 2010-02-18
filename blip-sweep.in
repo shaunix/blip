@@ -19,9 +19,14 @@
 # Suite 330, Boston, MA  0211-1307  USA.
 #
 
+BLIP_PYTHON_DIR = '@BLIP_PYTHON_DIR@'
+
 import os
 import os.path
 import sys
+
+if not BLIP_PYTHON_DIR in sys.path:
+    sys.path.append (BLIP_PYTHON_DIR)
 
 import blip.core
 import blip.sweep

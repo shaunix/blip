@@ -19,6 +19,7 @@
 # Suite 330, Boston, MA  0211-1307  USA.
 #
 
+BLIP_PYTHON_DIR = '@BLIP_PYTHON_DIR@'
 BLIP_DATA_DIR = '@BLIP_DATA_DIR@'
 BLIP_SITE_DIR = '@BLIP_SITE_DIR@'
 
@@ -29,6 +30,9 @@ import os.path
 import shutil
 import stat
 import sys
+
+if not BLIP_PYTHON_DIR in sys.path:
+    sys.path.append (BLIP_PYTHON_DIR)
 
 
 def usage (fd=sys.stderr, verbose=False):

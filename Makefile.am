@@ -7,7 +7,10 @@ pkgconfig_DATA = blip.pc
 
 EXTRA_DIST =			\
 	blip.pc.in		\
+	blip-admin		\
+	blip-admin.in		\
 	blip-sweep		\
+	blip-sweep.in		\
 	ChangeLog
 
 ChangeLog:
