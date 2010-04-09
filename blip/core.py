@@ -33,17 +33,28 @@ def import_plugins (domain):
                 pass
 
 class ExtensionPoint (object):
+    _disabled = []
+
     @classmethod
     def get_extensions (cls):
         extensions = []
         for subcls in cls.__subclasses__():
-            extensions = extensions + [subcls] + subcls.get_extensions()
+            if subcls not in cls._disabled:
+                extensions.append (subcls)
+            extensions = extensions + subcls.get_extensions()
         return extensions
+
+    @classmethod
+    def disable_extension (cls, ext):
+        cls._disabled.append (ext)
 
 
 class Request (object):
     def __init__ (self, **kw):
-        pass
+        self.environ = kw.get ('environ', os.environ)
+
+    def getenv (self, key):
+        return self.environ.get (key)
 
 
 class Response (object):

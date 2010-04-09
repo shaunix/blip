@@ -9,6 +9,7 @@ blip_PYTHON =			\
 	db.py			\
 	graphs.py		\
 	html.py			\
+	mail.py			\
 	scm.py			\
 	sweep.py		\
 	utils.py		\

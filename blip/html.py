@@ -404,6 +404,17 @@ class LinkBoxesComponent (Component):
 ################################################################################
 ## Pages
 
+
+class HeaderLinksProvider (blip.core.ExtensionPoint):
+    FIRST_LINK = 0
+    CORE_LINK = 10
+    EXTRA_LINK = 20
+
+    @classmethod
+    def add_header_links (cls, page, request):
+        pass
+
+
 class TabProvider (blip.web.ContentResponder):
     FIRST_TAB = 0
     CORE_TAB = 10
@@ -462,11 +473,16 @@ class Page (HtmlWidget, ContentComponent, SublinksComponent, FactsComponent):
         self._screenshot_file = None
         self._sidebar = None
         self._tabs = {}
+        self._header_links = {}
         self._panes = {}
 
         if request is not None:
+            if self._url is None:
+                self._url = blip.config.web_url + '/'.join(request.path)
             for provider in TabProvider.get_extensions ():
                 provider.add_tabs (self, request)
+            for provider in HeaderLinksProvider.get_extensions ():
+                provider.add_header_links (self, request)
 
     def set_title (self, title):
         """Set the title of the page."""
@@ -483,6 +499,10 @@ class Page (HtmlWidget, ContentComponent, SublinksComponent, FactsComponent):
     def add_tab (self, tabid, title, group=TabProvider.EXTRA_TAB):
         self._tabs.setdefault (group, [])
         self._tabs[group].append ((tabid, title))
+
+    def add_header_link (self, href, title, group=HeaderLinksProvider.EXTRA_LINK):
+        self._header_links.setdefault (group, [])
+        self._header_links[group].append ((href, title))
 
     def add_to_tab (self, tabid, content):
         pane = self._panes.get(tabid, None)
@@ -522,12 +542,14 @@ class Page (HtmlWidget, ContentComponent, SublinksComponent, FactsComponent):
         res.out ('<meta http-equiv="Content-type" content="text/html; charset=utf-8">')
         res.out ('<link rel="stylesheet" href="%sblip.css">', blip.config.web_data_url)
         res.out ('<script language="javascript" type="text/javascript">')
-        res.out ('pulse_root="%s"', blip.config.web_url)
-        res.out ('pulse_data="%s"', blip.config.web_data_url)
+        res.out ('blip_root="%s"', blip.config.web_url)
+        res.out ('blip_data="%s"', blip.config.web_data_url)
         if self._url != None:
-            res.out ('pulse_url="%s";', self._url)
+            res.out ('blip_url="%s";', self._url)
         res.out ('</script>')
         res.out ('<script language="javascript" type="text/javascript" src="%sjquery.js"></script>',
+           blip.config.web_data_url)
+        res.out ('<script language="javascript" type="text/javascript" src="%sjquery.cookie.js"></script>',
            blip.config.web_data_url)
         res.out ('<script language="javascript" type="text/javascript" src="%sblip.js"></script>',
            blip.config.web_data_url)
@@ -540,24 +562,21 @@ class Page (HtmlWidget, ContentComponent, SublinksComponent, FactsComponent):
             blip.config.web_site_name
             ))
         res.out ('<td class="headerlinks">')
-        if res.http_account == None:
-            res.out ('<a href="%saccount/login">%s</a>',
-               (blip.config.web_url, blip.utils.gettext ('Log in')))
-            res.out (BULLET)
-            res.out ('<a href="%saccount/new">%s</a>',
-               (blip.config.web_url, blip.utils.gettext ('Register')))
-        else:
-            res.out ('<a href="%shome">%s</a>',
-               (blip.config.web_url, blip.utils.gettext ('Home')))
-            res.out (BULLET)
-            res.out ('<a href="%saccount/logout">%s</a>',
-               (blip.config.web_url, blip.utils.gettext ('Log out')))
+        linktot = reduce (lambda cnt, lst: cnt + len(lst),
+                          self._header_links.values(), 0)
+        linki = 0
+        for linkgroup in sorted (self._header_links.keys()):
+            for href, title in self._header_links[linkgroup]:
+                linki += 1
+                res.out ('<a href="%s">%s</a>', (href, title))
+                if linki != linktot:
+                    res.out (BULLET)
         res.out ('</td></tr></table></div>')
 
         res.out ('<div id="all"><div id="subheader">', None, False)
-        if res.http_account != None and self._ident != None:
+        if res.request.account is not None and self._ident is not None:
             # FIXME STORM
-            if not blip.db.AccountWatch.has_watch (res.http_account, self._ident):
+            if not blip.db.AccountWatch.has_watch (res.request.account, self._ident):
                 res.out ('<div class="watch"><a href="javascript:watch(\'%s\')">%s</a></div>',
                    (self._ident, blip.utils.gettext ('Watch')), False)
         res.out ('<h1>', None, False)

@@ -37,7 +37,7 @@ class AllSetsResponder (blip.web.PageResponder):
 
         response = blip.web.WebResponse (request)
 
-        page = blip.html.Page ()
+        page = blip.html.Page (request=request)
         page.set_title (blip.utils.gettext ('Sets'))
         cont = blip.html.ContainerBox ()
         cont.set_show_icons (False)

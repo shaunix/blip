@@ -114,6 +114,8 @@ web_files_url = get_config ('web.files_url', web_url + 'files/')
 ## Other Stuff
 
 mail_host = get_config ('mail.host', 'localhost')
+mail_encryption = get_config ('mail.encryption', None)
+mail_port = get_config ('mail.port', (mail_encryption == 'ssl') and '465' or '25')
 
 # Username and password for hosts that require authentication.
 # Set mail.username to None if no authentication is required.

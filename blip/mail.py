@@ -21,9 +21,10 @@
 import smtplib
 from email.MIMEText import MIMEText
 
-from pulse import config, utils
+import blip.config
+import blip.utils
 
-class MailException (utils.PulseException):
+class MailException (blip.utils.BlipException):
     pass
 
 class Mail (object):
@@ -45,15 +46,20 @@ class Mail (object):
             raise MailException ('No content')
         message = MIMEText ('\n\n'.join (self._content))
         message['Subject'] = self._subject
-        message['From'] = config.mail_from
+        message['From'] = blip.config.mail_from
         message['To'] = ','.join (self._recipients)
 
-        session = smtplib.SMTP ()
-        session.connect (config.mail_host)
-        if config.mail_username is not None:
-            session.login (config.mail_username, config.mail_password)
+        if blip.config.mail_encryption == 'ssl':
+            session = smtplib.SMTP_SSL ()
+        else:
+            session = smtplib.SMTP ()
+        session.connect (blip.config.mail_host, blip.config.mail_port)
+        if blip.config.mail_encryption == 'tls':
+            session.starttls ()
+        if blip.config.mail_username not in (None, ''):
+            session.login (blip.config.mail_username, blip.config.mail_password)
 
-        result = session.sendmail (config.mail_from,
+        result = session.sendmail (blip.config.mail_from,
                                    self._recipients,
                                    message.as_string())
         session.close

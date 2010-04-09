@@ -1,4 +1,5 @@
 SUBDIRS = 		\
+	accounts	\
 	commits		\
 	cvs		\
 	git		\

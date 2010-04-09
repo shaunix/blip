@@ -20,6 +20,7 @@ web_DATA =				\
 	linkbullet.png			\
 	blip.css			\
 	blip.js				\
-	jquery.js
+	jquery.js			\
+	jquery.cookie.js
 
 EXTRA_DIST = $(web_DATA)

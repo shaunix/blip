@@ -17,32 +17,3 @@
 # with Blip; if not, write to the Free Software Foundation, 59 Temple Place,
 # Suite 330, Boston, MA  0211-1307  USA.
 #
-
-import blip.core
-import blip.html
-import blip.web
-import blip.utils
-
-class IndexResponder (blip.web.PageResponder):
-    @classmethod
-    def respond (cls, request, **kw):
-        if len(request.path) != 0:
-            return None
-
-        response = blip.web.WebResponse (request)
-
-        page = blip.html.Page (request=request)
-        page.set_title (blip.utils.gettext (''))
-        cont = blip.html.PaddingBox ()
-        page.add_content (cont)
-
-        for provider in IndexContentProvider.get_extensions ():
-            provider.provide_content (page, response)
-
-        response.set_widget (page)
-        return response
-
-class IndexContentProvider (blip.core.ExtensionPoint):
-    @classmethod
-    def provide_content (cls, page, response, **kw):
-        pass

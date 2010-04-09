@@ -137,7 +137,7 @@ $.fn.pulse_init = function () {
       width: 12
     });
     $('body').append(linker);
-    var img = $('<img id="passworderror" src="' + pulse_data + 'admon-error-16.png">')
+    var img = $('<img id="passworderror" src="' + blip_data + 'admon-error-16.png">')
     img.css ({
       position: 'absolute',
       left: pass1.offset().left + pass2.width() + 10,
@@ -1101,7 +1101,34 @@ function get_offsetTop (el) {
 /******************************************************************************/
 /** Account Stuff **/
 
-function createaccount () {
+function account_login () {
+  var username = $('#username').attr('value');
+  var password = $('#password').attr('value');
+  $('input').blur().each (function () { this.disabled = true; });
+  $.ajax({
+    type: 'POST',
+    url: blip_url + '?q=submit',
+    data: {'username': username, 'password': password},
+    complete: function (req, status) {
+      if (status == 'success') {
+        var data = $.parseJSON (req.responseText);
+        var ix = blip_root.indexOf('://');
+        var domain = blip_root.substr(ix + 3);
+        ix = domain.indexOf('/');
+        var path = domain.substr(ix);
+        domain = domain.substr(0, ix);
+        $.cookie('blip_auth', data.token, {'domain': domain, 'path': path});
+        window.location = data.location;
+      } else {
+        $('#accountform').children ('.admon').remove ();
+        $('#accountform').append(req.responseText);
+        $('input').each (function () { this.disabled = false; });
+      }
+    }
+  });
+}
+
+function account_register () {
   var realname = $('#realname').attr('value');
   var username = $('#username').attr('value');
   var email = $('#email').attr('value');
@@ -1118,7 +1145,7 @@ function createaccount () {
   $('input').blur().each (function () { this.disabled = true; });
   $.ajax ({
     type: 'POST',
-    url: pulse_url + '?action=create',
+    url: blip_url + '?q=submit',
     data: {'realname': realname, 'username': username, 'email': email, 'password': pass1},
     complete: function (req, status) {
       if (status == 'success') {

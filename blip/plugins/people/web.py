@@ -46,7 +46,7 @@ class AllPeopleResponder (blip.web.RecordLocator, blip.web.PageResponder):
 
         response = blip.web.WebResponse (request)
 
-        page = blip.html.Page ()
+        page = blip.html.Page (request=request)
         page.set_title (blip.utils.gettext ('People'))
         people = blip.db.Entity.select (type=u'Person')
         people = people.order_by (blip.db.Desc (blip.db.Entity.score))

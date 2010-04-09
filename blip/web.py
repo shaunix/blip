@@ -39,8 +39,10 @@ class WebRequest (blip.core.Request):
     def __init__ (self, **kw):
         super (WebRequest, self).__init__ (**kw)
 
-        self.path_info = kw.get ('path_info', os.getenv ('PATH_INFO'))
-        self.query_string = kw.get ('query_string', os.getenv ('QUERY_STRING'))
+        self.http = kw.get ('http', True)
+
+        self.path_info = kw.get ('path_info', self.getenv ('PATH_INFO'))
+        self.query_string = kw.get ('query_string', self.getenv ('QUERY_STRING'))
 
         self.path = []
         if self.path_info is not None:
@@ -49,6 +51,12 @@ class WebRequest (blip.core.Request):
                 if part != '':
                     self.path.append (part)
 
+        self.post_data = {}
+        if self.getenv ('REQUEST_METHOD') == 'POST':
+            data = cgi.parse ()
+            for key in data.keys():
+                self.post_data[key] = blip.utils.utf8dec (data[key][0])
+
         self.query = {}
         if self.query_string is not None:
             query = cgi.parse_qs (self.query_string, True)
@@ -56,11 +64,12 @@ class WebRequest (blip.core.Request):
                 self.query[key] = blip.utils.utf8dec (query[key][0])
 
         self.cookies = Cookie.SimpleCookie ()
-        self.cookies.load(kw.get('http_cookie', os.getenv ('HTTP_COOKIE') or ''))
-
-        self.http = kw.get ('http', True)
+        self.cookies.load(kw.get('http_cookie', self.getenv ('HTTP_COOKIE') or ''))
 
         self.record = None
+
+        self.account = None
+        self.account_locator = None
 
         self._data = {}
 
@@ -74,8 +83,6 @@ class WebRequest (blip.core.Request):
 class WebResponse (blip.core.Response):
     def __init__ (self, request, **kw):
         super (WebResponse, self).__init__ (request, **kw)
-        self.http_login = None
-        self.http_account = None
         self.http_content_type = 'text/html; charset=utf-8'
         self.http_content_disposition = None
         self.http_status = 200
@@ -114,7 +121,7 @@ class WebResponse (blip.core.Response):
                 self.out ('Status: 500 Internal server error')
             if self.http_status == 301:
                 self.out ('Status: 301 Moved permanently')
-                self.out ('Location: %s' % (self._location or config.web_uri))
+                self.out ('Location: %s' % (self._location or config.web_url))
             else:
                 self.out ('Content-type: %s' % self.http_content_type)
                 if self.http_content_disposition is not None:
@@ -123,7 +130,7 @@ class WebResponse (blip.core.Response):
                 ck = Cookie.SimpleCookie()
                 for cookie, value in self._cookies:
                     ck[cookie] = value
-                    nohttp = config.web_uri
+                    nohttp = blip.config.web_url
                     nohttp = nohttp[nohttp.find('://') + 3:]
                     ck[cookie]['domain'] = nohttp[:nohttp.find('/')]
                     ck[cookie]['path'] = nohttp[nohttp.find('/'):]
@@ -176,7 +183,37 @@ class WebResponder (blip.core.Responder):
         try:
             blip.core.import_plugins ('web')
 
-            # First, let a RecordLocator set request.record based on request.
+            # First, let an AccountHandler set request.account.  This could
+            # be based on a login cookie, but it might not for e.g. HTTP
+            # authentication.  We do this first because everything after
+            # this could change its behavior based on whether the user is
+            # logged in.  We also disable any account handler except the
+            # active one, because account handlers are usually header
+            # links providers
+            account_handler = blip.config.get_config ('web.account_handler', 'basic')
+            handler = None
+            for ext in AccountHandler.get_extensions ():
+                if handler is not None:
+                    blip.core.ExtensionPoint.disable_extension (ext)
+                elif ext.account_handler == account_handler:
+                    handler = ext
+                    handler.locate_account (request)
+                else:
+                    blip.core.ExtensionPoint.disable_extension (ext)
+
+            # The AccountHandler gets to handle everything that starts with
+            # /account.  If the handler wants to enable plugins to provide
+            # additional subpages, then it should provide its own extension
+            # points.  Note that handler might still be None, but we're not
+            # doing anything except the standard error page, so we just let
+            # the try/except clause take care of it.
+            if len(request.path) != 0 and request.path[0] == 'account':
+                response = handler.respond (request)
+                if response is None:
+                    raise blip.utils.BlipException ('No responder found')
+                return response
+
+            # Next, let a RecordLocator set request.record based on request.
             # Usually, this involves matching PATH_INFO against an ident, but
             # locate_record returns a boolean, so record locators can claim
             # they've located something even when there's no database entry.
@@ -222,7 +259,7 @@ class WebResponder (blip.core.Responder):
                     if response is not None:
                         break
 
-            # Finally, if we didn't get any response, raise and exception.
+            # Finally, if we didn't get any response, raise an exception.
             if response is None:
                 raise blip.utils.BlipException ('No responder found')
         except Exception, err:
@@ -232,7 +269,7 @@ class WebResponder (blip.core.Responder):
                 page = blip.html.AdmonBox (
                     blip.html.AdmonBox.error,
                     blip.utils.gettext (
-                    'Blip does not know how to construct this content.'))
+                    'Blip does not know how to construct this content %s.') % err.message)
             else:
                 page = blip.html.PageError (blip.utils.gettext (
                         'Blip does not know how to construct this page.  This is' +
@@ -249,6 +286,13 @@ class WebResponder (blip.core.Responder):
 class RecordLocator (blip.core.ExtensionPoint):
     @classmethod
     def locate_record (cls, request):
+        return False
+
+class AccountHandler (blip.core.Responder):
+    account_handler = None
+
+    @classmethod
+    def locate_account (cls, request):
         return False
         
 class PageResponder (blip.core.Responder):
@@ -286,6 +330,18 @@ class WebTextWidget (WebWidget):
     def output (self, res):
         for line in self._content:
             res.out (line, None, False)
+
+################################################################################
+
+class WebJsonWidget (WebWidget):
+    def __init__ (self, obj, **kw):
+        super (WebJsonWidget, self).__init__ (**kw)
+        self.http_content_type = 'application/json'
+        self._content = obj
+
+    def output (self, res):
+        import json
+        res.out (json.dumps (self._content))
 
 ################################################################################
 
