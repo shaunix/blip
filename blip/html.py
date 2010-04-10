@@ -1481,7 +1481,7 @@ class Graph (HtmlWidget):
                          blip.utils.weeknumday(weeknum).strftime('%Y-%m-%d'))
             cmt = title % tot
             jslink = 'javascript:replace(\'' + boxid + '\', '
-            jslink += ('pulse_url + \'%sweeknum=%i\')') % (qs, weeknum)
+            jslink += ('blip_url + \'%sweeknum=%i\')') % (qs, weeknum)
             graph.add_comment (coords, label, cmt, jslink)
         return graph
 

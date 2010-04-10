@@ -23,7 +23,7 @@ import re
 
 import blip.utils
 
-BLIP_DATA_NS = 'http://syllogist.net/blip/data/'
+BLIP_DATA_NS = 'http://blip-monitor.com/xmlns/ddl/1.0/'
 
 class Data (object):
     def __init__ (self, filename):

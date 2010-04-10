@@ -108,7 +108,7 @@ $.fn.unshade = function (speed) {
 
 /******************************************************************************/
 
-$.fn.pulse_init = function () {
+$.fn.blip_init = function () {
   /** Forms **/
   var pass1 = null;
   var pass2 = null;
@@ -179,7 +179,7 @@ $.fn.pulse_init = function () {
         cont.insertAfter(div);
         thr.stop ();
         div.remove ();
-        cont.pulse_init ();
+        cont.blip_init ();
         cont.slideDown('fast');
       }
     });
@@ -427,7 +427,7 @@ $.fn.pulse_init = function () {
   });
 }
 
-$(document).ready (function () { $('html').pulse_init(); });
+$(document).ready (function () { $('html').blip_init(); });
 
 
 /******************************************************************************/
@@ -493,11 +493,11 @@ function tab (tabid) {
     pane.show ();
     thr.start ();
     tabbar[0].loading_tabid = tabid;
-    var href = pulse_url + '?q=tab&tab=' + tabid;
+    var href = blip_url + '?q=tab&tab=' + tabid;
     var func = function (req, status) {
       var pane = $('#' + paneid);
       pane.html ($(req.responseText));
-      pane.pulse_init ();
+      pane.blip_init ();
       pane.removeClass ('paneloading');
       if (tabid == tabbar[0].current_tabid) {
         thr.stop ();
@@ -671,7 +671,7 @@ function slide (app, id, dir) {
   if (newcmt.length == 0) {
     $.ajax ({
       type: 'GET',
-      url: pulse_url,
+      url: blip_url,
       data: {'q': 'graphmap', 'graphmap': app, 'id': id,
              'num' : newdata.num, 'filename': newdata.filename},
       complete: function (req, status) {
@@ -740,7 +740,7 @@ function slide (app, id, dir) {
         div[0].timer = undefined;
         curdiv.remove();
         div.css ({overflow: 'visible'});
-        newimg.pulse_init ();
+        newimg.blip_init ();
       }
     };
     if (dir == -1) {
@@ -1166,7 +1166,7 @@ function account_register () {
 function watch (ident) {
   $.ajax ({
     type: 'GET',
-    url: pulse_root + 'account',
+    url: blip_root + 'account',
     data: {'action': 'watch', 'ident': ident},
     complete: function (req, status) {
       if (status == 'success') {
