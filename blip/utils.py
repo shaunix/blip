@@ -55,6 +55,14 @@ def utf8dec (s):
     else:
         return s
 
+def utf8enc (s):
+    """
+    Encode a unicode object to UTF-8, or don't if it already is
+    """
+    if isinstance(s, unicode):
+        return codecs.getencoder('utf-8')(s)[0]
+    else:
+        return s
 
 # Just a dummy until we hook up gettext
 def gettext (msg):

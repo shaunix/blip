@@ -30,6 +30,8 @@ import os.path
 
 import cairo
 
+import blip.utils
+
 class Graph:
     """
     Base class for all graphs
@@ -87,7 +89,10 @@ class Graph:
         filedir = os.path.dirname (filename)
         if not os.path.exists (filedir):
             os.makedirs (filedir)
-        self.surface.write_to_png (filename)
+        # Cairo tries to decode the filename from UTF-8, even though
+        # filename is already a unicode object. This causes a segfault.
+        # Re-encode so Cairo can decode.
+        self.surface.write_to_png (blip.utils.utf8enc (filename))
 
 
 class BarGraph (Graph):
