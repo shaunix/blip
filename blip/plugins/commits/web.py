@@ -76,12 +76,12 @@ class CommitsTab (blip.html.TabProvider):
         div = cls.get_commits_div (request, revs, title)
         tab.add_content (div)
 
-        response.set_widget (tab)
+        response.payload = tab
         return response
 
     @staticmethod
     def get_commits_div (request, revs, title):
-        div = blip.html.Div (widget_id='commits')
+        div = blip.html.Div (html_id='commits')
         div.add_content (title)
         dl = blip.html.DefinitionList()
         div.add_content (dl)
@@ -137,7 +137,7 @@ class CommitsGraphMap (blip.web.ContentResponder):
                                                     blip.utils.gettext ('%i commits'),
                                                     count=int(graphid), num=int(num),
                                                     map_only=True)
-            response.set_widget (graph)
+            response.payload = graph
             return response
         except:
             pass
@@ -193,7 +193,7 @@ class CommitsDiv (blip.web.ContentResponder):
                      % (len(revs), cnt, ago))
 
         div = CommitsTab.get_commits_div (request, revs, title)
-        response.set_widget (div)
+        response.payload = div
         return response
 
 

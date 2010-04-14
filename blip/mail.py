@@ -21,7 +21,8 @@
 import smtplib
 from email.MIMEText import MIMEText
 
-import blip.config
+import blinq.config
+
 import blip.utils
 
 class MailException (blip.utils.BlipException):
@@ -46,20 +47,20 @@ class Mail (object):
             raise MailException ('No content')
         message = MIMEText ('\n\n'.join (self._content))
         message['Subject'] = self._subject
-        message['From'] = blip.config.mail_from
+        message['From'] = blinq.config.mail_from
         message['To'] = ','.join (self._recipients)
 
-        if blip.config.mail_encryption == 'ssl':
+        if blinq.config.mail_encryption == 'ssl':
             session = smtplib.SMTP_SSL ()
         else:
             session = smtplib.SMTP ()
-        session.connect (blip.config.mail_host, blip.config.mail_port)
-        if blip.config.mail_encryption == 'tls':
+        session.connect (blinq.config.mail_server, blinq.config.mail_port)
+        if blinq.config.mail_encryption == 'tls':
             session.starttls ()
-        if blip.config.mail_username not in (None, ''):
-            session.login (blip.config.mail_username, blip.config.mail_password)
+        if blinq.config.mail_username not in (None, ''):
+            session.login (blinq.config.mail_username, blinq.config.mail_password)
 
-        result = session.sendmail (blip.config.mail_from,
+        result = session.sendmail (blinq.config.mail_from,
                                    self._recipients,
                                    message.as_string())
         session.close

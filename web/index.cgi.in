@@ -22,10 +22,14 @@
 BLIP_PYTHON_DIR = '@BLIP_PYTHON_DIR@'
 
 import optparse
+import os
 import sys
 
 if not BLIP_PYTHON_DIR in sys.path:
     sys.path.append (BLIP_PYTHON_DIR)
+
+import blip.config
+blip.config.init('blip')
 
 import blip.db
 import blip.html
@@ -73,8 +77,9 @@ def main ():
         blip.db.debug ()
 
     kw = {}
-    if len(args) > 0:
+    if not os.environ.has_key('REQUEST_METHOD'):
         kw['http'] = False
+    if len(args) > 0:
         kw['path_info'] = args[0]
         if len(args) > 1:
             kw['query_string'] = args[1]
@@ -82,7 +87,7 @@ def main ():
     blip.utils.set_log_level (options.log_level)
     if options.log_file is not None:
         blip.utils.set_log_file (options.log_file)
-        
+
     request = blip.web.WebRequest (**kw)
 
     #try:
@@ -99,13 +104,13 @@ def main ():
         blip.db.debug_summary ()
 
     if options.output is not None:
-        fd = open (options.output, 'w')
+        fp = open (options.output, 'w')
     else:
-        fd = None
-    response.output (fd=fd)
+        fp = None
+    response.output (fp=fp)
 
     blip.db.rollback ()
-    sys.exit (response.get_return_code ())
+    sys.exit (response.return_code)
 
 
 if __name__ == "__main__":

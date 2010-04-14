@@ -20,13 +20,16 @@
 
 import os
 
+import blinq.config
+import blinq.ext
+
 import blip.data
 import blip.db
 import blip.scm
 import blip.sweep
 
 
-class SetSweeper (blip.core.ExtensionPoint):
+class SetSweeper (blinq.ext.ExtensionPoint):
     @classmethod
     def sweep_set (cls, record, data, request):
         return False
@@ -45,10 +48,10 @@ class SetsResponder (blip.sweep.SweepResponder):
                                  help='do not update SCM repositories')
 
     @classmethod
-    def respond (cls, request, **kw):
+    def respond (cls, request):
         response = blip.sweep.SweepResponse (request)
 
-        data = blip.data.Data (os.path.join (blip.config.input_dir, 'sets.xml'))
+        data = blip.data.Data (os.path.join (blinq.config.input_dir, 'sets.xml'))
 
         for key in data.data.keys():
             if data.data[key]['blip:type'] == 'set':

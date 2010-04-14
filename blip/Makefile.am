@@ -4,7 +4,6 @@ blipdir=${pkgpythondir}
 
 blip_PYTHON =			\
 	config.py		\
-	core.py			\
 	data.py			\
 	db.py			\
 	graphs.py		\

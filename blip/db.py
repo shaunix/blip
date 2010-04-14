@@ -32,7 +32,8 @@ import storm.properties
 import storm.references
 import storm.store
 
-import blip.config
+import blinq.config
+
 import blip.utils
 import blip.scm
 
@@ -41,7 +42,7 @@ import blip.scm
 ## Basics
 
 
-database = create_database (blip.config.db_uri)
+database = create_database (blinq.config.db_uri)
 stores = {}
 def get_store (store):
     if isinstance (store, Store):
@@ -391,16 +392,16 @@ class BlipRecord (BlipModel):
 
     @property
     def blip_url (self):
-        return blip.config.web_url + self.ident[1:]
+        return blinq.config.web_root_url + self.ident[1:]
 
     @property
     def icon_url (self):
         if self.icon_name == None or self.icon_dir.startswith ('__icon__'):
             return None
         elif self.icon_dir == None:
-            return blip.config.web_files_url + 'icons/' + self.icon_name + '.png'
+            return blinq.config.web_files_url + 'icons/' + self.icon_name + '.png'
         else:
-            return blip.config.web_files_url + 'icons/' + self.icon_dir + '/' + self.icon_name + '.png'
+            return blinq.config.web_files_url + 'icons/' + self.icon_dir + '/' + self.icon_name + '.png'
 
     @property
     def title_default (self):
@@ -1383,7 +1384,7 @@ class OutputFile (BlipModel):
         if subsub != None:
             lst.append (subsub)
         lst.append (self.filename)
-        rootdir = blip.config.web_files_url + self.type + '/'
+        rootdir = blinq.config.web_files_url + self.type + '/'
         return rootdir + '/'.join(lst)
     blip_url = property (get_blip_url)
 
@@ -1394,10 +1395,10 @@ class OutputFile (BlipModel):
         if subsub != None:
             lst.append (subsub)
         lst.append (self.filename)
-        rootdir = getattr (blip.config, 'web_' + self.type + '_dir', None)
+        rootdir = getattr (blinq.config, 'web_' + self.type + '_dir', None)
         if rootdir == None:
             lst.insert (0, self.type)
-            rootdir = blip.config.web_files_dir
+            rootdir = blinq.config.web_files_dir
         return os.path.join(rootdir, *lst)
 
 

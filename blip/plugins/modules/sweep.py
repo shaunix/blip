@@ -25,7 +25,8 @@ Update information from projects and branches
 import datetime
 import os
 
-import blip.core
+import blinq.ext
+
 import blip.db
 import blip.graphs
 import blip.scm
@@ -59,7 +60,7 @@ class ModulesResponder (blip.sweep.SweepResponder):
                                  help='do not update SCM repositories')
 
     @classmethod
-    def respond (cls, request, **kw):
+    def respond (cls, request):
         response = blip.sweep.SweepResponse (request)
         argv = request.get_tool_args ()
         branches = []
@@ -88,7 +89,7 @@ class ModulesResponder (blip.sweep.SweepResponder):
         return response
 
 
-class ModuleFileScanner (blip.core.ExtensionPoint):
+class ModuleFileScanner (blinq.ext.ExtensionPoint):
     def __init__ (self, scanner):
         self.scanner = scanner
 
@@ -335,17 +336,3 @@ class ModuleScanner (object):
             self.branch.icon_dir = None
             self.branch.icon_name = None
             self.branch.data.pop ('screenshot', None)
-    
-
-def main (argv, options=None):
-    if options is None:
-        options = {}
-    kw = {'no_update': options.get ('--no-update', False),
-          'no_timestamps': options.get ('--no-timestamps', False),
-          'no_history': options.get ('--no-history', False),
-          'no_docs': options.get ('--no-docs', False),
-          'no_i18n': options.get ('--no-i18n', False)
-          }
-
-
-    return 0

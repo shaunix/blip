@@ -22,105 +22,89 @@
 Confinguration settings for Blip
 """
 
-import os
-import os.path
-import sys
-import ConfigParser
-
 BLIP_SITE_DIR = '@BLIP_SITE_DIR@'
 
-__blip_config = ConfigParser.RawConfigParser ()
-try:
-    __blip_config_fd = open (os.path.join (BLIP_SITE_DIR, 'blip.cfg'))
-    __blip_config.readfp (__blip_config_fd)
-    __blip_config_fd.close ()
-    del __blip_config_fd
-except:
-    pass
+import os
 
+import blinq.config
 
-def get_config (key, default=None):
-    try:
-        section, option = key.split ('.', 1)
-    except:
-        return default
-    try:
-        ret = __blip_config.get (section, option)
-    except:
-        return default
-    return ret
+def init (site):
+    blinq.config.init (os.path.join (BLIP_SITE_DIR, site + '.cfg'))
 
-
-################################################################################
-## Database settings
-
-db_uri = get_config ('db.uri')
+@blinq.config.option
+def db_uri (val):
+    """The URI for the Storm database connection for Blip"""
+    return val
 
 
 ################################################################################
 ## Directories for local stuff
-# These are the local directories where stuff can be found.
 
-# The directory containing input files that are stored in git with Blip
-input_dir = get_config ('blip.input_dir',
-                        os.path.join (BLIP_SITE_DIR, 'input'))
+@blinq.config.option
+def input_dir (val):
+    """The directory containing input files that are stored in git with Blip"""
+    return val or os.path.join (BLIP_SITE_DIR, 'input')
 
-# The directory where Blip checks stuff out from SCM systems
-scm_dir = get_config ('blip.scm_dir',
-                      os.path.join (BLIP_SITE_DIR, 'scm'))
+@blinq.config.option
+def scm_dir (val):
+    """The directory where Blip checks stuff out from SCM systems"""
+    return val or os.path.join (BLIP_SITE_DIR, 'scm')
 
-# The directory where Blip puts temporary files
-tmp_dir = get_config ('blip.tmp_dir',
-                      os.path.join (BLIP_SITE_DIR, 'tmp'))
+@blinq.config.option
+def tmp_dir (val):
+    """The directory where Blip puts temporary files"""
+    return val or os.path.join (BLIP_SITE_DIR, 'tmp')
 
 
 ################################################################################
 ## Directores for web stuff
-# These are the local directories where web-available stuff is located.
 
-# The directory that contains index.cgi, among other things
-web_dir = get_config ('web.dir')
+@blinq.config.option
+def web_dir (val):
+    """The directory that contains index.cgi, among other things"""
+    return val
 
-# The directory where Blip puts web-available files it creates
-web_files_dir = get_config ('web.files_dir',
-                            web_dir and os.path.join (web_dir, 'files') or None)
+@blinq.config.option
+def web_files_dir (val):
+    """The directory where Blip outputs files to serve over the web"""
+    if val is not None:
+        return val
+    elif blinq.config.web_dir is not None:
+        return os.path.join (blinq.config.web_dir, 'files')
+    return None
 
-# The name of this Blip site, to display in the header
-web_site_name = get_config ('web.site_name', 'Blip')
+@blinq.config.option
+def web_site_name (val):
+    """The name of this Blip site, to display in the header"""
+    return val or 'Blip'
 
 
 ################################################################################
 ## Web roots
-# These are the root URLs for various things in Blip.
 
-# The root URL for all things Blip
-web_url = get_config ('web.url', 'http://127.0.0.1/')
+@blinq.config.option
+def web_data_url (val):
+    """The root URL for Blip's CSS, JavaScript, images, etc."""
+    if val is None:
+        return blinq.config.web_root_url + 'data/'
+    elif not val.endswith('/'):
+        return val + '/'
+    else:
+        return val
 
-# The root URL for Blip's CSS, JavaScript, images, etc.
-web_data_url = get_config ('web.data_url', web_url + 'data/')
-
-# The root URL for web-available files Blip creates.
-web_files_url = get_config ('web.files_url', web_url + 'files/')
+@blinq.config.option
+def web_files_url (val):
+    """The root URL for web-available files Blip creates"""
+    if val is None:
+        return blinq.config.web_root_url + 'files/'
+    elif not val.endswith('/'):
+        return val + '/'
+    else:
+        return val
 
 # If you don't want to use mod_rewrite or something similar, then
 # web_url needs to end with 'index.cgi/'.  But then data_url and
 # files_url won't work, so do something like this:
-#   web.url = 'http://localhost/index.cgi/'
-#   web.data_url = 'http://localhost/data/'
-#   web.files_url = 'http://localhost/files/'
-
-
-################################################################################
-## Other Stuff
-
-mail_host = get_config ('mail.host', 'localhost')
-mail_encryption = get_config ('mail.encryption', None)
-mail_port = get_config ('mail.port', (mail_encryption == 'ssl') and '465' or '25')
-
-# Username and password for hosts that require authentication.
-# Set mail.username to None if no authentication is required.
-mail_username = get_config ('mail.username', None)
-mail_password = get_config ('mail.password', None)
-
-# The email address from which Blip sends email
-mail_from = get_config ('mail.from', 'webmaster@example.com')
+#   web_root_url = 'http://localhost/index.cgi/'
+#   web_data_url = 'http://localhost/data/'
+#   web_files_url = 'http://localhost/files/'

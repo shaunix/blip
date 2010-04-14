@@ -25,7 +25,9 @@ import os
 import random
 import re
 
-import blip.config
+import blinq.config
+import blinq.reqs.web
+
 import blip.db
 import blip.html
 import blip.utils
@@ -56,12 +58,12 @@ class BasicAccountHandler (blip.web.AccountHandler, blip.html.HeaderLinksProvide
         if len(request.path) > 0 and request.path[0] == 'account':
             pass
         elif request.account is None:
-            page.add_header_link (blip.config.web_url + 'account/login',
+            page.add_header_link (blinq.config.web_root_url + 'account/login',
                                   blip.utils.gettext ('Log in'))
-            page.add_header_link (blip.config.web_url + 'account/register',
+            page.add_header_link (blinq.config.web_root_url + 'account/register',
                                   blip.utils.gettext ('Register'))
         else:
-            page.add_header_link (blip.config.web_url + 'account/logout',
+            page.add_header_link (blinq.config.web_root_url + 'account/logout',
                                   blip.utils.gettext ('Log out'))
 
     @classmethod
@@ -94,7 +96,7 @@ class BasicAccountHandler (blip.web.AccountHandler, blip.html.HeaderLinksProvide
         response = blip.web.WebResponse (request)
         page = blip.html.Page (request=request)
         page.set_title (blip.utils.gettext ('Log In'))
-        response.set_widget (page)
+        response.payload = page
 
         pad = blip.html.PaddingBox ()
         page.add_content (pad)
@@ -102,7 +104,7 @@ class BasicAccountHandler (blip.web.AccountHandler, blip.html.HeaderLinksProvide
         if admon is not None:
             pad.add_content (admon)
 
-        section = blip.html.Div(widget_id='accountform')
+        section = blip.html.Div(html_id='accountform')
         pad.add_content (section)
 
         form = blip.html.Form ('GET', 'javascript:account_login()')
@@ -121,7 +123,7 @@ class BasicAccountHandler (blip.web.AccountHandler, blip.html.HeaderLinksProvide
         span.add_content (blip.html.SubmitButton ('login', 'Log In'))
         if cls.can_register:
             span.add_content (blip.utils.gettext (' or '))
-            span.add_content (blip.html.Link (blip.config.web_url + 'account/register',
+            span.add_content (blip.html.Link (blinq.config.web_root_url + 'account/register',
                                               blip.utils.gettext ('create an account')))
         table.add_row ('', span)
 
@@ -136,12 +138,12 @@ class BasicAccountHandler (blip.web.AccountHandler, blip.html.HeaderLinksProvide
         if username == u'' or password == u'':
             admon = blip.html.AdmonBox (blip.html.AdmonBox.error,
                                         blip.utils.gettext('Please enter your username and password.'))
-            response.set_widget (admon)
+            response.payload = admon
             return response
         account = blip.db.Account.get (username)
         try:
             if account is None:
-                raise blip.utils.BlipException()
+                raise blip.utils.BlipException('No account found')
             if account.check_type == 'new':
                 admon = blip.html.AdmonBox (blip.html.AdmonBox.error,
                                             blip.utils.gettext('You have not yet verified your email address.'))
@@ -150,16 +152,17 @@ class BasicAccountHandler (blip.web.AccountHandler, blip.html.HeaderLinksProvide
                 raise blip.utils.BlipException()
             token = blip.utils.get_token ()
             login = blip.db.Login.set_login (account, token, os.getenv ('REMOTE_ADDR'))
-            json = blip.web.WebJsonWidget ({'location': blip.config.web_url + 'home',
-                                            'token': token
-                                            })
-            response.set_widget (json)
-        except:
+            json = blinq.reqs.web.JsonPayload ()
+            json.set_data ({'location': blinq.config.web_root_url + 'home',
+                            'token': token
+                            })
+            response.payload = json
+        except Exception, err:
             blip.db.rollback (blip.db.Account)
             if admon is None:
                 admon = blip.html.AdmonBox (blip.html.AdmonBox.error,
-                                            blip.utils.gettext('Invalid username or password.'))
-            response.set_widget (admon)
+                                            blip.utils.gettext('Invalid username or password %s.') % err.message)
+            response.payload = admon
             return response
         else:
             blip.db.flush (blip.db.Account)
@@ -171,12 +174,12 @@ class BasicAccountHandler (blip.web.AccountHandler, blip.html.HeaderLinksProvide
         response = blip.web.WebResponse (request)
         page = blip.html.Page (request=request)
         page.set_title (blip.utils.gettext ('Create New Account'))
-        response.set_widget (page)
+        response.payload = page
 
         pad = blip.html.PaddingBox ()
         page.add_content (pad)
 
-        section = blip.html.Div(widget_id='accountform')
+        section = blip.html.Div(html_id='accountform')
         pad.add_content (section)
 
         form = blip.html.Form ('GET', 'javascript:account_register()')
@@ -203,7 +206,7 @@ class BasicAccountHandler (blip.web.AccountHandler, blip.html.HeaderLinksProvide
         span = blip.html.Span ()
         span.add_content (blip.html.SubmitButton ('create', 'Create'))
         span.add_content (blip.utils.gettext (' or '))
-        span.add_content (blip.html.Link (blip.config.web_url + 'account/login',
+        span.add_content (blip.html.Link (blinq.config.web_root_url + 'account/login',
                                           blip.utils.gettext ('log in')))
         table.add_row ('', span)
 
@@ -216,7 +219,7 @@ class BasicAccountHandler (blip.web.AccountHandler, blip.html.HeaderLinksProvide
         if realname == '':
             admon = blip.html.AdmonBox (blip.html.AdmonBox.error,
                                         blip.utils.gettext('Please enter your name.'))
-            response.set_widget (admon)
+            response.payload = admon
             return response
         username = request.post_data.get ('username', '')
         if not re.match ('[a-zA-Z0-9_-]{4,20}$', username):
@@ -226,14 +229,14 @@ class BasicAccountHandler (blip.web.AccountHandler, blip.html.HeaderLinksProvide
                     ' long, and may only contain alphanumeric characters (a-z, A-Z, 0-9), underscores' +
                     ' (_), and hyphens (-).'
                     ))
-            response.set_widget (admon)
+            response.payload = admon
             return response
         email = request.post_data.get ('email', '')
         # Regular expression more or less from bugzilla
         if not re.match ('[\w.+=-]+@[\w.-]+\.[\w-]+', email):
             admon = blip.html.AdmonBox (blip.html.AdmonBox.error,
                                         blip.utils.gettext('Please enter a valid email address.'))
-            response.set_widget (admon)
+            response.payload = admon
             return response
         password = request.post_data.get ('password', '')
         if len(password) < 8:
@@ -241,7 +244,7 @@ class BasicAccountHandler (blip.web.AccountHandler, blip.html.HeaderLinksProvide
                                         blip.utils.gettext(
                     'Please enter a valid password. Passwords must be at least eight characters long.'
                     ))
-            response.set_widget (admon)
+            response.payload = admon
             return response
         try:
             ident = u'/person/' + username
@@ -250,13 +253,13 @@ class BasicAccountHandler (blip.web.AccountHandler, blip.html.HeaderLinksProvide
                 admon = blip.html.AdmonBox (blip.html.AdmonBox.error,
                                             blip.utils.gettext(
                         'Username already in use.  Please choose another username.'))
-                response.set_widget (admon)
+                response.payload = admon
                 return response
             if (blip.db.Account.select (email=email).count() > 0):
                 admon = blip.html.AdmonBox (blip.html.AdmonBox.error,
                                             blip.utils.gettext(
                         'Email address already in use.'))
-                response.set_widget (admon)
+                response.payload = admon
                 return response
             person = blip.db.Entity (ident, u'Person', __blip_store__=blip.db.Account)
             token = blip.utils.get_token ()
@@ -272,8 +275,8 @@ class BasicAccountHandler (blip.web.AccountHandler, blip.html.HeaderLinksProvide
 
             # Uncomment *ONLY* for testing on non-production systems without
             # a mail server. Do not do this on a production server. Ever.
-            #div = blip.html.Div('%saccount/auth/%s' % (blip.config.web_url, token))
-            #response.set_widget (div)
+            #div = blip.html.Div('%saccount/auth/%s' % (blinq.config.web_root_url, token))
+            #response.payload = div
             #blip.db.flush (blip.db.Account)
             #blip.db.commit (blip.db.Account)
             #return response
@@ -285,18 +288,18 @@ class BasicAccountHandler (blip.web.AccountHandler, blip.html.HeaderLinksProvide
             mail.add_content (blip.utils.gettext (
                     'You have registered a Blip account. To complete your account registration,\n' +
                     'you need to verify your email address. Please visit the URL below.'))
-            mail.add_content ('%saccount/auth/%s' % (blip.config.web_url, token))
+            mail.add_content ('%saccount/auth/%s' % (blinq.config.web_root_url, token))
             mail.send ()
             div = blip.html.Div (blip.utils.gettext (
                     'Blip has sent you a confirmation email.  Please visit the link' +
                     ' in that email to complete your registration.'
                     ))
-            response.set_widget (div)
+            response.payload = div
         except Exception, err:
             blip.db.rollback (blip.db.Account)
             admon = blip.html.AdmonBox (blip.html.AdmonBox.error,
                                         blip.utils.gettext('There was a problem processing the request.'))
-            response.set_widget (admon)
+            response.payload = admon
             return response
         else:
             blip.db.flush (blip.db.Account)
@@ -309,7 +312,7 @@ class BasicAccountHandler (blip.web.AccountHandler, blip.html.HeaderLinksProvide
         if (len(request.path) != 3):
             page = blip.html.PageError (
                 blip.utils.gettext('No authorization token.'))
-            response.set_widget (page)
+            response.payload = page
             return response
         token = blip.utils.utf8dec (request.path[2])
         try:
@@ -318,7 +321,7 @@ class BasicAccountHandler (blip.web.AccountHandler, blip.html.HeaderLinksProvide
         except:
             page = blip.html.PageError (
                 blip.utils.gettext ('The authorization token %s was not found.') % token)
-            response.set_widget (page)
+            response.payload = page
             return response
         try:
             account.check_time = None
@@ -330,12 +333,12 @@ class BasicAccountHandler (blip.web.AccountHandler, blip.html.HeaderLinksProvide
             if realname is not None:
                 account.person.update (name=realname)
             response.set_cookie ('blip_auth', token)
-            response.redirect (blip.config.web_url + 'home')
+            response.redirect (blinq.config.web_root_url + 'home')
         except:
             blip.db.rollback (blip.db.Account)
             page = blip.html.PageError (
                 blip.utils.gettext('There was a problem processing the request.'))
-            response.set_widget (page)
+            response.payload = page
             return response
         else:
             blip.db.flush (blip.db.Account)
@@ -355,7 +358,7 @@ class BasicAccountHandler (blip.web.AccountHandler, blip.html.HeaderLinksProvide
         else:
             blip.db.flush (blip.db.Account)
             blip.db.commit (blip.db.Account)
-        response.redirect (blip.config.web_url)
+        response.redirect (blinq.config.web_root_url)
         response.set_cookie ('blip_auth', '')
         return response
 
@@ -372,10 +375,10 @@ class PrivateAccountHandler (BasicAccountHandler):
         if len(request.path) > 0 and request.path[0] == 'account':
             pass
         elif request.account is None:
-            page.add_header_link (blip.config.web_url + 'account/login',
+            page.add_header_link (blinq.config.web_root_url + 'account/login',
                                   blip.utils.gettext ('Log in'))
         else:
-            page.add_header_link (blip.config.web_url + 'account/logout',
+            page.add_header_link (blinq.config.web_root_url + 'account/logout',
                                   blip.utils.gettext ('Log out'))
 
     @classmethod

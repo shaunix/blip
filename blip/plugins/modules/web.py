@@ -20,6 +20,8 @@
 
 """Output information about projects"""
 
+import blinq.utils
+
 import blip.db
 import blip.html
 import blip.utils
@@ -77,16 +79,16 @@ class BranchResponder (blip.web.RecordLocator, blip.web.PageResponder):
         exception = request.get_data ('exception')
         if exception:
             page = blip.html.PageNotFound (exception.desc, title=exception.title)
-            response.set_widget (page)
+            response.payload = page
             return response
 
         branches = request.get_data ('branches', [])
         page = blip.html.Page (request=request)
-        response.set_widget (page)
+        response.payload = page
 
         page.set_sublinks_divider (blip.html.BULLET)
         if len(branches) > 1:
-            for branch in blip.utils.attrsorted (branches, '-is_default', 'scm_branch'):
+            for branch in blinq.utils.attrsorted (branches, '-is_default', 'scm_branch'):
                 if branch.ident != request.record.ident:
                     page.add_sublink (branch.blip_url, branch.ident.split('/')[-1])
                 else:
@@ -130,7 +132,7 @@ class OverviewTab (blip.html.TabProvider):
 
         rels = blip.db.SetModule.get_related (pred=request.record)
         if len(rels) > 0:
-            sets = blip.utils.attrsorted ([rel.subj for rel in rels], 'title')
+            sets = blinq.utils.attrsorted ([rel.subj for rel in rels], 'title')
             span = blip.html.Span (*[blip.html.Link(rset) for rset in sets])
             span.set_divider (blip.html.BULLET)
             facts.add_fact (blip.utils.gettext ('Release Sets'), span)
@@ -177,7 +179,7 @@ class OverviewTab (blip.html.TabProvider):
 
         # Dependencies
         # deps = db.ModuleDependency.get_related (subj=self.handler.record)
-        # deps = utils.attrsorted (list(deps), ['pred', 'scm_module'])
+        # deps = blinq.utils.attrsorted (list(deps), ['pred', 'scm_module'])
         # if len(deps) > 0:
         #     box = html.ContainerBox (utils.gettext ('Dependencies'))
         #     tab.add_content (box)
@@ -205,7 +207,7 @@ class OverviewTab (blip.html.TabProvider):
 
         response = blip.web.WebResponse (request)
 
-        response.set_widget (cls.get_tab (request))
+        response.payload = cls.get_tab (request)
         return response
 
 

@@ -25,8 +25,9 @@ Read information from a source code repository.
 import commands
 import os
 
-import blip.config
-import blip.core
+import blinq.config
+import blinq.ext
+
 import blip.utils
 
 months = {'Jan':1, 'Feb':2, 'Mar':3, 'Apr':4, 'May':5, 'Jun':6,
@@ -68,7 +69,7 @@ class Commit (object):
             return u'/ghost/' + self.author_name
         
 
-class Repository (blip.core.ExtensionPoint):
+class Repository (blinq.ext.ExtensionPoint):
     """
     Checkout or clone of a source code repository.
     """
@@ -134,7 +135,7 @@ class Repository (blip.core.ExtensionPoint):
         """
         Get the directory of the checkout on the local filesystem.
         """
-        return os.path.join (blip.config.scm_dir, self.server_dir, self.module_dir, self.branch_dir)
+        return os.path.join (blinq.config.scm_dir, self.server_dir, self.module_dir, self.branch_dir)
 
 
     def __init__ (self, **kw):
@@ -204,7 +205,7 @@ class Repository (blip.core.ExtensionPoint):
                                        % self.__class__.__name__)
         blip.utils.log ('Checking out %s (%s) from %s'
                         % (self.scm_module, self.scm_branch, self.server_dir))
-        topdir = os.path.join (blip.config.scm_dir, self.server_dir, self.module_dir)
+        topdir = os.path.join (blinq.config.scm_dir, self.server_dir, self.module_dir)
         if not os.path.exists (topdir):
             os.makedirs (topdir)
         owd = os.getcwd ()
@@ -277,4 +278,5 @@ class Repository (blip.core.ExtensionPoint):
 import blip
 import sys
 blip.scm = sys.modules[__name__]
-blip.core.import_plugins ('scm')
+import blip.plugins
+blinq.ext.import_extensions (blip.plugins, 'scm')

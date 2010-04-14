@@ -22,70 +22,68 @@
 """
 Generate HTML output.
 
-This module allows you to construct an HTML page using widgets,
+This module allows you to construct an HTML page using objects,
 in much the same way as you would construct a user interface in
-a graphical toolkit.  High-level widgets are provided for various
+a graphical toolkit.  High-level objects are provided for various
 common interface elements in Blip pages.
 """
 
-import Cookie
 import datetime
-import cgi
 import re
 import sys
 
-import blip.config
+import blinq.config
+import blinq.reqs.web
+
 import blip.db
 import blip.utils
 import blip.web
-
-esc = blip.web.esc
 
 SPACE = ' '
 BULLET = u' • '
 TRIANGLE = u' ‣ '
 
 
-class HtmlWidget (blip.web.WebWidget):
+class HtmlObject (blinq.reqs.web.HtmlPayload):
     """
-    Base class for all HTML widgets.
+    Base class for all HTML objects.
     """
     def __init__ (self, **kw):
-        super (HtmlWidget, self).__init__ (**kw)
-        self.http_content_type = 'text/html; charset=utf-8'
-        self._widget_id = kw.get ('widget_id', None)
-        self._widget_class = kw.get ('widget_class', None)
+        self.content_type = 'text/html; charset=utf-8'
+        self._html_id = kw.pop ('html_id', None)
+        self._html_class = kw.pop ('html_class', None)
+        super (HtmlObject, self).__init__ (**kw)
         
 
-    def set_id (self, widget_id):
-        self._widget_id = widget_id
+    def set_html_id (self, html_id):
+        self._html_id = html_id
 
-    def get_id (self):
-        if self._widget_id != None:
-            return self._widget_id
+    def get_html_id (self):
+        if self._html_id != None:
+            return self._html_id
         else:
             return 'x' + str(hash(self))
 
-    def add_class (self, widget_class):
-        if isinstance (self._widget_class, basestring):
-            self._widget_class = self._widget_class + ' ' + widget_class
+    def add_html_class (self, html_class):
+        if isinstance (self._html_class, basestring):
+            self._html_class = self._html_class + ' ' + html_class
         else:
-            self._widget_class = widget_class
+            self._html_class = html_class
 
-    def set_class (self, widget_class):
-        self._widget_class = widget_class
+    def set_html_class (self, html_class):
+        self._html_class = html_class
 
-    def get_class (self):
-        return self._widget_class
+    def get_html_class (self):
+        return self._html_class
 
 
-class Component (blip.web.WebWidget):
+class Component (blinq.reqs.web.HtmlPayload):
     """
     Base class for all components.
 
-    Components are effectively interfaces that widgets can implement.
+    Components are effectively interfaces that objects can implement.
     Their output methods are called at an appropriate place within a
-    widget's output method to create a portion of that widget's HTML.
+    object's output method to create a portion of that object's HTML.
     """
     def __init__ (self, **kw):
         super (Component, self).__init__ (**kw)
@@ -96,11 +94,11 @@ class Component (blip.web.WebWidget):
 
 class ContentComponent (Component):
     """
-    Simple component for widgets with generic content.
+    Simple component for objects with generic content.
 
-    The output method will call output on each of the added widgets.  Some
-    widgets may use this component only for the add_content method, and
-    control how the added widgets are output by mapping over get_content.
+    The output method will call output on each of the added objects.  Some
+    objects may use this component only for the add_content method, and
+    control how the added objects are output by mapping over get_content.
     """
 
     def __init__ (self, **kw):
@@ -108,7 +106,7 @@ class ContentComponent (Component):
         self._content = []
 
     def add_content (self, content):
-        """Add a widget or text to this container."""
+        """Add an object or text to this container."""
         self._content.append (content)
 
     def get_content (self):
@@ -118,14 +116,14 @@ class ContentComponent (Component):
     def output (self, res):
         """Output the HTML."""
         for cont in self._content:
-            res.out (None, cont)
+            res.write(self.escape(cont))
 
 
 class SublinksComponent (Component):
     """
-    Component for widgets that contain sublinks.
+    Component for objects that contain sublinks.
 
-    Sublinks are a list of links found under the title of a widget.  They
+    Sublinks are a list of links found under the title of an object.  They
     may provide alternate pages or a heirarchy of parent pages, depending
     on context.  The ouput method will create the sublinks.
 
@@ -133,9 +131,9 @@ class SublinksComponent (Component):
     """
 
     def __init__ (self, **kw):
-        super (SublinksComponent, self).__init__ (**kw)
         self._sublinks = []
-        self._divider = kw.get('divider', BULLET)
+        self._divider = kw.pop ('divider', BULLET)
+        super (SublinksComponent, self).__init__ (**kw)
 
     def add_sublink (self, href, title):
         self._sublinks.append ((href, title))
@@ -146,23 +144,23 @@ class SublinksComponent (Component):
     def output (self, res):
         """Output the HTML."""
         if len(self._sublinks) > 0:
-            res.out ('<div class="sublinks">', None, False)
+            res.write('<div class="sublinks">')
             for i in range(len(self._sublinks)):
                 if i != 0:
-                    res.out (None, self._divider, False)
+                    res.write(self.escape(self._divider))
                 if self._sublinks[i][0] != None:
-                    res.out ('<a href="%s">%s</a>', self._sublinks[i], False)
+                    res.write('<a href="%s">%s</a>' % self.escape(self._sublinks[i]))
                 else:
-                    res.out (None, self._sublinks[i][1], False)
-            res.out ('</div>')
+                    res.write(self.escape(self._sublinks[i][1]))
+            res.write('</div>')
 
 
 class FactsComponent (Component):
     """
-    Component for widgets that contain fact tables.
+    Component for objects that contain fact tables.
 
     Fact tables are key-value tables providing more information about whatever
-    thing the widget is showing.  The output method will create the table of
+    thing the object is showing.  The output method will create the table of
     facts.
     """
 
@@ -184,42 +182,42 @@ class FactsComponent (Component):
         """Output the HTML."""
         if len (self._facts) == 0:
             return
-        res.out ('<table class="facts">')
+        res.write('<table class="facts">')
         for fact in self._facts:
             if fact == None:
-                res.out ('<tr class="fact-sep"><td></td><td></td></tr>')
+                res.write('<tr class="fact-sep"><td></td><td></td></tr>')
             else:
-                res.out ('<tr>', None, False)
+                res.write('<tr>')
                 if fact['label'] != None:
-                    res.out ('<td class="fact-key">', None, False)
-                    key = esc(fact['label']).replace(' ', '&nbsp;')
-                    key = esc(blip.utils.gettext ('%s:')) % key
-                    res.out (key, None, False)
-                    res.out ('</td>')
-                    res.out ('<td class="fact-val">', None, False)
+                    res.write('<td class="fact-key">')
+                    key = self.escape(fact['label']).replace(' ', '&nbsp;')
+                    key = self.escape(blip.utils.gettext ('%s:')) % key
+                    res.write(key)
+                    res.write('</td>')
+                    res.write('<td class="fact-val">')
                 else:
-                    res.out ('<td class="fact-val" colspan="2">', None, False)
+                    res.write('<td class="fact-val" colspan="2">')
                 def factout (val):
-                    if isinstance (val, (basestring, HtmlWidget, Component)):
-                        res.out (None, val, False)
+                    if isinstance (val, (basestring, HtmlObject, Component)):
+                        res.write(self.escape(val))
                     elif isinstance (val, blip.db.BlipRecord):
-                        res.out (Link(val))
+                        Link(val).output (res)
                     elif hasattr (val, '__getitem__'):
                         for subval in val:
-                            res.out ('<div>', None, False)
+                            res.write('<div>')
                             factout (subval)
-                            res.out ('</div>')
+                            res.write('</div>')
                 factout (fact['content'])
-                res.out ('</td></tr>')
-        res.out ('</table>')
+                res.write('</td></tr>')
+        res.write('</table>')
 
 
 class FilterableComponent (Component):
     def __init__ (self, **kw):
-        super (FilterableComponent, self).__init__ (**kw)
-        self._filtertag = kw.get ('filterable_tag', None)
-        self._filterclass = kw.get ('filterable_class', None)
+        self._filtertag = kw.pop ('filterable_tag', None)
+        self._filterclass = kw.pop ('filterable_class', None)
         self._filters = []
+        super (FilterableComponent, self).__init__ (**kw)
 
     def set_filterable_tag (self, tag):
         self._filtertag = tag
@@ -239,31 +237,33 @@ class FilterableComponent (Component):
     def output (self, res):
         if len(self._filters) == 0:
             return
-        filterid = self.get_id ()
+        filterid = self.get_html_id ()
         filtertag = self._filtertag or 'table'
         filterclass = self._filterclass or 'lbox'
-        res.out ('<div class="filters" id="filters__%s"><span class="filters">', filterclass, False)
-        res.out ('<a class="filter filter-%s filterall filteron"', filterid, False)
-        res.out (' href="javascript:filter(\'%s\',\'%s\',\'%s\',null)"',
-           (filterid, filtertag, filterclass), False)
-        res.out (' id="filter__%s___all">', filterid, False)
-        res.out (None, blip.utils.gettext ('All'), False)
-        res.out ('</a>', None, False)
+        res.write('<div class="filters" id="filters__%s"><span class="filters">'
+                  % self.escape(filterclass))
+        res.write('<a class="filter filter-%s filterall filteron"'
+                  % self.escape(filterid))
+        res.write(' href="javascript:filter(\'%s\',\'%s\',\'%s\',null)"'
+                  % self.escape((filterid, filtertag, filterclass)))
+        res.write(' id="filter__%s___all">' % self.escape(filterid))
+        res.write(self.escape(blip.utils.gettext ('All')))
+        res.write('</a>')
         for badge in self._filters:
             txt = get_badge_title (badge)
-            res.out ('<a class="filter filter-%s"', filterid, False)
-            res.out (' href="javascript:filter(\'%s\',\'%s\',\'%s\',\'%s\')"',
-               (filterid, filtertag, filterclass, badge), False)
-            res.out (' id="filter__%s__%s">', (filterid, badge), False)
-            res.out ('<img src="%sbadge-%s-16.png" width="16" height="16" alt="%s">',
-               (blip.config.web_data_url, badge, txt), False)
-            res.out (' %s</a>', txt, False)
-        res.out ('</span></div>')
+            res.write('<a class="filter filter-%s"' % self.escape(filterid))
+            res.write(' href="javascript:filter(\'%s\',\'%s\',\'%s\',\'%s\')"'
+                      % self.escape((filterid, filtertag, filterclass, badge)))
+            res.write(' id="filter__%s__%s">' % self.escape((filterid, badge)))
+            res.write('<img src="%sbadge-%s-16.png" width="16" height="16" alt="%s">'
+                      % self.escape((blinq.config.web_data_url, badge, txt)))
+            res.write(' %s</a>' % self.escape(txt))
+        res.write('</span></div>')
 
 
 class SortableComponent (Component):
     """
-    Component for widgets that have sortable content.
+    Component for objects that have sortable content.
 
     The output method will create the link bar for sorting the content.
     FIXME: explaing tag and class and how sort keys are gathered.
@@ -272,10 +272,10 @@ class SortableComponent (Component):
     """
 
     def __init__ (self, **kw):
-        super (SortableComponent, self).__init__ (**kw)
-        self._slinktag = kw.get ('sortable_tag', None)
-        self._slinkclass = kw.get ('sortable_class', None)
+        self._slinktag = kw.pop ('sortable_tag', None)
+        self._slinkclass = kw.pop ('sortable_class', None)
         self._slinks = []
+        super (SortableComponent, self).__init__ (**kw)
 
     def set_sortable_tag (self, tag):
         self._slinktag = tag
@@ -299,48 +299,48 @@ class SortableComponent (Component):
         """Output the HTML."""
         if len(self._slinks) == 0:
             return
-        slinkid = self.get_id ()
+        slinkid = self.get_html_id ()
         slinktag = self._slinktag or 'table'
         slinkclass = self._slinkclass or 'lbox'
-        res.out ('<div class="sortlinks" id="sortlinks__%s">', slinkid, False)
-        res.out ('<span class="sortlinks">', None, False)
-        res.out (None, blip.utils.gettext ('sort by: '), False)
+        res.write('<div class="sortlinks" id="sortlinks__%s">' % self.escape(slinkid))
+        res.write('<span class="sortlinks">')
+        res.write(self.escape(blip.utils.gettext ('sort by: ')))
         for key, txt, cur in self._slinks:
             if cur == 1:
-                res.out ('<span class="sortcur">%s ▴</span>', txt, False)
+                res.write('<span class="sortcur">%s ▴</span>' % self.escape(txt))
                 break
             elif cur == -1:
-                res.out ('<span class="sortcur">%s ▾</span>', txt, False)
+                res.write('<span class="sortcur">%s ▾</span>' % self.escape(txt))
                 break
-        res.out ('</span>')
-        res.out ('<div class="sortmenu" id="sortmenu__%s">', slinkid)
+        res.write('</span>')
+        res.write('<div class="sortmenu" id="sortmenu__%s">' % self.escape(slinkid))
         for key, txt, cur in self._slinks:
-            res.out ('<div class="sortlink">', None, False)
-            res.out ('<span class="sortlabel" id="sortlink__%s__%s">%s</span>:',
-               (slinkid, key, txt))
+            res.write('<div class="sortlink">')
+            res.write('<span class="sortlabel" id="sortlink__%s__%s">%s</span>:'
+                      % self.escape((slinkid, key, txt)))
             if cur == 1:
-                res.out ('<span class="sortlink" id="sortlink__%s__%s__%s__%s__1">▴</span>',
-                   (slinkid, slinktag, slinkclass, key))
+                res.write('<span class="sortlink" id="sortlink__%s__%s__%s__%s__1">▴</span>'
+                          % self.escape((slinkid, slinktag, slinkclass, key)))
             else:
-                res.out (('<a class="sortlink" id="sortlink__%s__%s__%s__%s__1"'
-                        ' href="javascript:sort(\'%s\',\'%s\',\'%s\',\'%s\',1)">▴</a>'),
-                   (slinkid, slinktag, slinkclass, key,
-                    slinkid, slinktag, slinkclass, key))
+                res.write(('<a class="sortlink" id="sortlink__%s__%s__%s__%s__1"' +
+                           ' href="javascript:sort(\'%s\',\'%s\',\'%s\',\'%s\',1)">▴</a>')
+                          % self.escape((slinkid, slinktag, slinkclass, key,
+                                         slinkid, slinktag, slinkclass, key)))
             if cur == -1:
-                res.out ('<span class="sortlink" id="sortlink__%s__%s__%s__%s__-1">▾</span>',
-                   (slinkid, slinktag, slinkclass, key))
+                res.write('<span class="sortlink" id="sortlink__%s__%s__%s__%s__-1">▾</span>'
+                          % self.escape((slinkid, slinktag, slinkclass, key)))
             else:
-                res.out (('<a class="sortlink" id="sortlink__%s__%s__%s__%s__-1"'
-                        ' href="javascript:sort(\'%s\',\'%s\',\'%s\',\'%s\',-1)">▾</a>'),
-                   (slinkid, slinktag, slinkclass, key,
-                    slinkid, slinktag, slinkclass, key))
-            res.out ('</div>')
-        res.out ('</div></div>')
+                res.write(('<a class="sortlink" id="sortlink__%s__%s__%s__%s__-1"' +
+                           ' href="javascript:sort(\'%s\',\'%s\',\'%s\',\'%s\',-1)">▾</a>')
+                          % self.escape((slinkid, slinktag, slinkclass, key,
+                                         slinkid, slinktag, slinkclass, key)))
+            res.write('</div>')
+        res.write('</div></div>')
 
 
 class LinkBoxesComponent (Component):
     """
-    Component for widgets containing link boxes.
+    Component for objects containing link boxes.
 
     This provides a convenience routine for adding link boxes, and can
     display the link boxes in multiple columns.
@@ -349,10 +349,10 @@ class LinkBoxesComponent (Component):
     """
 
     def __init__ (self, **kw):
-        super (LinkBoxesComponent, self).__init__ (**kw)
         self._boxes = []
-        self._columns = kw.get('columns', 1)
+        self._columns = kw.pop ('columns', 1)
         self._show_icons = None
+        super (LinkBoxesComponent, self).__init__ (**kw)
 
     def add_link_box (self, *args, **kw):
         """Add a link box."""
@@ -376,36 +376,36 @@ class LinkBoxesComponent (Component):
                     self._show_icons = True
                     break
         if self._columns > 1:
-            res.out ('<table class="cols"><tr>')
-            res.out ('<td class="col col-first">')
+            res.write('<table class="cols"><tr>')
+            res.write('<td class="col col-first">')
             width = str(100 // self._columns)
             for box, col, pos in blip.utils.split (self._boxes, self._columns):
                 if pos == 0:
                     if col > 0:
-                        res.out ('</td><td class="col" style="width: ' + width + '%">')
+                        res.write('</td><td class="col" style="width: ' + width + '%">')
                 else:
-                    res.out ('<div class="pad">')
+                    res.write('<div class="pad">')
                 box.set_show_icon (self._show_icons)
-                res.out (box)
+                box.output (res)
                 if pos > 0:
-                    res.out ('</div>')
-            res.out ('</td></tr></table>')
+                    res.write('</div>')
+            res.write('</td></tr></table>')
         else:
             for i in range(len(self._boxes)):
                 box = self._boxes[i]
                 if i != 0:
-                    res.out ('<div class="pad">')
+                    res.write('<div class="pad">')
                 box.set_show_icon (self._show_icons)
-                res.out (box)
+                box.output (res)
                 if i != 0:
-                    res.out ('</div>')
+                    res.write('</div>')
 
 
 ################################################################################
 ## Pages
 
 
-class HeaderLinksProvider (blip.core.ExtensionPoint):
+class HeaderLinksProvider (blinq.ext.ExtensionPoint):
     FIRST_LINK = 0
     CORE_LINK = 10
     EXTRA_LINK = 20
@@ -435,7 +435,7 @@ class TabProvider (blip.web.ContentResponder):
         return None
 
 
-class Page (HtmlWidget, ContentComponent, SublinksComponent, FactsComponent):
+class Page (HtmlObject, ContentComponent, SublinksComponent, FactsComponent):
     """
     Complete web page.
 
@@ -449,14 +449,14 @@ class Page (HtmlWidget, ContentComponent, SublinksComponent, FactsComponent):
     """
 
     def __init__ (self, **kw):
-        super (Page, self).__init__ (**kw)
         self._ident = None
         self._title = None
         self._desc = None
         self._icon = None
         self._url = None
-        request = kw.get ('request', None)
-        record = kw.get ('record', None)
+
+        request = kw.pop ('request', None)
+        record = kw.pop ('record', None)
         if record is None and request is not None:
             record = request.record
         if record is not None:
@@ -466,19 +466,22 @@ class Page (HtmlWidget, ContentComponent, SublinksComponent, FactsComponent):
             self._url = record.blip_url
             if record.watchable:
                 self._ident = record.ident
-        self._title = kw.get ('title') or self._title
-        self._desc = kw.get ('desc') or self._desc
-        self._icon = kw.get ('icon') or self._icon
-        self._url = kw.get ('url') or self._url
+
+        self._title = kw.pop ('title', self._title)
+        self._desc = kw.pop ('desc', self._desc)
+        self._icon = kw.pop ('icon', self._icon)
+        self._url = kw.pop ('url', self._url)
         self._screenshot_file = None
         self._sidebar = None
         self._tabs = {}
         self._header_links = {}
         self._panes = {}
 
+        super (Page, self).__init__ (**kw)
+
         if request is not None:
             if self._url is None:
-                self._url = blip.config.web_url + '/'.join(request.path)
+                self._url = blinq.config.web_root_url + '/'.join(request.path)
             for provider in TabProvider.get_extensions ():
                 provider.add_tabs (self, request)
             for provider in HeaderLinksProvider.get_extensions ():
@@ -535,99 +538,100 @@ class Page (HtmlWidget, ContentComponent, SublinksComponent, FactsComponent):
 
     def output (self, res):
         """Output the HTML."""
-        res.out (('<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN"'
-                ' "http://www.w3.org/TR/html4/strict.dtd">'))
-        res.out ('<html><head>')
-        res.out ('<title>%s</title>', self._title)
-        res.out ('<meta http-equiv="Content-type" content="text/html; charset=utf-8">')
-        res.out ('<link rel="stylesheet" href="%sblip.css">', blip.config.web_data_url)
-        res.out ('<script language="javascript" type="text/javascript">')
-        res.out ('blip_root="%s"', blip.config.web_url)
-        res.out ('blip_data="%s"', blip.config.web_data_url)
+        res.write('<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN"')
+        res.write(' "http://www.w3.org/TR/html4/strict.dtd">\n')
+        res.write('<html><head>\n')
+        res.write('<title>%s</title>\n' % self.escape(self._title))
+        res.write('<meta http-equiv="Content-type" content="text/html; charset=utf-8">\n')
+        res.write('<link rel="stylesheet" href="%sblip.css">\n'
+                  % self.escape(blinq.config.web_data_url))
+        res.write('<script language="javascript" type="text/javascript">\n')
+        res.write('blip_root="%s";\n' % self.escape(blinq.config.web_root_url))
+        res.write('blip_data="%s";\n' % self.escape(blinq.config.web_data_url))
         if self._url != None:
-            res.out ('blip_url="%s";', self._url)
-        res.out ('</script>')
-        res.out ('<script language="javascript" type="text/javascript" src="%sjquery.js"></script>',
-           blip.config.web_data_url)
-        res.out ('<script language="javascript" type="text/javascript" src="%sjquery.cookie.js"></script>',
-           blip.config.web_data_url)
-        res.out ('<script language="javascript" type="text/javascript" src="%sblip.js"></script>',
-           blip.config.web_data_url)
-        res.out ('</head><body>')
+            res.write('blip_url="%s";\n' % self.escape(self._url))
+        res.write('</script>\n')
+        res.write('<script language="javascript" type="text/javascript" src="%sjquery.js"></script>\n'
+                  % self.escape(blinq.config.web_data_url))
+        res.write('<script language="javascript" type="text/javascript" src="%sjquery.cookie.js"></script>\n'
+                  % self.escape(blinq.config.web_data_url))
+        res.write('<script language="javascript" type="text/javascript" src="%sblip.js"></script>\n'
+                  % self.escape(blinq.config.web_data_url))
+        res.write('</head><body>')
 
-        res.out ('<div id="header"><table><tr>')
-        res.out ('<td class="headerlogo"><a href="%s" id="headerlink"><img src="%s" alt="Blip">%s</a></td>',
-           (blip.config.web_url,
-            blip.config.web_data_url + 'header-logo.png',
-            blip.config.web_site_name
-            ))
-        res.out ('<td class="headerlinks">')
+        res.write('<div id="header"><table><tr>')
+        res.write('<td class="headerlogo"><a href="%s" id="headerlink"><img src="%s" alt="Blip">%s</a></td>'
+                  % self.escape((blinq.config.web_root_url,
+                                 blinq.config.web_data_url + 'header-logo.png',
+                                 blinq.config.web_site_name
+                                 )))
+        res.write('<td class="headerlinks">')
         linktot = reduce (lambda cnt, lst: cnt + len(lst),
                           self._header_links.values(), 0)
         linki = 0
         for linkgroup in sorted (self._header_links.keys()):
             for href, title in self._header_links[linkgroup]:
                 linki += 1
-                res.out ('<a href="%s">%s</a>', (href, title))
+                res.write('<a href="%s">%s</a>' % self.escape((href, title)))
                 if linki != linktot:
-                    res.out (BULLET)
-        res.out ('</td></tr></table></div>')
+                    res.write(BULLET)
+        res.write('</td></tr></table></div>')
 
-        res.out ('<div id="all"><div id="subheader">', None, False)
+        res.write('<div id="all"><div id="subheader">')
         if res.request.account is not None and self._ident is not None:
             # FIXME STORM
             if not blip.db.AccountWatch.has_watch (res.request.account, self._ident):
-                res.out ('<div class="watch"><a href="javascript:watch(\'%s\')">%s</a></div>',
-                   (self._ident, blip.utils.gettext ('Watch')), False)
-        res.out ('<h1>', None, False)
+                res.write('<div class="watch"><a href="javascript:watch(\'%s\')">%s</a></div>'
+                          % self.escape((self._ident, blip.utils.gettext ('Watch'))))
+        res.write('<h1>')
         if self._icon is not None:
-            res.out ('<table><tr><td><img class="icon" src="%s" alt="%s"></td><td>',
-               (self._icon, self._title), False)
-        res.out ('<div class="title">%s</div>', self._title)
+            res.write('<table><tr><td><img class="icon" src="%s" alt="%s"></td><td>'
+                      % self.escape((self._icon, self._title)))
+        res.write('<div class="title">%s</div>' % self.escape(self._title))
         if self._desc is not None:
-            res.out ('<div class="desc">%s</div>', self._desc)
+            res.write('<div class="desc">%s</div>' % self.escape(self._desc))
         if self._icon is not None:
-            res.out ('</td></tr></table>', None, False)
-        res.out ('</h1>')
+            res.write('</td></tr></table>')
+        res.write('</h1>')
         SublinksComponent.output (self, res)
-        res.out ('</div>')
+        res.write('</div>')
 
-        res.out ('<div id="sidebar">')
+        res.write('<div id="sidebar">')
 
         if len(self._tabs) > 0:
-            res.out ('<ul id="tabs">')
+            res.write('<ul id="tabs">')
             for tabgroup in sorted (self._tabs.keys()):
                 for tabid, title in self._tabs[tabgroup]:
-                    title = esc (title).replace(' ', '&nbsp;')
-                    res.out ('<li class="tab" id="tab-%s">', tabid, False)
-                    res.out ('<a href="javascript:tab(\'%s\')"><div>' + title + '</div></a></li>', tabid)
-            res.out ('</ul>')
+                    title = self.escape(title).replace(' ', '&nbsp;')
+                    res.write('<li class="tab" id="tab-%s">' % self.escape(tabid))
+                    res.write(('<a href="javascript:tab(\'%s\')"><div>' + title + '</div></a></li>')
+                              % self.escape(tabid))
+            res.write('</ul>')
 
         if self._screenshot_file != None:
-            res.out ('<div class="screenshot">', None, False)
+            res.write('<div class="screenshot">')
             url = self._screenshot_file.get_blip_url ()
-            res.out ('<a href="%s" class="zoom">', self._screenshot_file.blip_url, False)
-            res.out ('<img src="%s" width="%i" height="%i">',
-               (self._screenshot_file.get_blip_url ('thumbs'),
-                self._screenshot_file.data['thumb_width'],
-                self._screenshot_file.data['thumb_height']))
-            res.out ('</a></div>')
+            res.write('<a href="%s" class="zoom">' % self.escape(self._screenshot_file.blip_url))
+            res.write('<img src="%s" width="%i" height="%i">'
+                      % self.escape((self._screenshot_file.get_blip_url ('thumbs'),
+                                     self._screenshot_file.data['thumb_width'],
+                                     self._screenshot_file.data['thumb_height'])))
+            res.write('</a></div>')
 
         if self._sidebar is not None:
             self._sidebar.output (res)
-        res.out ('</div>')
+        res.write('</div>')
 
-        res.out ('<div id="body"><div id="panes">')
+        res.write('<div id="body"><div id="panes">')
         FactsComponent.output (self, res)
         self.output_page_content (res)
         if len(self._tabs) > 0:
             for pane in self._panes:
-                res.out ('<div class="pane" id="pane-%s">', pane)
+                res.write('<div class="pane" id="pane-%s">' % self.escape(pane))
                 self._panes[pane].output (res)
-                res.out ('</div>')
-        res.out ('</div></div>')
-
-        res.out ('</div></body></html>')
+                res.write('</div>')
+        res.write('</div></div>\n')
+        res.write('</div></body></html>\n')
         
     def output_page_content (self, res):
         """Output the contents of the page."""
@@ -643,24 +647,24 @@ class PageNotFound (Page):
 
     def __init__ (self, message, **kw):
         kw.setdefault ('title', blip.utils.gettext('Page Not Found'))
+        self._pages = kw.pop ('pages', [])
+        self._message = message
         super (PageNotFound, self).__init__ (**kw)
         self.http_status = 400
-        self._pages = kw.get ('pages', [])
-        self._message = message
 
     def output_page_content (self, res):
         """Output the contents of the page."""
-        res.out ('<div class="notfound">')
-        res.out ('<div class="message">%s</div>', self._message)
+        res.write('<div class="notfound">')
+        res.write('<div class="message">%s</div>' % self.escape(self._message))
         if len(self._pages) > 0:
-            res.out ('<div class="pages">%s',
-               blip.utils.gettext ('The following pages might interest you:'))
-            res.out ('<ul>')
+            res.write('<div class="pages">%s'
+                      % self.escape(blip.utils.gettext ('The following pages might interest you:')))
+            res.write('<ul>')
             for page in self._pages:
-                res.out ('<li><a href="%s%s">%s</a></li>' %
-                   (blip.config.web_url, page[0], page[1]))
-            res.out ('</ul></div>')
-        res.out ('</div>')
+                res.write('<li><a href="%s%s">%s</a></li>' %
+                          (blinq.config.web_root_url, page[0], page[1]))
+            res.write('</ul></div>')
+        res.write('</div>')
         Page.output_page_content (self, res)
 
 
@@ -673,23 +677,23 @@ class PageError (Page):
 
     def __init__ (self, message, **kw):
         kw.setdefault ('title', blip.utils.gettext('Bad Monkeys'))
+        self._pages = kw.pop ('pages', [])
+        self._message = message
         super (PageError, self).__init__ (**kw)
         self.http_status = 500
-        self._pages = kw.get ('pages', [])
-        self._message = message
     
     def output_page_content (self, res):
         """Output the contents of the page."""
-        res.out ('<div class="servererror">')
-        res.out ('<div class="message">%s</div>', self._message)
-        res.out ('</div>')
+        res.write('<div class="servererror">')
+        res.write('<div class="message">%s</div>' % self.escape(self._message))
+        res.write('</div>')
         ContentComponent.output (self, res)
 
 
 ################################################################################
 ## Boxes
 
-class AjaxBox (HtmlWidget):
+class AjaxBox (HtmlObject):
     """
     A box that loads its contents over AJAX.
     """
@@ -699,25 +703,25 @@ class AjaxBox (HtmlWidget):
 
     def output (self, res):
         """Output the HTML."""
-        res.out ('<div class="ajax"><a href="%s">%s</a></div>',
-           (self._url, blip.utils.gettext ('Loading')) )
+        res.write('<div class="ajax"><a href="%s">%s</a></div>'
+                  % self.escape((self._url, blip.utils.gettext ('Loading'))))
 
 
-class SidebarBox (HtmlWidget, ContentComponent, LinkBoxesComponent):
+class SidebarBox (HtmlObject, ContentComponent, LinkBoxesComponent):
     def __init__ (self, title, **kw):
         super (SidebarBox, self).__init__ (**kw)
         self._title = title
 
     def output (self, res):
         """Output the HTML."""
-        res.out ('<div class="sidetitle">%s</div>', self._title, False)
-        res.out ('<div class="sidecont">')
+        res.write('<div class="sidetitle">%s</div>' % self.escape(self._title))
+        res.write('<div class="sidecont">')
         ContentComponent.output (self, res)
         LinkBoxesComponent.output (self, res)
-        res.out ('</div>')
+        res.write('</div>')
 
 
-class InfoBox (HtmlWidget, SortableComponent, ContentComponent, FilterableComponent, LinkBoxesComponent):
+class InfoBox (HtmlObject, SortableComponent, ContentComponent, FilterableComponent, LinkBoxesComponent):
     """
     A box containing information.
 
@@ -730,35 +734,35 @@ class InfoBox (HtmlWidget, SortableComponent, ContentComponent, FilterableCompon
 
     def output (self, res):
         """Output the HTML."""
-        res.out ('<div class="info"', None, False)
-        wid = self.get_id ()
+        res.write('<div class="info"')
+        wid = self.get_html_id ()
         if wid != None:
-            res.out (' id="%s"', wid, False)
-        res.out ('><div class="infotitle">%s</div>', self._title or '')
-        res.out ('<div class="infocont">')
+            res.write(' id="%s"' % self.escape(wid))
+        res.write('><div class="infotitle">%s</div>' % self.escape(self._title or ''))
+        res.write('<div class="infocont">')
         SortableComponent.output (self, res)
         FilterableComponent.output (self, res)
         ContentComponent.output (self, res)
         LinkBoxesComponent.output (self, res)
-        res.out ('</div></div>')
+        res.write('</div></div>')
 
 
-class SectionBox (HtmlWidget, ContentComponent):
+class SectionBox (HtmlObject, ContentComponent):
     def __init__ (self, title, **kw):
         super (SectionBox, self).__init__ (**kw)
         self._title = title
 
     def output (self, res):
-        res.out ('<div class="section"', None, False)
-        wid = self.get_id ()
+        res.write('<div class="section"')
+        wid = self.get_html_id ()
         if wid != None:
-            res.out (' id="%s"', wid, False)
-        res.out ('><div class="sectiontitle">%s</div>', self._title)
+            res.write(' id="%s"' % self.escape(wid))
+        res.write('><div class="sectiontitle">%s</div>' % self.escape(self._title))
         ContentComponent.output (self, res)
-        res.out ('</div>')
+        res.write('</div>')
 
 
-class ContainerBox (HtmlWidget, FilterableComponent, SortableComponent, ContentComponent, LinkBoxesComponent):
+class ContainerBox (HtmlObject, FilterableComponent, SortableComponent, ContentComponent, LinkBoxesComponent):
     """
     An all-purpose container box.
 
@@ -781,39 +785,39 @@ class ContainerBox (HtmlWidget, FilterableComponent, SortableComponent, ContentC
     def output (self, res):
         """Output the HTML."""
         slinks = len(self.get_sort_links())
-        res.out ('<div class="cont"', None, False)
-        wid = self.get_id ()
+        res.write('<div class="cont"')
+        wid = self.get_html_id ()
         if wid != None:
-            res.out (' id="%s"', wid, False)
-        res.out ('>', None, False)
+            res.write(' id="%s"' % self.escape(wid))
+        res.write('>')
         if self._title != None or slinks > 0:
             if self._title != None:
-                res.out ('<table class="cont"><tr>')
-                res.out ('<td class="contexp">&#9662;</td>')
-                res.out ('<td class="cont-title">', None, False)
+                res.write('<table class="cont"><tr>')
+                res.write('<td class="contexp">&#9662;</td>')
+                res.write('<td class="cont-title">')
             if self._title != None and slinks > 0:
-                res.out ('<table><tr><td>')
+                res.write('<table><tr><td>')
             if self._title != None:
-                res.out ('<span class="contexp">%s</span>', (self._title), False)
+                res.write('<span class="contexp">%s</span>' % self.escape(self._title))
             if self._title != None and slinks > 0:
-                res.out ('</td><td class="cont-slinks">')
+                res.write('</td><td class="cont-slinks">')
             SortableComponent.output (self, res)
             if self._title != None and slinks > 0:
-                res.out ('</td></tr></table>')
+                res.write('</td></tr></table>')
             if self._title != None:
-                res.out ('</td></tr>')
-                res.out ('<tr><td></td><td class="cont-content">', None, False)
+                res.write('</td></tr>')
+                res.write('<tr><td></td><td class="cont-content">')
         FilterableComponent.output (self, res)
-        res.out ('<div class="cont-content">')
+        res.write('<div class="cont-content">')
         ContentComponent.output (self, res)
         LinkBoxesComponent.output (self, res)
-        res.out ('</div>')
+        res.write('</div>')
         if self._title != None:
-            res.out ('</td></tr></table>')
-        res.out ('</div>')
+            res.write('</td></tr></table>')
+        res.write('</div>')
 
 
-class TickerBox (HtmlWidget):
+class TickerBox (HtmlObject):
     def __init__ (self, title, **kw):
         super (TickerBox, self).__init__ (**kw)
         self._title = title
@@ -823,21 +827,21 @@ class TickerBox (HtmlWidget):
         self._events.append ((event, icon))
 
     def output (self, res):
-        res.out ('<div class="ticker">')
-        res.out ('<div class="tickertitle">%s</div>', self._title)
+        res.write('<div class="ticker">')
+        res.write('<div class="tickertitle">%s</div>' % self.escape(self._title))
         for event, icon in self._events:
-            res.out ('<div class="tickerevent">', None, False)
+            res.write('<div class="tickerevent">')
             if icon != None:
-                res.out ('<div class="tickericon">', None, False)
-                res.out ('<img src="%s">', icon, False)
-                res.out ('</div>', None, False)
-            res.out ('<div class="tickertext">', None, False)
-            res.out (None, event, False)
-            res.out ('</div></div>')
-        res.out ('</div>')
+                res.write('<div class="tickericon">')
+                res.write('<img src="%s">' % self.escape(icon))
+                res.write('</div>')
+            res.write('<div class="tickertext">')
+            res.write(self.escape(event))
+            res.write('</div></div>')
+        res.write('</div>')
 
 
-class Calendar (HtmlWidget):
+class Calendar (HtmlObject):
     def __init__ (self, **kw):
         super (Calendar, self).__init__ (**kw)
         self._events = []
@@ -846,38 +850,39 @@ class Calendar (HtmlWidget):
         self._events.append ((start, end, summary, desc))
 
     def output (self, res):
-        res.out ('<div class="cal">')
-        res.out ('<table class="cal">')
-        res.out ('<tr class="calnav">')
-        res.out ('<td class="calprev">&#9666;</td>')
-        res.out ('<td class="calnav" colspan="5">', None, False)
-        res.out ('<span class="calmonth"></span> <span class="calyear"></span></td>')
-        res.out ('<td class="calnext">&#9656;</td>')
-        res.out ('</tr>')
-        res.out ('<tr class="calhead">', None, False)
+        res.write('<div class="cal">')
+        res.write('<table class="cal">')
+        res.write('<tr class="calnav">')
+        res.write('<td class="calprev">&#9666;</td>')
+        res.write('<td class="calnav" colspan="5">')
+        res.write('<span class="calmonth"></span> <span class="calyear"></span></td>')
+        res.write('<td class="calnext">&#9656;</td>')
+        res.write('</tr>')
+        res.write('<tr class="calhead">')
         for day in ('Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'):
-            res.out ('<td>%s</td>', day, False)
-        res.out ('</tr>')
+            res.write('<td>%s</td>' % day)
+        res.write('</tr>')
         for i in range (6):
-            res.out ('<tr class="calweek">', None, False)
+            res.write('<tr class="calweek">')
             for j in range (7):
-                res.out ('<td class="calday"></td>', None, False)
-            res.out ('</tr>')
-        res.out ('</table>')
-        res.out ('<dl class="calevents">')
+                res.write('<td class="calday"></td>')
+            res.write('</tr>')
+        res.write('</table>')
+        res.write('<dl class="calevents">')
         for event in self._events:
-            res.out ('<dt class="calevent">', None, False)
-            res.out ('<span class="caldtstart">%s</span> ', event[0].strftime('%Y-%m-%d'), False)
-            res.out ('<span class="calsummary">%s</span>', event[2], False)
-            res.out ('</dt>')
-            res.out ('<dd class="calevent">', None, False)
-            res.out (EllipsizedLabel (event[3], 130), None, False)
-            res.out ('</dd>')
-        res.out ('</dl>')
-        res.out ('</div>')
+            res.write('<dt class="calevent">')
+            res.write('<span class="caldtstart">%s</span> '
+                      % self.escape(event[0].strftime('%Y-%m-%d')))
+            res.write('<span class="calsummary">%s</span>' % self.escape(event[2]))
+            res.write('</dt>')
+            res.write('<dd class="calevent">')
+            EllipsizedLabel (event[3], 130).output (res)
+            res.write('</dd>')
+        res.write('</dl>')
+        res.write('</div>')
 
 
-class LinkBox (HtmlWidget, FactsComponent, ContentComponent):
+class LinkBox (HtmlObject, FactsComponent, ContentComponent):
     """
     A block-level link to an object with optional extra information.
 
@@ -888,7 +893,6 @@ class LinkBox (HtmlWidget, FactsComponent, ContentComponent):
     """
 
     def __init__ (self, *args, **kw):
-        super (LinkBox, self).__init__ (**kw)
         self._url = self._title = self._icon = self._desc = None
         self._show_icon = True
         self._heading = False
@@ -909,8 +913,10 @@ class LinkBox (HtmlWidget, FactsComponent, ContentComponent):
         self._badges = []
         self._classes = []
         self._graphs = []
-        if kw.get('icon_size') != None:
-            self._icon_size = kw['icon_size']
+        icon_size = kw.pop ('icon_size', None)
+        if icon_size is not None:
+            self._icon_size = icon_size
+        super (LinkBox, self).__init__ (**kw)
 
     def set_url (self, url):
         self._url = url
@@ -948,48 +954,50 @@ class LinkBox (HtmlWidget, FactsComponent, ContentComponent):
     def output (self, res):
         """Output the HTML."""
         cls = ' '.join(['lbox'] + self._classes)
-        res.out ('<table class="%s"><tr>', cls)
+        res.write('<table class="%s"><tr>' % self.escape(cls))
         if self._show_icon:
             if self._icon_size != None:
-                res.out ('<td class="lboxicon" style="width: %ipx">', self._icon_size, False)
+                res.write('<td class="lboxicon" style="width: %ipx">' % self.escape(self._icon_size))
             else:
-                res.out ('<td class="lboxicon">', None, False)
+                res.write('<td class="lboxicon">')
             if self._icon != None:
-                res.out ('<img class="icon" src="%s" alt="%s">', (self._icon, self._title), False)
-            res.out ('</td>')
-            res.out ('<td class="lboxtext">')
+                res.write('<img class="icon" src="%s" alt="%s">'
+                         % self.escape((self._icon, self._title)))
+            res.write('</td>')
+            res.write('<td class="lboxtext">')
         else:
-            res.out ('<td class="lboxtext lboxtextonly">')
+            res.write('<td class="lboxtext lboxtextonly">')
         if self._heading == True:
-            res.out ('<div class="lboxhead">')
+            res.write('<div class="lboxhead">')
         else:
-            res.out ('<div class="lboxtitle">')
+            res.write('<div class="lboxtitle">')
         if self._url != None:
-            res.out ('<a href="%s"><span class="title">%s</span></a>', (self._url, self._title))
+            res.write('<a href="%s"><span class="title">%s</span></a>'
+                      % self.escape((self._url, self._title)))
         else:
-            res.out ('<span class="title">%s</span>', self._title)
+            res.write('<span class="title">%s</span>' % self.escape(self._title))
         if len(self._badges) > 0:
-            res.out (' ')
+            res.write(' ')
             for badge in self._badges:
-                res.out ('<img class="badge-%s" src="%sbadge-%s-16.png" width="16" height="16" alt="%s">',
-                   (badge, blip.config.web_data_url, badge, get_badge_title (badge)))
-        res.out ('</div>')
+                res.write('<img class="badge-%s" src="%sbadge-%s-16.png" width="16" height="16" alt="%s">'
+                          % self.escape((badge, blinq.config.web_data_url, badge, get_badge_title (badge))))
+        res.write('</div>')
         if self._desc != None:
-            res.out ('<div class="lboxdesc desc">')
-            res.out (EllipsizedLabel (self._desc, 130))
-            res.out ('</div>')
+            res.write('<div class="lboxdesc desc">')
+            EllipsizedLabel (self._desc, 130).output (res)
+            res.write('</div>')
         FactsComponent.output (self, res)
         ContentComponent.output (self, res)
-        res.out ('</td>')
+        res.write('</td>')
         if len(self._graphs) > 0:
-            res.out ('<td class="lboxgraph">')
+            res.write('<td class="lboxgraph">')
             for graph in self._graphs:
                 Graph (graph[0], width=graph[1], height=graph[2]).output(res)
-            res.out ('</td>')
-        res.out ('</tr></table>')
+            res.write('</td>')
+        res.write('</tr></table>')
 
 
-class IconBox (HtmlWidget, ContentComponent):
+class IconBox (HtmlObject, ContentComponent):
     def __init__ (self, **kw):
         super (IconBox, self).__init__ (**kw)
         self._title = None
@@ -1008,24 +1016,25 @@ class IconBox (HtmlWidget, ContentComponent):
 
     def output (self, res):
         """Output the HTML."""
-        res.out ('<div class="iconbox">')
+        res.write('<div class="iconbox">')
         if self._title != None:
-            res.out ('<div class="iconboxtitle">%s</div>', self._title)
-        res.out ('<div class="iconboxcont">')
+            res.write('<div class="iconboxtitle">%s</div>' % self.escape(self._title))
+        res.write('<div class="iconboxcont">')
         ContentComponent.output (self, res)
         for url, title, icon in self._icons:
-            res.out ('<a href="%s" class="iconboxentry">', url, False)
+            res.write('<a href="%s" class="iconboxentry">' % self.escape(url))
             if icon != None:
-                res.out ('<div class="iconboxicon"><img class="img24" src="%s"></div>', icon, None)
+                res.write('<div class="iconboxicon"><img class="img24" src="%s"></div>'
+                          % self.escape(icon))
             else:
-                res.out ('<div class="iconboxicon"></div>')
-            res.out ('<div class="iconboxname">%s</div>', title, None)
-            res.out ('</a>')
-        res.out ('<div class="iconboxclear"></div>')
-        res.out ('</div></div>')
+                res.write('<div class="iconboxicon"></div>')
+            res.write('<div class="iconboxname">%s</div>' % self.escape(title))
+            res.write('</a>')
+        res.write('<div class="iconboxclear"></div>')
+        res.write('</div></div>')
 
 
-class ColumnBox (HtmlWidget):
+class ColumnBox (HtmlObject):
     def __init__ (self, num, **kw):
         super (ColumnBox, self).__init__ (**kw)
         self._columns = [[] for i in range(num)]
@@ -1036,21 +1045,21 @@ class ColumnBox (HtmlWidget):
 
     def output (self, res):
         """Output the HTML."""
-        res.out ('<table class="cols"><tr>', None)
+        res.write('<table class="cols"><tr>')
         width = str (100 / len(self._columns))
         for i in range(len(self._columns)):
             column = self._columns[i]
             if i == 0:
-                res.out ('<td class="col col-first">')
+                res.write('<td class="col col-first">')
             else:
-                res.out ('<td class="col" style="width: ' + width + '%">')
+                res.write('<td class="col" style="width: ' + width + '%">')
             for item in column:
-                res.out (None, item)
-            res.out ('</td>')
-        res.out ('</tr></table>')
+                res.write(self.escape(item))
+            res.write('</td>')
+        res.write('</tr></table>')
 
 
-class GridBox (HtmlWidget):
+class GridBox (HtmlObject):
     def __init__ (self, **kw):
         super (GridBox, self).__init__ (**kw)
         self._rows = []
@@ -1072,27 +1081,27 @@ class GridBox (HtmlWidget):
         if len (self._rows) == 0:
             return
         cls = ' '.join(['grid'] + self._classes)
-        res.out ('<table class="%s">', cls)
+        res.write('<table class="%s">' % self.escape(cls))
         cols = max ([len(x['data']) for x in self._rows])
         for row in self._rows:
             cls = row.get('classes', None)
             if cls != None:
-                res.out ('<tr class="%s">', ' '.join(cls))
+                res.write('<tr class="%s">' % self.escape(' '.join(cls)))
             else:
-                res.out ('<tr>')
+                res.write('<tr>')
             for i in range (cols):
                 if i == 0:
-                    res.out ('<td class="grid-td-first">')
+                    res.write('<td class="grid-td-first">')
                 else:
-                    res.out ('<td class="grid-td">')
+                    res.write('<td class="grid-td">')
                 if i < len (row['data']):
-                    res.out (None, row['data'][i])
-                res.out ('</td>')
-            res.out ('</tr>')
-        res.out ('</table>')
+                    res.write(self.escape(row['data'][i]))
+                res.write('</td>')
+            res.write('</tr>')
+        res.write('</table>')
 
 
-class PaddingBox (HtmlWidget, ContentComponent):
+class PaddingBox (HtmlObject, ContentComponent):
     """A box which puts vertical padding between its children."""
     def __init__ (self, **kw):
         super (PaddingBox, self).__init__ (**kw)
@@ -1102,26 +1111,26 @@ class PaddingBox (HtmlWidget, ContentComponent):
         content = self.get_content()
         for i in range(len(content)):
             if i == 0:
-                res.out (None, content[i])
+                res.write(self.escape(content[i]))
             else:
-                res.out ('<div class="pad">')
-                res.out (None, content[i])
-                res.out ('</div>')
+                res.write('<div class="pad">')
+                res.write(self.escape(content[i]))
+                res.write('</div>')
 
 
-class AdmonBox (HtmlWidget):
+class AdmonBox (HtmlObject):
     error = "error"
     information = "information"
     warning = "warning"
     
     def __init__ (self, kind, title, **kw):
+        self._kind = kind
+        self._title = title
+        self._tag = kw.pop ('tag', 'div')
+        self._classes = []
         super (AdmonBox, self).__init__ (**kw)
         # We often use AdmonBox as an error fragment
         self.http_status = 500
-        self._kind = kind
-        self._title = title
-        self._tag = kw.get('tag', 'div')
-        self._classes = []
 
     def add_class (self, class_):
         self._classes.append (class_)
@@ -1129,17 +1138,17 @@ class AdmonBox (HtmlWidget):
     def output (self, res):
         """Output the HTML."""
         class_ = ' '.join(['admon'] + self._classes)
-        res.out ('<%s class="admon-%s %s"', (self._tag, self._kind, class_))
-        wid = self.get_id ()
+        res.write('<%s class="admon-%s %s"' % self.escape((self._tag, self._kind, class_)))
+        wid = self.get_html_id ()
         if wid != None:
-            res.out (' id="%s"', wid, False)
-        res.out ('><img src="%sadmon-%s-16.png" width="16" height="16">',
-           (blip.config.web_data_url, self._kind))
-        res.out (None, self._title)
-        res.out ('</%s>', self._tag)
+            res.write(' id="%s"' % self.escape(wid))
+        res.write('><img src="%sadmon-%s-16.png" width="16" height="16">'
+                  % self.escape ((blinq.config.web_data_url, self._kind)))
+        res.write(self.escape(self._title))
+        res.write('</%s>' % self.escape(self._tag))
 
 
-class TabbedBox (HtmlWidget, ContentComponent):
+class TabbedBox (HtmlObject, ContentComponent):
     def __init__ (self, **kw):
         super (TabbedBox, self).__init__ (**kw)
         self._tabs = []
@@ -1155,26 +1164,27 @@ class TabbedBox (HtmlWidget, ContentComponent):
 
     def output (self, res):
         """Output the HTML."""
-        res.out ('<div class="tabbed">')
-        res.out ('<div class="tabbed-tabs">')
+        res.write('<div class="tabbed">')
+        res.write('<div class="tabbed-tabs">')
         for url, title in self._tabs:
-            title = esc(title).replace(' ', '&nbsp;')
+            title = self.escape(title).replace(' ', '&nbsp;')
             if url == True:
-                res.out ('<span class="tabbed-tab-active">' + title + '</span>')
+                res.write('<span class="tabbed-tab-active">%s</span>' % self.escape(title))
             else:
-                res.out ('<span class="tabbed-tab-link"><a href="%s">' + title + '</a></span>', url)
-        res.out ('</div>')
-        res.out ('<div class="tabbed-content">')
+                res.write('<span class="tabbed-tab-link"><a href="%s">%s</a></span>'
+                          % self.escape((url, title)))
+        res.write('</div>')
+        res.write('<div class="tabbed-content">')
         ContentComponent.output (self, res)
-        res.out ('</div>')
+        res.write('</div>')
 
 
-class TranslationForm (HtmlWidget):
+class TranslationForm (HtmlObject):
     def __init__ (self, **kw):
         super (TranslationForm, self).__init__ (**kw)
         self._msgs = []
 
-    class Entry (HtmlWidget):
+    class Entry (HtmlObject):
         def __init__ (self, msgkey, **kw):
             super (TranslationForm.Entry, self).__init__ (**kw)
             self._msg = msgkey[0]
@@ -1194,45 +1204,45 @@ class TranslationForm (HtmlWidget):
 
         def output (self, res):
             if self._trans == None:
-                res.out ('<div class="trentry trnotrans">')
+                res.write('<div class="trentry trnotrans">')
             else:
-                res.out ('<div class="trentry">')
-            res.out ('<div class="trsource">')
+                res.write('<div class="trentry">')
+            res.write('<div class="trsource">')
             lines = self._msg.split('\\n')
-            res.out (None, lines[0])
+            res.write(self.escape(lines[0]))
             for line in lines[1:]:
-                res.out ('<br>')
-                res.out (None, line)
-            res.out ('</div>')
+                res.write('<br>')
+                res.write(self.escape(line))
+            res.write('</div>')
             if self._plural != None:
-                res.out ('<div class="trsource">')
+                res.write('<div class="trsource">')
                 lines = self._plural.split('\\n')
-                res.out (None, lines[0])
+                res.write(self.escape(lines[0]))
                 for line in lines[1:]:
-                    res.out ('<br>')
-                    res.out (None, line)
-                res.out ('</div>')
+                    res.write('<br>')
+                    res.write(self.escape(line))
+                res.write('</div>')
             if self._comment != None:
                 lines = self._comment.split('\n')
                 if lines[-1] == '':
                     lines = lines[:-1]
                 if len(lines) > 0:
-                    res.out ('<div class="trcomment">')
-                    res.out ('# %s', lines[0])
+                    res.write('<div class="trcomment">')
+                    res.write('# %s' % self.escape(lines[0]))
                     for line in lines[1:]:
-                        res.out ('<br>')
-                        res.out ('# %s', line)
-                    res.out ('</div>')
+                        res.write('<br>')
+                        res.write('# %s' % self.escape(line))
+                    res.write('</div>')
             if self._trans != None:
                 for trans in self._trans:
-                    res.out ('<div class="trtrans">')
+                    res.write('<div class="trtrans">')
                     lines = trans.split('\\n')
-                    res.out (None, lines[0])
+                    res.write(self.escape(lines[0]))
                     for line in lines[1:]:
-                        res.out ('<br>')
-                        res.out (None, line)
-                    res.out ('</div>')
-            res.out ('</div>')
+                        res.write('<br>')
+                        res.write(self.escape(line))
+                    res.write('</div>')
+            res.write('</div>')
 
     def add_entry (self, msg):
         entry = TranslationForm.Entry (msg)
@@ -1240,16 +1250,16 @@ class TranslationForm (HtmlWidget):
         return entry
 
     def output (self, res):
-        res.out ('<div class="trform">')
+        res.write('<div class="trform">')
         for msg in self._msgs:
             msg.output (res)
-        res.out ('</div>')
+        res.write('</div>')
 
 
 ################################################################################
 ## Forms
 
-class Form (HtmlWidget, ContentComponent):
+class Form (HtmlObject, ContentComponent):
     def __init__ (self, method, action, **kw):
         super (Form, self).__init__ (**kw)
         self._method = method
@@ -1257,24 +1267,26 @@ class Form (HtmlWidget, ContentComponent):
 
     def output (self, res):
         """Output the HTML."""
-        res.out ('<form method="%s" action="%s">', (self._method, self._action))
+        res.write('<form method="%s" action="%s">'
+                  % self.escape((self._method, self._action)))
         ContentComponent.output (self, res)
-        res.out ('</form>')
+        res.write('</form>')
         
 
-class TextInput (HtmlWidget):
+class TextInput (HtmlObject):
     def __init__ (self, name, **kw):
-        super (TextInput, self).__init__ (**kw)
         self._name = name
-        self._password = kw.get('password', False)
+        self._password = kw.pop ('password', False)
+        super (TextInput, self).__init__ (**kw)
  
     def output (self, res):
         """Output the HTML."""
-        res.out ('<input type="%s" id="%s" name="%s" class="text">', 
-           (self._password and 'password' or 'text', self._name, self._name))
+        res.write('<input type="%s" id="%s" name="%s" class="text">'
+                  % self.escape((self._password and 'password' or 'text',
+                                 self._name, self._name)))
 
 
-class SubmitButton (HtmlWidget):
+class SubmitButton (HtmlObject):
     def __init__ (self, name, title, **kw):
         super (SubmitButton, self).__init__ (**kw)
         self._name = name
@@ -1282,20 +1294,18 @@ class SubmitButton (HtmlWidget):
 
     def output (self, res):
         """Output the HTML."""
-        res.out ('<input type="submit" id="%s" name="%s" value="%s" class="submit">',
-           (self._name, self._name, self._title))
+        res.write('<input type="submit" id="%s" name="%s" value="%s" class="submit">'
+                  % self.escape((self._name, self._name, self._title)))
     
 
 
 ################################################################################
 ## Lists
 
-class DefinitionList (HtmlWidget):
+class DefinitionList (HtmlObject):
     def __init__ (self, **kw):
-        super (DefinitionList, self).__init__ (**kw)
-        self._id = kw.get('id', None)
-        self._classname = kw.get('classname', None)
         self._all = []
+        super (DefinitionList, self).__init__ (**kw)
 
     def add_term (self, term, classname=None):
         self._all.append (('dt', term, classname))
@@ -1314,23 +1324,23 @@ class DefinitionList (HtmlWidget):
         
     def output (self, res):
         """Output the HTML."""
-        res.out ('<dl', None, False)
-        if self._id != None:
-            res.out (' id="%s"', self._id, False)
-        if self._classname != None:
-            res.out (' class="%s"', self._classname, False)
-        res.out ('>')
+        res.write('<dl')
+        if self.get_html_id() is not None:
+            res.write(' id="%s"' % self.escape(self.get_html_id()))
+        if self.get_html_class() is not None:
+            res.write(' class="%s"' % self.escape(self.get_html_class()))
+        res.write('>')
         for tag, content, cname in self._all:
             if cname != None:
-                res.out ('<%s class="%%s">' % tag, cname, False)
+                res.write('<%s class="%s">' % self.escape((tag, cname)))
             else:
-                res.out ('<%s>' % tag, None, False)
+                res.write('<%s>' % tag)
             if content:
-                res.out (None, content, False)
+                res.write(self.escape(content))
             else:
-                res.out ('<hr>', None, False)
-            res.out ('</%s>' % tag)
-        res.out ('</dl>')
+                res.write('<hr>')
+            res.write('</%s>' % tag)
+        res.write('</dl>')
 
 
 class FactList (DefinitionList):
@@ -1339,13 +1349,13 @@ class FactList (DefinitionList):
         super (FactList, self).__init__ (**kw)
 
 
-class BulletList (HtmlWidget):
+class BulletList (HtmlObject):
     def __init__ (self, **kw):
-        super (BulletList, self).__init__ (**kw)
-        self._id = kw.get ('id', None)
+        self._id = kw.pop ('id', None)
         self._items = []
         self._title = None
-        self._classname = kw.get ('classname', None)
+        self._classname = kw.pop ('classname', None)
+        super (BulletList, self).__init__ (**kw)
 
     def add_item (self, item, classname=None):
         self._items.append ((item, classname))
@@ -1358,37 +1368,37 @@ class BulletList (HtmlWidget):
 
     def output (self, res):
         """Output the HTML."""
-        res.out ('<div class="ul">')
+        res.write('<div class="ul">')
         if self._title != None:
-            res.out ('<div class="ultitle">', None, False)
-            res.out (None, self._title, False)
-            res.out ('</div>')
-        res.out ('<ul', None, False)
+            res.write('<div class="ultitle">')
+            res.write(self.escape(self._title))
+            res.write('</div>')
+        res.write('<ul')
         if self._id != None:
-            res.out (' id="%s"', self._id, False)
+            res.write(' id="%s"' % self.escape(self._id))
         if self._classname != None:
-            res.out (' class="%s"', self._classname, False)
-        res.out ('>')
+            res.write(' class="%s"' % self.escape(self._classname))
+        res.write('>')
         for item, cname in self._items:
             if cname != None:
-                res.out ('<li class="%s">', cname, False)
+                res.write('<li class="%s">' % self.escape(cname))
             else:
-                res.out ('<li>', None, False)
-            res.out (None, item, False)
-            res.out ('</li>')
-        res.out ('</ul></div>')
+                res.write('<li>')
+            res.write(self.escape(item))
+            res.write('</li>')
+        res.write('</ul></div>')
 
 
 ################################################################################
 ## Other...
 
-class Rule (HtmlWidget):
+class Rule (HtmlObject):
     def output (self, res):
         """Output the HTML."""
-        res.out ('<div class="hr"><hr></div>')
+        res.write('<div class="hr"><hr></div>')
 
 
-class Graph (HtmlWidget):
+class Graph (HtmlObject):
     """
     A generated graph with optional comments.
     """
@@ -1396,16 +1406,16 @@ class Graph (HtmlWidget):
     _count = 0
 
     def __init__ (self, url, **kw):
-        super (Graph, self).__init__ (**kw)
         self._url = url
-        self._graph_id = kw.get('graph_id')
-        self._count = kw.get('count', None)
-        self._num = kw.get('num', 0)
-        self._links = kw.get('links', False)
-        self._width = kw.get('width', None)
-        self._height = kw.get('height', None)
-        self._map_only = kw.get('map_only', False)
+        self._graph_id = kw.pop ('graph_id', None)
+        self._count = kw.pop ('count', None)
+        self._num = kw.pop ('num', 0)
+        self._links = kw.pop ('links', False)
+        self._width = kw.pop ('width', None)
+        self._height = kw.pop ('height', None)
+        self._map_only = kw.pop ('map_only', False)
         self._comments = []
+        super (Graph, self).__init__ (**kw)
 
     def add_comment (self, coords, label, comment, href=None):
         """
@@ -1424,41 +1434,42 @@ class Graph (HtmlWidget):
             self._count = Graph._count
         if not self._map_only:
             if self._links:
-                res.out ('<table class="graph"><tr><td colspan="2">', None, False)
-            res.out ('<div class="graph" id="graph-%i">', self._count, False)
-            res.out ('<img src="%s"', self._url, False)
+                res.write('<table class="graph"><tr><td colspan="2">')
+            res.write('<div class="graph" id="graph-%i">' % self.escape(self._count))
+            res.write('<img src="%s"' % self.escape(self._url))
             if len(self._comments) > 0:
-                res.out (' class="graphmap" id="graphmap-%i-%i" ',
-                   (self._count, self._num), False)
+                res.write(' class="graphmap" id="graphmap-%i-%i" '
+                          % self.escape((self._count, self._num)))
             if self._width != None:
-                res.out (' width="%i"', self._width, False)
+                res.write(' width="%i"' % self.escape(self._width))
             if self._height != None:
-                res.out (' height="%i"', self._height, False)
-            res.out ('>', None, False)
+                res.write(' height="%i"' % self.escape(self._height))
+            res.write('>')
         if len(self._comments) > 0:
-            res.out ('<div class="comments" id="comments-%i-%i">',
-               (self._count, self._num), False)
+            res.write('<div class="comments" id="comments-%i-%i">'
+                      % self.escape((self._count, self._num)))
             for comment in self._comments:
-                res.out ('<a class="comment" id="comment-%i-%i-%i" href="%s">',
-                   (self._count, self._num, comment[0][0], comment[3]), False)
-                res.out ('<div class="label">%s</div>', comment[1], False)
-                res.out ('<div>%s</div></a>', comment[2], False)
-            res.out ('</div>', None, False)
+                res.write('<a class="comment" id="comment-%i-%i-%i" href="%s">'
+                          % self.escape((self._count, self._num,
+                                         comment[0][0], comment[3])))
+                res.write('<div class="label">%s</div>' % self.escape(comment[1]))
+                res.write('<div>%s</div></a>' % self.escape(comment[2]))
+            res.write('</div>')
         if not self._map_only:
-            res.out ('</div>', None, False)
+            res.write('</div>')
             if self._links:
-                res.out ('</td></tr><tr>')
-                res.out ('<td class="graphprev">', None, False)
-                res.out ('<a class="graphprev" id="graphprev-%i" href="javascript:slide(\'%s\', %i, -1)"',
-                   (self._count, self._graph_id, self._count), False)
-                res.out ('<img src="%sgo-prev.png" height="12" width="12"></a>',
-                   blip.config.web_data_url, False)
-                res.out ('</td><td class="graphnext">', None, False)
-                res.out ('<a class="graphnext" id="graphnext-%i" href="javascript:slide(\'%s\', %i, 1)">',
-                   (self._count, self._graph_id, self._count), False)
-                res.out ('<img src="%sgo-next.png" height="12" width="12"></a>',
-                   blip.config.web_data_url, False)
-                res.out ('</td></tr></table>')
+                res.write('</td></tr><tr>')
+                res.write('<td class="graphprev">')
+                res.write('<a class="graphprev" id="graphprev-%i" href="javascript:slide(\'%s\', %i, -1)"'
+                          % self.escape((self._count, self._graph_id, self._count)))
+                res.write('<img src="%sgo-prev.png" height="12" width="12"></a>'
+                          % self.escape(blinq.config.web_data_url))
+                res.write('</td><td class="graphnext">')
+                res.write('<a class="graphnext" id="graphnext-%i" href="javascript:slide(\'%s\', %i, 1)">'
+                          % self.escape((self._count, self._graph_id, self._count)))
+                res.write('<img src="%sgo-next.png" height="12" width="12"></a>'
+                          % self.escape(blinq.config.web_data_url))
+                res.write('</td></tr></table>')
 
     @classmethod
     def activity_graph (cls, outfile, boxid, title, **kw):
@@ -1486,7 +1497,7 @@ class Graph (HtmlWidget):
         return graph
 
 
-class EllipsizedLabel (HtmlWidget):
+class EllipsizedLabel (HtmlObject):
     """
     A text label that gets ellipsized if it exceeds a certain length.
 
@@ -1496,10 +1507,10 @@ class EllipsizedLabel (HtmlWidget):
     """
     
     def __init__ (self, label, size, **kw):
-        super (EllipsizedLabel, self).__init__ (**kw)
         self._label = label
         self._size = size
-        self._truncate = kw.get ('truncate', False)
+        self._truncate = kw.pop ('truncate', False)
+        super (EllipsizedLabel, self).__init__ (**kw)
 
     def output (self, res):
         """Output the HTML."""
@@ -1512,18 +1523,18 @@ class EllipsizedLabel (HtmlWidget):
                     break
                 i += 1
             if i == len(self._label):
-                res.out (None, self._label, False)
+                res.write(self.escape(self._label))
             else:
-                res.out (None, self._label[:i+1], False)
+                res.write(self.escape(self._label[:i+1]))
                 if self._truncate:
-                    res.out (None, blip.utils.gettext ('...'), False)
+                    res.write(self.escape(blip.utils.gettext ('...')))
                 else:
-                    res.out ('<span class="elliptxt">%s</span>', self._label[i+1:], False)
+                    res.write('<span class="elliptxt">%s</span>' % self.escape(self._label[i+1:]))
         else:
-            res.out (None, self._label)
+            res.write(self.escape(self._label))
 
 
-class MenuLink (HtmlWidget):
+class MenuLink (HtmlObject):
     """
     A link that pops down a menu of links.
 
@@ -1545,7 +1556,7 @@ class MenuLink (HtmlWidget):
         self._menu_url = None
 
     def add_link (self, *args):
-        if isinstance (args[0], HtmlWidget):
+        if isinstance (args[0], HtmlObject):
             self._links.append (args[0])
         else:
             self._links.append (Link(*args))
@@ -1557,22 +1568,22 @@ class MenuLink (HtmlWidget):
         """Output the HTML."""
         MenuLink._count += 1
         if self._menu_only != True:
-            res.out ('<a class="mlink" id="mlink%s" href="javascript:mlink(\'%s\')">%s</a>',
-               (self._id, self._id, self._txt or self._id))
+            res.write('<a class="mlink" id="mlink%s" href="javascript:mlink(\'%s\')">%s</a>'
+                      % self.escape((self._id, self._id, self._txt or self._id)))
         if self._menu_url != None:
-            res.out ('<div class="mstub" id="mcont%s">%s</div>',
-               (self._id, self._menu_url))
+            res.write('<div class="mstub" id="mcont%s">%s</div>'
+                      % self.escape((self._id, self._menu_url)))
         else:
-            res.out ('<div class="mcont" id="mcont%s">', self._id)
-            res.out ('<div class="mcont-cont">')
+            res.write('<div class="mcont" id="mcont%s">' % self.escape(self._id))
+            res.write('<div class="mcont-cont">')
             for link in self._links:
-                res.out ('<div>', None, False)
-                res.out (link, None, False)
-                res.out ('</div>')
-            res.out ('</div></div>')
+                res.write('<div>')
+                res.write(link)
+                res.write('</div>')
+            res.write('</div></div>')
 
 
-class PopupLink (HtmlWidget):
+class PopupLink (HtmlObject):
     _count = 0
 
     def __init__ (self, short, full, **kw):
@@ -1582,7 +1593,7 @@ class PopupLink (HtmlWidget):
         self._links = []
 
     def add_link (self, *args):
-        if isinstance (args[0], HtmlWidget):
+        if isinstance (args[0], HtmlObject):
             self._links.append (args[0])
         else:
             self._links.append (Link(*args))
@@ -1591,27 +1602,28 @@ class PopupLink (HtmlWidget):
         """Output the HTML."""
         PopupLink._count += 1
         pid = str(PopupLink._count)
-        res.out ('<a class="plink" id="plink%s" href="javascript:plink(\'%s\')">',
-           (pid, pid), False)
-        res.out (None, self._short, False)
-        res.out ('</a>')
-        res.out ('<div class="pcont" id="pcont%s">', pid)
+        res.write('<a class="plink" id="plink%s" href="javascript:plink(\'%s\')">'
+                  % self.escape((pid, pid)))
+        res.write(self.escape(self._short))
+        res.write('</a>')
+        res.write('<div class="pcont" id="pcont%s">' % self.escape(pid))
         if isinstance (self._full, basestring):
             while len(self._full) > 0 and self._full[-1] == '\n': self._full = self._full[:-1]
-        res.out ('<pre class="pcont-content">', None, False)
-        res.out (None, self._full)
-        res.out ('</pre>')
+        res.write('<pre class="pcont-content">')
+        res.write(self.escape(self._full))
+        res.write('</pre>')
         if self._links != []:
-            res.out ('<div class="pcont-links">', None, False)
+            res.write('<div class="pcont-links">')
             for i in range(len(self._links)):
                 if i != 0:
-                    res.out (BULLET)
-                res.out (self._links[i])
-            res.out ('</div>')
-        res.out ('</div>')
+                    res.write(BULLET)
+                res.write(self._links[i])
+            res.write('</div>')
+        res.write('</div>')
 
     @classmethod
     def from_revision (cls, rev, app, **kw):
+        branch = kw.pop ('branch', None)
         comment = rev.comment
         if comment.strip() == '':
             lnk = cls (AdmonBox (AdmonBox.warning, blip.utils.gettext ('No comment')),
@@ -1647,8 +1659,7 @@ class PopupLink (HtmlWidget):
 
             lnk = cls (line, comment, **kw)
 
-        branch = kw.get ('branch', None)
-        if branch == None:
+        if branch is None:
             branch = rev.branch
         if branch.scm_type == 'svn':
             if branch.scm_server.endswith ('/svn/'):
@@ -1674,7 +1685,7 @@ class PopupLink (HtmlWidget):
         return lnk
 
 
-class Span (HtmlWidget, ContentComponent):
+class Span (HtmlObject, ContentComponent):
     """
     A simple inline span.
 
@@ -1686,10 +1697,10 @@ class Span (HtmlWidget, ContentComponent):
     """
 
     def __init__ (self, *args, **kw):
+        self._divider = kw.pop ('divider', None)
         super (Span, self).__init__ (**kw)
         for arg in args:
             self.add_content (arg)
-        self._divider = kw.get('divider', None)
 
     def set_divider (self, divider):
         """Set a divider to be placed between child elements."""
@@ -1697,23 +1708,23 @@ class Span (HtmlWidget, ContentComponent):
 
     def output (self, res):
         """Output the HTML."""
-        res.out ('<span', None, False)
-        wid = self.get_id ()
+        res.write('<span')
+        wid = self.get_html_id ()
         if wid != None:
-            res.out (' id="%s"', wid, False)
-        wcls = self.get_class ()
+            res.write(' id="%s"' % self.escape(wid))
+        wcls = self.get_html_class ()
         if wcls != None:
-            res.out (' class="%s"', wcls, False)
-        res.out ('>', None, False)
+            res.write(' class="%s"' % self.escape(wcls))
+        res.write('>')
         content = self.get_content()
         for i in range(len(content)):
             if i != 0 and self._divider != None:
-                res.out (None, self._divider, False)
-            res.out (None, content[i], False)
-        res.out ('</span>')
+                res.write(self.escape(self._divider))
+            res.write(self.escape(content[i]))
+        res.write('</span>')
 
 
-class StatusSpan (HtmlWidget, ContentComponent):
+class StatusSpan (HtmlObject, ContentComponent):
     _statuses = {
         'none' : 0,
         'stub' : 1,
@@ -1736,7 +1747,7 @@ class StatusSpan (HtmlWidget, ContentComponent):
 
     def output (self, res):
         """Output the HTML."""
-        res.out ('<span class="status">%i</span>', self._status, False)
+        res.write('<span class="status">%i</span>' % self.escape(self._status))
         ContentComponent.output (self, res)
 
 
@@ -1744,7 +1755,7 @@ class FactsTable (FactsComponent):
     pass
 
 
-class Div (HtmlWidget, ContentComponent):
+class Div (HtmlObject, ContentComponent):
     """
     A simple block.
 
@@ -1762,19 +1773,19 @@ class Div (HtmlWidget, ContentComponent):
 
     def output (self, res):
         """Output the HTML."""
-        res.out ('<div', None, False)
-        wid = self.get_id ()
+        res.write('<div')
+        wid = self.get_html_id ()
         if wid != None:
-            res.out (' id="%s"', wid, False)
-        wcls = self.get_class ()
+            res.write(' id="%s"' % self.escape(wid))
+        wcls = self.get_html_class ()
         if wcls != None:
-            res.out (' class="%s"', wcls, False)
-        res.out ('>', None, False)
+            res.write(' class="%s"' % self.escape(wcls))
+        res.write('>')
         ContentComponent.output (self, res)
-        res.out ('</div>')
+        res.write('</div>')
 
 
-class Table (HtmlWidget):
+class Table (HtmlObject):
     def __init__ (self, **kw):
         super (Table, self).__init__ (**kw)
         self._cols = 0
@@ -1785,27 +1796,27 @@ class Table (HtmlWidget):
         self._rows.append (args)
 
     def output (self, res):
-        res.out ('<div class="table"><table', None, False)
-        wid = self.get_id ()
+        res.write('<div class="table"><table')
+        wid = self.get_html_id ()
         if wid != None:
-            res.out (' id="%s"', wid, False)
-        wcls = self.get_class ()
+            res.write(' id="%s"' % self.escape(wid))
+        wcls = self.get_html_class ()
         if wcls != None:
-            res.out (' class="%s"', wcls, False)
-        res.out ('>', None, False)
+            res.write(' class="%s"' % self.escape(wcls))
+        res.write('>')
         for row in self._rows:
-            res.out ('<tr>')
+            res.write('<tr>')
             for col in row:
-                res.out ('<td>', None, False)
-                res.out (None, col, False)
-                res.out ('</td>')
+                res.write('<td>')
+                res.write(self.escape(col))
+                res.write('</td>')
             for col in range(self._cols - len(row)):
-                res.out ('<td></td>')
-            res.out ('</tr>')
-        res.out ('</table></div>')
+                res.write('<td></td>')
+            res.write('</tr>')
+        res.write('</table></div>')
 
 
-class Pre (HtmlWidget, ContentComponent):
+class Pre (HtmlObject, ContentComponent):
     """
     A simple pre-formatted block.
 
@@ -1817,26 +1828,26 @@ class Pre (HtmlWidget, ContentComponent):
     """
 
     def __init__ (self, *args, **kw):
-        super (Pre, self).__init__ (**kw)
-        self._id = kw.get('id', None)
+        self._id = kw.pop('id', None)
         for arg in args:
             self.add_content (arg)
+        super (Pre, self).__init__ (**kw)
 
     def output (self, res):
         """Output the HTML."""
         if self._id != None:
-            res.out ('<pre id="%s">', self._id)
+            res.write('<pre id="%s">' % self.escape(self._id))
         else:
-            res.out ('<pre>')
+            res.write('<pre>')
         ContentComponent.output (self, res)
-        res.out ('</pre>')
+        res.write('</pre>')
 
 
-class Link (HtmlWidget):
+class Link (HtmlObject):
     """
     A link to another page.
 
-    This widget constructs a link to another page.  The constructor
+    This object constructs a link to another page.  The constructor
     can be called multiple ways.  If it is passed a BlipRecord, it
     automatically extracts the URL and title from that object.  If
     it is passed two strings, it considers them to be the URL and
@@ -1849,7 +1860,6 @@ class Link (HtmlWidget):
     """
 
     def __init__ (self, *args, **kw):
-        super (Link, self).__init__ (**kw)
         self._href = self._text = None
         if isinstance (args[0], blip.db.BlipRecord):
             if args[0].linkable:
@@ -1860,23 +1870,24 @@ class Link (HtmlWidget):
             self._text = args[1]
         else:
             self._href = self._text = args[0]
-        self._icon = kw.get ('icon', None)
-        self._classname = kw.get ('classname', None)
+        self._icon = kw.pop ('icon', None)
+        self._classname = kw.pop ('classname', None)
+        super (Link, self).__init__ (**kw)
     
     def output (self, res):
         """Output the HTML."""
         if self._href != None:
             if self._classname != None:
-                res.out ('<a href="%s" class="%s">', (self._href, self._classname), False)
+                res.write('<a href="%s" class="%s">'
+                          % self.escape((self._href, self._classname)))
             else:
-                res.out ('<a href="%s">', self._href, False)
+                res.write('<a href="%s">' % self.escape(self._href))
         if self._icon != None:
-            res.out ('<img src="%s%s-16.png" height="16" width="16"> ',
-               (blip.config.web_data_url, self._icon),
-               False)
-        res.out (None, self._text, False)
+            res.write('<img src="%s%s-16.png" height="16" width="16"> '
+                      % self.escape((blinq.config.web_data_url, self._icon)))
+        res.write(self.escape(self._text))
         if (self._href != None):
-            res.out ('</a>')
+            res.write('</a>')
 
 
 

@@ -21,7 +21,6 @@
 import datetime
 import os
 
-import blip.core
 import blip.db
 import blip.graphs
 import blip.sweep

@@ -23,128 +23,24 @@ import optparse
 import os.path
 import sys
 
-import blip.core
+import blinq.ext
+import blinq.reqs.cmd
 
 
-def print_error (msg):
-    print >>sys.stderr, '%s: %s' % (os.path.basename (sys.argv[0]), msg)
+class SweepRequest (blinq.reqs.cmd.CmdRequest):
+    pass
 
 
-class OptionParser (optparse.OptionParser):
-    def print_help (self, request, formatter=None):
-        tool = request.get_tool_name()
-        if tool is None:
-            self.set_usage ('%prog [common options] <command> [command arguments]')
-            optparse.OptionParser.print_help (self, formatter)
-            print '\nCommands:'
-            for cmd in SweepResponder.get_extensions ():
-                if cmd.command is None:
-                    continue
-                line = '  ' + cmd.command
-                if cmd.synopsis is not None:
-                    line += '    ' + cmd.synopsis
-                print line
-        else:
-            optparse.OptionParser.print_help (self, formatter)
-
-class CommonFormatter (optparse.IndentedHelpFormatter):
-    def format_heading (self, heading):
-        return 'Common Options:\n'
-
-class ToolFormatter (optparse.IndentedHelpFormatter):
-    def format_usage (self, usage):
-        return ''
-
-    def format_heading (self, heading):
-        return 'Command Options:\n'
+class SweepResponse (blinq.reqs.cmd.CmdResponse):
+    pass
 
 
-class SweepRequest (blip.core.Request):
-    def __init__ (self, args=sys.argv[1:]):
-        self._common_parser = OptionParser (formatter=CommonFormatter())
-        self._common_parser.disable_interspersed_args ()
-        self._common_parser.remove_option ('-h')
-        self._common_parser.add_option ('-h', '--help',
-                                        dest='_is_help_request',
-                                        action='store_true',
-                                        default=False,
-                                        help='print this help message and exit')
-        self._tool_parser = OptionParser (formatter=ToolFormatter())
-        self._tool_parser.remove_option ('-h')
-        self._tool = None
-        self._common_options = {}
-        self._common_args = []
-        self._tool_options = {}
-        self._tool_args = []
-
-    def set_usage (self, usage):
-        self._common_parser.set_usage (usage)
-
-    def add_common_option (self, *args, **kw):
-        self._common_parser.add_option (*args, **kw)
-
-    def add_tool_option (self, *args, **kw):
-        self._tool_parser.add_option (*args, **kw)
-
-    def parse_common_options (self, args=sys.argv[1:]):
-        (self._common_options, args) = self._common_parser.parse_args (args)
-        if len(args) > 0:
-            self._tool = args[0]
-            self._common_args = args[1:]
-
-    def parse_tool_options (self, args=None):
-        if args is None:
-            (self._tool_options, self._tool_args) = self._tool_parser.parse_args (self._common_args)
-        else:
-            (self._tool_options, self._tool_args) = self._tool_parser.parse_args (args)
-
-    def is_help_request (self):
-        return self._common_options._is_help_request
-
-    def print_help (self):
-        self._common_parser.print_help (self)
-        if self._tool is not None:
-            self._tool_parser.print_help (self)
-
-    def get_tool_name (self):
-        return self._tool
-
-    def get_common_option (self, option, default=None):
-        try:
-            return getattr (self._common_options, option)
-        except:
-            return default
-
-    def get_tool_option (self, option, default=None):
-        try:
-            return getattr (self._tool_options, option)
-        except:
-            return default
-
-    def get_tool_args (self):
-        return self._tool_args
-
-
-class SweepResponse (blip.core.Response):
-    def __init__ (self, request):
-        blip.core.Response.__init__ (self, request)
-        self._error_text = None
-
-    def get_error_text (self):
-        return self._error_text
-
-    def set_error_text (self, error):
-        self._error_text = error
-
-
-class SweepResponder (blip.core.Responder):
+class SweepResponder (blinq.reqs.cmd.CmdResponder):
     command = None
     synopsis = None
 
     @classmethod
-    def run (cls, request, args=sys.argv[1:]):
-        blip.core.import_plugins ('sweep')
-
+    def respond (cls, request):
         request.add_common_option ('--log-file',
                                    dest='log_file',
                                    action='store',
@@ -178,48 +74,15 @@ class SweepResponder (blip.core.Responder):
                                    action='store_true',
                                    default=False,
                                    help='roll back all changes (dry run)')
-        request.parse_common_options (args)
+        request.parse_common_options ()
 
-        tool = request.get_tool_name ()
-        help = request.is_help_request ()
+        import blip.plugins
+        blinq.ext.import_extensions (blip.plugins, 'sweep')
+        for tool in SweepResponder.get_extensions ():
+            if tool.command is not None:
+                request.add_tool_responder (tool)
 
-        responder = None
-        if tool is not None:
-            for cmd in SweepResponder.get_extensions ():
-                if cmd.command == tool:
-                    responder = cmd
-                    break
-        if responder is None and tool is not None:
-            response = SweepResponse (request)
-            response.set_error_text ('%s is not a blip-sweep command.' % tool)
-            response.set_return_code (1)
-            return response
-
-        if responder is not None:
-            try:
-                responder.set_usage (request)
-                responder.add_tool_options (request)
-            except NotImplementedError:
-                pass
-
-        if help:
-            request.print_help ()
-            return SweepResponse (request)
-
-        if responder is None:
-            request.print_help ()
-            response = SweepResponse (request)
-            response.set_error_text ('No blip-sweep command supplied.')
-            response.set_return_code (1)
-            return response
-
-        if request.is_help_request():
-            request.print_help ()
-            return SweepResponse (request)
-
-        request.parse_tool_options ()
-        response = responder.respond (request)
-        return response
+        return blinq.reqs.cmd.CmdResponder.respond (request)
 
     @classmethod
     def set_usage (cls, request):

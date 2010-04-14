@@ -18,7 +18,8 @@
 # Suite 330, Boston, MA  0211-1307  USA.
 #
 
-import blip.core
+import blinq.ext
+
 import blip.html
 import blip.web
 import blip.utils
@@ -39,10 +40,10 @@ class IndexResponder (blip.web.PageResponder):
         for provider in IndexContentProvider.get_extensions ():
             provider.provide_content (page, response)
 
-        response.set_widget (page)
+        response.payload = page
         return response
 
-class IndexContentProvider (blip.core.ExtensionPoint):
+class IndexContentProvider (blinq.ext.ExtensionPoint):
     @classmethod
     def provide_content (cls, page, response, **kw):
         pass

@@ -21,6 +21,9 @@
 import datetime
 import os
 
+import blinq.config
+import blinq.utils
+
 import blip.db
 import blip.html
 import blip.utils
@@ -55,11 +58,11 @@ class AllPeopleResponder (blip.web.RecordLocator, blip.web.PageResponder):
         for person in people[:42]:
             lbox = blip.html.LinkBox (person)
             lbox.add_fact (blip.utils.gettext ('score'), str(person.score))
-            lbox.add_graph (blip.config.web_files_url + 'graphs/' +
+            lbox.add_graph (blinq.config.web_files_url + 'graphs/' +
                             '/'.join(person.ident.split('/')[1:] + ['commits-tight.png']))
             page.add_content (lbox)
 
-        response.set_widget (page)
+        response.payload = page
         return response
 
 
@@ -83,15 +86,15 @@ class PersonReponder (blip.web.RecordLocator, blip.web.PageResponder):
             page = blip.html.PageNotFound (
                 blip.util.gettext ('Blip could not find the person %s') % request.path[1],
                 title=blip.utils.gettext ('Person Not Found'))
-            response.set_widget (page)
+            response.payload = page
             return response
 
         page = blip.html.Page (request=request)
-        response.set_widget (page)
+        response.payload = page
 
         # Teams
         rels = blip.db.TeamMember.get_related (pred=request.record)
-        rels = blip.utils.attrsorted (list(rels), ('subj', 'title'))
+        rels = blinq.utils.attrsorted (list(rels), ('subj', 'title'))
         if len(rels) > 0:
             box = blip.html.SidebarBox (blip.utils.gettext ('Teams'))
             page.add_sidebar_content (box)
@@ -170,7 +173,7 @@ class OverviewTab (blip.html.TabProvider):
 
         response = blip.web.WebResponse (request)
 
-        response.set_widget (cls.get_tab (request))
+        response.payload = cls.get_tab (request)
         return response
 
 
@@ -215,7 +218,7 @@ def get_hacking_tab (person, **kw):
 
     # Modules
     rels = blip.db.ModuleEntity.get_related (pred=person)
-    rels = blip.utils.attrsorted (list(rels),
+    rels = blinq.utils.attrsorted (list(rels),
                                    ('subj', 'title'),
                                    ('-', 'subj', 'is_default'),
                                    ('-', 'subj', 'scm_branch'))
@@ -242,7 +245,7 @@ def get_hacking_tab (person, **kw):
 
     # Documents
     rels = blip.db.DocumentEntity.get_related (pred=person)
-    rels = blip.utils.attrsorted (list(rels),
+    rels = blinq.utils.attrsorted (list(rels),
                                    ('subj', 'title'),
                                    ('-', 'subj', 'is_default'),
                                    ('-', 'subj', 'scm_branch'))
