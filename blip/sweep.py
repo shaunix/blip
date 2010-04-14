@@ -36,9 +36,6 @@ class SweepResponse (blinq.reqs.cmd.CmdResponse):
 
 
 class SweepResponder (blinq.reqs.cmd.CmdResponder):
-    command = None
-    synopsis = None
-
     @classmethod
     def respond (cls, request):
         request.add_common_option ('--log-file',
@@ -83,15 +80,3 @@ class SweepResponder (blinq.reqs.cmd.CmdResponder):
                 request.add_tool_responder (tool)
 
         return blinq.reqs.cmd.CmdResponder.respond (request)
-
-    @classmethod
-    def set_usage (cls, request):
-        request.set_usage ('%prog [common options] ' + cls.command + ' [command options]')
-
-    @classmethod
-    def add_tool_options (cls, request):
-        raise NotImplementedError ('%s does not provide the add_tool_options method.'
-                                   % cls.__name__)
-
-
-
