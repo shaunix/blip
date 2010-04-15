@@ -1,0 +1,69 @@
+# Copyright (c) 2006, 2010  Shaun McCance  <shaunm@gnome.org>
+#
+# This file is part of Blip, a program for displaying various statistics
+# of questionable relevance about software and the people who make it.
+#
+# Blip is free software; you can redistribute it and/or modify it under the
+# terms of the GNU General Public License as published by the Free Software
+# Foundation; either version 2 of the License, or (at your option) any later
+# version.
+#
+# Blip is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with Blip; if not, write to the Free Software Foundation, 59 Temple Place,
+# Suite 330, Boston, MA  0211-1307  USA.
+#
+
+import os
+import urllib
+
+import RDF
+
+import blinq.config
+import blip.db
+import blip.utils
+import blip.plugins.modules.sweep
+
+class DoapScanner (blip.plugins.modules.sweep.ModuleFileScanner):
+    def process_file (self, dirname, basename):
+        if (dirname == self.scanner.repository.directory
+            and basename == self.scanner.branch.scm_module + '.doap'):
+            filename = os.path.join (dirname, basename)
+            rel_ch = blip.utils.relative_path (filename, self.scanner.repository.directory)
+            rel_scm = blip.utils.relative_path (filename, blinq.config.scm_dir)
+            mtime = os.stat(filename).st_mtime
+
+            if not self.scanner.request.get_tool_option ('timestamps'):
+                stamp = blip.db.Timestamp.get_timestamp (rel_scm)
+                if mtime <= stamp:
+                    blip.utils.log ('Skipping file %s' % rel_scm)
+                    return
+
+            blip.utils.log ('Processing file %s' % rel_scm)
+            model = RDF.Model()
+            if not model.load ('file://' + urllib.pathname2url(filename)):
+                return
+            query = RDF.SPARQLQuery(' PREFIX doap: <http://usefulinc.com/ns/doap#>'
+                                    ' SELECT ?name ?desc'
+                                    ' WHERE {'
+                                    '  ?project a doap:Project ;'
+                                    '    doap:name ?name ;'
+                                    '    doap:shortdesc ?desc .'
+                                    ' FILTER('
+                                    '  langMatches(lang(?name), "en") &&'
+                                    '  langMatches(lang(?desc), "en")'
+                                    ' )} LIMIT 1')
+            for defs in query.execute (model):
+                self.scanner.branch.update ({
+                        'name': defs['name'].literal_value['string'],
+                        'desc': defs['desc'].literal_value['string']
+                        })
+                break
+
+
+    def post_process (self):
+        pass

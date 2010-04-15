@@ -93,7 +93,7 @@ class ModuleFileScanner (blinq.ext.ExtensionPoint):
     def __init__ (self, scanner):
         self.scanner = scanner
 
-    def process_file (dirname, basename):
+    def process_file (self, dirname, basename):
         pass
 
     def post_process (self):
@@ -331,8 +331,9 @@ class ModuleScanner (object):
             if default_child.data.has_key ('screenshot'):
                 self.branch.data['screenshot'] = default_child.data['screenshot']
         else:
-            self.branch.name = self.branch.scm_module
-            self.branch.desc = u''
-            self.branch.icon_dir = None
-            self.branch.icon_name = None
-            self.branch.data.pop ('screenshot', None)
+            self.branch.extend({
+                    'name': self.branch.scm_module,
+                    'desc': u'',
+                    'icon_dir': None,
+                    'icon_name': None,
+                    })
