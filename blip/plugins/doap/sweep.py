@@ -35,9 +35,9 @@ class DoapScanner (blip.plugins.modules.sweep.ModuleFileScanner):
             filename = os.path.join (dirname, basename)
             rel_ch = blip.utils.relative_path (filename, self.scanner.repository.directory)
             rel_scm = blip.utils.relative_path (filename, blinq.config.scm_dir)
-            mtime = os.stat(filename).st_mtime
+            mtime = int(os.stat(filename).st_mtime)
 
-            if not self.scanner.request.get_tool_option ('timestamps'):
+            if self.scanner.request.get_tool_option ('timestamps'):
                 stamp = blip.db.Timestamp.get_timestamp (rel_scm)
                 if mtime <= stamp:
                     blip.utils.log ('Skipping file %s' % rel_scm)
@@ -63,7 +63,7 @@ class DoapScanner (blip.plugins.modules.sweep.ModuleFileScanner):
                         'desc': defs['desc'].literal_value['string']
                         })
                 break
-
+            blip.db.Timestamp.set_timestamp (rel_scm, mtime)
 
     def post_process (self):
         pass
