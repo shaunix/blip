@@ -81,7 +81,6 @@ div.watch a { font-size: 0.83em; }
 h1 img { vertical-align: middle; }
 .sublinks {
   margin: 0;
-  padding: 0 2.4em 0.2em 20px;
   font-size: 0.83em;
 }
 
@@ -279,7 +278,7 @@ td.col-first { padding: 0; }
 .info div.filters { display: none; }
 .info dd { display: none; }
 .infoactive .infotitle {
-  background-color: #fce94f;
+  background-color: #fcf197;
 }
 .infotitle {
   background-color: #eeeeec;
@@ -455,7 +454,7 @@ td.calhover div {
   border: solid 1px #ef2929;
 }
 td.calevent {
-  background-color: #fce94f;
+  background-color: #fcf197;
 }
 dd.calevent {
   margin-left: 1.44em;
@@ -482,7 +481,7 @@ a.filter img {
 }
 a.filterall { border-left: none; }
 a.filteron {
-  background-color: #fce94f;
+  background-color: #fcf197;
   color: #555753;
 }
 
@@ -498,7 +497,7 @@ span.sortlinks {
  cursor: pointer;
 }
 span.sortlinksactive {
-  background-color: #fce94f;
+  background-color: #fcf197;
 }
 div.sortlinks a { color: #204a87; }
 div.sortmenu {
@@ -508,6 +507,8 @@ div.sortmenu {
   padding: 0 0.5em 0.2em 0.5em;
   display: none;
 }
+div.sortlink { margin: 0.2em 0 0.2em 0; }
+a.sortlink, span.sortlink { margin-left: 1em; }
 span.sortlink { color: #888a85; }
 
 a.plink:hover { text-decoration: none; }
