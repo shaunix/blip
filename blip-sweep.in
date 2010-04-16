@@ -26,9 +26,6 @@ import sys
 if not BLIP_PYTHON_DIR in sys.path:
     sys.path.append (BLIP_PYTHON_DIR)
 
-import blip.config
-blip.config.init('blip')
-
 import blip.sweep
 import blip.utils
 

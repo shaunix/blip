@@ -38,6 +38,11 @@ class SweepResponse (blinq.reqs.cmd.CmdResponse):
 class SweepResponder (blinq.reqs.cmd.CmdResponder):
     @classmethod
     def respond (cls, request):
+        request.add_common_option ('-s', '--site',
+                                   dest='site',
+                                   action='store',
+                                   default='blip',
+                                   help='use the site SITE (default: blip)')
         request.add_common_option ('--log-file',
                                    dest='log_file',
                                    action='store',
@@ -72,6 +77,9 @@ class SweepResponder (blinq.reqs.cmd.CmdResponder):
                                    default=False,
                                    help='roll back all changes (dry run)')
         request.parse_common_options ()
+
+        import blip.config
+        blip.config.init (request.get_common_option ('site'))
 
         import blip.plugins
         blinq.ext.import_extensions (blip.plugins, 'sweep')

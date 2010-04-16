@@ -29,7 +29,7 @@ if not BLIP_PYTHON_DIR in sys.path:
     sys.path.append (BLIP_PYTHON_DIR)
 
 import blip.config
-blip.config.init('blip')
+blip.config.init('@BLIP_SITE@')
 
 import blip.db
 import blip.html

@@ -29,6 +29,7 @@ import sys
 if not BLIP_PYTHON_DIR in sys.path:
     sys.path.append (BLIP_PYTHON_DIR)
 
+import blinq.config
 import blinq.reqs.cmd
 
 
@@ -43,7 +44,16 @@ class AdminResponse (blinq.reqs.cmd.CmdResponse):
 class AdminResponder (blinq.reqs.cmd.CmdResponder):
     @classmethod
     def respond (cls, request):
+        request.add_common_option ('-s', '--site',
+                                   dest='site',
+                                   action='store',
+                                   default='blip',
+                                   help='use the site SITE (default: blip)')
         request.parse_common_options ()
+
+        import blip.config
+        blip.config.init (request.get_common_option ('site'))
+
         for tool in cls.get_extensions ():
             if tool.command is not None:
                 request.add_tool_responder (tool)
@@ -65,10 +75,6 @@ class ConfigResponder (AdminResponder):
 
     @classmethod
     def respond (cls, request):
-        import blinq.config
-        import blip.config
-        blip.config.init('blip')
-
         args = request.get_tool_args ()
         if len(args) not in (1, 2):
             request.print_help ()
@@ -103,9 +109,6 @@ class DbResponder (AdminResponder):
 
     @classmethod
     def respond (cls, request):
-        import blinq.config
-        import blip.config
-        blip.config.init('blip')
         import blip.db
         import storm.properties
 
@@ -191,15 +194,16 @@ class WebResponder (AdminResponder):
 
     @classmethod
     def respond (cls, request):
-        import blinq.config
-        import blip.config
-        blip.config.init('blip')
         import shutil
         import stat
 
         cgi = os.path.join (blinq.config.web_dir, 'index.cgi')
         if not os.path.exists (cgi):
-            shutil.copyfile (os.path.join (BLIP_DATA_DIR, 'web', 'index.cgi'), cgi)
+            site = request.get_common_option ('site')
+            outfp = open(cgi, 'w')
+            infp = open(os.path.join (BLIP_DATA_DIR, 'web', 'index.cgi'))
+            for line in infp:
+                outfp.write(line.replace('@BLIP_SITE@', site))
             os.chmod (cgi,
                       stat.S_IRUSR | stat.S_IRGRP | stat.S_IROTH |
                       stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH |
