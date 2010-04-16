@@ -165,10 +165,14 @@ class ModuleScanner (object):
         since = blip.db.Revision.get_last_revision (branch=self.branch)
         if since is not None:
             since = since.revision
-            current = self.repository.get_revision()
-            if current is not None and since == current[0]:
-                blip.utils.log ('Skipping history for %s' % self.branch.ident)
-                return
+            try:
+                # If get_revision isn't implemented (CVS), we can't fast-path skip
+                current = self.repository.get_revision()
+                if current is not None and since == current[0]:
+                    blip.utils.log ('Skipping history for %s' % self.branch.ident)
+                    return
+            except:
+                pass
         blip.utils.log ('Checking history for %s' % self.branch.ident)
         for commit in self.repository.read_history (since=since):
             if commit.author_id is not None:

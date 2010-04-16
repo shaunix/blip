@@ -79,6 +79,7 @@ class Repository (blinq.ext.ExtensionPoint):
     _cached_repos = {}
 
     def __new__(cls, *args, **kw):
+        subcls = None
         if cls == Repository and 'scm_type' in kw:
             subcls = Repository.get_repository_class (kw['scm_type'])
         if subcls is None:
