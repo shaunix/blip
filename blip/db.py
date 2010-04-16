@@ -1412,9 +1412,16 @@ class Timestamp (BlipModel):
         pass
 
     @classmethod
+    def _get_sourcefunc (cls):
+        for frame in inspect.stack():
+            mod = inspect.getmodule(frame[0])
+            if mod == sys.modules[__name__]:
+                continue
+            return unicode(mod.__name__ + '.' + frame[3])
+
+    @classmethod
     def set_timestamp (cls, filename, stamp):
-        sfunc = inspect.stack()[1]
-        sfunc = unicode (os.path.basename (sfunc[1]) + '#' + sfunc[3])
+        sfunc = cls._get_sourcefunc()
         obj = cls.select (filename=filename, sourcefunc=sfunc)
         try:
             obj = obj[0]
@@ -1424,8 +1431,7 @@ class Timestamp (BlipModel):
 
     @classmethod
     def get_timestamp (cls, filename):
-        sfunc = inspect.stack()[1]
-        sfunc = unicode (os.path.basename (sfunc[1]) + '#' + sfunc[3])
+        sfunc = cls._get_sourcefunc()
         obj = cls.select (filename=filename, sourcefunc=sfunc)
         try:
             return obj[0].stamp
