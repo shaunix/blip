@@ -33,37 +33,28 @@ class DoapScanner (blip.plugins.modules.sweep.ModuleFileScanner):
         if (dirname == self.scanner.repository.directory
             and basename == self.scanner.branch.scm_module + '.doap'):
             filename = os.path.join (dirname, basename)
-            rel_ch = blip.utils.relative_path (filename, self.scanner.repository.directory)
-            rel_scm = blip.utils.relative_path (filename, blinq.config.scm_dir)
-            mtime = int(os.stat(filename).st_mtime)
+            with blip.db.Timestamp.stamp (filename, self.scanner.repository) as stamp:
+                stamp.check (self.scanner.request.get_tool_option ('timestamps'))
 
-            if self.scanner.request.get_tool_option ('timestamps'):
-                stamp = blip.db.Timestamp.get_timestamp (rel_scm)
-                if mtime <= stamp:
-                    blip.utils.log ('Skipping file %s' % rel_scm)
+                model = RDF.Model()
+                if not model.load ('file://' + urllib.pathname2url(filename)):
                     return
-
-            blip.utils.log ('Processing file %s' % rel_scm)
-            model = RDF.Model()
-            if not model.load ('file://' + urllib.pathname2url(filename)):
-                return
-            query = RDF.SPARQLQuery(' PREFIX doap: <http://usefulinc.com/ns/doap#>'
-                                    ' SELECT ?name ?desc'
-                                    ' WHERE {'
-                                    '  ?project a doap:Project ;'
-                                    '    doap:name ?name ;'
-                                    '    doap:shortdesc ?desc .'
-                                    ' FILTER('
-                                    '  langMatches(lang(?name), "en") &&'
-                                    '  langMatches(lang(?desc), "en")'
-                                    ' )} LIMIT 1')
-            for defs in query.execute (model):
-                self.scanner.branch.update ({
-                        'name': defs['name'].literal_value['string'],
-                        'desc': defs['desc'].literal_value['string']
-                        })
-                break
-            blip.db.Timestamp.set_timestamp (rel_scm, mtime)
+                query = RDF.SPARQLQuery(' PREFIX doap: <http://usefulinc.com/ns/doap#>'
+                                        ' SELECT ?name ?desc'
+                                        ' WHERE {'
+                                        '  ?project a doap:Project ;'
+                                        '    doap:name ?name ;'
+                                        '    doap:shortdesc ?desc .'
+                                        ' FILTER('
+                                        '  langMatches(lang(?name), "en") &&'
+                                        '  langMatches(lang(?desc), "en")'
+                                        ' )} LIMIT 1')
+                for defs in query.execute (model):
+                    self.scanner.branch.update ({
+                            'name': defs['name'].literal_value['string'],
+                            'desc': defs['desc'].literal_value['string']
+                            })
+                    break
 
     def post_process (self):
         pass

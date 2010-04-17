@@ -1411,6 +1411,30 @@ class Timestamp (BlipModel):
     def log_create (self):
         pass
 
+    class stamp:
+        class stampedout (Exception):
+            pass
+        def __init__ (self, filename, repository):
+            self.filename = filename
+            self.repository = repository
+            self.rel_scm = blip.utils.relative_path (filename, blinq.config.scm_dir)
+        def check (self, check):
+            self.mtime = int(os.stat(self.filename).st_mtime)
+            if check:
+                stamp = blip.db.Timestamp.get_timestamp (self.rel_scm)
+                if self.mtime <= stamp:
+                    blip.utils.log ('Skipping file %s' % self.rel_scm)
+                    raise Timestamp.stamp.stampedout(None)
+            blip.utils.log ('Processing file %s' % self.rel_scm)
+        def __enter__ (self):
+            return self
+        def __exit__ (self, type, value, tb):
+            if type is None:
+                Timestamp.set_timestamp (self.rel_scm, self.mtime)
+            else:
+                if issubclass(type, Timestamp.stamp.stampedout):
+                    return True
+
     @classmethod
     def _get_sourcefunc (cls):
         for frame in inspect.stack():
