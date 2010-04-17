@@ -33,7 +33,7 @@ class DoapScanner (blip.plugins.modules.sweep.ModuleFileScanner):
         if (dirname == self.scanner.repository.directory
             and basename == self.scanner.branch.scm_module + '.doap'):
             filename = os.path.join (dirname, basename)
-            with blip.db.Timestamp.stamp (filename, self.scanner.repository) as stamp:
+            with blip.db.Timestamp.stamped (filename, self.scanner.repository) as stamp:
                 stamp.check (self.scanner.request.get_tool_option ('timestamps'))
 
                 model = RDF.Model()

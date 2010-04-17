@@ -1411,7 +1411,7 @@ class Timestamp (BlipModel):
     def log_create (self):
         pass
 
-    class stamp:
+    class stamped:
         class stampedout (Exception):
             pass
         def __init__ (self, filename, repository):
@@ -1424,7 +1424,7 @@ class Timestamp (BlipModel):
                 stamp = blip.db.Timestamp.get_timestamp (self.rel_scm)
                 if self.mtime <= stamp:
                     blip.utils.log ('Skipping file %s' % self.rel_scm)
-                    raise Timestamp.stamp.stampedout(None)
+                    raise Timestamp.stamped.stampedout(None)
             blip.utils.log ('Processing file %s' % self.rel_scm)
         def __enter__ (self):
             return self
@@ -1432,7 +1432,7 @@ class Timestamp (BlipModel):
             if type is None:
                 Timestamp.set_timestamp (self.rel_scm, self.mtime)
             else:
-                if issubclass(type, Timestamp.stamp.stampedout):
+                if issubclass(type, Timestamp.stamped.stampedout):
                     return True
 
     @classmethod
