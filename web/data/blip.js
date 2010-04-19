@@ -210,6 +210,44 @@ $.fn.blip_init = function () {
     });
   });
 
+  /** PopupLink **/
+  $('a.PopupLink').each (function () {
+    var plink = $(this);
+    plink.click (function () {
+      var pcont = plink.next('div.PopupLink');
+      if (plink.hasClass('PopupLinkActive')) {
+        $('body').click();
+        return false;
+      }
+      $('body').click();
+      plink.addClass('PopupLinkActive');
+      pcont.css ({
+        left: plink.offset().left - 1 + 'px',
+        top: plink.offset().top + plink.height() + 'px',
+      });
+      pcont.fadeIn('fast');
+      scroll(pcont);
+      var away = function (e) {
+        plink.removeClass('PopupLinkActive');
+        var e = e || window.event;
+        var target = e.target || e.srcElement;
+        do {
+          if (target == pcont[0])
+            break;
+          if (target == plink[0])
+            break;
+        } while (target = target.parentNode);
+        if (target != pcont[0]) {
+          pcont.fadeOut('fast');
+          $('body').unbind('click', away);
+          return (target != plink[0]);
+        }
+      }
+      $('body').click (away);
+      return false;
+    });
+  });
+
   /** Calendars **/
   this.find ('div.cal').each (function () {
     var cal = $(this);
@@ -821,33 +859,6 @@ function scroll (div, pad) {
       for (var i = window.pageYOffset; i <= newy; i += 2)
         window.scrollTo(0, i);
   }
-}
-
-
-/******************************************************************************/
-/** Popup links **/
-
-function plink (id) {
-  var plink = $('#plink' + id);
-  var pcont = $('#pcont' + id);
-  pcont.fadeIn('fast');
-  scroll(pcont);
-  var away = function (e) {
-    var e = e || window.event;
-    var target = e.target || e.srcElement;
-    do {
-      if (target == pcont[0])
-        break;
-      if (target == plink[0])
-        break;
-    } while (target = target.parentNode);
-    if (target != pcont[0]) {
-      pcont.fadeOut('fast');
-      $('body').unbind('click', away);
-      return (target != plink[0]);
-    }
-  }
-  $('body').click (away);
 }
 
 

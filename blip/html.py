@@ -29,7 +29,6 @@ common interface elements in Blip pages.
 """
 
 import datetime
-import re
 import sys
 
 import blinq.config
@@ -1583,14 +1582,12 @@ class MenuLink (HtmlObject):
             res.write('</div></div>')
 
 
-class PopupLink (HtmlObject):
-    _count = 0
-
-    def __init__ (self, short, full, **kw):
+class PopupLink (HtmlObject, ContentComponent):
+    def __init__ (self, text, content, **kw):
         super (PopupLink, self).__init__ (**kw)
-        self._short = short
-        self._full = full
+        self._text = text
         self._links = []
+        ContentComponent.add_content (self, content)
 
     def add_link (self, *args):
         if isinstance (args[0], HtmlObject):
@@ -1600,89 +1597,21 @@ class PopupLink (HtmlObject):
 
     def output (self, res):
         """Output the HTML."""
-        PopupLink._count += 1
-        pid = str(PopupLink._count)
-        res.write('<a class="plink" id="plink%s" href="javascript:plink(\'%s\')">'
-                  % self.escape((pid, pid)))
-        res.write(self.escape(self._short))
+        res.write('<a class="PopupLink" href="#">')
+        res.write(self.escape(self._text))
         res.write('</a>')
-        res.write('<div class="pcont" id="pcont%s">' % self.escape(pid))
-        if isinstance (self._full, basestring):
-            while len(self._full) > 0 and self._full[-1] == '\n': self._full = self._full[:-1]
-        res.write('<pre class="pcont-content">')
-        res.write(self.escape(self._full))
-        res.write('</pre>')
+        res.write('<div class="PopupLink">')
+        res.write('<div class="PopupLinkContent">')
+        ContentComponent.output (self, res)
+        res.write('</div>')
         if self._links != []:
-            res.write('<div class="pcont-links">')
+            res.write('<div class="PopupLinkLinks">')
             for i in range(len(self._links)):
                 if i != 0:
                     res.write(BULLET)
                 res.write(self._links[i])
             res.write('</div>')
         res.write('</div>')
-
-    @classmethod
-    def from_revision (cls, rev, app, **kw):
-        branch = kw.pop ('branch', None)
-        comment = rev.comment
-        if comment.strip() == '':
-            lnk = cls (AdmonBox (AdmonBox.warning, blip.utils.gettext ('No comment')),
-                       '', **kw)
-        else:
-            datere = re.compile ('^\d\d\d\d-\d\d-\d\d ')
-            colonre = re.compile ('^\* [^:]*:(.*)')
-            maybe = ''
-            for line in comment.split('\n'):
-                line = line.strip()
-                if line == '':
-                    pass
-                elif datere.match(line):
-                    maybe = line
-                else:
-                    cmatch = colonre.match(line)
-                    if cmatch:
-                        line = cmatch.group(1).strip()
-                        if line != '':
-                            break
-                    else:
-                        break
-            if line == '':
-                line = maybe
-            if len(line) > 80:
-                i = 60
-                while i < len(line):
-                    if line[i] == ' ':
-                        break
-                    i += 1
-                if i < len(comment):
-                    line = line[:i] + '...'
-
-            lnk = cls (line, comment, **kw)
-
-        if branch is None:
-            branch = rev.branch
-        if branch.scm_type == 'svn':
-            if branch.scm_server.endswith ('/svn/'):
-                base = branch.scm_server[:-4] + 'viewvc/'
-                colon = base.find (':')
-                if colon < 0:
-                    return lnk
-                if base[:colon] != 'http':
-                    base = 'http' + base[colon:]
-                if branch.scm_path != None:
-                    base += branch.scm_path
-                elif branch.scm_branch == 'trunk':
-                    base += branch.scm_module + '/trunk'
-                else:
-                    base += branch.scm_module + '/branches/' + branch.scm_branch
-                mlink = MenuLink (rev.revision, 'files')
-                mlink.set_menu_url ('%s?application=%s&action=revfiles&revid=%s'
-                                    % (branch.blip_url, app, str(rev.ident)))
-                lnk.add_link (mlink)
-                infourl = base + '?view=revision&revision=' + rev.revision
-                lnk.add_link (infourl, blip.utils.gettext ('info'))
-
-        return lnk
 
 
 class Span (HtmlObject, ContentComponent):
@@ -1822,21 +1751,18 @@ class Pre (HtmlObject, ContentComponent):
 
     Any non-keyword arguments passed to the constructor are taken to
     be child content, and are automatically added with add_content.
-
-    Keyword arguments:
-    id -- An optional HTML id for the pre tag.
     """
 
     def __init__ (self, *args, **kw):
-        self._id = kw.pop('id', None)
+        super (Pre, self).__init__ (**kw)
         for arg in args:
             self.add_content (arg)
-        super (Pre, self).__init__ (**kw)
 
     def output (self, res):
         """Output the HTML."""
-        if self._id != None:
-            res.write('<pre id="%s">' % self.escape(self._id))
+        wid = self.get_html_id ()
+        if wid is not None:
+            res.write('<pre id="%s">' % self.escape(wid))
         else:
             res.write('<pre>')
         ContentComponent.output (self, res)

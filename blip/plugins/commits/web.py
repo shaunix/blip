@@ -18,8 +18,69 @@
 # Suite 330, Boston, MA  0211-1307  USA.
 #
 
+import re
+
 import blip.db
 import blip.html
+
+def from_revision (rev, app, **kw):
+    branch = kw.pop ('branch', None)
+    comment = rev.comment
+    if comment.strip() == '':
+        lnk = cls (blip.html.AdmonBox (blip.html.AdmonBox.warning, blip.utils.gettext ('No comment')),
+                   '', **kw)
+    else:
+        datere = re.compile ('^\d\d\d\d-\d\d-\d\d ')
+        colonre = re.compile ('^\* [^:]*:(.*)')
+        maybe = ''
+        for line in comment.split('\n'):
+            line = line.strip()
+            if line == '':
+                pass
+            elif datere.match(line):
+                maybe = line
+            else:
+                cmatch = colonre.match(line)
+                if cmatch:
+                    line = cmatch.group(1).strip()
+                    if line != '':
+                        break
+                else:
+                    break
+        if line == '':
+            line = maybe
+        if len(line) > 80:
+            i = 60
+            while i < len(line):
+                if line[i] == ' ':
+                    break
+                i += 1
+            if i < len(comment):
+                line = line[:i] + '...'
+        lnk = blip.html.PopupLink (line, blip.html.Pre(comment), **kw)
+    if branch is None:
+        branch = rev.branch
+    # if branch.scm_type == 'svn':
+    #     if branch.scm_server.endswith ('/svn/'):
+    #         base = branch.scm_server[:-4] + 'viewvc/'
+    #         colon = base.find (':')
+    #         if colon < 0:
+    #             return lnk
+    #         if base[:colon] != 'http':
+    #             base = 'http' + base[colon:]
+    #         if branch.scm_path != None:
+    #             base += branch.scm_path
+    #         elif branch.scm_branch == 'trunk':
+    #             base += branch.scm_module + '/trunk'
+    #         else:
+    #             base += branch.scm_module + '/branches/' + branch.scm_branch
+    #         mlink = blip.html.MenuLink (rev.revision, 'files')
+    #         mlink.set_menu_url ('%s?application=%s&action=revfiles&revid=%s'
+    #                             % (branch.blip_url, app, str(rev.ident)))
+    #         lnk.add_link (mlink)
+    #         infourl = base + '?view=revision&revision=' + rev.revision
+    #         lnk.add_link (infourl, blip.utils.gettext ('info'))
+    return lnk
 
 
 class CommitsTab (blip.html.TabProvider):
@@ -106,7 +167,7 @@ class CommitsTab (blip.html.TabProvider):
                 branch = rev.project.default
             dl.add_term (span)
             # FIXME: branch=request.record or...
-            dl.add_entry (blip.html.PopupLink.from_revision (rev, 'activity', branch=branch))
+            dl.add_entry (from_revision (rev, 'activity', branch=branch))
         return div
 
 

@@ -142,10 +142,10 @@ ul#tabs li a {
 
 ul#tabs li a:hover {
   text-decoration: none;
+  cursor: default;
 }
 ul#tabs li a:hover div {
-  background-color: #729fcf;
-  color: white;
+  background-color: #b1d5fc;
 }
 ul#tabs li.tabactive div {
   background-color: #fcf197;
@@ -511,28 +511,42 @@ div.sortlink { margin: 0.2em 0 0.2em 0; }
 a.sortlink, span.sortlink { margin-left: 1em; }
 span.sortlink { color: #888a85; }
 
-a.plink:hover { text-decoration: none; }
-div.pcont {
+/******************************************************************************/
+/** PopupLink *****************************************************************/
+a.PopupLink { padding: 0 0.5em 0 0.5em; }
+a.PopupLink:hover {
+  background-color: #b1d5fc;
+  text-decoration: none;
+  cursor: default;
+}
+a.PopupLinkActive {
+  outline: solid 1px #555753;
+  background-color: #fcf197;
+  color: #555753;
+}
+a.PopupLinkActive:hover {
+  background-color: #fcf197;
+  color: #555753;
+}
+div.PopupLink {
   position: absolute;
   display: none;
   padding: 0;
   background-color: #eeeeec;
-  border: solid 2px #ffffff;
-  opacity: 0.9;
 }
-.pcont-content {
-  padding: 1em;
+div.PopupLinkContent {
+  padding: 0.5em;
   border: solid 1px #555753;
   color: #000000;
 }
-.pcont-links {
-  padding: 0 1em 0 1em;
+div.PopupLinkLinks {
+  padding: 0.2em 0.5em 0.2em 0.5em;
   border-bottom: solid 1px #555753;
   border-left: solid 1px #555753;
   border-right: solid 1px #555753;
-  background-color: #fff9cf;
 }
 
+/******************************************************************************/
 div.mstub { display: none; }
 div.mcont {
   position: absolute;
