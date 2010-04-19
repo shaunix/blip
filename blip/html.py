@@ -1142,7 +1142,7 @@ class AdmonBox (HtmlObject):
         wid = self.get_html_id ()
         if wid != None:
             res.write(' id="%s"' % self.escape(wid))
-        res.write('><img src="%sadmon-%s-16.png" width="16" height="16">'
+        res.write('><img src="%sadmon-%s-16.png" width="16" height="16"> '
                   % self.escape ((blinq.config.web_data_url, self._kind)))
         res.write(self.escape(self._title))
         res.write('</%s>' % self.escape(self._tag))

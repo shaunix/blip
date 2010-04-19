@@ -32,29 +32,31 @@ class DoapScanner (blip.plugins.modules.sweep.ModuleFileScanner):
     def process_file (self, dirname, basename):
         if (dirname == self.scanner.repository.directory
             and basename == self.scanner.branch.scm_module + '.doap'):
-            filename = os.path.join (dirname, basename)
-            with blip.db.Timestamp.stamped (filename, self.scanner.repository) as stamp:
-                stamp.check (self.scanner.request.get_tool_option ('timestamps'))
 
-                model = RDF.Model()
-                if not model.load ('file://' + urllib.pathname2url(filename)):
-                    return
-                query = RDF.SPARQLQuery(' PREFIX doap: <http://usefulinc.com/ns/doap#>'
-                                        ' SELECT ?name ?desc'
-                                        ' WHERE {'
-                                        '  ?project a doap:Project ;'
-                                        '    doap:name ?name ;'
-                                        '    doap:shortdesc ?desc .'
-                                        ' FILTER('
-                                        '  langMatches(lang(?name), "en") &&'
-                                        '  langMatches(lang(?desc), "en")'
-                                        ' )} LIMIT 1')
-                for defs in query.execute (model):
-                    self.scanner.branch.update ({
-                            'name': defs['name'].literal_value['string'],
-                            'desc': defs['desc'].literal_value['string']
-                            })
-                    break
+            filename = os.path.join (dirname, basename)
+            with blip.db.Error.catch (self.scanner.branch, 'Invalid DOAP file'):
+                with blip.db.Timestamp.stamped (filename, self.scanner.repository) as stamp:
+                    stamp.check (self.scanner.request.get_tool_option ('timestamps'))
+
+                    model = RDF.Model()
+                    if not model.load ('file://' + urllib.pathname2url(filename)):
+                        return
+                    query = RDF.SPARQLQuery(' PREFIX doap: <http://usefulinc.com/ns/doap#>'
+                                            ' SELECT ?name ?desc'
+                                            ' WHERE {'
+                                            '  ?project a doap:Project ;'
+                                            '    doap:name ?name ;'
+                                            '    doap:shortdesc ?desc .'
+                                            ' FILTER('
+                                            '  langMatches(lang(?name), "en") &&'
+                                            '  langMatches(lang(?desc), "en")'
+                                            ' )} LIMIT 1')
+                    for defs in query.execute (model):
+                        self.scanner.branch.update ({
+                                'name': defs['name'].literal_value['string'],
+                                'desc': defs['desc'].literal_value['string']
+                                })
+                        break
 
     def post_process (self):
         pass

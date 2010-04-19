@@ -127,11 +127,11 @@ class ModuleScanner (object):
         return self._parsed_files[(parser, filename)]
 
     def update (self):
-        if self.repository.error is not None:
-            self.branch.update (error=self.repository.error)
-            return
+        #    self.branch.update (error=None)
+        if self.repository.error is None:
+            blip.db.Error.clear_error (self.branch)
         else:
-            self.branch.update (error=None)
+            blip.db.Error.set_error (self.branch, self.repository.error)
 
         if self.request.get_tool_option ('read_history', True):
             self.check_history ()

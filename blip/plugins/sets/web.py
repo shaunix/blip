@@ -298,6 +298,7 @@ class OverviewTab (blip.html.TabProvider):
 #             boxes[boxid]['cnt'] += 1
 #             lbox.add_graph (config.graphs_root + doc.ident[1:] + '/commits-tight.png',
 #                             width=240, height=40)
+# FIXME: use blip.db.Error
 #             if doc.error != None:
 #                 slink_error = True
 #                 span = html.Span (doc.error)
@@ -373,6 +374,7 @@ class OverviewTab (blip.html.TabProvider):
 
 #         for obj, of in objs:
 #             lbox = cont.add_link_box (obj)
+# FIXME: use blip.db.Error
 #             if obj.error != None:
 #                 slink_error = True
 #                 span = html.Span (obj.error)
@@ -435,6 +437,7 @@ class OverviewTab (blip.html.TabProvider):
 #             slink_error = False
 #             for obj in objs:
 #                 lbox = cont.add_link_box (obj)
+# FIXME: use blip.db.Error
 #                 if obj.error != None:
 #                     slink_error = True
 #                     span = html.Span (obj.error)
@@ -489,6 +492,7 @@ class OverviewTab (blip.html.TabProvider):
 #         slink_error = False
 #         for obj in objs:
 #             lbox = cont.add_link_box (obj)
+# FIXME: use blip.db.Error
 #             if obj.error != None:
 #                 slink_error = True
 #                 span = html.Span (obj.error)

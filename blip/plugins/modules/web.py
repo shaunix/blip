@@ -116,8 +116,8 @@ class OverviewTab (blip.html.TabProvider):
     def get_tab (cls, request):
         tab = blip.html.PaddingBox()
 
-        if request.record.error is not None:
-            tab.add_content (blip.html.AdmonBox (blip.html.AdmonBox.error, request.record.error))
+        for err in blip.db.Error.select (ident=request.record.ident):
+            tab.add_content (blip.html.AdmonBox (blip.html.AdmonBox.error, err.message))
 
         facts = blip.html.FactsTable()
         tab.add_content (facts)

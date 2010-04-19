@@ -276,6 +276,9 @@ class BlipModel (Storm):
     def log_create (self):
         blip.utils.log ('Creating %s' % self)
 
+    def log_delete (self):
+        blip.utils.log ('Deleting %s' % self)
+
     def decache (self):
         storm.store.Store.of(self)._cache.remove (self)
 
@@ -348,7 +351,7 @@ class BlipModel (Storm):
                 sel = table.select (fields[key][0] == self)
                 for rec in sel:
                     rec.delete ()
-        blip.utils.log ('Deleting %s' % self)
+        self.log_delete ()
         self.__blip_store__.remove (self)
 
 
@@ -510,7 +513,6 @@ class Branch (BlipRecord):
     parent = Reference (parent_ident, 'Branch.ident')
     project_ident = ShortText ()
     project = Reference (project_ident, 'Project.ident')
-    error = Unicode ()
 
     scm_type = ShortText ()
     scm_server = ShortText ()
@@ -1461,6 +1463,77 @@ class Timestamp (BlipModel):
             return obj[0].stamp
         except IndexError:
             return -1
+
+
+class Error (BlipModel):
+    __storm_primary__ = 'ident', 'sourcefunc'
+    ident = ShortText ()
+    sourcefunc = ShortText ()
+    message = Unicode ()
+
+    def log_create (self):
+        blip.utils.log ('Setting error %s on %s' % (self.sourcefunc, self.ident))
+
+    def log_delete (self):
+        blip.utils.log ('Clearing error %s on %s' % (self.sourcefunc, self.ident))
+
+    @classmethod
+    def _get_sourcefunc (cls):
+        for frame in inspect.stack():
+            mod = inspect.getmodule(frame[0])
+            if mod == sys.modules[__name__]:
+                continue
+            return unicode(mod.__name__ + '.' + frame[3])
+
+    @classmethod
+    def set_error (cls, ident, message):
+        if isinstance (ident, basestring):
+            ident = blinq.utils.utf8dec (ident)
+        else:
+            ident = ident.ident
+        sfunc = cls._get_sourcefunc ()
+        message = blinq.utils.utf8dec (message)
+        obj = cls.select (ident=ident, sourcefunc=sfunc)
+        try:
+            obj = obj[0]
+            obj.message = message
+        except IndexError:
+            cls (ident=ident, sourcefunc=sfunc, message = message)
+
+    @classmethod
+    def clear_error (cls, ident):
+        if isinstance (ident, basestring):
+            ident = blinq.utils.utf8dec (ident)
+        else:
+            ident = ident.ident
+        sfunc = cls._get_sourcefunc ()
+        for err in cls.select (ident=ident, sourcefunc=sfunc):
+            err.delete ()
+
+    class catch:
+        def __init__ (self, ident, message=None):
+            if isinstance (ident, basestring):
+                self.ident = blinq.utils.utf8dec (ident)
+            else:
+                self.ident = ident.ident
+            self.sfunc = Error._get_sourcefunc ()
+            self.message = message and blinq.utils.utf8dec (message) or None
+        def __enter__ (self):
+            return self
+        def __exit__ (self, type, value, tb):
+            if type is None:
+                for err in Error.select (ident=self.ident, sourcefunc=self.sfunc):
+                    err.delete ()
+            else:
+                if self.message is None:
+                    self.message = blinq.utils.utf8dec (value)
+                obj = Error.select (ident=self.ident, sourcefunc=self.sfunc)
+                try:
+                    obj = obj[0]
+                    obj.message = self.message
+                except IndexError:
+                    Error (ident=self.ident, sourcefunc=self.sfunc, message=self.message)
+            return True
 
 
 class Queue (BlipModel):
