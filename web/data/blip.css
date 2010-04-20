@@ -528,7 +528,7 @@ a.PopupLinkActive:hover {
   background-color: #fcf197;
   color: #555753;
 }
-div.PopupLink {
+div.PopupLinkBody {
   position: absolute;
   display: none;
   padding: 0;

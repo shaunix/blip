@@ -1600,7 +1600,7 @@ class PopupLink (HtmlObject, ContentComponent):
         res.write('<a class="PopupLink" href="#">')
         res.write(self.escape(self._text))
         res.write('</a>')
-        res.write('<div class="PopupLink">')
+        res.write('<div class="PopupLinkBody">')
         res.write('<div class="PopupLinkContent">')
         ContentComponent.output (self, res)
         res.write('</div>')

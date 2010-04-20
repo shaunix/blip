@@ -213,24 +213,33 @@ $.fn.blip_init = function () {
   /** PopupLink **/
   $('a.PopupLink').each (function () {
     var plink = $(this);
-    plink.click (function () {
-      var pcont = plink.next('div.PopupLink');
+    plink.click (function (event) {
+      var pcont = plink.next('div.PopupLinkBody');
       if (plink.hasClass('PopupLinkActive')) {
-        $('body').click();
         return false;
       }
-      $('body').click();
+      /* Test if we're inside another PopupLink. Don't close it if we are.
+       * The target checking code in the away function ought to catch this,
+       * but for some reason event.target is the <html> element when we
+       * click a nested PopupLink. So we check here as well.
+       */
+      var target = event.target;
+      do {
+        if ($(target).hasClass('PopupLinkBody'))
+          break;
+      } while (target = target.parentNode);
+      if (!$(target).hasClass('PopupLinkBody')) {
+        $('body').click();
+      }
       plink.addClass('PopupLinkActive');
       pcont.css ({
-        left: plink.offset().left - 1 + 'px',
-        top: plink.offset().top + plink.height() + 'px',
+        left: plink[0].offsetLeft - 1 + 'px',
+        top: plink[0].offsetTop + plink.height() + 'px',
       });
       pcont.fadeIn('fast');
       scroll(pcont);
-      var away = function (e) {
-        plink.removeClass('PopupLinkActive');
-        var e = e || window.event;
-        var target = e.target || e.srcElement;
+      var away = function (event) {
+        var target = event.target;
         do {
           if (target == pcont[0])
             break;
@@ -238,9 +247,10 @@ $.fn.blip_init = function () {
             break;
         } while (target = target.parentNode);
         if (target != pcont[0]) {
+          plink.removeClass('PopupLinkActive');
           pcont.fadeOut('fast');
           $('body').unbind('click', away);
-          return (target != plink[0]);
+          return true;
         }
       }
       $('body').click (away);
@@ -836,6 +846,7 @@ function replace (id, url) {
       data = $(req.responseText);
       data.attr ('id', el.attr ('id'));
       el.after (data);
+      el.next().blip_init();
       el.remove ();
       par.unshade ();
     }
