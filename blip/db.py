@@ -1398,7 +1398,7 @@ class OutputFile (BlipModel):
             lst.append (subsub)
         lst.append (self.filename)
         rootdir = getattr (blinq.config, 'web_' + self.type + '_dir', None)
-        if rootdir == None:
+        if rootdir is None:
             lst.insert (0, self.type)
             rootdir = blinq.config.web_files_dir
         return os.path.join(rootdir, *lst)

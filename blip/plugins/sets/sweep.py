@@ -51,7 +51,12 @@ class SetsResponder (blip.sweep.SweepResponder):
     def respond (cls, request):
         response = blip.sweep.SweepResponse (request)
 
-        data = blip.data.Data (os.path.join (blinq.config.input_dir, 'sets.xml'))
+        infile = os.path.join (blinq.config.input_dir, 'sets.xml')
+        if not os.path.exists (infile):
+            response.set_error (1, 'No input file: ' + infile)
+            return response
+
+        data = blip.data.Data (infile)
 
         for key in data.data.keys():
             if data.data[key]['blip:type'] == 'set':
