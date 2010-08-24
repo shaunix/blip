@@ -1,0 +1,94 @@
+<page xmlns="http://projectmallard.org/1.0/"
+      type="topic" id="setup-config">
+<info>
+  <link type="guide" xref="setup" group="config"/>
+
+  <revision date="2010-08-20" status="stub"/>
+</info>
+
+<title>Configure your Blip site</title>
+
+<p>Before you can use Blip, you must configure it using the
+<cmd>blip-admin</cmd> tool. You can create multiple
+site configurations; see <link xref="setup-config-multiple"/>
+for more details. For now, just create a single Blip site.</p>
+
+<p>Use <cmd>blip-admin</cmd> to get or set configuration keys
+for your Blip site. You can run <cmd>blip-admin</cmd> one of
+two ways:</p>
+
+<terms>
+  <item>
+    <title><cmd>blip-admin <var>key</var></cmd></title>
+    <p>Get the value for the configuration key <var>key</var>.</p>
+  </item>
+  <item>
+    <title><cmd>blip-admin <var>key</var> <var>value</var></cmd></title>
+    <p>Set the value of the configuration key <var>key</var>
+    to <var>value</var>.</p>
+  </item>
+</terms>
+
+<p>Only a few keys are required. Blip provides more configuration
+options, but most of them have default values based on the values
+of other keys. Note that <cmd>blip-admin</cmd> will return default
+values of unset keys.</p>
+
+<section id="db">
+  <title>Database</title>
+
+  <p>Blip stores most of its information in an SQL database. You
+  have to tell Blip where your database is located using the
+  <sys>db_uri</sys> configuration key. Blip uses the Storm ORM
+  for database connectivity, so the value of the <sys>db_uri</sys>
+  key must be a URI that Storm understands. See the
+  <link href="https://storm.canonical.com/Manual">Storm Manual</link>
+  for details on URIs for different types of databases.</p>
+
+  <p>To configure Blip to use an SQLite database located at
+  <file>/var/blip/db/blip.db</file>, use the following command:</p>
+
+  <screen>blip-admin config db_uri sqlite:/var/blip/db/blip.db</screen>
+
+  <p>SQLite databases are useful for rapid testing and development,
+  but for real deployments, you should use a client-server database
+  such as MySQL. To configure Blip to use a MySQL database called
+  <sys>blip</sys> on your local machine with the username
+  <sys>blip</sys> and the password <sys>1234</sys>, use the
+  following command:</p>
+
+  <screen>blip-admin config db_uri mysql://blip:1234@localhost/blip</screen>
+
+  <p>For information on setting up your database, see <link xref="setup-db"/>.</p>
+</section>
+
+<section id="web">
+  <title>Web</title>
+
+  <p>Blip provides a web application to display the data it collects. Before
+  you can use the web application, you have to tell Blip where your files will
+  be stored and how they can be accessed. Set the <sys>web_dir</sys> key to
+  the directory that will hold files for the web:</p>
+
+  <screen>blip-admin config web_dir /var/www/html</screen>
+
+  <p>On many systems, <file>/var/www/html</file> is the default root for the
+  Apache web server. If your Apache configuration uses a different directory,
+  use the appropriate setting.</p>
+
+  <p>Blip needs to know the URL you will use to access it. This allows it to
+  reference images and other media, and to create correct links. By default,
+  Blip uses <sys>http://127.0.0.1/</sys>. If you are only accessing the web
+  server from your local machine, you can skip this step. Otherwise, set the
+  root URL:</p>
+
+  <screen>blip-admin config web_root_url http://example.com/</screen>
+
+  <p>Replace <sys>http://example.com/</sys> with a URL that points to your
+  web server. Make sure to include the trailing slash character.</p>
+
+  <p>Once you have set these keys, you can initialize the web application.
+  See <link xref="setup-web"/> for details.</p>
+</section>
+
+</page>

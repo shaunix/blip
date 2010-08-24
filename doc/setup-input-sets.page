@@ -1,0 +1,124 @@
+<page xmlns="http://projectmallard.org/1.0/"
+      xmlns:e="http://projectmallard.org/experimental/"
+      type="topic" id="setup-input-sets">
+<info>
+  <link type="guide" xref="setup" group="input"/>
+
+  <revision date="2010-08-23" status="stub"/>
+</info>
+
+<title>Create input for sets</title>
+
+<p>Blip finds most information automatically, but you need to feed it some
+initial information. To scan source code repositories, you need to define
+some release sets and specify which modules are in them. You do this by
+creating an input data file. First, find the directory that contains your
+input files with the following command:</p>
+
+<screen>blip-admin config input_dir</screen>
+
+<p>This directory might not exist yet. If not, simply create it.</p>
+
+<p>Create a file inside this directory called <file>sets.xml</file>. The
+contents of this file are expected to be in Blip's data definition XML
+format. This format allows you to define nested objects with properties,
+as well as specify default properties for all objects.</p>
+
+<p>After you have created an input file, you can tell Blip to read it using
+the <cmd>blip-sweed</cmd> command. See <link xref="blip-sweep-sets"/> for
+more information.</p>
+
+<section id="basic">
+<title>Basic sets input</title>
+
+<p>Use the following file to create a single release set for Blip that
+contains the master branch of the Blip repository:</p>
+
+<code><![CDATA[
+<blip:group
+  xmlns:blip="http://blip-monitor.com/xmlns/ddl/1.0/">
+  <set blip:id="blip">
+    <name>Blip</name>
+    <module blip:id="blip">
+      <scm_type>git</scm_type>
+      <scm_server>git://git.gitorious.org/blip/</scm_server>
+      <scm_module>blip</scm_module>
+      <scm_path>blip.git</scm_path>
+    </module>
+  </set>
+</blip:group>
+]]></code>
+
+<p>Elements and attributes in the <code>blip</code> namespace belong
+to the data definition language. They have special meaning to the
+parser. Unnamespaced elements define objects and properties. Any
+element with a <code>blip:id</code> attribute is an object. Any
+other unnamespaced element is a property of its parent object.</p>
+
+<note>
+<p>This example uses <code>scm_path</code> because the full path to
+clone the repository uses the <file>.git</file> extension. You do
+not need to use <code>scm_path</code> if Blip can correctly infer
+the full path from <code>scm_module</code>.</p>
+</note>
+</section>
+
+<section id="more">
+<title>Add more modules</title>
+
+<p>You can define more modules in the Blip release set. Add a module
+for the Blinq framework used by Blip:</p>
+
+<code><![CDATA[
+<blip:group
+  xmlns:blip="http://blip-monitor.com/xmlns/ddl/1.0/">
+  <set blip:id="blip">
+    <name>Blip</name>
+    <module blip:id="blip">
+      <scm_type>git</scm_type>
+      <scm_server>git://git.gitorious.org/blip/</scm_server>
+      <scm_module>blip</scm_module>
+      <scm_path>blip.git</scm_path>
+    </module>
+]]><e:hi><![CDATA[    <module blip:id="blinq">
+      <scm_type>git</scm_type>
+      <scm_server>git://git.gitorious.org/blip/</scm_server>
+      <scm_module>blinq</scm_module>
+      <scm_path>blinq.git</scm_path>
+    </module>]]></e:hi><![CDATA[
+  </set>
+</blip:group>]]></code>
+</section>
+
+<section id="defaults">
+<title>Use default properties</title>
+
+<p>If you create a lot of modules, many of them will share the same properties,
+or certain properties will be standard variations on other properties. You can
+create default values with the <code>blip:defaults</code> element.</p>
+
+<code><![CDATA[
+<blip:group
+  xmlns:blip="http://blip-monitor.com/xmlns/ddl/1.0/">
+  <set blip:id="blip">
+]]><e:hi><![CDATA[    <blip:defaults>
+      <module>
+        <scm_type>git</scm_type>
+        <scm_server>git://git.gitorious.org/blip/</scm_server>
+        <scm_module>%(blip:id)</scm_module>
+        <scm_path>%(blip:id).git</scm_path>
+      </module>
+    </blip:defaults>]]></e:hi><![CDATA[
+    <name>Blip</name>
+    <module blip:id="blip"/>
+    <module blip:id="blinq"/>
+  </set>
+</blip:group>]]></code>
+
+<p>The <code>scm_type</code> and <code>scm_server</code> properties are applied
+as-is to all the modules in the same set. The <code>scm_module</code> and
+<code>scm_path</code> properties are applied to each module with
+<code>%(blip:id)</code> replaced by the corresponding attribute value.</p>
+</section>
+
+</page>

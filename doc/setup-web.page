@@ -1,0 +1,59 @@
+<page xmlns="http://projectmallard.org/1.0/"
+      type="topic" id="setup-web">
+<info>
+  <link type="guide" xref="setup" group="web"/>
+
+  <revision date="2010-08-23" status="stub"/>
+</info>
+
+<title>Set up the web application</title>
+
+<p>After you have <link xref="setup-config#web">configured Blip for your local
+web directory</link>, you can set up the web application. Blip requires a CGI
+program as well as CSS, JavaScript, and image files to run. This files come
+with Blip, but they need to be copied to your web directory. Run the following
+command to copy the files:</p>
+
+<screen>blip-admin web</screen>
+
+<p>Some extensions use additional data files. This command will copy the files
+for all installed extensions as well. If you install additional extensions,
+run this command again to ensure that all web files are installed into your
+web directory.</p>
+
+<section id="apache">
+  <title>Apache notes</title>
+
+  <p>Blip installs a <file>.htaccess</file> file to handle its URLs using
+  Apache's RewriteEngine. You may copy this into your <file>httpd.conf</file>
+  file if you prefer.</p>
+
+  <p>There are some Apache settings that must be set correctly outside the
+  <file>.htaccess</file> file. Depending on the setup of your Apache server,
+  you may need to edit the <file>httpd.conf</file> file for the following:</p>
+
+  <list>
+    <item><p>Ensure the <code>Indexes</code> and <code>ExecCGI</code> options
+    are enabled inside the <code>Directory</code> section for your web
+    directory.</p></item>
+    <item><p>Ensure the <file>.htaccess</file> file can override the directory
+    index and rewrite engine for your web directory. The simplest way is to
+    allow all options to be overridden with the following command:</p>
+    <code>AllowOverride All</code></item>
+    <item><p>Ensure the <code>cgi-script</code> handler is enabled with the
+    following command:</p>
+    <code>AddHandler cgi-script .cgi</code></item>
+  </list>
+</section>
+
+<section id="selinux">
+  <title>SELinux notes</title>
+
+  <p>If SELinux is enabled on your system, you may not be able to run the
+  CGI program through the web server, even though you can run it from the
+  command line. You can disable SELinux with the following command:</p>
+
+  <screen>setenforce 0</screen>
+</section>
+
+</page>

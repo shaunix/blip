@@ -1,0 +1,67 @@
+<page xmlns="http://projectmallard.org/1.0/"
+      type="topic" id="setup-db">
+<info>
+  <link type="guide" xref="setup" group="db"/>
+
+  <revision date="2010-08-20" status="stub"/>
+</info>
+
+<title>Set up a database</title>
+
+<p>After you have <link xref="setup-config#db">configured Blip with your
+database information</link> and set up your database, you need to create
+the tables that Blip will use. Blip will automatically create all tables
+and indexes with the following command:</p>
+
+<screen>blip-admin db</screen>
+
+<p>Blip extensions can add additional database tables. After installing
+an extension that adds tables, you must run this command again for that
+extension to work.</p>
+
+<p>This assumes that you have correctly installed and set up a database.
+This document cannot provide a full manual on database administration;
+however, see below for basic instructions on setting up a MySQL database.</p>
+
+<section id="mysql">
+<title>MySQL setup</title>
+
+<p>This section provides basic instructions on how to set up a MySQL database
+for use with Blip. These are not exhaustive instructions, and certain details
+may vary depending on your local configuration. These instructions assume you
+have already installed MySQL. All of these steps should be performed as the
+root user or with a privilege-escalation tool like <sys>sudo</sys>.</p>
+
+<p>Before you can begin, you must start the MySQL server. On most systems,
+you can start MySQL with the following command:</p>
+
+<screen>/etc/init.d/mysqld start</screen>
+
+<p>Once the MySQL server is running, you need to create a database for Blip
+to use. Create a database named <sys>blip</sys>:</p>
+
+<screen>mysqladmin create blip</screen>
+
+<p>Now you need to create MySQL user for Blip and give that user appropriate
+permissions on the <sys>blip</sys> database. Run <cmd>mysql</cmd> to get an
+interactive MySQL session, then enter the following SQL commands:</p>
+
+<screen>
+CREATE USER blip@localhost IDENTIFIED BY '1234';
+GRANT ALL ON blip.* TO blip@localhost;
+</screen>
+
+<p>This creates a user named <sys>blip</sys> that can only access the database
+from the local machine using the password <sys>1234</sys>. You should use a
+different password. The user is allowed to perform any action on the
+<sys>blip</sys> database.</p>
+
+<note>
+<p>Your user needs permission to create and alter tables and indexes when you
+run the <cmd>blip-admin db</cmd> command. After running that command, you may
+restrict the user to just <sys>DELETE</sys>, <sys>INSERT</sys>, <sys>SELECT</sys>,
+and <sys>UPDATE</sys>.</p>
+</note>
+</section>
+
+</page>

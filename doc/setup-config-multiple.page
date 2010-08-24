@@ -1,0 +1,11 @@
+<page xmlns="http://projectmallard.org/1.0/"
+      type="topic" id="setup-config-multiple">
+<info>
+  <link type="guide" xref="setup" group="advanced"/>
+
+  <revision date="2010-08-20" status="stub"/>
+</info>
+
+<title>Configure multiple Blip sites</title>
+
+</page>

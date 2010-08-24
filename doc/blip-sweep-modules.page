@@ -1,0 +1,50 @@
+<page xmlns="http://projectmallard.org/1.0/"
+      type="topic" id="blip-sweep-modules">
+<info>
+  <link type="guide" xref="blip-sweep"/>
+
+  <revision date="2010-08-24" status="stub"/>
+</info>
+
+<title>Sweep modules</title>
+
+<p>Use the following command to make Blip scan the modules it
+tracks for information:</p>
+
+<screen>blip-sweep modules</screen>
+
+<p>By default, this reads the repository history and visits each tracked
+file. Extensions can register themselves to handle particular files; this
+will happen while this command is running.</p>
+
+<p>You can pass the following options after the <cmd>modules</cmd>
+subcommand:</p>
+
+<terms>
+  <item>
+    <title><cmd>--no-history</cmd></title>
+    <p>The repository history will not be checked during this run.</p>
+  </item>
+  <item>
+    <title><cmd>--no-timestamps</cmd></title>
+    <p>Any extensions which read files will ignore timestamps. During
+    normal operation, extensions set and check timestamps to prevent
+    them from needlessly reprocessing the same data.</p>
+  </item>
+  <item>
+    <title><cmd>--no-update</cmd></title>
+    <p>Blip will not update from the remote repository before processing.</p>
+  </item>
+</terms>
+
+<p>You can also pass an argument to the <cmd>modules</cmd> subcommand
+to limit it to a certain module or set of modules. The argument should
+match the module identifier. You can use the percent sign (<sys>%</sys>)
+anywhere in the identifier as a wildcard. The argument is used with the
+SQL <code>LIKE</code> verb.</p>
+
+<p>If the argument starts with <sys>/set/</sys>, Blip treats it as a set
+identifier, and will process all modules in any sets whose identifiers
+match the argument.</p>
+
+</page>
