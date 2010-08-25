@@ -33,7 +33,10 @@ import blip.scm
 import blip.sweep
 import blip.utils
 
-class ModulesResponder (blip.sweep.SweepResponder):
+import blip.plugins.queue.sweep
+
+class ModulesResponder (blip.sweep.SweepResponder,
+                        blip.plugins.queue.sweep.QueueHandler):
     command = 'modules'
     synopsis = 'update information about projects and module branches'
 
@@ -87,6 +90,24 @@ class ModulesResponder (blip.sweep.SweepResponder):
             else:
                 blip.db.commit ()
         return response
+
+    @classmethod
+    def process_queued (cls, ident, request):
+        if ident.startswith (u'/mod/'):
+            try:
+                mod = blip.db.Branch.select (ident=ident)
+                mod = mod[0]
+            except IndexError:
+                return
+            try:
+                scanner = ModuleScanner (request, mod)
+                scanner.update ()
+                blip.db.flush ()
+            except:
+                blip.db.rollback ()
+                raise
+            else:
+                blip.db.commit ()
 
 
 class ModuleFileScanner (blinq.ext.ExtensionPoint):
@@ -159,7 +180,7 @@ class ModuleScanner (object):
         self.set_default_child ()
 
         self.branch.updated = datetime.datetime.utcnow ()
-        blip.db.Queue.remove (self.branch.ident)
+        blip.db.Queue.pop (self.branch.ident)
 
     def check_history (self):
         since = blip.db.Revision.get_last_revision (branch=self.branch)

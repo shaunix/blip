@@ -26,7 +26,10 @@ import blip.graphs
 import blip.sweep
 import blip.utils
 
-class PeopleResponder (blip.sweep.SweepResponder):
+import blip.plugins.queue.sweep
+
+class PeopleResponder (blip.sweep.SweepResponder,
+                       blip.plugins.queue.sweep.QueueHandler):
     command = 'people'
     synopsis = 'update information about people and teams'
 
@@ -76,7 +79,7 @@ class PeopleResponder (blip.sweep.SweepResponder):
         PeopleResponder.update_commit_graphs (entity, request)
 
         entity.updated = datetime.datetime.utcnow ()
-        blip.db.Queue.remove (entity.ident)
+        blip.db.Queue.pop (entity.ident)
 
     @staticmethod
     def update_commit_graphs (entity, request):
@@ -162,6 +165,16 @@ class PeopleResponder (blip.sweep.SweepResponder):
                 of.data['weeknum'] = topweek
 
             i += 1
+
+    @classmethod
+    def process_queued (cls, ident, request):
+        if ident.startswith (u'/person/'):
+            try:
+                ent = blip.db.Entity.select (ident=ident)
+                ent = ent[0]
+            except IndexError:
+                return
+            cls.update_person (ent, request)
 
 # FIXME: move to new blogs plugin
 if False:

@@ -7,6 +7,7 @@ SUBDIRS = 		\
 	index		\
 	modules 	\
 	people		\
+	queue		\
 	sets		\
 	svn
 
