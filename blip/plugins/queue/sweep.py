@@ -85,28 +85,24 @@ class QueueResponder (blip.sweep.SweepResponder):
     def respond (cls, request):
         response = blip.sweep.SweepResponse (request)
         argv = request.get_tool_args ()
-        idents = []
         if len(argv) == 0:
-            idents = [obj.ident for obj in blip.db.Queue.select ()]
+            args = []
         else:
-            for arg in argv:
-                ident = blip.utils.utf8dec (arg)
-                idents += [obj.ident for obj in
-                           blip.db.Queue.select (blip.db.Queue.ident.like (ident))]
+            from storm.expr import Or
+            args = [Or (*[blip.db.Queue.ident.like (blip.utils.utf8dec (arg)) for arg in argv])]
 
         if request.get_tool_option ('queue_length'):
-            print len(idents)
+            print blip.db.Queue.select (*args).count ()
             return response
 
         if request.get_tool_option ('queue_list'):
-            for ident in idents:
-                print ident
+            for obj in blip.db.Queue.select (*args):
+                print obj.ident
             return response
 
         limit = request.get_tool_option ('queue_limit')
         if limit is not None:
             limit = int(limit)
-            idents = idents[:limit]
 
         timelimit = request.get_tool_option ('queue_time_limit')
         if timelimit is not None:
@@ -127,7 +123,14 @@ class QueueResponder (blip.sweep.SweepResponder):
         timestart = datetime.datetime.now()
 
         ident_i = 0
-        for ident in idents:
+        obj = blip.db.Queue.select (*args)
+        try:
+            obj = obj[0]
+        except IndexError:
+            obj = None
+
+        while obj is not None:
+            ident = obj.ident
             try:
                 blip.utils.log ('Poppping from queue: %s' % ident)
                 for cls in QueueHandler.get_extensions ():
@@ -138,10 +141,19 @@ class QueueResponder (blip.sweep.SweepResponder):
                 raise
             else:
                 blip.db.commit ()
+
             ident_i += 1
+            if limit is not None and ident_i >= limit:
+                break
             if (timelimit is not None and
                 (datetime.datetime.now() - timestart).seconds > timelimit):
                 break;
+
+            obj = blip.db.Queue.select (*args)
+            try:
+                obj = obj[0]
+            except IndexError:
+                obj = None
 
         diff = datetime.datetime.now () - timestart
         diff = datetime.timedelta (days=diff.days, seconds=diff.seconds)
