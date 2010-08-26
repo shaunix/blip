@@ -105,9 +105,8 @@ class PersonReponder (blip.web.RecordLocator, blip.web.PageResponder):
 
         # Blog
         bident = u'/blog' + request.record.ident
-        blog = blip.db.Forum.select (ident=bident)
-        try:
-            blog = blog[0]
+        blog = blip.db.Forum.select_one (ident=bident)
+        if blog is not None:
             box = blip.html.SidebarBox (blip.utils.gettext ('Blog'))
             page.add_sidebar_content (box)
             dl = blip.html.DefinitionList ()
@@ -117,8 +116,6 @@ class PersonReponder (blip.web.RecordLocator, blip.web.PageResponder):
                 dl.add_term (link)
                 if entry.datetime != None:
                     dl.add_entry (entry.datetime.strftime('%Y-%m-%d %T'))
-        except IndexError:
-            pass
 
         return response
 

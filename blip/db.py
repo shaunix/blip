@@ -293,6 +293,16 @@ class BlipModel (Storm):
         return store.find (cls, *args, **kw)
 
     @classmethod
+    def select_one (cls, *args, **kw):
+        store = get_store (kw.pop ('__blip_store__', cls.__blip_store__))
+        ret = store.find (cls, *args, **kw)
+        try:
+            ret = ret[0]
+            return ret
+        except IndexError:
+            return None
+
+    @classmethod
     def get_fields (cls):
         fields = {}
         for key, prop in inspect.getmembers (cls):

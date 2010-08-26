@@ -123,11 +123,7 @@ class QueueResponder (blip.sweep.SweepResponder):
         timestart = datetime.datetime.now()
 
         ident_i = 0
-        obj = blip.db.Queue.select (*args)
-        try:
-            obj = obj[0]
-        except IndexError:
-            obj = None
+        obj = blip.db.Queue.select_one (*args)
 
         while obj is not None:
             ident = obj.ident
@@ -149,11 +145,7 @@ class QueueResponder (blip.sweep.SweepResponder):
                 (datetime.datetime.now() - timestart).seconds > timelimit):
                 break;
 
-            obj = blip.db.Queue.select (*args)
-            try:
-                obj = obj[0]
-            except IndexError:
-                obj = None
+            obj = blip.db.Queue.select_one (*args)
 
         diff = datetime.datetime.now () - timestart
         diff = datetime.timedelta (days=diff.days, seconds=diff.seconds)

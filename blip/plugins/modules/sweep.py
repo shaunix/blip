@@ -94,10 +94,8 @@ class ModulesResponder (blip.sweep.SweepResponder,
     @classmethod
     def process_queued (cls, ident, request):
         if ident.startswith (u'/mod/'):
-            try:
-                mod = blip.db.Branch.select (ident=ident)
-                mod = mod[0]
-            except IndexError:
+            mod = blip.db.Branch.select_one (ident=ident)
+            if mod is None:
                 return
             try:
                 scanner = ModuleScanner (request, mod)
@@ -258,11 +256,7 @@ class ModuleScanner (object):
                                                       branch=self.branch)
             if stillrev:
                 fname = u'commits-' + str(i) + '.png'
-                of = blip.db.OutputFile.select (type=u'graphs', ident=self.branch.ident, filename=fname)
-                try:
-                    of = of[0]
-                except IndexError:
-                    of = None
+                of = blip.db.OutputFile.select_one (type=u'graphs', ident=self.branch.ident, filename=fname)
                 if i == 0 and of is not None:
                     if self.request.get_tool_option ('timestamps', True):
                         revcount = of.data.get ('revcount', 0)

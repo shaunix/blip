@@ -70,11 +70,7 @@ class PeopleResponder (blip.sweep.SweepResponder,
 
     @staticmethod
     def update_person (entity, request):
-        of = blip.db.OutputFile.select (type=u'graphs', ident=entity.ident, filename=u'commits.png')
-        try:
-            of = of[0]
-        except IndexError:
-            of = None
+        of = blip.db.OutputFile.select_one (type=u'graphs', ident=entity.ident, filename=u'commits.png')
 
         PeopleResponder.update_commit_graphs (entity, request)
 
@@ -103,11 +99,7 @@ class PeopleResponder (blip.sweep.SweepResponder,
                                                       person=entity)
             if stillrev:
                 fname = u'commits-' + str(i) + '.png'
-                of = blip.db.OutputFile.select (type=u'graphs', ident=entity.ident, filename=fname)
-                try:
-                    of = of[0]
-                except IndexError:
-                    of = None
+                of = blip.db.OutputFile.select_one (type=u'graphs', ident=entity.ident, filename=fname)
                 if i == 0 and of is not None:
                     if request.get_tool_option ('timestamps', True):
                         revcount = of.data.get ('revcount', 0)
@@ -169,12 +161,9 @@ class PeopleResponder (blip.sweep.SweepResponder,
     @classmethod
     def process_queued (cls, ident, request):
         if ident.startswith (u'/person/'):
-            try:
-                ent = blip.db.Entity.select (ident=ident)
-                ent = ent[0]
-            except IndexError:
-                return
-            cls.update_person (ent, request)
+            ent = blip.db.Entity.select_one (ident=ident)
+            if ent is not None:
+                cls.update_person (ent, request)
 
 # FIXME: move to new blogs plugin
 if False:

@@ -109,16 +109,13 @@ class CommitsTab (blip.html.TabProvider):
 
         response = blip.web.WebResponse (request)
         tab = blip.html.Div ()
-        of = blip.db.OutputFile.select (type=u'graphs',
-                                        ident=request.record.ident,
-                                        filename=u'commits-0.png')
-        try:
-            of = of[0] 
+        of = blip.db.OutputFile.select_one (type=u'graphs',
+                                            ident=request.record.ident,
+                                            filename=u'commits-0.png')
+        if of is not None:
             graph = blip.html.Graph.activity_graph (of, 'commits',
                                                     blip.utils.gettext ('%i commits'))
             tab.add_content (graph)
-        except IndexError:
-            pass
 
         if isinstance (request.record, blip.db.Branch):
             cnt = blip.db.RevisionBranch.select (branch=request.record).count ()

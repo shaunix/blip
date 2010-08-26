@@ -23,7 +23,6 @@ import urllib
 
 import RDF
 
-import blinq.config
 import blip.db
 import blip.utils
 import blip.plugins.modules.sweep
