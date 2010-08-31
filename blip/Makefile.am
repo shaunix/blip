@@ -1,4 +1,4 @@
-SUBDIRS = plugins
+SUBDIRS = parsers plugins
 
 blipdir=${pkgpythondir}
 
