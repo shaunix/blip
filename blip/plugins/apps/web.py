@@ -20,11 +20,141 @@
 
 """Output information about applications"""
 
+import blinq.utils
+
 import blip.db
 import blip.html
 import blip.utils
 
 import blip.plugins.modules.web
+
+class ApplicationResponder (blip.web.RecordLocator, blip.web.PageResponder):
+    @classmethod
+    def locate_record (cls, request):
+        if len(request.path) not in (4, 5) or request.path[0] != 'app':
+            return False
+        ident = u'/' + u'/'.join(request.path)
+        if len(request.path) == 4:
+            apps = list(blip.db.Branch.select (project_ident=ident))
+            if len(apps) == 0:
+                exception = blip.web.WebException (
+                    blip.utils.gettext ('Application Not Found'),
+                    blip.utils.gettext ('Blip could not find the application %s in the module %s on %s')
+                    % (request.path[3], request.path[2], request.path[1]))
+                request.set_data ('exception', exception)
+                return True
+            app = [app for app in apps if app.is_default]
+            if len(app) == 0:
+                exception = blip.web.WebException (
+                    blip.utils.gettext ('Default Branch Not Found'),
+                    blip.utils.gettext ('Blip could not find the default branch for the application %s in the module %s on %s')
+                    % (request.path[3], request.path[2], request.path[1]))
+                request.set_data ('exception', exception)
+                return True
+            request.record = app[0]
+        else:
+            app = blip.db.Branch.get (ident)
+            if app is None:
+                exception = blip.web.WebException (
+                    blip.utils.gettext ('Application Not Found'),
+                    blip.utils.gettext ('Blip could not find the application %s in the module %s on %s')
+                    % (request.path[3], request.path[2], request.path[1]))
+                request.set_data ('exception', exception)
+                return True
+            request.record = app
+            apps = list(blip.db.Branch.select (project_ident=app.project_ident))
+        request.set_data ('branches', apps)
+        return True
+
+    @classmethod
+    def respond (cls, request, **kw):
+        if len(request.path) not in (4, 5) or request.path[0] != 'app':
+            return None
+
+        response = blip.web.WebResponse (request)
+
+        exception = request.get_data ('exception')
+        if exception is not None:
+            page = blip.html.PageNotFound (exception.desc, title=exception.title)
+            response.payload = page
+            return response
+
+        page = blip.html.Page (request=request)
+        response.payload = page
+
+        branches = request.get_data ('branches', [])
+        if len(branches) > 1:
+            for branch in blinq.utils.attrsorted (branches, '-is_default', 'scm_branch'):
+                if branch.ident != request.record.ident:
+                    page.add_sublink (branch.blip_url, branch.scm_branch)
+                else:
+                    page.add_sublink (None, branch.scm_branch)
+
+        if request.record.data.has_key ('screenshot'):
+            page.add_screenshot (request.record.data['screenshot'])
+
+        return response
+
+class OverviewTab (blip.html.TabProvider):
+    @classmethod
+    def add_tabs (cls, page, request):
+        if len(request.path) < 1 or request.path[0] != 'app':
+            return None
+        page.add_tab ('overview',
+                      blip.utils.gettext ('Overview'),
+                      blip.html.TabProvider.FIRST_TAB),
+        page.add_to_tab ('overview', cls.get_tab (request))
+
+    @classmethod
+    def get_tab (cls, request):
+        tab = blip.html.PaddingBox ()
+
+        for err in blip.db.Error.select (ident=request.record.ident):
+            tab.add_content (blip.html.AdmonBox (blip.html.AdmonBox.error, err.message))
+
+        facts = blip.html.FactsTable ()
+        tab.add_content (facts)
+
+        facts.add_fact (blip.utils.gettext ('Name'), request.record.title)
+        facts.add_fact_divider ()
+
+        if request.record.desc != '':
+            facts.add_fact (blip.utils.gettext ('Description'),
+                            request.record.desc)
+            facts.add_fact_divider ()
+
+        rels = blip.db.SetModule.get_related (pred=request.record.parent)
+        if len(rels) > 0:
+            sets = blinq.utils.attrsorted ([rel.subj for rel in rels], 'title')
+            span = blip.html.Span (*[blip.html.Link(rset) for rset in sets])
+            span.set_divider (blip.html.BULLET)
+            facts.add_fact (blip.utils.gettext ('Release Sets'), span)
+            facts.add_fact_divider ()
+
+        facts.add_fact (blip.utils.gettext ('Module'), blip.html.Link (request.record.parent))
+
+        checkout = blip.scm.Repository.from_record (request.record, checkout=False, update=False)
+        facts.add_fact (blip.utils.gettext ('Location'), checkout.location)
+
+        if request.record.mod_datetime is not None:
+            span = blip.html.Span(divider=blip.html.SPACE)
+            # FIXME: i18n, word order, but we want to link person
+            span.add_content (request.record.mod_datetime.strftime('%Y-%m-%d %T'))
+            page.add_fact (pulse.utils.gettext ('Last Modified'), span)
+
+        return tab
+
+    @classmethod
+    def respond (cls, request):
+        if len(request.path) < 1 or request.path[0] != 'app':
+            return None
+        if not blip.html.TabProvider.match_tab (request, 'overview'):
+            return None
+
+        response = blip.web.WebResponse (request)
+
+        response.payload = cls.get_tab (request)
+        return response
 
 class ApplicationsTab (blip.html.TabProvider):
     @classmethod
@@ -80,115 +210,3 @@ class ApplicationsTab (blip.html.TabProvider):
 
         response.payload = tab
         return response
-
-
-def main (response, path, query):
-    """Output information about applications"""
-    ident = u'/' + u'/'.join(path)
-    if len(path) == 4:
-        branches = list(pulse.db.Branch.select (branchable=ident))
-        if len(branches) == 0:
-            page = pulse.html.PageNotFound (
-                pulse.utils.gettext ('Pulse could not find the application %s')
-                % path[3],
-                title=pulse.utils.gettext ('Application Not Found'))
-            response.set_contents (page)
-            return
-
-        app = [branch for branch in branches if branch.is_default]
-        if len(app) == 0:
-            page = pulse.html.PageNotFound (
-                pulse.utils.gettext ('Pulse could not find a default branch'
-                                     ' for the application %s')
-                % path[3],
-                title=pulse.utils.gettext ('Default Branch Not Found'))
-            response.set_contents (page)
-            return
-        app = app[0]
-
-    elif len(path) == 5:
-        app = pulse.db.Branch.get (ident)
-        if app == None:
-            page = pulse.html.PageNotFound (
-                (pulse.utils.gettext ('Pulse could not find the branch %s'
-                                      ' of the application %s')
-                 % (path[4], path[3])),
-                title=pulse.utils.gettext ('Application Not Found'))
-            response.set_contents (page)
-            return
-    else:
-        # FIXME: redirect to /set or something
-        pass
-
-    return output_app (response, app, path=path, query=query)
-
-
-def output_app (response, app, **kw):
-    """Output information about an application"""
-    page = pulse.html.Page (app)
-    response.set_contents (page)
-    checkout = pulse.scm.Checkout.from_record (app, checkout=False, update=False)
-
-    branches = pulse.utils.attrsorted (list(pulse.db.Branch.select (branchable=app.branchable)),
-                                       '-is_default', 'scm_branch')
-    if len(branches) > 1:
-        for branch in branches:
-            if branch.ident != app.ident:
-                page.add_sublink (branch.pulse_url, branch.ident.split('/')[-1])
-            else:
-                page.add_sublink (None, branch.ident.split('/')[-1])
-
-    if app.data.has_key ('screenshot'):
-        page.add_screenshot (app.data['screenshot'])
-
-    sep = False
-    try:
-        desc = app.localized_desc
-        page.add_fact (pulse.utils.gettext ('Description'), desc)
-        sep = True
-    except:
-        pass
-
-    rels = pulse.db.SetModule.get_related (pred=app.parent)
-    if len(rels) > 0:
-        sets = pulse.utils.attrsorted ([rel.subj for rel in rels], 'title')
-        span = [pulse.html.Link(obj.pulse_url + '#apps', obj.title) for obj in sets]
-        span = pulse.html.Span (*span)
-        span.set_divider (pulse.html.BULLET)
-        page.add_fact (pulse.utils.gettext ('Release Sets'), span)
-        sep = True
-
-    page.add_fact (pulse.utils.gettext ('Module'), pulse.html.Link (app.parent))
-
-    if sep:
-        page.add_fact_divider ()
-    
-    page.add_fact (pulse.utils.gettext ('Location'),
-                   checkout.get_location (app.scm_dir, app.scm_file))
-
-    if app.mod_datetime != None:
-        span = pulse.html.Span(divider=pulse.html.SPACE)
-        # FIXME: i18n, word order, but we want to link person
-        span.add_content (app.mod_datetime.strftime('%Y-%m-%d %T'))
-        if app.mod_person != None:
-            span.add_content (' by ')
-            span.add_content (pulse.html.Link (app.mod_person))
-        page.add_fact (pulse.utils.gettext ('Last Modified'), span)
-
-    # Developers
-    box = pulse.pages.mod.get_developers_box (app.parent)
-    page.add_sidebar_content (box)
-
-    # Documentation
-    rels = pulse.db.Documentation.get_related (subj=app)
-    box = pulse.html.InfoBox (pulse.utils.gettext ('Documentation'))
-    page.add_content (box)
-    if len(rels) > 0:
-        docs = pulse.utils.attrsorted ([rel.pred for rel in rels], 'title')
-        for doc in docs:
-            lbox = box.add_link_box (doc)
-            res = doc.select_children (u'Translation')
-            lbox.add_fact (None, pulse.utils.gettext ('%i translations') % res.count())
-    else:
-        box.add_content (pulse.html.AdmonBox (pulse.html.AdmonBox.warning,
-                                              pulse.utils.gettext ('No documentation') ))

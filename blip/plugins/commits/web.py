@@ -88,9 +88,10 @@ class CommitsTab (blip.html.TabProvider):
     def add_tabs (cls, page, request):
         if request.record is None:
             return
-        if not (isinstance (request.record, blip.db.Branch) or
+        if not ((isinstance (request.record, blip.db.Branch) and
+                 request.record.type == u'Module') or
                 (isinstance (request.record, blip.db.Entity) and
-                 request.record.type == u'Person')):
+                 request.record.type == u'Person') ):
             return
         page.add_tab ('commits',
                       blip.utils.gettext ('Commits'),
