@@ -103,7 +103,7 @@ class CommitsTab (blip.html.TabProvider):
         if not (isinstance (request.record, blip.db.Branch) or
                 (isinstance (request.record, blip.db.Entity) and
                  request.record.type == u'Person')):
-            return
+            return None
         if not blip.html.TabProvider.match_tab (request, 'commits'):
             return None
 

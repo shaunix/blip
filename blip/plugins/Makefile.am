@@ -1,5 +1,6 @@
 SUBDIRS = 		\
 	accounts	\
+	apps		\
 	commits		\
 	cvs		\
 	doap		\

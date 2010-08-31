@@ -20,13 +20,67 @@
 
 """Output information about applications"""
 
-import pulse.config
-import pulse.db
-import pulse.html
-import pulse.scm
-import pulse.utils
+import blip.db
+import blip.html
+import blip.utils
 
-import pulse.pages.mod
+import blip.plugins.modules.web
+
+class ApplicationsTab (blip.html.TabProvider):
+    @classmethod
+    def add_tabs (cls, page, request):
+        if len(request.path) < 1:
+            return None
+        if request.record is None:
+            return None
+        if request.path[0] == 'mod':
+            apps = blip.db.Branch.select (type=u'Application',
+                                          parent=request.record)
+        elif request.path[0] == 'set':
+            apps = blip.db.Branch.select (type=u'Application',
+                                          parent_in_set=request.record)
+        else:
+            return None
+        cnt = apps.count ()
+        if cnt > 0:
+            page.add_tab ('apps',
+                          blip.utils.gettext ('Applications (%i)') % cnt,
+                          blip.html.TabProvider.CORE_TAB)
+
+    @classmethod
+    def respond (cls, request):
+        if request.record is None:
+            return None
+        if not blip.html.TabProvider.match_tab (request, 'apps'):
+            return None
+        if request.record.type == u'Module':
+            apps = blip.db.Branch.select (type=u'Application',
+                                          parent=request.record)
+        elif request.record.type == u'Set':
+            apps = blip.db.Branch.select (type=u'Application',
+                                          parent_in_set=request.record)
+        else:
+            return None
+
+        response = blip.web.WebResponse (request)
+        tab = blip.html.ContainerBox ()
+        tab.set_columns (2)
+        if request.record.type == u'Set':
+            tab.add_sort_link ('title', blip.utils.gettext ('title'), 1)
+            tab.add_sort_link ('module', blip.utils.gettext ('module'))
+
+        for app in apps.order_by ('name'):
+            lbox = tab.add_link_box (app)
+            if request.record.type == u'Set':
+                lbox.add_fact (blip.utils.gettext ('module'),
+                               blip.html.Span(blip.html.Link (app.parent.blip_url,
+                                                              app.parent.branch_module),
+                                              html_class='module'))
+                               
+
+        response.payload = tab
+        return response
+
 
 def main (response, path, query):
     """Output information about applications"""
@@ -98,7 +152,7 @@ def output_app (response, app, **kw):
     rels = pulse.db.SetModule.get_related (pred=app.parent)
     if len(rels) > 0:
         sets = pulse.utils.attrsorted ([rel.subj for rel in rels], 'title')
-        span = [pulse.html.Link(obj.pulse_url + '#programs', obj.title) for obj in sets]
+        span = [pulse.html.Link(obj.pulse_url + '#apps', obj.title) for obj in sets]
         span = pulse.html.Span (*span)
         span.set_divider (pulse.html.BULLET)
         page.add_fact (pulse.utils.gettext ('Release Sets'), span)

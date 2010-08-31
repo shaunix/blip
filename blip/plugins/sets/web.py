@@ -167,8 +167,8 @@ class SetResponder (blip.web.RecordLocator, blip.web.PageResponder):
             parent_in_set=record)
         cnt = objs.count()
         if cnt > 0:
-            bl.add_link (record.blip_url + '#programs',
-                         blip.utils.gettext ('%i programs') % cnt)
+            bl.add_link (record.blip_url + '#apps',
+                         blip.utils.gettext ('%i applications') % cnt)
 
         # Libraries
         cnt = blip.db.Branch.select (type=u'Library', parent_in_set=record)
