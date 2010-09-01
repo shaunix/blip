@@ -230,6 +230,7 @@ class TranslationsTab (blip.html.TabProvider):
             # FIXME: i18n reordering
             span.add_content (blip.utils.gettext ('(%i messages)') % of.statistic)
             span.add_content (blip.utils.gettext ('on %s') % of.datetime.strftime('%Y-%m-%d %T'))
+            pad.add_content (span)
 
         translations = blip.db.Branch.select_with_statistic ([u'Messages', u'ImageMessages'],
                                                              type=u'Translation',
