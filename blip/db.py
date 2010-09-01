@@ -636,21 +636,24 @@ class Branch (BlipRecord):
         store = get_store (kw.pop ('__blip_store__', cls.__blip_store__))
         if isinstance (stattype, basestring):
             stattype = [stattype]
+        clss = [cls]
         args = [arg for arg in args]
         for key in kw.keys ():
             args.append (getattr (cls, key) == kw[key])
-        tables = [cls]
+        useargs = []
         for stype in stattype:
             stat = ClassAlias (Statistic)
-            tables.append (stat)
-            args.append (stat.branch_ident == cls.ident)
-            args.append (stat.type == stype)
-            args.append (stat.daynum == Select (Max (stat.daynum),
-                                                where=And (stat.branch_ident == cls.ident,
-                                                           stat.type == stype),
-                                                tables=stat))
-        # FIXME: left join
-        sel = store.find (tuple(tables), *args)
+            clss.append (stat)
+            useargs.append (LeftJoin(stat, And (
+                        cls.ident == stat.branch_ident,
+                        stat.type == stype,
+                        stat.daynum == Select (Max (stat.daynum),
+                                               where=And (stat.branch_ident == cls.ident,
+                                                          stat.type == stype),
+                                               tables=stat)
+                        )))
+        using = store.using (cls, *useargs)
+        sel = using.find (tuple(clss), *args)
         return sel
 
     def select_children (self, type):
