@@ -4,6 +4,7 @@ SUBDIRS = 		\
 	commits		\
 	cvs		\
 	doap		\
+	docs		\
 	git		\
 	index		\
 	modules 	\
