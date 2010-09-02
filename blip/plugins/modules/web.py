@@ -122,13 +122,11 @@ class OverviewTab (blip.html.TabProvider):
         facts = blip.html.FactsTable()
         tab.add_content (facts)
 
-        facts.add_fact (blip.utils.gettext ('Name'), request.record.title)
-        facts.add_fact_divider ()
-
+        facts.add_fact (blip.utils.gettext ('Module Name'), request.record.title)
         if request.record.desc != '':
             facts.add_fact (blip.utils.gettext ('Description'),
                             request.record.desc)
-            facts.add_fact_divider ()
+        facts.add_fact_divider ()
 
         rels = blip.db.SetModule.get_related (pred=request.record)
         if len(rels) > 0:
@@ -139,17 +137,17 @@ class OverviewTab (blip.html.TabProvider):
             facts.add_fact_divider ()
 
         checkout = blip.scm.Repository.from_record (request.record, checkout=False, update=False)
+        facts.add_fact (blip.utils.gettext ('Module'), request.record.scm_module)
+        facts.add_fact (blip.utils.gettext ('Branch'), request.record.scm_branch)
         facts.add_fact (blip.utils.gettext ('Location'), checkout.location)
         facts.add_fact_divider ()
 
         if request.record.mod_datetime is not None:
-            span = blip.html.Span(divider=blip.html.SPACE)
-            # FIXME: i18n, word order, but we want to link person
-            span.add_content (request.record.mod_datetime.strftime('%Y-%m-%d %T'))
+            div = blip.html.Div ()
             if request.record.mod_person_ident is not None:
-                span.add_content (' by ')
-                span.add_content (blip.html.Link (request.record.mod_person))
-            facts.add_fact (blip.utils.gettext ('Last Modified'), span)
+                div.add_content (blip.html.Div (blip.html.Link (request.record.mod_person)))
+            div.add_content (blip.html.Div (request.record.mod_datetime.strftime('%Y-%m-%d %T')))
+            facts.add_fact (blip.utils.gettext ('Modified'), div)
 
         if request.record.data.has_key ('tarname'):
             facts.add_fact_divider ()
@@ -160,7 +158,17 @@ class OverviewTab (blip.html.TabProvider):
             facts.add_fact (blip.utils.gettext ('Version'), request.record.data['tarversion'])
 
         facts.add_fact_divider ()
-        facts.add_fact (blip.utils.gettext ('Score'), str(request.record.project.score))
+        span = blip.html.Span (divider=blip.html.SPACE)
+        span.add_content (str(request.record.project.score))
+        lt = blip.db.Project.select (blip.db.Project.type == u'Module',
+                                     blip.db.Project.score != 0,
+                                     blip.db.Project.score <= request.record.project.score)
+        lt = lt.count()
+        gt = blip.db.Project.select (blip.db.Project.type == u'Module',
+                                     blip.db.Project.score >= request.record.project.score)
+        gt = gt.count()
+        span.add_content ('(%.2f%%)' % ((100.0 * lt) / (lt + gt)))
+        facts.add_fact (blip.utils.gettext ('Score'), span)
 
         if request.record.bug_database is not None:
             facts.add_fact_divider ()

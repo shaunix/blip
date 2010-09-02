@@ -231,7 +231,7 @@ class ModuleScanner (object):
 
         blip.db.Revision.flush_file_cache ()
         revision = blip.db.Revision.get_last_revision (branch=self.branch)
-        if revision != None:
+        if revision is not None:
             self.branch.mod_datetime = revision.datetime
             self.branch.mod_person = revision.person
 

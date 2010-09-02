@@ -600,7 +600,7 @@ class Page (HtmlObject, ContentComponent, SublinksComponent, FactsComponent):
         if len(self._tabs) > 0:
             res.write('<ul id="tabs">')
             for tabgroup in sorted (self._tabs.keys()):
-                for tabid, title in self._tabs[tabgroup]:
+                for tabid, title in blinq.utils.attrsorted (self._tabs[tabgroup], 1):
                     title = self.escape(title).replace(' ', '&nbsp;')
                     res.write('<li class="tab" id="tab-%s">' % self.escape(tabid))
                     res.write(('<a href="javascript:tab(\'%s\')"><div>' + title + '</div></a></li>')

@@ -116,13 +116,11 @@ class OverviewTab (blip.html.TabProvider):
         facts = blip.html.FactsTable ()
         tab.add_content (facts)
 
-        facts.add_fact (blip.utils.gettext ('Name'), request.record.title)
-        facts.add_fact_divider ()
-
+        facts.add_fact (blip.utils.gettext ('Document'), request.record.title)
         if request.record.desc != '':
             facts.add_fact (blip.utils.gettext ('Description'),
                             request.record.desc)
-            facts.add_fact_divider ()
+        facts.add_fact_divider ()
 
         rels = blip.db.SetModule.get_related (pred=request.record.parent)
         if len(rels) > 0:
@@ -134,16 +132,31 @@ class OverviewTab (blip.html.TabProvider):
             facts.add_fact (blip.utils.gettext ('Release Sets'), span)
             facts.add_fact_divider ()
 
-        facts.add_fact (blip.utils.gettext ('Module'), blip.html.Link (request.record.parent))
-
         checkout = blip.scm.Repository.from_record (request.record, checkout=False, update=False)
+        facts.add_fact (blip.utils.gettext ('Module'),
+                        blip.html.Link (request.record.parent.blip_url,
+                                        request.record.scm_module))
+        facts.add_fact (blip.utils.gettext ('Branch'), request.record.scm_branch)
         facts.add_fact (blip.utils.gettext ('Location'), checkout.location)
+        if request.record.scm_dir is not None:
+            if request.record.scm_file is not None:
+                facts.add_fact (blip.utils.gettext ('File'),
+                                os.path.join (request.record.scm_dir, request.record.scm_file))
+            else:
+                facts.add_fact (blip.utils.gettext ('Directory'), request.record.scm_dir)
 
         if request.record.mod_datetime is not None:
-            span = blip.html.Span(divider=blip.html.SPACE)
-            # FIXME: i18n, word order, but we want to link person
-            span.add_content (request.record.mod_datetime.strftime('%Y-%m-%d %T'))
-            page.add_fact (pulse.utils.gettext ('Last Modified'), span)
+            facts.add_fact_divider ()
+            div = blip.html.Div ()
+            if request.record.mod_person_ident is not None:
+                div.add_content (blip.html.Div (blip.html.Link (request.record.mod_person)))
+            div.add_content (blip.html.Div (request.record.mod_datetime.strftime('%Y-%m-%d %T')))
+            facts.add_fact (blip.utils.gettext ('Modified'), div)
+
+        if request.record.updated is not None:
+            facts.add_fact_divider ()
+            facts.add_fact (blip.utils.gettext ('Last Updated'),
+                            request.record.updated.strftime('%Y-%m-%d %T'))
 
         return tab
 
@@ -191,6 +204,44 @@ class PeopleTab (blip.html.TabProvider):
             for badge in ('maintainer', 'author', 'editor', 'publisher'):
                 if getattr (rel, badge) == True:
                     lbox.add_badge (badge)
+
+        response.payload = tab
+        return response
+
+class FilesTab (blip.html.TabProvider):
+    @classmethod
+    def add_tabs (cls, page, request):
+        if len(request.path) < 1 or request.path[0] != 'doc':
+            return None
+        if not (isinstance (request.record, blip.db.Branch) and
+                request.record.type == u'Document'):
+            return None
+        cnt = len (request.record.data.get ('scm_files', []))
+        if cnt > 0:
+            page.add_tab ('files',
+                          blip.utils.gettext ('Files (%i)') % cnt,
+                          blip.html.TabProvider.CORE_TAB)
+
+    @classmethod
+    def respond (cls, request):
+        if len(request.path) < 1 or request.path[0] != 'doc':
+            return None
+        if not blip.html.TabProvider.match_tab (request, 'files'):
+            return None
+
+        response = blip.web.WebResponse (request)
+
+        tab = blip.html.ContainerBox ()
+
+        terms = blip.html.DefinitionList ()
+        tab.add_content (terms)
+        for filename in request.record.data.get ('scm_files', []):
+            terms.add_term (filename)
+            rev = blip.db.Revision.get_last_revision (branch=request.record.parent,
+                                                      files=[os.path.join (request.record.scm_dir,
+                                                                           filename) ])
+            if rev is not None:
+                terms.add_entry (rev.datetime.strftime ('%Y-%m-%d %T'))
 
         response.payload = tab
         return response

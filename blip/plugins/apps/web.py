@@ -115,13 +115,11 @@ class OverviewTab (blip.html.TabProvider):
         facts = blip.html.FactsTable ()
         tab.add_content (facts)
 
-        facts.add_fact (blip.utils.gettext ('Name'), request.record.title)
-        facts.add_fact_divider ()
-
+        facts.add_fact (blip.utils.gettext ('Application'), request.record.title)
         if request.record.desc != '':
             facts.add_fact (blip.utils.gettext ('Description'),
                             request.record.desc)
-            facts.add_fact_divider ()
+        facts.add_fact_divider ()
 
         rels = blip.db.SetModule.get_related (pred=request.record.parent)
         if len(rels) > 0:
@@ -131,9 +129,11 @@ class OverviewTab (blip.html.TabProvider):
             facts.add_fact (blip.utils.gettext ('Release Sets'), span)
             facts.add_fact_divider ()
 
-        facts.add_fact (blip.utils.gettext ('Module'), blip.html.Link (request.record.parent))
-
         checkout = blip.scm.Repository.from_record (request.record, checkout=False, update=False)
+        facts.add_fact (blip.utils.gettext ('Module'),
+                        blip.html.Link (request.record.parent.blip_url,
+                                        request.record.scm_module))
+        facts.add_fact (blip.utils.gettext ('Branch'), request.record.scm_branch)
         facts.add_fact (blip.utils.gettext ('Location'), checkout.location)
 
         if request.record.mod_datetime is not None:
