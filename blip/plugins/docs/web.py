@@ -116,11 +116,11 @@ class OverviewTab (blip.html.TabProvider):
         facts = blip.html.FactsTable ()
         tab.add_content (facts)
 
+        facts.start_fact_group ()
         facts.add_fact (blip.utils.gettext ('Document'), request.record.title)
         if request.record.desc != '':
             facts.add_fact (blip.utils.gettext ('Description'),
                             request.record.desc)
-        facts.add_fact_divider ()
 
         rels = blip.db.SetModule.get_related (pred=request.record.parent)
         if len(rels) > 0:
@@ -129,9 +129,10 @@ class OverviewTab (blip.html.TabProvider):
                                                     rset.title)
                                      for rset in sets])
             span.set_divider (blip.html.BULLET)
+            facts.start_fact_group ()
             facts.add_fact (blip.utils.gettext ('Release Sets'), span)
-            facts.add_fact_divider ()
 
+        facts.start_fact_group ()
         checkout = blip.scm.Repository.from_record (request.record, checkout=False, update=False)
         facts.add_fact (blip.utils.gettext ('Module'),
                         blip.html.Link (request.record.parent.blip_url,
@@ -146,15 +147,18 @@ class OverviewTab (blip.html.TabProvider):
                 facts.add_fact (blip.utils.gettext ('Directory'), request.record.scm_dir)
 
         if request.record.mod_datetime is not None:
-            facts.add_fact_divider ()
-            div = blip.html.Div ()
+            facts.start_fact_group ()
             if request.record.mod_person_ident is not None:
-                div.add_content (blip.html.Div (blip.html.Link (request.record.mod_person)))
-            div.add_content (blip.html.Div (request.record.mod_datetime.strftime('%Y-%m-%d %T')))
-            facts.add_fact (blip.utils.gettext ('Modified'), div)
+                facts.add_fact (blip.utils.gettext ('Modified'),
+                                blip.html.Link (request.record.mod_person))
+                facts.add_fact ('',
+                                request.record.mod_datetime.strftime('%Y-%m-%d %T'))
+            else:
+                facts.add_fact (blip.utils.gettext ('Modified'),
+                                request.record.mod_datetime.strftime('%Y-%m-%d %T'))
 
         if request.record.updated is not None:
-            facts.add_fact_divider ()
+            facts.start_fact_group ()
             facts.add_fact (blip.utils.gettext ('Last Updated'),
                             request.record.updated.strftime('%Y-%m-%d %T'))
 
@@ -279,7 +283,8 @@ class TranslationsTab (blip.html.TabProvider):
                                               blip.utils.gettext ('POT file'),
                                               icon='download'))
             # FIXME: i18n reordering
-            span.add_content (blip.utils.gettext ('(%i messages)') % of.statistic)
+            if of.statistic is not None:
+                span.add_content (blip.utils.gettext ('(%i messages)') % of.statistic)
             span.add_content (blip.utils.gettext ('on %s') % of.datetime.strftime('%Y-%m-%d %T'))
             pad.add_content (span)
 

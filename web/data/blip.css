@@ -201,15 +201,17 @@ pre {
 /******************************************************************************/
 /** Forms **/
 
-input { border: solid 1px #555753; }
+form td { vertical-align: middle; }
+input {
+  border: solid 1px #555753;
+  margin: 0.2em;
+}
 input.text {
   padding: 0 0.2em 0 0.2em;
   width: 20em;
 }
 input.submit { background-color: #eeeeec; }
-input.inputactive {
-  background-color: #fcf197;
-}
+input:focus { background-color: #fcf197; }
 
 
 /******************************************************************************/
@@ -620,7 +622,9 @@ dl.facts dd {
 }
 table.facts {
 }
-tr.fact-sep td { padding-bottom: 12px; }
+tbody.facts + tbody.facts tr:first-child td {
+  padding-top: 12px;
+}
 td.fact-key { margin: 0; padding: 0.1em 1em 0.1em 0; color: #555753;
 }
 td.fact-val { margin: 0; padding: 0.1em 1em 0.1em 0; }

@@ -115,20 +115,23 @@ class OverviewTab (blip.html.TabProvider):
         facts = blip.html.FactsTable ()
         tab.add_content (facts)
 
+        facts.start_fact_group ()
         facts.add_fact (blip.utils.gettext ('Application'), request.record.title)
         if request.record.desc != '':
             facts.add_fact (blip.utils.gettext ('Description'),
                             request.record.desc)
-        facts.add_fact_divider ()
 
         rels = blip.db.SetModule.get_related (pred=request.record.parent)
         if len(rels) > 0:
             sets = blinq.utils.attrsorted ([rel.subj for rel in rels], 'title')
-            span = blip.html.Span (*[blip.html.Link(rset) for rset in sets])
+            span = blip.html.Span (*[blip.html.Link(rset.blip_url + '#apps',
+                                                    rset.title)
+                                     for rset in sets])
             span.set_divider (blip.html.BULLET)
+            facts.start_fact_group ()
             facts.add_fact (blip.utils.gettext ('Release Sets'), span)
-            facts.add_fact_divider ()
 
+        facts.start_fact_group ()
         checkout = blip.scm.Repository.from_record (request.record, checkout=False, update=False)
         facts.add_fact (blip.utils.gettext ('Module'),
                         blip.html.Link (request.record.parent.blip_url,

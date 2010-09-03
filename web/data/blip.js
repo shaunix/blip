@@ -118,8 +118,6 @@ $.fn.blip_init = function () {
       pass1 = input;
     else if (input.attr ('name') == 'password2')
       pass2 = input;
-    input.focus (function () { $(this).addClass ('inputactive'); });
-    input.blur (function () { $(this).removeClass ('inputactive'); });
   });
   if (pass1 != null && pass2 != null) {
     var linker = $('<div id="passwordlinker"></div>');

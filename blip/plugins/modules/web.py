@@ -122,42 +122,46 @@ class OverviewTab (blip.html.TabProvider):
         facts = blip.html.FactsTable()
         tab.add_content (facts)
 
+        facts.start_fact_group ()
         facts.add_fact (blip.utils.gettext ('Module Name'), request.record.title)
         if request.record.desc != '':
             facts.add_fact (blip.utils.gettext ('Description'),
                             request.record.desc)
-        facts.add_fact_divider ()
 
         rels = blip.db.SetModule.get_related (pred=request.record)
         if len(rels) > 0:
             sets = blinq.utils.attrsorted ([rel.subj for rel in rels], 'title')
             span = blip.html.Span (*[blip.html.Link(rset) for rset in sets])
             span.set_divider (blip.html.BULLET)
+            facts.start_fact_group ()
             facts.add_fact (blip.utils.gettext ('Release Sets'), span)
-            facts.add_fact_divider ()
 
+        facts.start_fact_group ()
         checkout = blip.scm.Repository.from_record (request.record, checkout=False, update=False)
         facts.add_fact (blip.utils.gettext ('Module'), request.record.scm_module)
         facts.add_fact (blip.utils.gettext ('Branch'), request.record.scm_branch)
         facts.add_fact (blip.utils.gettext ('Location'), checkout.location)
-        facts.add_fact_divider ()
 
         if request.record.mod_datetime is not None:
-            div = blip.html.Div ()
+            facts.start_fact_group ()
             if request.record.mod_person_ident is not None:
-                div.add_content (blip.html.Div (blip.html.Link (request.record.mod_person)))
-            div.add_content (blip.html.Div (request.record.mod_datetime.strftime('%Y-%m-%d %T')))
-            facts.add_fact (blip.utils.gettext ('Modified'), div)
+                facts.add_fact (blip.utils.gettext ('Modified'),
+                                blip.html.Link (request.record.mod_person))
+                facts.add_fact ('',
+                                request.record.mod_datetime.strftime('%Y-%m-%d %T'))
+            else:
+                facts.add_fact (blip.utils.gettext ('Modified'),
+                                request.record.mod_datetime.strftime('%Y-%m-%d %T'))
 
         if request.record.data.has_key ('tarname'):
-            facts.add_fact_divider ()
+            facts.start_fact_group ()
             facts.add_fact (blip.utils.gettext ('Tarball Name'), request.record.data['tarname'])
         if request.record.data.has_key ('tarversion'):
             if not request.record.data.has_key ('tarname'):
-                facts.add_fact_divider ()
+                facts.start_fact_group ()
             facts.add_fact (blip.utils.gettext ('Version'), request.record.data['tarversion'])
 
-        facts.add_fact_divider ()
+        facts.start_fact_group ()
         span = blip.html.Span (divider=blip.html.SPACE)
         span.add_content (str(request.record.project.score))
         lt = blip.db.Project.select (blip.db.Project.type == u'Module',
@@ -171,13 +175,13 @@ class OverviewTab (blip.html.TabProvider):
         facts.add_fact (blip.utils.gettext ('Score'), span)
 
         if request.record.bug_database is not None:
-            facts.add_fact_divider ()
+            facts.start_fact_group ()
             facts.add_fact (blip.utils.gettext ('Bug Tracker'), 
                             blip.html.Link ( request.record.bug_database,
                                              request.record.bug_database))
 
         if request.record.updated is not None:
-            facts.add_fact_divider ()
+            facts.start_fact_group ()
             facts.add_fact (blip.utils.gettext ('Last Updated'),
                             request.record.updated.strftime('%Y-%m-%d %T'))
 

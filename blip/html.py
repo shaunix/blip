@@ -171,7 +171,7 @@ class FactsComponent (Component):
         fact = {'label' : label, 'content' : content, 'badge' : kw.get('badge', None)}
         self._facts.append (fact)
 
-    def add_fact_divider (self):
+    def start_fact_group (self):
         self._facts.append (None)
 
     def has_facts (self):
@@ -182,16 +182,20 @@ class FactsComponent (Component):
         if len (self._facts) == 0:
             return
         res.write('<table class="facts">')
+        ingroup = False
         for fact in self._facts:
-            if fact == None:
-                res.write('<tr class="fact-sep"><td></td><td></td></tr>')
+            if fact is None:
+                if ingroup:
+                    res.write('</tbody>')
+                res.write('<tbody class="facts">')
             else:
                 res.write('<tr>')
                 if fact['label'] != None:
                     res.write('<td class="fact-key">')
-                    key = self.escape(fact['label']).replace(' ', '&nbsp;')
-                    key = self.escape(blip.utils.gettext ('%s:')) % key
-                    res.write(key)
+                    if fact['label'] != '':
+                        key = self.escape(fact['label']).replace(' ', '&nbsp;')
+                        key = self.escape(blip.utils.gettext ('%s:')) % key
+                        res.write(key)
                     res.write('</td>')
                     res.write('<td class="fact-val">')
                 else:
@@ -208,6 +212,8 @@ class FactsComponent (Component):
                             res.write('</div>')
                 factout (fact['content'])
                 res.write('</td></tr>')
+        if ingroup:
+            res.write('</tbody>')
         res.write('</table>')
 
 
@@ -434,7 +440,7 @@ class TabProvider (blip.web.ContentResponder):
         return None
 
 
-class Page (HtmlObject, ContentComponent, SublinksComponent, FactsComponent):
+class Page (HtmlObject, ContentComponent, SublinksComponent):
     """
     Complete web page.
 
@@ -622,7 +628,6 @@ class Page (HtmlObject, ContentComponent, SublinksComponent, FactsComponent):
         res.write('</div>')
 
         res.write('<div id="body"><div id="panes">')
-        FactsComponent.output (self, res)
         self.output_page_content (res)
         if len(self._tabs) > 0:
             for pane in self._panes:
