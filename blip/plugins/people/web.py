@@ -140,13 +140,13 @@ class OverviewTab (blip.html.TabProvider):
         facts = blip.html.FactsTable ()
         tab.add_content (facts)
 
+        facts.start_fact_group ()
         if request.record.name is not None:
             facts.add_fact (blip.utils.gettext ('Name'), request.record.title)
         if request.record.nick is not None:
             facts.add_fact (blip.utils.gettext ('Nick'), request.record.nick)
 
-        facts.add_fact_divider ()
-
+        facts.start_fact_group ()
         if request.record.email != None:
             facts.add_fact (blip.utils.gettext ('Email'),
                             blip.html.Link ('mailto:' + request.record.email,
@@ -155,9 +155,18 @@ class OverviewTab (blip.html.TabProvider):
             facts.add_fact (blip.utils.gettext ('Website'),
                             blip.html.Link (request.record.web))
 
-        facts.add_fact_divider ()
-
-        facts.add_fact (blip.utils.gettext ('Score'), str(request.record.score))
+        facts.start_fact_group ()
+        span = blip.html.Span (divider=blip.html.SPACE)
+        span.add_content (str(request.record.score))
+        lt = blip.db.Entity.select (blip.db.Entity.type == u'Person',
+                                    blip.db.Entity.score != 0,
+                                    blip.db.Entity.score <= request.record.score)
+        lt = lt.count()
+        gt = blip.db.Entity.select (blip.db.Entity.type == u'Person',
+                                    blip.db.Entity.score > request.record.score)
+        gt = gt.count()
+        span.add_content ('(%.2f%%)' % ((100.0 * lt) / (lt + gt)))
+        facts.add_fact (blip.utils.gettext ('Score'), span)
 
         return tab
 

@@ -169,7 +169,7 @@ class OverviewTab (blip.html.TabProvider):
                                      blip.db.Project.score <= request.record.project.score)
         lt = lt.count()
         gt = blip.db.Project.select (blip.db.Project.type == u'Module',
-                                     blip.db.Project.score >= request.record.project.score)
+                                     blip.db.Project.score > request.record.project.score)
         gt = gt.count()
         span.add_content ('(%.2f%%)' % ((100.0 * lt) / (lt + gt)))
         facts.add_fact (blip.utils.gettext ('Score'), span)
