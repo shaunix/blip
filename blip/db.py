@@ -1438,9 +1438,9 @@ class Timestamp (BlipModel):
             if check:
                 stamp = blip.db.Timestamp.get_timestamp (self.rel_scm)
                 if self.mtime <= stamp:
-                    blip.utils.log ('Skipping file %s' % self.rel_scm)
                     raise Timestamp.stamped.stampedout(None)
-            blip.utils.log ('Processing file %s' % self.rel_scm)
+        def log (self):
+            blip.utils.log ('Processing %s' % self.rel_scm)
         def __enter__ (self):
             return self
         def __exit__ (self, type, value, tb):

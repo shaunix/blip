@@ -107,7 +107,6 @@ class PeopleResponder (blip.sweep.SweepResponder,
                         if weeknum == thisweek:
                             rev = None
                             if revcount == revstot:
-                                blip.utils.log ('Skipping commit graph for %s' % entity.ident)
                                 return
                 elif of is None:
                     of = blip.db.OutputFile (type=u'graphs', ident=entity.ident,
@@ -193,5 +192,3 @@ if False:
                     post.update (postdata)
             forum.data['etag'] = feed.get('etag')
             forum.data['modified'] = feed.get('modified')
-        else:
-            pulse.utils.log ('Skipping blog %s' % bident)

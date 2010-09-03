@@ -188,7 +188,6 @@ class ModuleScanner (object):
                 # If get_revision isn't implemented (CVS), we can't fast-path skip
                 current = self.repository.get_revision()
                 if current is not None and since == current[0]:
-                    blip.utils.log ('Skipping history for %s' % self.branch.ident)
                     return
             except:
                 pass
@@ -264,7 +263,6 @@ class ModuleScanner (object):
                         if weeknum == thisweek:
                             rev = None
                             if revcount == revstot:
-                                blip.utils.log ('Skipping commit graph for %s' % self.branch.ident)
                                 return
                 elif of is None:
                     of = blip.db.OutputFile (type=u'graphs', ident=self.branch.ident,

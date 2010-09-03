@@ -36,6 +36,7 @@ class DoapScanner (blip.plugins.modules.sweep.ModuleFileScanner):
             with blip.db.Error.catch (self.scanner.branch, 'Invalid DOAP file'):
                 with blip.db.Timestamp.stamped (filename, self.scanner.repository) as stamp:
                     stamp.check (self.scanner.request.get_tool_option ('timestamps'))
+                    stamp.log ()
 
                     model = RDF.Model()
                     if not model.load ('file://' + urllib.pathname2url(filename)):
