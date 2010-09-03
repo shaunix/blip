@@ -250,6 +250,45 @@ class FilesTab (blip.html.TabProvider):
         response.payload = tab
         return response
 
+class PagesTab (blip.html.TabProvider):
+    @classmethod
+    def add_tabs (cls, page, request):
+        if len(request.path) < 1 or request.path[0] != 'doc':
+            return None
+        if not (isinstance (request.record, blip.db.Branch) and
+                request.record.type == u'Document'):
+            return None
+        cnt = request.record.select_children (u'DocumentPage').count ()
+        if cnt > 0:
+            page.add_tab ('pages',
+                          blip.utils.gettext ('Pages (%i)') % cnt,
+                          blip.html.TabProvider.CORE_TAB)
+
+    @classmethod
+    def respond (cls, request):
+        if len(request.path) < 1 or request.path[0] != 'doc':
+            return None
+        if not blip.html.TabProvider.match_tab (request, 'pages'):
+            return None
+
+        response = blip.web.WebResponse (request)
+
+        tab = blip.html.ContainerBox ()
+        tab.set_columns (2)
+        tab.add_sort_link ('title', blip.utils.gettext ('title'), 1)
+        tab.add_sort_link ('pageid', blip.utils.gettext ('page'))
+
+        pages = blinq.utils.attrsorted (list (request.record.select_children (u'DocumentPage')),
+                                        'title')
+        for page in pages:
+            lbox = tab.add_link_box (page)
+            lbox.add_fact (blip.utils.gettext ('page'),
+                           blip.html.Span(page.ident.split('/')[2],
+                                          html_class='pageid'))
+
+        response.payload = tab
+        return response
+
 class TranslationsTab (blip.html.TabProvider):
     @classmethod
     def add_tabs (cls, page, request):
