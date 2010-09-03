@@ -1491,20 +1491,23 @@ class Error (BlipModel):
         blip.utils.log ('Clearing error %s on %s' % (self.sourcefunc, self.ident))
 
     @classmethod
-    def _get_sourcefunc (cls):
+    def _get_sourcefunc (cls, ctxt):
         for frame in inspect.stack():
             mod = inspect.getmodule(frame[0])
             if mod == sys.modules[__name__]:
                 continue
-            return unicode(mod.__name__ + '.' + frame[3])
+            ret = unicode(mod.__name__ + '.' + frame[3])
+            if ctxt is not None:
+                ret = ret + u'#' + unicode (ctxt)
+            return ret
 
     @classmethod
-    def set_error (cls, ident, message):
+    def set_error (cls, ident, message, ctxt=None):
         if isinstance (ident, basestring):
             ident = blinq.utils.utf8dec (ident)
         else:
             ident = ident.ident
-        sfunc = cls._get_sourcefunc ()
+        sfunc = cls._get_sourcefunc (ctxt)
         message = blinq.utils.utf8dec (message)
         obj = cls.select (ident=ident, sourcefunc=sfunc)
         try:
@@ -1514,22 +1517,22 @@ class Error (BlipModel):
             cls (ident=ident, sourcefunc=sfunc, message = message)
 
     @classmethod
-    def clear_error (cls, ident):
+    def clear_error (cls, ident, ctxt=None):
         if isinstance (ident, basestring):
             ident = blinq.utils.utf8dec (ident)
         else:
             ident = ident.ident
-        sfunc = cls._get_sourcefunc ()
+        sfunc = cls._get_sourcefunc (ctxt)
         for err in cls.select (ident=ident, sourcefunc=sfunc):
             err.delete ()
 
     class catch:
-        def __init__ (self, ident, message=None):
+        def __init__ (self, ident, message=None, ctxt=None):
             if isinstance (ident, basestring):
                 self.ident = blinq.utils.utf8dec (ident)
             else:
                 self.ident = ident.ident
-            self.sfunc = Error._get_sourcefunc ()
+            self.sfunc = Error._get_sourcefunc (ctxt)
             self.message = message and blinq.utils.utf8dec (message) or None
         def __enter__ (self):
             return self
