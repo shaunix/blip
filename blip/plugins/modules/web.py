@@ -185,10 +185,6 @@ class OverviewTab (blip.html.TabProvider):
             facts.add_fact (blip.utils.gettext ('Last Updated'),
                             request.record.updated.strftime('%Y-%m-%d %T'))
 
-        # Developers
-        #box = self.get_developers_box ()
-        #tab.add_content (box)
-
         # Dependencies
         # deps = db.ModuleDependency.get_related (subj=self.handler.record)
         # deps = blinq.utils.attrsorted (list(deps), ['pred', 'scm_module'])
@@ -222,10 +218,43 @@ class OverviewTab (blip.html.TabProvider):
         response.payload = cls.get_tab (request)
         return response
 
+class DevelopersTab (blip.html.TabProvider):
+    @classmethod
+    def add_tabs (cls, page, request):
+        if len(request.path) < 1 or request.path[0] != 'mod':
+            return None
+        if not (isinstance (request.record, blip.db.Branch) and
+                request.record.type == u'Module'):
+            return None
+        cnt = blip.db.ModuleEntity.count_related (subj=request.record)
+        if cnt > 0:
+            page.add_tab ('developers',
+                          blip.utils.gettext ('Developers (%i)') % cnt,
+                          blip.html.TabProvider.CORE_TAB)
+
+    @classmethod
+    def respond (cls, request):
+        if len(request.path) < 1 or request.path[0] != 'mod':
+            return None
+        if not blip.html.TabProvider.match_tab (request, 'developers'):
+            return None
+
+        response = blip.web.WebResponse (request)
+
+        tab = blip.html.ContainerBox ()
+
+        rels = blip.db.ModuleEntity.select_related (subj=request.record)
+        rels = blinq.utils.attrsorted (list(rels), '-maintainer', ('pred', 'title'))
+        for rel in rels:
+            lbox = tab.add_link_box (rel.pred)
+            if rel.maintainer:
+                lbox.add_badge ('maintainer')
+
+        response.payload = tab
+        return response
 
 ################################################################################
 ## Index Content
-
 
 class SetIndexContentProvider (blip.plugins.index.web.IndexContentProvider):
     @classmethod
