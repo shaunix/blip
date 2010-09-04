@@ -57,6 +57,28 @@ class DoapScanner (blip.plugins.modules.sweep.ModuleFileScanner):
                                 'desc': defs['desc'].literal_value['string']
                                 })
                         break
+                    query = RDF.SPARQLQuery(' PREFIX doap: <http://usefulinc.com/ns/doap#>'
+                                            ' PREFIX foaf: <http://xmlns.com/foaf/0.1/>'
+                                            ' SELECT ?name ?mbox'
+                                            ' WHERE {'
+                                            '  ?project a doap:Project .'
+                                            '  ?project doap:maintainer ?person .'
+                                            '  ?person a foaf:Person ;'
+                                            '    foaf:name ?name ;'
+                                            '    foaf:mbox ?mbox .'
+                                            ' }')
+                    maints = []
+                    print 'foo'
+                    for defs in query.execute (model):
+                        mbox = defs['mbox'].uri
+                        if mbox is not None:
+                            mbox = unicode (mbox)
+                        if mbox.startswith ('mailto:'):
+                            mbox = mbox[7:]
+                            ent = blip.db.Entity.get_or_create_email (mbox)
+                            maints.append (blip.db.ModuleEntity.set_related (self.scanner.branch,
+                                                                             ent, maintainer=True))
+                    self.scanner.branch.set_relations (blip.db.ModuleEntity, maints)
 
     def post_process (self):
         pass
