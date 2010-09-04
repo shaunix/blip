@@ -65,18 +65,21 @@ class SweepResponder (blinq.reqs.cmd.CmdResponder):
                                    action='store_true',
                                    default=False,
                                    help='print summary of database queries to stdout')
-        request.add_common_option ('--disable-plugins',
-                                   dest='disable_plugins',
+        request.add_common_option ('--disable',
+                                   dest='disable_pkgs',
                                    action='store',
                                    default='',
-                                   metavar='PLUGINS',
-                                   help='disable plugins from comma-separated PLUGINS list')
+                                   metavar='PACKAGES',
+                                   help='disable plugin packages from comma-separated list PACKAGES')
         request.add_common_option ('--rollback',
                                    dest='rollback',
                                    action='store_true',
                                    default=False,
                                    help='roll back all changes (dry run)')
         request.parse_common_options ()
+
+        for pkg in request.get_common_option ('disable_pkgs').split (','):
+            blinq.ext.ExtensionPoint.disable_package (pkg)
 
         import blip.config
         blip.config.init (request.get_common_option ('site'))
