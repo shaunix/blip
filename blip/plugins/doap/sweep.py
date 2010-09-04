@@ -68,7 +68,6 @@ class DoapScanner (blip.plugins.modules.sweep.ModuleFileScanner):
                                             '    foaf:mbox ?mbox .'
                                             ' }')
                     maints = []
-                    print 'foo'
                     for defs in query.execute (model):
                         mbox = defs['mbox'].uri
                         if mbox is not None:

@@ -153,13 +153,13 @@ class OverviewTab (blip.html.TabProvider):
                 facts.add_fact (blip.utils.gettext ('Modified'),
                                 request.record.mod_datetime.strftime('%Y-%m-%d %T'))
 
-        if request.record.data.has_key ('tarname'):
+        if request.record.data.has_key ('pkgname'):
             facts.start_fact_group ()
-            facts.add_fact (blip.utils.gettext ('Tarball Name'), request.record.data['tarname'])
-        if request.record.data.has_key ('tarversion'):
-            if not request.record.data.has_key ('tarname'):
+            facts.add_fact (blip.utils.gettext ('Package'), request.record.data['pkgname'])
+        if request.record.data.has_key ('pkgversion'):
+            if not request.record.data.has_key ('pkgname'):
                 facts.start_fact_group ()
-            facts.add_fact (blip.utils.gettext ('Version'), request.record.data['tarversion'])
+            facts.add_fact (blip.utils.gettext ('Version'), request.record.data['pkgversion'])
 
         facts.start_fact_group ()
         span = blip.html.Span (divider=blip.html.SPACE)

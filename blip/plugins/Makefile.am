@@ -1,5 +1,6 @@
 SUBDIRS = 		\
 	accounts	\
+	autoconf	\
 	apps		\
 	commits		\
 	cvs		\

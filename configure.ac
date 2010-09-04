@@ -54,6 +54,7 @@ blip/config.py
 blip/parsers/Makefile
 blip/plugins/Makefile
 blip/plugins/accounts/Makefile
+blip/plugins/autoconf/Makefile
 blip/plugins/apps/Makefile
 blip/plugins/commits/Makefile
 blip/plugins/cvs/Makefile
