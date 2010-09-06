@@ -275,8 +275,6 @@ class PagesTab (blip.html.TabProvider):
             span = blip.html.Span(status[2:], html_class='status')
             span.add_data_attribute ('sort-key', status[:2])
             lbox.add_fact (blip.utils.gettext ('status'), span)
-            #blip.html.Span(status,
-            #$html_class='status'))
             docdate = page.data.get ('docdate', None)
 
         response.payload = tab
@@ -415,9 +413,10 @@ class DocumentsTab (blip.html.TabProvider):
         response = blip.web.WebResponse (request)
         tab = blip.html.ContainerBox ()
         tab.set_columns (2)
+        tab.add_sort_link ('title', blip.utils.gettext ('title'), 1)
         if request.record.type == u'Set':
-            tab.add_sort_link ('title', blip.utils.gettext ('title'), 1)
             tab.add_sort_link ('module', blip.utils.gettext ('module'))
+        tab.add_sort_link ('status', blip.utils.gettext ('status'))
 
         for doc in docs.order_by ('name'):
             lbox = tab.add_link_box (doc)
@@ -426,7 +425,10 @@ class DocumentsTab (blip.html.TabProvider):
                                blip.html.Span(blip.html.Link (doc.parent.blip_url,
                                                               doc.parent.branch_module),
                                               html_class='module'))
-                               
+            status = doc.data.get ('docstatus', '00none')
+            span = blip.html.Span(status[2:], html_class='status')
+            span.add_data_attribute ('sort-key', status[:2])
+            lbox.add_fact (blip.utils.gettext ('status'), span)
 
         response.payload = tab
         return response
