@@ -40,29 +40,14 @@ class BranchResponder (blip.web.RecordLocator, blip.web.PageResponder):
         if len(request.path) == 3:
             branches = list(blip.db.Branch.select (project_ident=ident))
             if len(branches) == 0:
-                exception = blip.web.WebException (
-                    blip.utils.gettext ('Project Not Found'),
-                    blip.utils.gettext ('Blip could not find the project %s on %s')
-                    % (request.path[2], request.path[1]))
-                request.set_data ('exception', exception)
                 return True
             branch = [branch for branch in branches if branch.is_default]
             if len(branch) == 0:
-                exception = blip.web.WebException (
-                    blip.utils.gettext ('Default Branch Not Found'),
-                    blip.utils.gettext ('Blip could not find a default branch for the project %s on %s')
-                    % (request.path[2], request.path[1]))
-                request.set_data ('exception', exception)
                 return True
             request.record = branch[0]
         else:
             branch = blip.db.Branch.get (ident)
             if branch is None:
-                exception = blip.web.WebException (
-                    blip.utils.gettext ('Branch Not Found'),
-                    blip.utils.gettext ('Blip could not find the branch %s for the project %s on %s')
-                    % (request.path[3], request.path[2], request.path[1]))
-                request.set_data ('exception', exception)
                 return True
             request.record = branch
             branches = list(blip.db.Branch.select (project_ident=branch.project_ident))
@@ -76,9 +61,8 @@ class BranchResponder (blip.web.RecordLocator, blip.web.PageResponder):
 
         response = blip.web.WebResponse (request)
 
-        exception = request.get_data ('exception')
-        if exception:
-            page = blip.html.PageNotFound (exception.desc, title=exception.title)
+        if request.record is None:
+            page = blip.html.PageNotFound (None)
             response.payload = page
             return response
 

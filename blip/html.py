@@ -653,13 +653,15 @@ class PageNotFound (Page):
         kw.setdefault ('title', blip.utils.gettext('Page Not Found'))
         self._pages = kw.pop ('pages', [])
         self._message = message
+        if self._message is None:
+            self._message = blip.utils.gettext ('Blip could not find a matching record in its database.')
         super (PageNotFound, self).__init__ (**kw)
         self.http_status = 400
 
     def output_page_content (self, res):
         """Output the contents of the page."""
         res.write('<div class="notfound">')
-        res.write('<div class="message">%s</div>' % self.escape(self._message))
+        res.write('<div class="message">%s</div>' % blip.utils.utf8dec (self.escape(self._message)))
         if len(self._pages) > 0:
             res.write('<div class="pages">%s'
                       % self.escape(blip.utils.gettext ('The following pages might interest you:')))

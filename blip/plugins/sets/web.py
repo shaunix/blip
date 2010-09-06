@@ -71,12 +71,6 @@ class SetResponder (blip.web.RecordLocator, blip.web.PageResponder):
             return False
         ident = '/' + '/'.join(request.path)
         request.record = blip.db.ReleaseSet.get (ident)
-        if request.record is None:
-            exception = blip.web.WebException (
-                blip.utils.gettext ('Set Not Found'),
-                blip.utils.gettext ('Blip could not find the set %s')
-                % '/'.join(request.path[1:]))
-            request.set_data ('exception', exception)
         return True
 
     @classmethod
@@ -86,9 +80,8 @@ class SetResponder (blip.web.RecordLocator, blip.web.PageResponder):
 
         response = blip.web.WebResponse (request)
 
-        exception = request.get_data ('exception')
-        if exception:
-            page = blip.html.PageNotFound (exception.desc, title=exception.title)
+        if request.record is None:
+            page = blip.html.PageNotFound (None)
             response.payload = page
             return response
 
@@ -151,7 +144,7 @@ class SetResponder (blip.web.RecordLocator, blip.web.PageResponder):
         cnt = blip.db.Branch.select (type=u'Document', parent_in_set=record)
         cnt = cnt.count()
         if cnt > 0:
-            bl.add_link (record.blip_url + '#documents',
+            bl.add_link (record.blip_url + '#docs',
                          blip.utils.gettext ('%i documents') % cnt)
 
         # Domains

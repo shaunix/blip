@@ -1,3 +1,4 @@
+# coding=UTF-8
 # Copyright (c) 2006  Shaun McCance  <shaunm@gnome.org>
 #
 # This file is part of Pulse, a program for displaying various statistics
@@ -38,29 +39,14 @@ class DocumentResponder (blip.web.RecordLocator, blip.web.PageResponder):
         if len(request.path) == 4:
             docs = list(blip.db.Branch.select (project_ident=ident))
             if len(docs) == 0:
-                exception = blip.web.WebException (
-                    blip.utils.gettext ('Document Not Found'),
-                    blip.utils.gettext ('Blip could not find the document %s in the module %s on %s')
-                    % (request.path[3], request.path[2], request.path[1]))
-                request.set_data ('exception', exception)
                 return True
             doc = [doc for doc in docs if doc.is_default]
             if len(doc) == 0:
-                exception = blip.web.WebException (
-                    blip.utils.gettext ('Default Branch Not Found'),
-                    blip.utils.gettext ('Blip could not find the default branch for the document %s in the module %s on %s')
-                    % (request.path[3], request.path[2], request.path[1]))
-                request.set_data ('exception', exception)
                 return True
             request.record = doc[0]
         else:
             doc = blip.db.Branch.get (ident)
             if doc is None:
-                exception = blip.web.WebException (
-                    blip.utils.gettext ('Document Not Found'),
-                    blip.utils.gettext ('Blip could not find the document %s in the module %s on %s')
-                    % (request.path[3], request.path[2], request.path[1]))
-                request.set_data ('exception', exception)
                 return True
             request.record = doc
             docs = list(blip.db.Branch.select (project_ident=doc.project_ident))
@@ -74,9 +60,8 @@ class DocumentResponder (blip.web.RecordLocator, blip.web.PageResponder):
 
         response = blip.web.WebResponse (request)
 
-        exception = request.get_data ('exception')
-        if exception is not None:
-            page = blip.html.PageNotFound (exception.desc, title=exception.title)
+        if request.record is None:
+            page = blip.html.PageNotFound (None)
             response.payload = page
             return response
 
@@ -176,7 +161,7 @@ class OverviewTab (blip.html.TabProvider):
         response.payload = cls.get_tab (request)
         return response
 
-class PeopleTab (blip.html.TabProvider):
+class DevelopersTab (blip.html.TabProvider):
     @classmethod
     def add_tabs (cls, page, request):
         if len(request.path) < 1 or request.path[0] != 'doc':
@@ -186,15 +171,15 @@ class PeopleTab (blip.html.TabProvider):
             return None
         cnt = blip.db.DocumentEntity.count_related (subj=request.record)
         if cnt > 0:
-            page.add_tab ('people',
-                          blip.utils.gettext ('People (%i)') % cnt,
+            page.add_tab ('developers',
+                          blip.utils.gettext ('Developers (%i)') % cnt,
                           blip.html.TabProvider.CORE_TAB)
 
     @classmethod
     def respond (cls, request):
         if len(request.path) < 1 or request.path[0] != 'doc':
             return None
-        if not blip.html.TabProvider.match_tab (request, 'people'):
+        if not blip.html.TabProvider.match_tab (request, 'developers'):
             return None
 
         response = blip.web.WebResponse (request)

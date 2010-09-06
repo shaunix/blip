@@ -19,7 +19,7 @@ body {
   background: -webkit-gradient(linear, left -60, left 40, from(white), to(#204a87));
   background: -moz-linear-gradient(top, white -60px, #204a87 40px);
   color: #fcf197;
-  text-shadow: -1px 0 2px #204a87;
+  text-shadow: -1px 1px 0px #204a87;
 }
 #header table {
   width: 820px;
@@ -65,11 +65,11 @@ h1 img.icon {
 h1 div.title {
   font-size: 1.44em;
   font-weight: bold;
+  text-shadow: -1px 1px 0px white;
 }
 h1 div.desc {
   font-style: italic;
   font-size: 0.83em;
-  color: #888a85;
   margin: -0.2em 0 0 0;
 }
 

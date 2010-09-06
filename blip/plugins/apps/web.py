@@ -37,29 +37,14 @@ class ApplicationResponder (blip.web.RecordLocator, blip.web.PageResponder):
         if len(request.path) == 4:
             apps = list(blip.db.Branch.select (project_ident=ident))
             if len(apps) == 0:
-                exception = blip.web.WebException (
-                    blip.utils.gettext ('Application Not Found'),
-                    blip.utils.gettext ('Blip could not find the application %s in the module %s on %s')
-                    % (request.path[3], request.path[2], request.path[1]))
-                request.set_data ('exception', exception)
                 return True
             app = [app for app in apps if app.is_default]
             if len(app) == 0:
-                exception = blip.web.WebException (
-                    blip.utils.gettext ('Default Branch Not Found'),
-                    blip.utils.gettext ('Blip could not find the default branch for the application %s in the module %s on %s')
-                    % (request.path[3], request.path[2], request.path[1]))
-                request.set_data ('exception', exception)
                 return True
             request.record = app[0]
         else:
             app = blip.db.Branch.get (ident)
             if app is None:
-                exception = blip.web.WebException (
-                    blip.utils.gettext ('Application Not Found'),
-                    blip.utils.gettext ('Blip could not find the application %s in the module %s on %s')
-                    % (request.path[3], request.path[2], request.path[1]))
-                request.set_data ('exception', exception)
                 return True
             request.record = app
             apps = list(blip.db.Branch.select (project_ident=app.project_ident))
@@ -73,9 +58,8 @@ class ApplicationResponder (blip.web.RecordLocator, blip.web.PageResponder):
 
         response = blip.web.WebResponse (request)
 
-        exception = request.get_data ('exception')
-        if exception is not None:
-            page = blip.html.PageNotFound (exception.desc, title=exception.title)
+        if request.record is None:
+            page = blip.html.PageNotFound (None)
             response.payload = page
             return response
 

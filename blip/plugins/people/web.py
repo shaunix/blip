@@ -83,9 +83,7 @@ class PersonReponder (blip.web.RecordLocator, blip.web.PageResponder):
         response = blip.web.WebResponse (request)
 
         if request.record is None:
-            page = blip.html.PageNotFound (
-                blip.util.gettext ('Blip could not find the person %s') % request.path[1],
-                title=blip.utils.gettext ('Person Not Found'))
+            page = blip.html.PageNotFound (None)
             response.payload = page
             return response
 
