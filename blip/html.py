@@ -1633,6 +1633,7 @@ class Span (HtmlObject, ContentComponent):
     """
 
     def __init__ (self, *args, **kw):
+        self._data_attrs = []
         self._divider = kw.pop ('divider', None)
         super (Span, self).__init__ (**kw)
         for arg in args:
@@ -1641,6 +1642,9 @@ class Span (HtmlObject, ContentComponent):
     def set_divider (self, divider):
         """Set a divider to be placed between child elements."""
         self._divider = divider
+
+    def add_data_attribute (self, key, value):
+        self._data_attrs.append ((key, value))
 
     def output (self, res):
         """Output the HTML."""
@@ -1651,6 +1655,8 @@ class Span (HtmlObject, ContentComponent):
         wcls = self.get_html_class ()
         if wcls != None:
             res.write(' class="%s"' % self.escape(wcls))
+        for key, value in self._data_attrs:
+            res.write(' data-%s="%s"' % self.escape((key, value)))
         res.write('>')
         content = self.get_content()
         for i in range(len(content)):
@@ -1658,33 +1664,6 @@ class Span (HtmlObject, ContentComponent):
                 res.write(self.escape(self._divider))
             res.write(self.escape(content[i]))
         res.write('</span>')
-
-
-class StatusSpan (HtmlObject, ContentComponent):
-    _statuses = {
-        'none' : 0,
-        'stub' : 1,
-        'incomplete' : 2,
-        'update': 3,
-        'draft' : 4,
-        'review' : 5,
-        'candidate' : 6,
-        'final' : 7
-        }
-
-    def __init__ (self, str, **kw):
-        super (StatusSpan, self).__init__ (**kw)
-        self._status = StatusSpan._statuses.get (str)
-        if self._status == None:
-            self._status = 0
-            self.add_content ('none')
-        else:
-            self.add_content (str)
-
-    def output (self, res):
-        """Output the HTML."""
-        res.write('<span class="status">%i</span>' % self.escape(self._status))
-        ContentComponent.output (self, res)
 
 
 class FactsTable (FactsComponent):

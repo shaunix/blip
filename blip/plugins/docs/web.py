@@ -262,6 +262,7 @@ class PagesTab (blip.html.TabProvider):
         tab.set_columns (2)
         tab.add_sort_link ('title', blip.utils.gettext ('title'), 1)
         tab.add_sort_link ('pageid', blip.utils.gettext ('page'))
+        tab.add_sort_link ('status', blip.utils.gettext ('status'))
 
         pages = blinq.utils.attrsorted (list (request.record.select_children (u'DocumentPage')),
                                         'title')
@@ -270,6 +271,13 @@ class PagesTab (blip.html.TabProvider):
             lbox.add_fact (blip.utils.gettext ('page'),
                            blip.html.Span(page.ident.split('/')[2],
                                           html_class='pageid'))
+            status = page.data.get ('docstatus', '00none')
+            span = blip.html.Span(status[2:], html_class='status')
+            span.add_data_attribute ('sort-key', status[:2])
+            lbox.add_fact (blip.utils.gettext ('status'), span)
+            #blip.html.Span(status,
+            #$html_class='status'))
+            docdate = page.data.get ('docdate', None)
 
         response.payload = tab
         return response
