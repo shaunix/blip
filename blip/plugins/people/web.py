@@ -180,6 +180,69 @@ class OverviewTab (blip.html.TabProvider):
         response.payload = cls.get_tab (request)
         return response
 
+class ModulesTab (blip.html.TabProvider):
+    @classmethod
+    def add_tabs (cls, page, request):
+        if len(request.path) != 2 or request.path[0] != 'person':
+            return None
+        cnt = blip.db.ModuleEntity.select_related (pred=request.record).count ()
+        if cnt > 0:
+            page.add_tab ('modules',
+                          blip.utils.gettext ('Modules (%i)') % cnt,
+                          blip.html.TabProvider.CORE_TAB)
+
+    @classmethod
+    def respond (cls, request):
+        if len(request.path) != 2 or request.path[0] != 'person':
+            return None
+        if not blip.html.TabProvider.match_tab (request, 'modules'):
+            return None
+
+        response = blip.web.WebResponse (request)
+        tab = blip.html.ContainerBox ()
+
+        rels = blip.db.ModuleEntity.select_related (pred=request.record)
+        rels = blinq.utils.attrsorted (list(rels), ('subj', 'title'))
+        for rel in rels:
+            lbox = tab.add_link_box (rel.subj)
+            if rel.maintainer:
+                lbox.add_badge ('maintainer')
+
+        response.payload = tab
+        return response
+
+class DocumentsTab (blip.html.TabProvider):
+    @classmethod
+    def add_tabs (cls, page, request):
+        if len(request.path) != 2 or request.path[0] != 'person':
+            return None
+        cnt = blip.db.DocumentEntity.select_related (pred=request.record).count ()
+        if cnt > 0:
+            page.add_tab ('docs',
+                          blip.utils.gettext ('Documents (%i)') % cnt,
+                          blip.html.TabProvider.CORE_TAB)
+
+    @classmethod
+    def respond (cls, request):
+        if len(request.path) != 2 or request.path[0] != 'person':
+            return None
+        if not blip.html.TabProvider.match_tab (request, 'docs'):
+            return None
+
+        response = blip.web.WebResponse (request)
+        tab = blip.html.ContainerBox ()
+
+        rels = blip.db.DocumentEntity.select_related (pred=request.record)
+        rels = blinq.utils.attrsorted (list(rels), ('subj', 'title'))
+        for rel in rels:
+            lbox = tab.add_link_box (rel.subj)
+            for badge in ('maintainer', 'author', 'editor', 'publisher'):
+                if getattr (rel, badge) == True:
+                    lbox.add_badge (badge)
+
+        response.payload = tab
+        return response
+
 
 ################################################################################
 ## IndexContent
