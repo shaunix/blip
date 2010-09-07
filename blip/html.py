@@ -118,42 +118,6 @@ class ContentComponent (Component):
             res.write(self.escape(cont))
 
 
-class SublinksComponent (Component):
-    """
-    Component for objects that contain sublinks.
-
-    Sublinks are a list of links found under the title of an object.  They
-    may provide alternate pages or a heirarchy of parent pages, depending
-    on context.  The ouput method will create the sublinks.
-
-    FIXME: document **kw
-    """
-
-    def __init__ (self, **kw):
-        self._sublinks = []
-        self._divider = kw.pop ('divider', BULLET)
-        super (SublinksComponent, self).__init__ (**kw)
-
-    def add_sublink (self, href, title):
-        self._sublinks.append ((href, title))
-
-    def set_sublinks_divider (self, div):
-        self._divider = div
-
-    def output (self, res):
-        """Output the HTML."""
-        if len(self._sublinks) > 0:
-            res.write('<div class="sublinks">')
-            for i in range(len(self._sublinks)):
-                if i != 0:
-                    res.write(self.escape(self._divider))
-                if self._sublinks[i][0] != None:
-                    res.write('<a href="%s">%s</a>' % self.escape(self._sublinks[i]))
-                else:
-                    res.write(self.escape(self._sublinks[i][1]))
-            res.write('</div>')
-
-
 class FactsComponent (Component):
     """
     Component for objects that contain fact tables.
@@ -440,7 +404,7 @@ class TabProvider (blip.web.ContentResponder):
         return None
 
 
-class Page (HtmlObject, ContentComponent, SublinksComponent):
+class Page (HtmlObject, ContentComponent):
     """
     Complete web page.
 
@@ -459,6 +423,8 @@ class Page (HtmlObject, ContentComponent, SublinksComponent):
         self._desc = None
         self._icon = None
         self._url = None
+        self._sublinks = []
+        self._traillinks = []
 
         request = kw.pop ('request', None)
         record = kw.pop ('record', None)
@@ -507,6 +473,12 @@ class Page (HtmlObject, ContentComponent, SublinksComponent):
     def add_tab (self, tabid, title, group=TabProvider.EXTRA_TAB):
         self._tabs.setdefault (group, [])
         self._tabs[group].append ((tabid, title))
+
+    def add_sublink (self, href, title):
+        self._sublinks.append ((href, title))
+
+    def add_trail_link (self, href, title):
+        self._traillinks.append ((href, title))
 
     def add_header_link (self, href, title, group=HeaderLinksProvider.EXTRA_LINK):
         self._header_links.setdefault (group, [])
@@ -588,6 +560,15 @@ class Page (HtmlObject, ContentComponent, SublinksComponent):
             if not blip.db.AccountWatch.has_watch (res.request.account, self._ident):
                 res.write('<div class="watch"><a href="javascript:watch(\'%s\')">%s</a></div>'
                           % self.escape((self._ident, blip.utils.gettext ('Watch'))))
+        if len(self._traillinks) > 0:
+            res.write('<div class="traillinks">')
+            for i in range(len(self._traillinks)):
+                if self._traillinks[i][0] != None:
+                    res.write('<a href="%s">%s</a>' % self.escape(self._traillinks[i]))
+                else:
+                    res.write(self.escape(self._traillinks[i][1]))
+                res.write(TRIANGLE)
+            res.write('</div>')
         res.write('<h1>')
         if self._icon is not None:
             res.write('<table><tr><td><img class="icon" src="%s" alt="%s"></td><td>'
@@ -598,7 +579,16 @@ class Page (HtmlObject, ContentComponent, SublinksComponent):
         if self._icon is not None:
             res.write('</td></tr></table>')
         res.write('</h1>')
-        SublinksComponent.output (self, res)
+        if len(self._sublinks) > 0:
+            res.write('<div class="sublinks">')
+            for i in range(len(self._sublinks)):
+                if i != 0:
+                    res.write(BULLET)
+                if self._sublinks[i][0] != None:
+                    res.write('<a href="%s">%s</a>' % self.escape(self._sublinks[i]))
+                else:
+                    res.write(self.escape(self._sublinks[i][1]))
+            res.write('</div>')
         res.write('</div>')
 
         res.write('<div id="sidebar">')

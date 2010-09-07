@@ -13,6 +13,7 @@ body {
 
 #header {
   height: 36px;
+  width: 821px;
   margin: 0;
   padding: 0 0 0 40px;
   background-color: #5574a2;
@@ -70,7 +71,7 @@ h1 div.title {
 h1 div.desc {
   font-style: italic;
   font-size: 0.83em;
-  margin: -0.2em 0 0 0;
+  margin: 0;
 }
 
 div.watch {
@@ -83,7 +84,11 @@ h1 img { vertical-align: middle; }
   margin: 0;
   font-size: 0.83em;
 }
-
+.traillinks {
+  margin: 0 0 -0.2em 0;
+  padding: 0.2em 0 0 0;
+  font-size: 0.83em;
+}
 
 /******************************************************************************/
 /** Main Content **/
@@ -92,7 +97,7 @@ div#all {
   width: 860px;
   background-color: #eeeeec;
   background: -webkit-gradient(linear, left 40, left 150, from(#eeeeec), to(white));
-  background: -moz-linear-gradient(top, #eeeeec, white 150px);
+  background: -moz-linear-gradient(top, #eeeeec 40px, white 150px);
   border-right: solid 1px #d3d7cf;
 }
 #body {

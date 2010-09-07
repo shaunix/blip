@@ -70,7 +70,6 @@ class BranchResponder (blip.web.RecordLocator, blip.web.PageResponder):
         page = blip.html.Page (request=request)
         response.payload = page
 
-        page.set_sublinks_divider (blip.html.BULLET)
         if len(branches) > 1:
             for branch in blinq.utils.attrsorted (branches, '-is_default', 'scm_branch'):
                 if branch.ident != request.record.ident:

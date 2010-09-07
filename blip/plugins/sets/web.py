@@ -88,10 +88,9 @@ class SetResponder (blip.web.RecordLocator, blip.web.PageResponder):
         page = blip.html.Page (request=request)
         response.payload = page
 
-        page.set_sublinks_divider (blip.html.TRIANGLE)
-        page.add_sublink (blinq.config.web_root_url + 'set', blip.utils.gettext ('Sets'))
+        page.add_trail_link (blinq.config.web_root_url + 'set', blip.utils.gettext ('Sets'))
         for superset in cls.get_supersets (request.record):
-            page.add_sublink (superset.blip_url, superset.title)
+            page.add_trail_link (superset.blip_url, superset.title)
 
         # Schedule
         schedule = request.record.data.get ('schedule', [])

@@ -66,6 +66,9 @@ class ApplicationResponder (blip.web.RecordLocator, blip.web.PageResponder):
         page = blip.html.Page (request=request)
         response.payload = page
 
+        page.add_trail_link (request.record.parent.blip_url,
+                             request.record.parent.title)
+
         branches = request.get_data ('branches', [])
         if len(branches) > 1:
             for branch in blinq.utils.attrsorted (branches, '-is_default', 'scm_branch'):

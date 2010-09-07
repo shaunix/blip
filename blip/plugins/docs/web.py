@@ -68,6 +68,9 @@ class DocumentResponder (blip.web.RecordLocator, blip.web.PageResponder):
         page = blip.html.Page (request=request)
         response.payload = page
 
+        page.add_trail_link (request.record.parent.blip_url,
+                             request.record.parent.title)
+
         branches = request.get_data ('branches', [])
         if len(branches) > 1:
             for branch in blinq.utils.attrsorted (branches, '-is_default', 'scm_branch'):
@@ -282,6 +285,8 @@ class PagesTab (blip.html.TabProvider):
                            blip.html.Span(page.ident.split('/')[2],
                                           html_class='pageid'))
             status = page.data.get ('docstatus', '00none')
+            if status is None:
+                status = '00none'
             span = blip.html.Span(status[2:], html_class='status')
             span.add_data_attribute ('sort-key', status[:2])
             lbox.add_fact (blip.utils.gettext ('status'), span)
@@ -436,6 +441,8 @@ class DocumentsTab (blip.html.TabProvider):
                                                               doc.parent.branch_module),
                                               html_class='module'))
             status = doc.data.get ('docstatus', '00none')
+            if status is None:
+                status = '00none'
             span = blip.html.Span(status[2:], html_class='status')
             span.add_data_attribute ('sort-key', status[:2])
             lbox.add_fact (blip.utils.gettext ('status'), span)
