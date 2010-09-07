@@ -31,6 +31,8 @@ body {
 }
 #header a {
   color: #eeeeec;
+  -webkit-transition: color 0.2s linear;
+  -moz-transition: color 0.2s linear;
 }
 #header a:hover {
   color: white;
@@ -145,6 +147,10 @@ ul#tabs li a {
   color: #555753;
 }
 
+ul#tabs li div {
+  -webkit-transition: background-color 0.2s linear;
+  -moz-transition: background-color 0.2s linear;
+}
 ul#tabs li a:hover {
   text-decoration: none;
   cursor: default;
@@ -518,7 +524,11 @@ span.sortlink { color: #888a85; }
 
 /******************************************************************************/
 /** PopupLink *****************************************************************/
-a.PopupLink { padding: 0 0.5em 0 0.5em; }
+a.PopupLink {
+  padding: 0 0.5em 0 0.5em;
+  -webkit-transition: background-color 0.2s linear;
+  -moz-transition: background-color 0.2s linear;
+}
 a.PopupLink:hover {
   background-color: #b1d5fc;
   text-decoration: none;
