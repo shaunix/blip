@@ -131,6 +131,16 @@ class OverviewTab (blip.html.TabProvider):
             else:
                 facts.add_fact (blip.utils.gettext ('Directory'), request.record.scm_dir)
 
+        facts.start_fact_group ()
+        status = request.record.data.get ('docstatus', '00none')
+        if status is None:
+            status = '00none'
+        span = blip.html.Span (status[2:], divider=blip.html.SPACE)
+        docdate = request.record.data.get ('docdate', None)
+        if docdate is not None:
+            span.add_content ('(%s)' % docdate)
+        facts.add_fact (blip.utils.gettext ('Status'), span)
+
         if request.record.mod_datetime is not None:
             facts.start_fact_group ()
             if request.record.mod_person_ident is not None:
