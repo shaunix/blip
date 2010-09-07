@@ -131,7 +131,13 @@ class Data (object):
                 data[key] = self._keyvalue (el)
 
         if defaults:
+            # We want to apply defaults before processing child nodes,
+            # because the defaults might create nodes. But we don't
+            # want to apply the defaults set on this node to this node.
+            newdefaults = self._defaults
+            self._defaults = olddefaults
             self._apply_defaults (data)
+            self._defaults = newdefaults
 
         for key in data.keys():
             if not key.startswith ('__') and isinstance (data[key], dict):
@@ -143,6 +149,7 @@ class Data (object):
                         del (ndata['__node__'])
 
         self._defaults = olddefaults
+
         return data
 
     def _apply_defaults (self, data):
