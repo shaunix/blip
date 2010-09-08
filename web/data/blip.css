@@ -505,7 +505,13 @@ span.sortlinks {
   background-color: #eeeeec;
   border: solid 1px #d3d7cf;
   padding: 0 0.5em 0 0.5em;
- cursor: pointer;
+  cursor: pointer;
+  -webkit-transition: background-color 0.2s linear;
+  -moz-transition: background-color 0.2s linear;
+}
+span.sortlinks:hover {
+  background-color: #b1d5fc;
+  cursor: default;
 }
 span.sortlinksactive {
   background-color: #fcf197;
@@ -519,8 +525,24 @@ div.sortmenu {
   display: none;
 }
 div.sortlink { margin: 0.2em 0 0.2em 0; }
-a.sortlink, span.sortlink { margin-left: 1em; }
-span.sortlink { color: #888a85; }
+span.sortlink {
+  color: #888a85;
+}
+a.sortlink, span.sortlink {
+  margin-left: 1em;
+  font-size: 1.2em;
+  padding: 0 6px 0 6px;
+  -webkit-transition: color 0.2s linear;
+  -moz-transition: color 0.2s linear;
+  -webkit-transition: background-color 0.2s linear;
+  -moz-transition: background-color 0.2s linear;
+}
+a.sortlink:hover {
+  color: #555753;
+  background-color: #b1d5fc;
+  text-decoration: none;
+  cursor: default;
+}
 
 /******************************************************************************/
 /** PopupLink *****************************************************************/
