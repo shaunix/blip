@@ -33,10 +33,12 @@ import blip.plugins.modules.web
 class DocumentResponder (blip.web.RecordLocator, blip.web.PageResponder):
     @classmethod
     def locate_record (cls, request):
-        if len(request.path) not in (4, 5) or request.path[0] != 'doc':
+        if not ((len(request.path) in (4, 5) and request.path[0] == 'doc') or
+                (len(request.path) in (6, 7) and request.path[0] == 'page')):
             return False
         ident = u'/' + u'/'.join(request.path)
-        if len(request.path) == 4:
+        if ((request.path[0] == 'doc' and len(request.path) == 4) or
+            (request.path[0] == 'page' and len(request.path) == 6)):
             docs = list(blip.db.Branch.select (project_ident=ident))
             if len(docs) == 0:
                 return True
@@ -55,7 +57,7 @@ class DocumentResponder (blip.web.RecordLocator, blip.web.PageResponder):
 
     @classmethod
     def respond (cls, request, **kw):
-        if len(request.path) not in (4, 5) or request.path[0] != 'doc':
+        if len(request.path) < 1 or request.path[0] not in ('doc', 'page'):
             return None
 
         response = blip.web.WebResponse (request)
@@ -68,8 +70,14 @@ class DocumentResponder (blip.web.RecordLocator, blip.web.PageResponder):
         page = blip.html.Page (request=request)
         response.payload = page
 
-        page.add_trail_link (request.record.parent.blip_url,
-                             request.record.parent.title)
+        if request.record.type == u'DocumentPage':
+            page.add_trail_link (request.record.parent.parent.blip_url + '#docs',
+                                 request.record.parent.parent.title)
+            page.add_trail_link (request.record.parent.blip_url + '#pages',
+                                 request.record.parent.title)
+        else:
+            page.add_trail_link (request.record.parent.blip_url + '#docs',
+                                 request.record.parent.title)
 
         branches = request.get_data ('branches', [])
         if len(branches) > 1:
@@ -87,7 +95,7 @@ class DocumentResponder (blip.web.RecordLocator, blip.web.PageResponder):
 class OverviewTab (blip.html.TabProvider):
     @classmethod
     def add_tabs (cls, page, request):
-        if len(request.path) < 1 or request.path[0] != 'doc':
+        if len(request.path) < 1 or request.path[0] not in ('doc', 'page'):
             return None
         page.add_tab ('overview',
                       blip.utils.gettext ('Overview'),
@@ -105,12 +113,17 @@ class OverviewTab (blip.html.TabProvider):
         tab.add_content (facts)
 
         facts.start_fact_group ()
-        facts.add_fact (blip.utils.gettext ('Document'), request.record.title)
+        if request.record.type == u'Document':
+            facts.add_fact (blip.utils.gettext ('Document'), request.record.title)
+            module = request.record.parent
+        else:
+            facts.add_fact (blip.utils.gettext ('Page'), request.record.title)
+            module = request.record.parent.parent
         if request.record.desc != '':
             facts.add_fact (blip.utils.gettext ('Description'),
                             request.record.desc)
 
-        rels = blip.db.SetModule.get_related (pred=request.record.parent)
+        rels = blip.db.SetModule.get_related (pred=module)
         if len(rels) > 0:
             sets = blinq.utils.attrsorted ([rel.subj for rel in rels], 'title')
             span = blip.html.Span (*[blip.html.Link(rset.blip_url + '#docs',
@@ -120,10 +133,17 @@ class OverviewTab (blip.html.TabProvider):
             facts.start_fact_group ()
             facts.add_fact (blip.utils.gettext ('Release Sets'), span)
 
+        if request.record.type == u'DocumentPage':
+            facts.start_fact_group ()
+            facts.add_fact (blip.utils.gettext ('Document'),
+                            blip.html.Link (request.record.parent))
+            facts.add_fact (blip.utils.gettext ('Page ID'),
+                            request.record.ident.split('/')[2])
+
         facts.start_fact_group ()
         checkout = blip.scm.Repository.from_record (request.record, checkout=False, update=False)
         facts.add_fact (blip.utils.gettext ('Module'),
-                        blip.html.Link (request.record.parent.blip_url,
+                        blip.html.Link (module.blip_url,
                                         request.record.scm_module))
         facts.add_fact (blip.utils.gettext ('Branch'), request.record.scm_branch)
         facts.add_fact (blip.utils.gettext ('Location'), checkout.location)
@@ -164,7 +184,7 @@ class OverviewTab (blip.html.TabProvider):
 
     @classmethod
     def respond (cls, request):
-        if len(request.path) < 1 or request.path[0] != 'doc':
+        if len(request.path) < 1 or request.path[0] not in ('doc', 'page'):
             return None
         if not blip.html.TabProvider.match_tab (request, 'overview'):
             return None
@@ -177,10 +197,11 @@ class OverviewTab (blip.html.TabProvider):
 class DevelopersTab (blip.html.TabProvider):
     @classmethod
     def add_tabs (cls, page, request):
-        if len(request.path) < 1 or request.path[0] != 'doc':
+        if len(request.path) < 1 or request.path[0] not in ('doc', 'page'):
             return None
         if not (isinstance (request.record, blip.db.Branch) and
-                request.record.type == u'Document'):
+                (request.record.type == u'Document' or
+                 request.record.type == u'DocumentPage')):
             return None
         cnt = blip.db.DocumentEntity.count_related (subj=request.record)
         if cnt > 0:
@@ -190,7 +211,7 @@ class DevelopersTab (blip.html.TabProvider):
 
     @classmethod
     def respond (cls, request):
-        if len(request.path) < 1 or request.path[0] != 'doc':
+        if len(request.path) < 1 or request.path[0] not in ('doc', 'page'):
             return None
         if not blip.html.TabProvider.match_tab (request, 'developers'):
             return None
