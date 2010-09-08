@@ -216,7 +216,8 @@ class DocumentsTab (blip.html.TabProvider):
     def add_tabs (cls, page, request):
         if len(request.path) != 2 or request.path[0] != 'person':
             return None
-        cnt = blip.db.DocumentEntity.select_related (pred=request.record).count ()
+        cnt = blip.db.DocumentEntity.count_related (pred=request.record,
+                                                    subj_type=u'Document')
         if cnt > 0:
             page.add_tab ('docs',
                           blip.utils.gettext ('Documents (%i)') % cnt,
@@ -232,7 +233,8 @@ class DocumentsTab (blip.html.TabProvider):
         response = blip.web.WebResponse (request)
         tab = blip.html.ContainerBox ()
 
-        rels = blip.db.DocumentEntity.select_related (pred=request.record)
+        rels = blip.db.DocumentEntity.select_related (pred=request.record,
+                                                      subj_type=u'Document')
         rels = blinq.utils.attrsorted (list(rels), ('subj', 'title'))
         for rel in rels:
             lbox = tab.add_link_box (rel.subj)

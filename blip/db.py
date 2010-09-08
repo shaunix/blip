@@ -475,15 +475,26 @@ class BlipRelation (BlipModel):
     @classmethod
     def select_related (cls, subj=None, pred=None, **kw):
         store = get_store (kw.pop ('__blip_store__', cls.__blip_store__))
-        if subj != None and pred != None:
-            rel = store.find (cls, subj_ident=subj.ident, pred_ident=pred.ident)
-            return rel
-        elif subj != None:
-            # FIXME STORM: django has select_related
-            return store.find (cls, subj_ident=subj.ident)
-        elif pred != None:
-            # FIXME STORM
-            return store.find (cls, pred_ident=pred.ident)
+        subj_type = kw.pop ('subj_type', None)
+        pred_type = kw.pop ('pred_type', None)
+        joins = []
+        args = []
+        if subj is not None:
+            args.append (cls.subj_ident == subj.ident)
+        if subj_type is not None:
+            joincls = ClassAlias (cls.subj._remote_key.cls)
+            joins.append (LeftJoin (joincls, cls.subj_ident == joincls.ident))
+            args.append (joincls.type == subj_type)
+        if pred is not None:
+            args.append (cls.pred_ident == pred.ident)
+        if pred_type is not None:
+            joincls = ClassAlias (cls.pred._remote_key.cls)
+            joins.append (LeftJoin (joincls, cls.pred_ident == joincls.ident))
+            args.append (joincls.type == pred_type)
+        if len(args) > 0:
+            if len(joins) > 0:
+                store = store.using (cls, *joins)
+            return store.find (cls, *args)
         else:
             return storm.store.EmptyResultSet ()
 
@@ -493,8 +504,8 @@ class BlipRelation (BlipModel):
         return list(sel)
 
     @classmethod
-    def count_related (cls, subj=None, pred=None):
-        sel = cls.select_related (subj=subj, pred=pred)
+    def count_related (cls, subj=None, pred=None, **kw):
+        sel = cls.select_related (subj=subj, pred=pred, **kw)
         return sel.count ()
 
 
