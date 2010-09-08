@@ -340,6 +340,9 @@ class BlipModel (Storm):
         return self._update_or_extend (False, _update_data, **kw)
 
     def delete (self):
+        if getattr (self, '__blip_deleted__', False):
+            return
+        setattr (self, '__blip_deleted__', True)
         for table in read_tables ():
             fields = table.get_fields ()
             for key in fields.keys ():
