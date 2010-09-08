@@ -440,3 +440,246 @@ def import_ (name):
     for modname in name.split ('.')[1:]:
         mod = getattr (mod, modname)
     return mod
+
+def language_name (lang):
+    if lang == 'af':
+       return gettext ('Afrikaans')
+    elif lang == 'am':
+       return gettext ('Amharic')
+    elif lang == 'an':
+       return gettext ('Aragonese')
+    elif lang == 'ang':
+       return gettext ('Old English')
+    elif lang == 'ar':
+       return gettext ('Arabic')
+    elif lang == 'as':
+       return gettext ('Assamese')
+    elif lang == 'ast':
+       return gettext ('Asturian')
+    elif lang == 'az':
+       return gettext ('Azerbaijani')
+    elif lang == 'az_IR':
+       return gettext ('Azerbaijani (Iranian)')
+    elif lang == 'bal':
+       return gettext ('Balochi')
+    elif lang == 'be':
+       return gettext ('Belarusian')
+    elif lang == 'bem':
+       return gettext ('Bemba')
+    elif lang == 'bg':
+       return gettext ('Bulgarian')
+    elif lang == 'bn':
+       return gettext ('Bengali')
+    elif lang == 'bn_IN':
+       return gettext ('Bengali (India)')
+    elif lang == 'br':
+       return gettext ('Breton')
+    elif lang == 'bs':
+       return gettext ('Bosnian')
+    elif lang == 'ca':
+       return gettext ('Catalan')
+    elif lang == 'crh':
+       return gettext ('Crimean Tatar')
+    elif lang == 'cs':
+       return gettext ('Czech')
+    elif lang == 'cy':
+       return gettext ('Welsh')
+    elif lang == 'da':
+       return gettext ('Danish')
+    elif lang == 'de':
+       return gettext ('German')
+    elif lang == 'dv':
+       return gettext ('Divehi')
+    elif lang == 'dz':
+       return gettext ('Dzongkha')
+    elif lang == 'el':
+       return gettext ('Greek')
+    elif lang == 'en@shaw':
+       return gettext ('Shavian')
+    elif lang == 'en_AU':
+       return gettext ('English (Australian)')
+    elif lang == 'en_CA':
+       return gettext ('English (Canadian)')
+    elif lang == 'en_GB':
+       return gettext ('English (British)')
+    elif lang == 'eo':
+       return gettext ('Esperanto')
+    elif lang == 'es':
+       return gettext ('Spanish')
+    elif lang == 'et':
+       return gettext ('Estonian')
+    elif lang == 'eu':
+       return gettext ('Basque')
+    elif lang == 'fa':
+       return gettext ('Persian')
+    elif lang == 'ff':
+       return gettext ('Fula')
+    elif lang == 'fi':
+       return gettext ('Finnish')
+    elif lang == 'fr':
+       return gettext ('French')
+    elif lang == 'fur':
+       return gettext ('Friulian')
+    elif lang == 'fy':
+       return gettext ('Frisian')
+    elif lang == 'ga':
+       return gettext ('Irish')
+    elif lang == 'gl':
+       return gettext ('Galician')
+    elif lang == 'gn':
+       return gettext ('Guarani')
+    elif lang == 'gu':
+       return gettext ('Gujarati')
+    elif lang == 'gv':
+       return gettext ('Manx')
+    elif lang == 'ha':
+       return gettext ('Hausa')
+    elif lang == 'he':
+       return gettext ('Hebrew')
+    elif lang == 'hi':
+       return gettext ('Hindi')
+    elif lang == 'hr':
+       return gettext ('Croatian')
+    elif lang == 'hu':
+       return gettext ('Hungarian')
+    elif lang == 'hy':
+       return gettext ('Armenian')
+    elif lang == 'id':
+       return gettext ('Indonesian')
+    elif lang == 'io':
+       return gettext ('Ido')
+    elif lang == 'is':
+       return gettext ('Icelandic')
+    elif lang == 'it':
+       return gettext ('Italian')
+    elif lang == 'ja':
+       return gettext ('Japanese')
+    elif lang == 'ka':
+       return gettext ('Georgian')
+    elif lang == 'kk':
+       return gettext ('Kazakh')
+    elif lang == 'km':
+       return gettext ('Khmer')
+    elif lang == 'kn':
+       return gettext ('Kannada')
+    elif lang == 'ko':
+       return gettext ('Korean')
+    elif lang == 'ks':
+       return gettext ('Kashmiri')
+    elif lang == 'ku':
+       return gettext ('Kurdish')
+    elif lang == 'ky':
+       return gettext ('Kirghiz')
+    elif lang == 'la':
+       return gettext ('Latin')
+    elif lang == 'li':
+       return gettext ('Limburgian')
+    elif lang == 'lo':
+       return gettext ('Lao')
+    elif lang == 'lt':
+       return gettext ('Lithuanian')
+    elif lang == 'lv':
+       return gettext ('Latvian')
+    elif lang == 'mai':
+       return gettext ('Maithili')
+    elif lang == 'mg':
+       return gettext ('Malagasy')
+    elif lang == 'mi':
+       return gettext ('Maori')
+    elif lang == 'mk':
+       return gettext ('Macedonian')
+    elif lang == 'ml':
+       return gettext ('Malayalam')
+    elif lang == 'mn':
+       return gettext ('Mongolian')
+    elif lang == 'mr':
+       return gettext ('Marathi')
+    elif lang == 'ms':
+       return gettext ('Malay')
+    elif lang == 'my':
+       return gettext ('Burmese')
+    elif lang == 'nap':
+       return gettext ('Neapolitan')
+    elif lang == 'nds':
+       return gettext ('Low German')
+    elif lang == 'ne':
+       return gettext ('Nepali')
+    elif lang == 'nl':
+       return gettext ('Dutch')
+    elif lang == 'no':
+       return gettext ('Norwegian (Bokmål and Nynorsk)')
+    elif lang == 'nso':
+       return gettext ('Northern Sotho')
+    elif lang == 'oc':
+       return gettext ('Occitan')
+    elif lang == 'or':
+       return gettext ('Oriya')
+    elif lang == 'pa':
+       return gettext ('Punjabi')
+    elif lang == 'pl':
+       return gettext ('Polish')
+    elif lang == 'ps':
+       return gettext ('Pashto')
+    elif lang == 'pt':
+       return gettext ('Portuguese')
+    elif lang == 'pt_BR':
+       return gettext ('Portuguese (Brazilian)')
+    elif lang == 'ro':
+       return gettext ('Romanian')
+    elif lang == 'ru':
+       return gettext ('Russian')
+    elif lang == 'rw':
+       return gettext ('Kinyarwanda')
+    elif lang == 'si':
+       return gettext ('Sinhala')
+    elif lang == 'sk':
+       return gettext ('Slovak')
+    elif lang == 'sl':
+       return gettext ('Slovenian')
+    elif lang == 'sq':
+       return gettext ('Albanian')
+    elif lang == 'sr':
+       return gettext ('Serbian')
+    elif lang == 'sv':
+       return gettext ('Swedish')
+    elif lang == 'ta':
+       return gettext ('Tamil')
+    elif lang == 'te':
+       return gettext ('Telugu')
+    elif lang == 'tg':
+       return gettext ('Tajik')
+    elif lang == 'th':
+       return gettext ('Thai')
+    elif lang == 'tk':
+       return gettext ('Turkmen')
+    elif lang == 'tl':
+       return gettext ('Tagalog')
+    elif lang == 'tr':
+       return gettext ('Turkish')
+    elif lang == 'tt':
+       return gettext ('Tatar')
+    elif lang == 'ug':
+       return gettext ('Uighur')
+    elif lang == 'uk':
+       return gettext ('Ukrainian')
+    elif lang == 'ur':
+       return gettext ('Urdu')
+    elif lang == 'uz':
+       return gettext ('Uzbek')
+    elif lang == 'vi':
+       return gettext ('Vietnamese')
+    elif lang == 'wa':
+       return gettext ('Walloon')
+    elif lang == 'xh':
+       return gettext ('Xhosa')
+    elif lang == 'yi':
+       return gettext ('Yiddish')
+    elif lang == 'yo':
+       return gettext ('Yoruba')
+    elif lang == 'zh_CN':
+       return gettext ('Chinese (China)')
+    elif lang == 'zh_trad':
+       return gettext ('Chinese Traditional')
+    elif lang == 'zu':
+       return gettext ('Zulu')
+    return lang

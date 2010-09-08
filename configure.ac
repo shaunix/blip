@@ -61,6 +61,7 @@ blip/plugins/cvs/Makefile
 blip/plugins/doap/Makefile
 blip/plugins/docs/Makefile
 blip/plugins/git/Makefile
+blip/plugins/i18n/Makefile
 blip/plugins/index/Makefile
 blip/plugins/modules/Makefile
 blip/plugins/people/Makefile

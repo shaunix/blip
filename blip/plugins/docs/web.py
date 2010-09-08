@@ -1,21 +1,21 @@
 # coding=UTF-8
 # Copyright (c) 2006  Shaun McCance  <shaunm@gnome.org>
 #
-# This file is part of Pulse, a program for displaying various statistics
+# This file is part of Blip, a program for displaying various statistics
 # of questionable relevance about software and the people who make it.
 #
-# Pulse is free software; you can redistribute it and/or modify it under the
+# Blip is free software; you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software
 # Foundation; either version 2 of the License, or (at your option) any later
 # version.
 #
-# Pulse is distributed in the hope that it will be useful, but WITHOUT ANY
+# Blip is distributed in the hope that it will be useful, but WITHOUT ANY
 # WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
 # FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
 # details.
 #
 # You should have received a copy of the GNU General Public License along
-# with Pulse; if not, write to the Free Software Foundation, 59 Temple Place,
+# with Blip; if not, write to the Free Software Foundation, 59 Temple Place,
 # Suite 330, Boston, MA  0211-1307  USA.
 #
 
@@ -314,100 +314,6 @@ class PagesTab (blip.html.TabProvider):
             docdate = page.data.get ('docdate', None)
 
         response.payload = tab
-        return response
-
-class TranslationsTab (blip.html.TabProvider):
-    @classmethod
-    def add_tabs (cls, page, request):
-        if len(request.path) < 1 or request.path[0] != 'doc':
-            return None
-        if not (isinstance (request.record, blip.db.Branch) and
-                request.record.type == u'Document'):
-            return None
-        cnt = blip.db.Branch.select (parent=request.record, type=u'Translation').count ()
-        if cnt > 0:
-            page.add_tab ('i18n',
-                          blip.utils.gettext ('Translations (%i)') % cnt,
-                          blip.html.TabProvider.CORE_TAB)
-
-    @classmethod
-    def respond (cls, request):
-        if len(request.path) < 1 or request.path[0] != 'doc':
-            return None
-        if not blip.html.TabProvider.match_tab (request, 'i18n'):
-            return None
-
-        response = blip.web.WebResponse (request)
-
-        pad = blip.html.PaddingBox ()
-
-        of = blip.db.OutputFile.select_one (type=u'l10n', ident=request.record.ident,
-                                            filename=(request.record.ident.split('/')[-2] + u'.pot'))
-        if of is not None:
-            span = blip.html.Span (divider=blip.html.SPACE)
-            span.add_content (blip.html.Link (of.blip_url,
-                                              blip.utils.gettext ('POT file'),
-                                              icon='download'))
-            # FIXME: i18n reordering
-            if of.statistic is not None:
-                span.add_content (blip.utils.gettext ('(%i messages)') % of.statistic)
-            span.add_content (blip.utils.gettext ('on %s') % of.datetime.strftime('%Y-%m-%d %T'))
-            pad.add_content (span)
-
-        translations = blip.db.Branch.select_with_statistic ([u'Messages', u'ImageMessages'],
-                                                             type=u'Translation',
-                                                             parent=request.record)
-        translations = blinq.utils.attrsorted (list(translations), (0, 'title'))
-        if len(translations) == 0:
-            pad.add_content (blip.html.AdmonBox (blip.html.AdmonBox.warning,
-                                                 blip.utils.gettext ('No translations')))
-        else:
-            cont = blip.html.ContainerBox ()
-            pad.add_content (cont)
-            cont.set_sortable_tag ('tr')
-            cont.set_sortable_class ('po')
-            grid = blip.html.GridBox ()
-            cont.add_content (grid)
-            sort_percent = False
-            sort_images = False
-            for translation, mstat, istat in translations:
-                span = blip.html.Span (os.path.basename (translation.scm_dir))
-                span.add_html_class ('title')
-                link = blip.html.Link (translation.blip_url, span)
-                row = [link]
-                percent = 0
-                if mstat is not None:
-                    sort_percent = True
-                    untranslated = mstat.total - mstat.stat1 - mstat.stat2
-                    try:
-                        percent = math.floor (100 * (float(mstat.stat1) / mstat.total))
-                    except:
-                        percent = 0
-                    span = blip.html.Span ('%i%%' % percent)
-                    span.add_html_class ('percent')
-                    row.append (span)
-                    row.append (('%i.%i.%i') %
-                                (mstat.stat1, mstat.stat2, untranslated))
-                if istat is not None:
-                    sort_images = True
-                    span = blip.html.Span (str(istat.stat1))
-                    span.add_html_class ('images')
-                    fspan = blip.html.Span (span, '/', str(istat.total), divider = blip.html.SPACE)
-                    row.append (fspan)
-                idx = grid.add_row (*row)
-                grid.add_row_class (idx, 'po')
-                if percent >= 0:
-                    grid.add_row_class (idx, 'po80')
-                elif percent >= 50:
-                    grid.add_row_class (idx, 'po50')
-            if sort_percent or sort_images:
-                cont.add_sort_link ('title', blip.utils.gettext ('language'), 1)
-                if sort_percent:
-                    cont.add_sort_link ('percent', blip.utils.gettext ('percent'))
-                if sort_images:
-                    cont.add_sort_link ('images', blip.utils.gettext ('images'))
-
-        response.payload = pad
         return response
 
 class DocumentsTab (blip.html.TabProvider):

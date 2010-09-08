@@ -7,6 +7,7 @@ SUBDIRS = 		\
 	doap		\
 	docs		\
 	git		\
+	i18n		\
 	index		\
 	modules 	\
 	people		\

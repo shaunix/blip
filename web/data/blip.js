@@ -1033,8 +1033,9 @@ function sort (id, tag, cls, key, asc) {
     var el_title = these.find ('span.title');
 
     if (el_key.length > 0) {
-      el_key = el_key.attr('data-sort-key');
-      if (el_key == undefined)
+      if (el_key.attr('data-sort-key') != undefined)
+        el_key = el_key.attr('data-sort-key');
+      else
         el_key = el_key.html();
       el.removeClass ('nokey');
     } else {
