@@ -28,6 +28,162 @@ import blip.db
 import blip.html
 import blip.utils
 
+class TranslationResponder (blip.web.RecordLocator, blip.web.PageResponder):
+    @classmethod
+    def locate_record (cls, request):
+        if not (len(request.path) in (6, 7) and request.path[0] == 'l10n'):
+            return False
+        ident = u'/' + u'/'.join(request.path)
+        if len(request.path) == 6:
+            trs = list(blip.db.Branch.select (project_ident=ident))
+            if len(trs) == 0:
+                return True
+            tr = [tr for tr in trs if tr.is_default]
+            if len(tr) == 0:
+                return True
+            request.record = tr[0]
+        else:
+            tr = blip.db.Branch.get (ident)
+            if tr is None:
+                return True
+            request.record = tr
+            trs = list(blip.db.Branch.select (project_ident=tr.project_ident))
+        request.set_data ('branches', trs)
+        return True
+
+    @classmethod
+    def respond (cls, request, **kw):
+        if len(request.path) < 1 or request.path[0] != 'l10n':
+            return None
+
+        response = blip.web.WebResponse (request)
+
+        if request.record is None:
+            page = blip.html.PageNotFound (None)
+            response.payload = page
+            return response
+
+        lang = request.record.ident.split('/')[2]
+        page = blip.html.Page (request=request,
+                               title=blip.utils.language_name (lang))
+        response.payload = page
+
+        if request.record.parent.type == u'Document':
+            page.add_trail_link (request.record.parent.parent.blip_url + '#docs',
+                                 request.record.parent.parent.title)
+            page.add_trail_link (request.record.parent.blip_url + '#i18n',
+                                 request.record.parent.title)
+        else:
+            domid = request.record.parent.ident.split('/')[-2]
+            page.add_trail_link (request.record.parent.parent.blip_url + '#i18n/' + domid,
+                                 request.record.parent.parent.title)
+
+        branches = request.get_data ('branches', [])
+        if len(branches) > 1:
+            for branch in blinq.utils.attrsorted (branches, '-is_default', 'scm_branch'):
+                if branch.ident != request.record.ident:
+                    page.add_sublink (branch.blip_url, branch.scm_branch)
+                else:
+                    page.add_sublink (None, branch.scm_branch)
+
+        return response
+
+class OverviewTab (blip.html.TabProvider):
+    @classmethod
+    def add_tabs (cls, page, request):
+        if len(request.path) < 1 or request.path[0] != 'l10n':
+            return None
+        page.add_tab ('overview',
+                      blip.utils.gettext ('Overview'),
+                      blip.html.TabProvider.FIRST_TAB),
+        page.add_to_tab ('overview', cls.get_tab (request))
+
+    @classmethod
+    def get_tab (cls, request):
+        tab = blip.html.PaddingBox ()
+
+        for err in blip.db.Error.select (ident=request.record.ident):
+            tab.add_content (blip.html.AdmonBox (blip.html.AdmonBox.error, err.message))
+
+        facts = blip.html.FactsTable ()
+        tab.add_content (facts)
+
+        facts.start_fact_group ()
+        lang = request.record.ident.split('/')[2]
+        facts.add_fact (blip.utils.gettext ('Language'),
+                        blip.utils.language_name (lang))
+        facts.add_fact (blip.utils.gettext ('Code'), lang)
+        if request.record.desc not in (None, ''):
+            facts.add_fact (blip.utils.gettext ('Description'),
+                            request.record.desc)
+
+        module = request.record.parent.parent
+        rels = blip.db.SetModule.get_related (pred=module)
+        if len(rels) > 0:
+            sets = blinq.utils.attrsorted ([rel.subj for rel in rels], 'title')
+            span = blip.html.Span (*[blip.html.Link(rset.blip_url + '#docs',
+                                                    rset.title)
+                                     for rset in sets])
+            span.set_divider (blip.html.BULLET)
+            facts.start_fact_group ()
+            facts.add_fact (blip.utils.gettext ('Release Sets'), span)
+
+        facts.start_fact_group ()
+        if request.record.parent.type == u'Document':
+            facts.add_fact (blip.utils.gettext ('Document'),
+                            blip.html.Link (request.record.parent))
+        elif request.record.parent.type == u'Domain':
+            domid = request.record.ident.split('/')[-2]
+            domtitle = '%s (%s)' % (request.record.ident.split('/')[-3], domid)
+            facts.add_fact (blip.utils.gettext ('Domain'),
+                            blip.html.Link (module.blip_url + '#i18n/' + domid,
+                                            domtitle))
+
+        facts.start_fact_group ()
+        checkout = blip.scm.Repository.from_record (request.record, checkout=False, update=False)
+        facts.add_fact (blip.utils.gettext ('Module'),
+                        blip.html.Link (module.blip_url,
+                                        request.record.scm_module))
+        facts.add_fact (blip.utils.gettext ('Branch'), request.record.scm_branch)
+        facts.add_fact (blip.utils.gettext ('Location'), checkout.location)
+        if request.record.scm_dir is not None:
+            if request.record.scm_file is not None:
+                facts.add_fact (blip.utils.gettext ('File'),
+                                os.path.join (request.record.scm_dir, request.record.scm_file))
+            else:
+                facts.add_fact (blip.utils.gettext ('Directory'), request.record.scm_dir)
+
+        if request.record.mod_datetime is not None:
+            facts.start_fact_group ()
+            if request.record.mod_person_ident is not None:
+                facts.add_fact (blip.utils.gettext ('Modified'),
+                                blip.html.Link (request.record.mod_person))
+                facts.add_fact ('',
+                                request.record.mod_datetime.strftime('%Y-%m-%d %T'))
+            else:
+                facts.add_fact (blip.utils.gettext ('Modified'),
+                                request.record.mod_datetime.strftime('%Y-%m-%d %T'))
+
+        if request.record.updated is not None:
+            facts.start_fact_group ()
+            facts.add_fact (blip.utils.gettext ('Last Updated'),
+                            request.record.updated.strftime('%Y-%m-%d %T'))
+
+        return tab
+
+    @classmethod
+    def respond (cls, request):
+        if len(request.path) < 1 or request.path[0] != 'l10n':
+            return None
+        if not blip.html.TabProvider.match_tab (request, 'overview'):
+            return None
+
+        response = blip.web.WebResponse (request)
+
+        response.payload = cls.get_tab (request)
+        return response
+
+
 class TranslationsTab (blip.html.TabProvider):
     @classmethod
     def add_tabs (cls, page, request):
