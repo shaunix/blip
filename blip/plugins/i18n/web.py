@@ -31,12 +31,24 @@ import blip.utils
 class TranslationsTab (blip.html.TabProvider):
     @classmethod
     def add_tabs (cls, page, request):
-        if len(request.path) < 1 or request.path[0] != 'doc':
+        if len(request.path) < 1 or request.path[0] not in ('mod', 'doc'):
             return None
-        if not (isinstance (request.record, blip.db.Branch) and
-                request.record.type == u'Document'):
+        if not isinstance (request.record, blip.db.Branch):
             return None
-        cnt = blip.db.Branch.select (parent=request.record, type=u'Translation').count ()
+        if request.record.type == u'Module':
+            store = blip.db.get_store (blip.db.Branch)
+            domain = blip.db.ClassAlias (blip.db.Branch)
+            using = store.using (blip.db.LeftJoin (blip.db.Branch, domain,
+                                                   blip.db.Branch.parent_ident == domain.ident))
+            cnt = using.find (blip.db.Branch.scm_file,
+                              blip.db.Branch.type == u'Translation',
+                              domain.type == u'Domain',
+                              domain.parent_ident == request.record.ident
+                              ).count()
+        elif request.record.type == u'Document':
+            cnt = blip.db.Branch.select (parent=request.record, type=u'Translation').count ()
+        else:
+            return None
         if cnt > 0:
             page.add_tab ('i18n',
                           blip.utils.gettext ('Translations (%i)') % cnt,
@@ -44,7 +56,7 @@ class TranslationsTab (blip.html.TabProvider):
 
     @classmethod
     def respond (cls, request):
-        if len(request.path) < 1 or request.path[0] != 'doc':
+        if len(request.path) < 1 or request.path[0] not in ('mod', 'doc'):
             return None
         if not blip.html.TabProvider.match_tab (request, 'i18n'):
             return None
@@ -53,8 +65,29 @@ class TranslationsTab (blip.html.TabProvider):
         pad = blip.html.PaddingBox ()
         response.payload = pad
 
-        of = blip.db.OutputFile.select_one (type=u'l10n', ident=request.record.ident,
-                                            filename=(request.record.ident.split('/')[-2] + u'.pot'))
+        if request.record.type == u'Module':
+            domain = list(request.record.select_children (u'Domain'))
+            if len(domain) == 0:
+                pad.add_content (blip.html.AdmonBox (blip.html.AdmonBox.warning,
+                                                     blip.utils.gettext ('No translation domains')))
+                return response
+            elif len(domain) > 1:
+                domain = blinq.utils.attrsorted (domain, 'scm_dir')
+                # FIXME
+                #for do in domain:
+                #    doid = do.ident.split('/')[-2]
+                #    pad.add_content (blip.html.Link (blinq.config.web_root_url +
+                #                                     '/'.join (request.path) +
+                #                                     '#i18n/' + doid,
+                #                                     'foo'))
+                domain = domain[0]
+            else:
+                domain = domain[0]
+        else:
+            domain = request.record
+
+        of = blip.db.OutputFile.select_one (type=u'l10n', ident=domain.ident,
+                                            filename=(domain.ident.split('/')[-2] + u'.pot'))
         if of is not None:
             span = blip.html.Span (divider=blip.html.SPACE)
             span.add_content (blip.html.Link (of.blip_url,
@@ -68,7 +101,7 @@ class TranslationsTab (blip.html.TabProvider):
 
         translations = blip.db.Branch.select_with_statistic ([u'Messages', u'ImageMessages'],
                                                              type=u'Translation',
-                                                             parent=request.record)
+                                                             parent=domain)
         translations = list(translations)
         for translation in translations:
             setattr (translation[0], 'x_lang_name',
@@ -84,7 +117,7 @@ class TranslationsTab (blip.html.TabProvider):
         cont.add_sort_link ('language', blip.utils.gettext ('language'))
         pad.add_content (cont)
         sort_percent = False
-        sort_fuzzy = True
+        sort_fuzzy = False
         sort_images = False
         for translation, mstat, istat in translations:
             lbox = cont.add_link_box (translation.blip_url, translation.x_lang_name)
