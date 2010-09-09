@@ -119,7 +119,7 @@ class OverviewTab (blip.html.TabProvider):
         else:
             facts.add_fact (blip.utils.gettext ('Page'), request.record.title)
             module = request.record.parent.parent
-        if request.record.desc != '':
+        if request.record.desc not in (None, ''):
             facts.add_fact (blip.utils.gettext ('Description'),
                             request.record.desc)
 

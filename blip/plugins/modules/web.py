@@ -107,7 +107,7 @@ class OverviewTab (blip.html.TabProvider):
 
         facts.start_fact_group ()
         facts.add_fact (blip.utils.gettext ('Module Name'), request.record.title)
-        if request.record.desc != '':
+        if request.record.desc not in (None, ''):
             facts.add_fact (blip.utils.gettext ('Description'),
                             request.record.desc)
 
