@@ -31,7 +31,8 @@ class DoapScanner (blip.plugins.modules.sweep.ModuleFileScanner):
     def process_file (self, dirname, basename):
         if (dirname == self.scanner.repository.directory
             and (basename == self.scanner.branch.scm_module + '.doap' or
-                 basename == self.scanner.branch.scm_path + '.doap')):
+                 (self.scanner.branch.scm_path is not None and
+                  basename == self.scanner.branch.scm_path + '.doap'))):
 
             filename = os.path.join (dirname, basename)
             with blip.db.Error.catch (self.scanner.branch, 'Invalid DOAP file'):
