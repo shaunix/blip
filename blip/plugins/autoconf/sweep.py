@@ -54,7 +54,7 @@ class AutoconfHandler (blip.plugins.modules.sweep.ModuleFileScanner):
             stamp.log ()
 
             autoconf = blip.parsers.get_parsed_file (blip.parsers.autoconf.Autoconf,
-                                                     filename)
+                                                     self.scanner.branch, filename)
 
             version = autoconf.get_package_version ()
             series = version.split('.')[:2]

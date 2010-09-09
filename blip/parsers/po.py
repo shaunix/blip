@@ -32,7 +32,7 @@ class Po (object):
     and call the finish method when you're done.
     """
 
-    def __init__ (self, fd=None):
+    def __init__ (self, record, fd=None):
         if isinstance (fd, basestring):
             self._fd = codecs.open (fd, 'r', 'utf-8')
         elif isinstance (fd, file):

@@ -27,7 +27,7 @@ class Autoconf (object):
     Parse a configure.ac file.
     """
 
-    def __init__ (self, filename):
+    def __init__ (self, record, filename):
         dirname = os.path.dirname (filename)
         basename = os.path.basename (filename)
         owd = os.getcwd ()

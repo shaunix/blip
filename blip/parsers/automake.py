@@ -33,7 +33,7 @@ class Automake (object):
     extracting variables.
     """
 
-    def __init__ (self, filename):
+    def __init__ (self, record, filename):
         self._variables = {}
         self._lines = []
         regexp = re.compile ('''([A-Za-z_]+)(\s*=)(.*)''')

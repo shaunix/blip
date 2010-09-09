@@ -20,11 +20,11 @@
 
 _parsed_files = {}
 
-def get_parsed_file (cls, filename):
-    ret = _parsed_files.get ((cls, filename))
+def get_parsed_file (cls, record, filename):
+    ret = _parsed_files.get ((cls, record.ident, filename))
     if ret is not None:
         return ret
 
-    ret = cls (filename)
-    _parsed_files[(cls, filename)] = ret
+    ret = cls (record, filename)
+    _parsed_files[(cls, record.ident, filename)] = ret
     return ret
