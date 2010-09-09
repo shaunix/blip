@@ -103,6 +103,8 @@ class Autoconf (object):
             else:
                 pkgname = initargs[0]
         self._pkgname = self.subvar (pkgname)
+        if not self._vars.has_key ('PACKAGE'):
+            self._vars['PACKAGE'] = self._pkgname
 
         pkgversion = self._vars.get ('PACKAGE_VERSION', '').strip()
         if pkgversion == '':
