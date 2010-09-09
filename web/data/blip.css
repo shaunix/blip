@@ -244,6 +244,46 @@ td.col-first { padding: 0; }
 }
 .ajax img { vertical-align: bottom; }
 
+div.TabBar {
+  text-align: center;
+}
+span.TabBar {
+  padding: 4px 8px 4px 8px;
+  border: solid 1px #babdb6;
+  background-color: #eeeeec;
+  background: -webkit-gradient(linear, left -20, left 50, from(#eeeeec), to(white));
+  background: -moz-linear-gradient(top, #eeeeec -20px, white 50px);
+  border-radius: 2px;
+}
+a.TabBar:first-child {
+  border-left: solid 1px #babdb6;
+}
+a.TabBar {
+  margin: 0 6px 0 6px;
+  padding: 1px;
+  border: solid 1px #babdb6;
+  border-radius: 2px;
+  background-color: white;
+  color: #555753;
+  font-weight: bold;
+}
+a.TabBar:hover {
+  cursor: default;
+  text-decoration: none;
+}
+a.TabBar span {
+  padding: 0 6px 0 6px;
+  border-radius: 1px;
+  -webkit-transition: background-color 0.2s linear;
+  -moz-transition: background-color 0.2s linear;
+}
+a.TabBarActive span {
+  background-color: #fcf197;
+}
+a.TabBar:hover span {
+  background-color: #b1d5fc;
+}
+
 .trentry {
   margin: 1em 0 1em 0;
   padding: 6px 1em 6px 1em;

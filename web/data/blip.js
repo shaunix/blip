@@ -504,12 +504,17 @@ function tab (tabid) {
 
   var oldpane = undefined;
   if (tabbar[0].current_tabid != undefined)
-    oldpane = $('#pane-' + tabbar[0].current_tabid);
+    oldpane = $('#pane-' + tabbar[0].current_tabid.replace('/', '____'));
   if (oldpane != undefined)
     oldpane.hide();
 
   tabs.removeClass ('tabactive');
-  var tab = $('#tab-' + tabid);
+  var tab;
+  var slash = tabid.indexOf('/');
+  if (slash >= 0)
+    tab = $('#tab-' + tabid.substring(0, slash));
+  else
+    tab = $('#tab-' + tabid);
   tab.addClass ('tabactive');
 
   if (tabbar[0].current_tabid == undefined)
@@ -518,17 +523,12 @@ function tab (tabid) {
     document.title = document.title.substr(0, document.title.lastIndexOf(' - ') + 3) + tab.text();
 
   tabbar[0].current_tabid = tabid;
-  var paneid = 'pane-' + tabid;
+  var paneid = 'pane-' + tabid.replace('/', '____');
   var pane = $('#' + paneid);
   if (pane.length > 0) {
-    if (pane.hasClass ('paneloading'))
-      $('#reload').shade ();
-    else
-      $('#reload').unshade ();
     pane.show();
   } else {
     var panes = $('#panes');
-    $('#reload').shade ();
     pane = $('<div class="pane"></div>');
     pane.attr ('id', paneid);
     pane.addClass ('paneloading');
@@ -547,22 +547,12 @@ function tab (tabid) {
       pane.removeClass ('paneloading');
       if (tabid == tabbar[0].current_tabid) {
         thr.stop ();
-        $('#reload').unshade ();
         tabbar[0].loading_tabid = undefined;
         pane.show ();
       }
     };
     $.ajax({url: href, complete: func});
   }
-}
-
-function reload () {
-  var tabbar = $('#tabs');
-  if (tabbar[0].current_tabid != undefined) {
-    oldpane = $('#pane-' + tabbar[0].current_tabid);
-    oldpane.remove ();
-  }
-  tab (tabbar[0].current_tabid);
 }
 
 $(document).ready (function () {

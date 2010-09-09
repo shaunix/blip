@@ -397,7 +397,11 @@ class TabProvider (blip.web.ContentResponder):
     def match_tab (cls, request, tabid):
         if request.query.get ('q', None) != 'tab':
             return False
-        return (request.query.get ('tab', None) == tabid)
+        reqtab = request.query.get ('tab', None)
+        if tabid.endswith ('/*'):
+            return reqtab is not None and reqtab.startswith (tabid[:-1])
+        else:
+            return (reqtab == tabid)
 
     @classmethod
     def respond (cls, request):
@@ -715,6 +719,30 @@ class SidebarBox (HtmlObject, ContentComponent, LinkBoxesComponent):
         ContentComponent.output (self, res)
         LinkBoxesComponent.output (self, res)
         res.write('</div>')
+
+
+class TabBar (HtmlObject):
+    def __init__ (self, **kw):
+        super (TabBar, self).__init__ (**kw)
+        self._tabs = []
+        self._has_active = False
+
+    def add_tab (self, tab, title, active=False):
+        self._tabs.append ((tab, title, active))
+        self._has_active = self._has_active or active
+
+    def output (self, res):
+        """Output the HTML."""
+        res.write('<div class="TabBar"><span class="TabBar">')
+        if not self._has_active and len(self._tabs) > 0:
+            self._tabs[0] = (self._tabs[0][0], self._tabs[0][1], True)
+        for tab, title, active in self._tabs:
+            cls = 'TabBar'
+            if active:
+                cls += ' TabBarActive'
+            res.write('<a class="%s" href="#%s"><span>%s</span></a>' %
+                      (cls, tab, self.escape(title)))
+        res.write('</span></div>')
 
 
 class InfoBox (HtmlObject, SortableComponent, ContentComponent, FilterableComponent, LinkBoxesComponent):

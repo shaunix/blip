@@ -58,7 +58,8 @@ class TranslationsTab (blip.html.TabProvider):
     def respond (cls, request):
         if len(request.path) < 1 or request.path[0] not in ('mod', 'doc'):
             return None
-        if not blip.html.TabProvider.match_tab (request, 'i18n'):
+        if not (blip.html.TabProvider.match_tab (request, 'i18n') or
+                blip.html.TabProvider.match_tab (request, 'i18n/*')):
             return None
 
         response = blip.web.WebResponse (request)
@@ -72,19 +73,29 @@ class TranslationsTab (blip.html.TabProvider):
                                                      blip.utils.gettext ('No translation domains')))
                 return response
             elif len(domain) > 1:
-                domain = blinq.utils.attrsorted (domain, 'scm_dir')
-                # FIXME
-                #for do in domain:
-                #    doid = do.ident.split('/')[-2]
-                #    pad.add_content (blip.html.Link (blinq.config.web_root_url +
-                #                                     '/'.join (request.path) +
-                #                                     '#i18n/' + doid,
-                #                                     'foo'))
-                domain = domain[0]
+                reqtab = request.query.get ('tab', None)
+                if reqtab is not None and reqtab.startswith ('i18n/'):
+                    reqtab = reqtab[5:]
+                tabbar = blip.html.TabBar ()
+                pad.add_content (tabbar)
+                domains = blinq.utils.attrsorted (domain, 'scm_dir')
+                domain = None
+                for dom in domains:
+                    domid = dom.ident.split('/')[-2]
+                    active = False
+                    if domid == reqtab:
+                        active = True
+                        domain = dom
+                    tabbar.add_tab ('i18n/' + domid, domid, active)
+                if domain is None:
+                    domain = domains[0]
             else:
                 domain = domain[0]
         else:
             domain = request.record
+
+        for err in blip.db.Error.select (ident=domain.ident):
+            pad.add_content (blip.html.AdmonBox (blip.html.AdmonBox.error, err.message))
 
         of = blip.db.OutputFile.select_one (type=u'l10n', ident=domain.ident,
                                             filename=(domain.ident.split('/')[-2] + u'.pot'))
