@@ -75,8 +75,10 @@ class TranslationResponder (blip.web.RecordLocator, blip.web.PageResponder):
                                  request.record.parent.title)
         else:
             domid = request.record.parent.ident.split('/')[-2]
-            page.add_trail_link (request.record.parent.parent.blip_url + '#i18n/' + domid,
+            page.add_trail_link (request.record.parent.parent.blip_url,
                                  request.record.parent.parent.title)
+            page.add_trail_link (request.record.parent.parent.blip_url + '#i18n/' + domid,
+                                 domid)
 
         branches = request.get_data ('branches', [])
         if len(branches) > 1:
@@ -134,10 +136,8 @@ class OverviewTab (blip.html.TabProvider):
                             blip.html.Link (request.record.parent))
         elif request.record.parent.type == u'Domain':
             domid = request.record.ident.split('/')[-2]
-            domtitle = '%s (%s)' % (request.record.ident.split('/')[-3], domid)
             facts.add_fact (blip.utils.gettext ('Domain'),
-                            blip.html.Link (module.blip_url + '#i18n/' + domid,
-                                            domtitle))
+                            blip.html.Link (module.blip_url + '#i18n/' + domid, domid))
 
         facts.start_fact_group ()
         checkout = blip.scm.Repository.from_record (request.record, checkout=False, update=False)
