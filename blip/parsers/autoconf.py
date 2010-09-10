@@ -19,6 +19,7 @@
 #
 
 import commands
+import fnmatch
 import os
 import re
 
@@ -41,10 +42,40 @@ class Autoconf (object):
         self._vars = {}
         self._functxts = {}
         self._funcargs = {}
+        if record is not None and record.data.has_key ('configure_args'):
+            for arg in record.data['configure_args'].split():
+                if arg.startswith ('--with-'):
+                    (var, sep, val) = arg.partition ('=')
+                    var = var[2:].replace ('-', '_')
+                    self._vars[var] = val
         infunc = None
-        varre = re.compile ('^([A-Z_]+)=\'?([^\']*)\'?')
+        incase = False
+        caseval = None
+        casematch = casedone = False
+        casere = re.compile ('case \"?\$\{?([A-Za-z_][A-Za-z0-9_]*)\}?\"? in')
+        condre = re.compile ('\s*([^\)]+)\)(.*)')
+        varre = re.compile ('^\s*([A-Z_]+)=\'?([^\']*)\'?')
         for line in output.split('\n'):
-            if infunc == None:
+            if incase:
+                if line.strip() == 'esac':
+                    incase = False
+                    continue
+                if casedone:
+                    continue
+                if not casematch and caseval is not None:
+                    m = condre.match (line)
+                    if m:
+                        if fnmatch.fnmatch (caseval, m.group(1)):
+                            casematch = True
+                            line = m.group(2)
+                if casematch:
+                    if line.endswith(';;'):
+                        casematch = False
+                        casedone = True
+                        line = line[:-2]
+                else:
+                    continue
+            if infunc is None:
                 if line.startswith ('AC_INIT('):
                     infunc = 'AC_INIT'
                     self._functxts[infunc] = ''
@@ -58,13 +89,21 @@ class Autoconf (object):
                     self._functxts[infunc] = ''
                     line = line[11:]
                 else:
+                    m = casere.match (line)
+                    if m:
+                        casevar = m.group(1)
+                        incase = True
+                        caseval = self._vars.get (casevar, None)
+                        casematch = False
+                        casedone = False
+                        continue
                     m = varre.match (line)
                     if m:
                         varval = m.group(2).strip()
                         if len(varval) > 0 and varval[0] == varval[-1] == '"':
                             varval = varval[1:-1]
                         self._vars[m.group(1)] = varval
-            if infunc != None:
+            if infunc is not None:
                 rparen = line.find (')')
                 if rparen >= 0:
                     self._functxts[infunc] += line[:rparen]
