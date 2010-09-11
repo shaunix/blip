@@ -90,7 +90,7 @@ class Autoconf (object):
                     line = line[11:]
                 else:
                     m = casere.match (line)
-                    if m:
+                    if m and not line.endswith ('esac'):
                         casevar = m.group(1)
                         incase = True
                         caseval = self._vars.get (casevar, None)
