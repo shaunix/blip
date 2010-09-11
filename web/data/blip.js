@@ -183,6 +183,50 @@ $.fn.blip_init = function () {
     });
   });
 
+  /** Meters **/
+  this.find ('div.Meter').each (function () {
+    var div = $(this);
+    var total = parseInt (div.attr ('data-meter-width'));
+    var scale = 1.0;
+    if (total > 320)
+      scale = 320 / total;
+    var i = 0;
+    div.children ('div.MeterBar').each (function () {
+      var bar = $(this);
+      var width = parseInt (bar.attr ('data-meter-width')) * scale;
+      var color;
+      if (i % 3 == 0)
+        color = '#729fcf'
+      else if (i % 3 == 1)
+        color = '#8ae234';
+      else
+        color = '#ef2929';
+      i++;
+      bar.css ({
+        width: width + 'px',
+        backgroundColor: color
+      })
+      bar.hover (
+        function () {
+          bar.children ('div.MeterText').each (function () {
+            var offset = bar.offset();
+            var txt = $(this);
+            txt.css ({
+              display: 'block',
+              position: 'absolute',
+              left: offset.left + (bar.width() / 2) - (txt.width() / 2),
+              top: offset.top - txt.height() - 8
+            });
+          });
+        },
+        function () {
+          bar.children ('div.MeterText').hide ();
+        }
+      );
+    });
+    div.show ();
+  });
+
   /** Info Boxes **/
   this.find ('div.info').each (function () {
     var div = $(this);
@@ -859,7 +903,6 @@ function scroll (div, pad) {
         window.scrollTo(0, i);
   }
 }
-
 
 /******************************************************************************/
 /** Menu links **/

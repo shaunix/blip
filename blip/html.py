@@ -1416,6 +1416,23 @@ class BulletList (HtmlObject):
 ################################################################################
 ## Other...
 
+class Meter (HtmlObject):
+    def __init__ (self, **kw):
+        self._bars = []
+        super (Meter, self).__init__ (**kw)
+
+    def add_bar (self, width, text):
+        self._bars.append ((width, text))
+
+    def output (self, res):
+        total = sum([bar[0] for bar in self._bars])
+        res.write('<div class="Meter" data-meter-width="%i">' % total)
+        for width, title in self._bars:
+            res.write('<div class="MeterBar" data-meter-width="%i">' % width)
+            res.write('<div class="MeterText">%s</div></div>' % self.escape(title))
+        res.write('</div>')
+
+
 class Rule (HtmlObject):
     def output (self, res):
         """Output the HTML."""

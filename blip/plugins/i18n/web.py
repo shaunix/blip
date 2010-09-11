@@ -119,6 +119,22 @@ class OverviewTab (blip.html.TabProvider):
             facts.add_fact (blip.utils.gettext ('Description'),
                             request.record.desc)
 
+        facts.start_fact_group ()
+        stat = blip.db.Statistic.select_statistic (request.record, u'Messages')
+        try:
+            stat = stat[0]
+            meter = blip.html.Meter ()
+            meter.add_bar (stat.stat1,
+                           blip.utils.gettext ('%i translated') % stat.stat1)
+            meter.add_bar (stat.stat2,
+                           blip.utils.gettext ('%i fuzzy') % stat.stat2)
+            untranslated = stat.total - stat.stat1 - stat.stat2
+            meter.add_bar (untranslated,
+                           blip.utils.gettext ('%i untranslated') % untranslated)
+            facts.add_fact ('Translated', meter)
+        except IndexError:
+            pass
+
         module = request.record.parent.parent
         rels = blip.db.SetModule.get_related (pred=module)
         if len(rels) > 0:

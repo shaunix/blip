@@ -244,6 +244,33 @@ td.col-first { padding: 0; }
 }
 .ajax img { vertical-align: bottom; }
 
+div.Meter {
+  display: none;
+  height: 8px;
+  -webkit-box-shadow: 0px 0px 3px #888a85;
+  -moz-box-shadow: 0px 0px 3px #888a85;
+  padding: 1px;
+}
+div.MeterBar {
+  float: left;
+  margin: 0;
+  height: 8px;
+  line-height: 8px;
+  opacity: 0.6;
+  -webkit-transition: opacity 0.2s linear;
+  -moz-transition: opacity 0.2s linear;
+}
+div.MeterBar:hover {
+  opacity: 0.8;
+}
+div.MeterText {
+  display: none;
+  background-color: #fcf197;
+  padding: 2px 4px 2px 4px;
+  -webkit-box-shadow: 0px 0px 3px #888a85;
+  -moz-box-shadow: 0px 0px 3px #888a85;
+}
+
 div.TabBar {
   text-align: center;
 }
