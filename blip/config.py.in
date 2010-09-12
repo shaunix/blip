@@ -32,7 +32,7 @@ def init (site):
     blinq.config.init (os.path.join (BLIP_SITE_DIR, site + '.cfg'))
 
 @blinq.config.option
-def db_uri (val):
+def db_uri (config, val):
     """The URI for the Storm database connection for Blip"""
     return val
 
@@ -41,17 +41,17 @@ def db_uri (val):
 ## Directories for local stuff
 
 @blinq.config.option
-def input_dir (val):
+def input_dir (config, val):
     """The directory containing input files that are stored in git with Blip"""
     return val or os.path.join (BLIP_SITE_DIR, 'input')
 
 @blinq.config.option
-def scm_dir (val):
+def scm_dir (config, val):
     """The directory where Blip checks stuff out from SCM systems"""
     return val or os.path.join (BLIP_SITE_DIR, 'scm')
 
 @blinq.config.option
-def tmp_dir (val):
+def tmp_dir (config, val):
     """The directory where Blip puts temporary files"""
     return val or os.path.join (BLIP_SITE_DIR, 'tmp')
 
@@ -60,12 +60,12 @@ def tmp_dir (val):
 ## Directores for web stuff
 
 @blinq.config.option
-def web_dir (val):
+def web_dir (config, val):
     """The directory that contains index.cgi, among other things"""
     return val
 
 @blinq.config.option
-def web_files_dir (val):
+def web_files_dir (config, val):
     """The directory where Blip outputs files to serve over the web"""
     if val is not None:
         return val
@@ -74,7 +74,7 @@ def web_files_dir (val):
     return None
 
 @blinq.config.option
-def web_site_name (val):
+def web_site_name (config, val):
     """The name of this Blip site, to display in the header"""
     return val or 'Blip'
 
@@ -83,7 +83,7 @@ def web_site_name (val):
 ## Web roots
 
 @blinq.config.option
-def web_data_url (val):
+def web_data_url (config, val):
     """The root URL for Blip's CSS, JavaScript, images, etc."""
     if val is None:
         return blinq.config.web_root_url + 'data/'
@@ -93,7 +93,7 @@ def web_data_url (val):
         return val
 
 @blinq.config.option
-def web_files_url (val):
+def web_files_url (config, val):
     """The root URL for web-available files Blip creates"""
     if val is None:
         return blinq.config.web_root_url + 'files/'
