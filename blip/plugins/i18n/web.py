@@ -216,7 +216,7 @@ class TranslationsTab (blip.html.TabProvider):
                               blip.db.Branch.type == u'Translation',
                               domain.type == u'Domain',
                               domain.parent_ident == request.record.ident
-                              ).count()
+                              ).config(distinct=True).count()
         elif request.record.type == u'Document':
             cnt = blip.db.Branch.select (parent=request.record, type=u'Translation').count ()
         else:
