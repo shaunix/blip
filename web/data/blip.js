@@ -539,7 +539,7 @@ function tab (tabid) {
   else {
     if (tabid == curhash || (curhash == '' && tabid == tabbar[0].default_tabid)) {
       if (tabbar[0].current_tabid != undefined) {
-        oldpane = $('#pane-' + tabbar[0].current_tabid);
+        oldpane = $('#pane-' + tabbar[0].current_tabid.replace('.', '\\.'));
         oldpane.remove ();
       }
     }
@@ -548,7 +548,7 @@ function tab (tabid) {
 
   var oldpane = undefined;
   if (tabbar[0].current_tabid != undefined)
-    oldpane = $('#pane-' + tabbar[0].current_tabid.replace('/', '____'));
+    oldpane = $('#pane-' + tabbar[0].current_tabid.replace('/', '____').replace('.', '\\.'));
   if (oldpane != undefined)
     oldpane.hide();
 
@@ -568,7 +568,7 @@ function tab (tabid) {
 
   tabbar[0].current_tabid = tabid;
   var paneid = 'pane-' + tabid.replace('/', '____');
-  var pane = $('#' + paneid);
+  var pane = $('#' + paneid.replace('.', '\\.'));
   if (pane.length > 0) {
     pane.show();
   } else {
@@ -585,7 +585,7 @@ function tab (tabid) {
     tabbar[0].loading_tabid = tabid;
     var href = blip_url + '?q=tab&tab=' + tabid;
     var func = function (req, status) {
-      var pane = $('#' + paneid);
+      var pane = $('#' + paneid.replace('.', '\\.'));
       pane.html ($(req.responseText));
       pane.blip_init ();
       pane.removeClass ('paneloading');
