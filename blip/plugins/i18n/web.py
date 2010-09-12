@@ -341,6 +341,17 @@ class TranslationsTab (blip.html.TabProvider):
                                        html_class='images')
                 span.add_data_attribute ('sort-key', str(istat.stat1))
                 lbox.add_fact (blip.utils.gettext ('images'), span)
+            if mstat is not None:
+                meter = blip.html.Meter ()
+                meter.add_bar (mstat.stat1,
+                               blip.utils.gettext ('%i translated') % mstat.stat1)
+                if mstat.stat2 is not None:
+                    meter.add_bar (mstat.stat2,
+                                   blip.utils.gettext ('%i fuzzy') % mstat.stat2)
+                untranslated = mstat.total - mstat.stat1 - mstat.stat2
+                meter.add_bar (untranslated,
+                               blip.utils.gettext ('%i untranslated') % untranslated)
+                lbox.add_fact (None, meter)
         if sort_percent:
             cont.add_sort_link ('translated', blip.utils.gettext ('translated'))
         if sort_fuzzy:

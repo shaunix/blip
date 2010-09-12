@@ -188,12 +188,16 @@ $.fn.blip_init = function () {
     var div = $(this);
     var total = parseInt (div.attr ('data-meter-width'));
     var scale = 1.0;
-    if (total > 320)
+    if (total > 320) {
       scale = 320 / total;
+      total = 320;
+    }
+    total = 0;
     var i = 0;
     div.children ('div.MeterBar').each (function () {
       var bar = $(this);
-      var width = parseInt (bar.attr ('data-meter-width')) * scale;
+      var width = parseInt(parseInt (bar.attr ('data-meter-width')) * scale);
+      total = total + width;
       var color;
       if (i % 3 == 0)
         color = '#729fcf'
@@ -224,7 +228,7 @@ $.fn.blip_init = function () {
         }
       );
     });
-    div.show ();
+    div.width(total);
   });
 
   /** Info Boxes **/
