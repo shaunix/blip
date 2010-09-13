@@ -183,6 +183,41 @@ $.fn.blip_init = function () {
     });
   });
 
+  /** Watches **/
+  this.find ('input.watch').change (function () {
+    var input = $(this);
+    var label = input.closest('label');
+    var ident = input.attr('data-watch-ident');
+    if (input.is(':checked')) {
+      $.ajax ({
+        type: 'GET',
+        url: blip_root + 'account',
+        data: {'q': 'watch', 'ident': ident},
+        complete: function (req, status) {
+          if (status == 'success') {
+            label.addClass('watchactive');
+          } else {
+            label.empty().append ($(req.responseText))
+          }
+        }
+      });
+    }
+    else {
+      $.ajax ({
+        type: 'GET',
+        url: blip_root + 'account',
+        data: {'q': 'unwatch', 'ident': ident},
+        complete: function (req, status) {
+          if (status == 'success') {
+            label.removeClass('watchactive');
+          } else {
+            label.empty().append ($(req.responseText))
+          }
+        }
+      });
+    }
+  });
+
   /** Meters **/
   this.find ('div.Meter').each (function () {
     var div = $(this);
@@ -1218,21 +1253,6 @@ function account_register () {
         $('#accountform').children ('.admon').remove ();
         $('#accountform').append(req.responseText);
         $('input').each (function () { this.disabled = false; });
-      }
-    }
-  });
-}
-
-function watch (ident) {
-  $.ajax ({
-    type: 'GET',
-    url: blip_root + 'account',
-    data: {'q': 'watch', 'ident': ident},
-    complete: function (req, status) {
-      if (status == 'success') {
-        $('div.watch').fadeOut ('fast', function () { $('div.watch').remove () });
-      } else {
-        $('div.watch').empty().append ($(req.responseText))
       }
     }
   });

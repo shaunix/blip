@@ -75,6 +75,8 @@ class BasicAccountHandler (blip.web.AccountHandler, blip.html.HeaderLinksProvide
         if len(request.path) < 2:
             if request.query.get('q') == 'watch':
                 response = cls.respond_watch (request)
+            elif request.query.get('q') == 'unwatch':
+                response = cls.respond_unwatch (request)
         elif request.path[1] == 'login':
             if request.query.get('q') == 'submit':
                 response = cls.respond_login_submit (request)
@@ -371,6 +373,25 @@ class BasicAccountHandler (blip.web.AccountHandler, blip.html.HeaderLinksProvide
             raise blip.utils.BlipException()
         try:
             blip.db.AccountWatch.add_watch (request.account.username,
+                                            blip.utils.utf8dec (ident))
+            json = blinq.reqs.web.JsonPayload ()
+            json.set_data ({'watch': 'ident'})
+            response.payload = json
+            blip.db.flush (blip.db.Account)
+            blip.db.commit (blip.db.Account)
+        except Exception, err:
+            blip.db.rollback (blip.db.Account)
+            raise
+        return response
+
+    @classmethod
+    def respond_unwatch (cls, request):
+        response = blip.web.WebResponse (request)
+        ident = request.query.get('ident')
+        if ident is None:
+            raise blip.utils.BlipException()
+        try:
+            blip.db.AccountWatch.remove_watch (request.account.username,
                                             blip.utils.utf8dec (ident))
             json = blinq.reqs.web.JsonPayload ()
             json.set_data ({'watch': 'ident'})

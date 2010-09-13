@@ -1060,6 +1060,12 @@ class AccountWatch (BlipModel):
         return watch
 
     @classmethod
+    def remove_watch (cls, username, ident):
+        store = cls.__blip_store__
+        watch = store.get (cls, (username, ident))
+        store.remove (watch)
+
+    @classmethod
     def has_watch (cls, account, ident):
         return cls.select (account=account, ident=ident).count() > 0
 

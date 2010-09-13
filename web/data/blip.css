@@ -53,6 +53,7 @@ td.headerlogo img {
 }
 #subheader {
   width: 600px;
+  min-height: 3.5em;
   padding: 0 0 0 40px;
   border-bottom: solid 1px #d3d7cf;
 }
@@ -79,26 +80,24 @@ h1 div.desc {
 
 div.watch {
   float: right;
-  margin: 8px 0 0 0;
+  margin: 6px 0 6px 0;
   border: solid 1px #729fcf;
   background-color: white;
 }
-div.watch a {
+div.watch label {
   font-size: 0.83em;
   color: #555753;
   font-weight: bold;
 }
-div.watch a div {
-  padding: 0 1.2em 0 1.2em;
+div.watch label div {
+  padding: 0 6px 0 6px;
   border: solid 1px white;
   -webkit-transition: background-color 0.2s linear;
   -moz-transition: background-color 0.2s linear;
 }
-div.watch a:hover {
-  text-decoration: none;
-  cursor: default;
-}
-div.watch a:hover div { background-color: #b1d5fc; }
+div.watch input { vertical-align: -10%; }
+label.watchactive div { background-color: #fcf197; }
+label.watch:hover div { background-color: #b1d5fc; }
 h1 img { vertical-align: middle; }
 .sublinks {
   margin: 0;

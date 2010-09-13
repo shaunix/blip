@@ -560,10 +560,16 @@ class Page (HtmlObject, ContentComponent):
 
         res.write('<div id="all"><div id="subheader">')
         if res.request.account is not None and self._watchable is not None:
-            # FIXME STORM
-            if not blip.db.AccountWatch.has_watch (res.request.account, self._watchable):
-                res.write('<div class="watch"><a href="javascript:watch(\'%s\')"><div>%s</div></a></div>'
-                          % self.escape((self._watchable, blip.utils.gettext ('Watch'))))
+            if blip.db.AccountWatch.has_watch (res.request.account, self._watchable):
+                res.write('<div class="watch"><label class="watch watchactive"><div>')
+                res.write('<input data-watch-ident="%s" class="watch" type="checkbox" checked="yes">' %
+                          self._watchable)
+            else:
+                res.write('<div class="watch"><label class="watch"><div>')
+                res.write('<input data-watch-ident="%s" class="watch" type="checkbox">' %
+                          self._watchable)
+            res.write(self.escape(blip.utils.gettext ('Watch')))
+            res.write('</label></div>')
         if len(self._traillinks) > 0:
             res.write('<div class="traillinks">')
             for i in range(len(self._traillinks)):
