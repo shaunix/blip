@@ -448,6 +448,7 @@ a.iconboxentry:hover div.iconboxname { overflow: visible; }
 table.lbox { margin: 0.2em 0 0.2em 0; width: 100%;}
 td.lboxicon { width: 24px; text-align: center; }
 td.lboxtext { padding: 0 0.5em 0 0.5em; }
+div.lboxtitle { font-weight: bold; }
 td.lboxtextonly { padding: 0 0.5em 0 0; }
 div.lboxhead {
   font-size: 1.2em;
@@ -626,6 +627,37 @@ a.sortlink:hover {
   background-color: #b1d5fc;
   text-decoration: none;
   cursor: default;
+}
+
+/******************************************************************************/
+/** ActivityBox ***************************************************************/
+div.ActivityBox {
+  margin: 0 0 6px 1px;
+  padding: 2px 6px 2px 6px;
+  background-color: white;
+  border-left: solid 1px white;
+  -webkit-transition: border 0.2s linear;
+  -moz-transition: border 0.2s linear;
+}
+div.ActivityBox:hover {
+  border-color: #729fcf;
+}
+div.ActivityDate {
+  float: left;
+  color: #888a85;
+  font-weight: bold;
+  margin-right: 1.2em;
+}
+span.ActivitySubject {
+  font-weight: bold;
+}
+div.ActivityContainer {
+  margin: 0 0 12px 0;
+}
+div.ActivityTitle {
+  color: #888a85;
+  font-weight: bold;
+  margin: 0 0 6px 0;
 }
 
 /******************************************************************************/

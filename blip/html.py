@@ -906,6 +906,66 @@ class Calendar (HtmlObject):
         res.write('</div>')
 
 
+class ActivityContainer (HtmlObject):
+    def __init__ (self, **kw):
+        self._content = []
+        super (ActivityContainer, self).__init__ (**kw)
+
+    def add_activity (self, group, content):
+        self._content.append ((group, content))
+
+    def output (self, res):
+        """Output the HTML."""
+        curgroup = None
+        for group, content in self._content:
+            if group != curgroup:
+                if curgroup is not None:
+                    res.write('</div>')
+                res.write('<div class="ActivityContainer">')
+                res.write('<div class="ActivityTitle">%s</div>' % self.escape(group))
+                curgroup = group
+            res.write(content)
+        if curgroup is not None:
+            res.write('</div>')
+
+class ActivityBox (HtmlObject):
+    def __init__ (self, **kw):
+        self._subject = kw.pop ('subject', None)
+        self._datetime = kw.pop ('datetime', None)
+        self._message = kw.pop ('message', None)
+        super (ActivityBox, self).__init__ (**kw)
+
+    def set_subject (self, subject):
+        self._subject = subject
+
+    def set_datetime (self, datetime):
+        self._datetime = datetime
+
+    def set_message (self, message):
+        self._message = message
+
+    def output (self, res):
+        """Output the HTML."""
+        res.write('<div class="ActivityBox">')
+        if self._datetime is not None:
+            res.write('<div class="ActivityDate">')
+            if isinstance (self._datetime, datetime.datetime):
+                res.write(self._datetime.strftime('%Y-%m-%d %T'))
+            else:
+                res.write(self.escape(self._datetime))
+            res.write('</div>')
+        if self._subject is not None:
+            res.write('<span class="ActivitySubject">')
+            if isinstance (self._subject, blip.db.BlipRecord):
+                Link(self._subject).output(res)
+            else:
+                res.write(self.escape(self._subject))
+            res.write('</span>' )
+        if self._message is not None:
+            res.write(self._message)
+        res.write('</div>')
+
+
 class LinkBox (HtmlObject, FactsComponent, ContentComponent):
     """
     A block-level link to an object with optional extra information.

@@ -23,6 +23,8 @@ import re
 import blip.db
 import blip.html
 
+import blip.plugins.home.web
+
 def from_revision (rev, app, **kw):
     branch = kw.pop ('branch', None)
     comment = rev.comment
@@ -82,6 +84,21 @@ def from_revision (rev, app, **kw):
     #         lnk.add_link (infourl, blip.utils.gettext ('info'))
     return lnk
 
+class CommitMessageFormatter (blip.plugins.home.web.MessageFormatter):
+    @classmethod
+    def format_message (cls, message, record):
+        if message.type == u'commit':
+            box = blip.html.ActivityBox (subject=record,
+                                         datetime=message.datetime.strftime('%Y-%m-%d'))
+            if isinstance (record, blip.db.Entity):
+                span = blip.html.Span (' made %i commits to ' % message.count)
+                proj = blip.db.Project.get (message.pred)
+                span.add_content (blip.html.Link (proj.default))
+                box.set_message (span)
+            else:
+                box.set_message (' had %i commits' % message.count)
+            return box
+        return None
 
 class CommitsTab (blip.html.TabProvider):
     @classmethod

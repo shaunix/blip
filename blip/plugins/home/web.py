@@ -21,10 +21,17 @@
 import blinq.config
 import blinq.utils
 
+import blinq.ext
+
 import blip.db
 import blip.html
 import blip.utils
 import blip.web
+
+class MessageFormatter (blinq.ext.ExtensionPoint):
+    @classmethod
+    def format_message (cls, message, record):
+        return None
 
 class HomeHeaderLinks (blip.html.HeaderLinksProvider):
     @classmethod
@@ -102,23 +109,15 @@ class WatchesTab (blip.html.TabProvider):
         cnt = blip.db.AccountWatch.select (username=request.account.username)
         cnt = cnt.count ()
         if cnt > 0:
+            page.add_tab ('messages',
+                          blip.utils.gettext ('Messages'),
+                          blip.html.TabProvider.CORE_TAB)
             page.add_tab ('watch',
                           blip.utils.gettext ('Watches (%i)') % cnt,
                           blip.html.TabProvider.CORE_TAB)
 
     @classmethod
-    def respond (cls, request):
-        if len(request.path) != 1 or request.path[0] != 'home':
-            return None
-        if request.account is None:
-            return None
-        if not blip.html.TabProvider.match_tab (request, 'watch'):
-            return None
-
-        response = blip.web.WebResponse (request)
-        tab = blip.html.ContainerBox ()
-        response.payload = tab
-
+    def get_watched_records (cls, request):
         records = []
         for watch in blip.db.AccountWatch.select (username=request.account.username):
             watchreq = blip.web.WebRequest (http=False,
@@ -127,9 +126,51 @@ class WatchesTab (blip.html.TabProvider):
             for loc in blip.web.RecordLocator.get_extensions ():
                 if loc.locate_record (watchreq):
                     if watchreq.record is not None:
-                        records.append (watchreq.record)
+                        records.append ((watch.ident, watchreq.record))
                     break
-        for record in blinq.utils.attrsorted (records, 'title'):
-            tab.add_link_box (record)
+        return blinq.utils.attrsorted (records, (1, 'title'))
 
+    @classmethod
+    def get_watch_tab (cls, request):
+        tab = blip.html.ContainerBox ()
+        for ident, record in cls.get_watched_records (request):
+            tab.add_link_box (record)
+        return tab
+
+    @classmethod
+    def get_messages_tab (cls, request):
+        tab = blip.html.ActivityContainer ()
+        idents = []
+        records = {}
+        for ident, record in cls.get_watched_records (request):
+            idents.append (ident)
+            records[ident] = record
+        messages = blip.db.Message.select (blip.db.Message.subj.is_in (idents))
+        messages = messages.order_by (blip.db.Desc (blip.db.Message.datetime))
+        for message in messages[:100]:
+            for formatter in MessageFormatter.get_extensions ():
+                cont = formatter.format_message (message, records[message.subj])
+                if cont is not None:
+                    date = message.datetime.strftime ('%Y-%m-%d')
+                    cont.set_datetime (None)
+                    tab.add_activity (date, cont)
+                    continue
+        return tab
+
+    @classmethod
+    def respond (cls, request):
+        if len(request.path) != 1 or request.path[0] != 'home':
+            return None
+        if request.account is None:
+            return None
+
+        if blip.html.TabProvider.match_tab (request, 'watch'):
+            tab = cls.get_watch_tab (request)
+        elif blip.html.TabProvider.match_tab (request, 'messages'):
+            tab = cls.get_messages_tab (request)
+        else:
+            return None
+
+        response = blip.web.WebResponse (request)
+        response.payload = tab
         return response
