@@ -391,9 +391,10 @@ class BlipRecord (BlipModel):
     # want to override this, possibly with a property.
     linkable = True
 
-    # Whether Blip can watch this thing.  Subclasses will want
-    # to override this, possible with a property.
-    watchable = False
+    # An ident to use to watch this record, or None if the record
+    # is not watchable. Subclasses will want to override this,
+    # possibly with a property.
+    watchable = None
 
     def __init__ (self, ident, type, **kw):
         kw['ident'] = ident
@@ -582,7 +583,10 @@ class Branch (BlipRecord):
 
     @property
     def watchable (self):
-        return self.type == 'Module'
+        if self.type == u'Module':
+            return self.project_ident
+        else:
+            return None
 
     @property
     def is_default (self):
@@ -727,7 +731,9 @@ class Entity (BlipRecord):
 
     @property
     def watchable (self):
-        return self.type == 'Module'
+        if self.linkable:
+            return self.ident
+        return None
 
 
 class Alias (BlipRecord):

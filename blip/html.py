@@ -422,7 +422,7 @@ class Page (HtmlObject, ContentComponent):
     """
 
     def __init__ (self, **kw):
-        self._ident = None
+        self._watchable = None
         self._title = None
         self._desc = None
         self._icon = None
@@ -439,8 +439,8 @@ class Page (HtmlObject, ContentComponent):
             self._desc = record.desc
             self._icon = record.icon_url
             self._url = record.blip_url
-            if record.watchable:
-                self._ident = record.ident
+            if record.watchable is not None:
+                self._watchable = record.watchable
 
         self._title = kw.pop ('title', self._title)
         self._desc = kw.pop ('desc', self._desc)
@@ -559,11 +559,11 @@ class Page (HtmlObject, ContentComponent):
         res.write('</td></tr></table></div>')
 
         res.write('<div id="all"><div id="subheader">')
-        if res.request.account is not None and self._ident is not None:
+        if res.request.account is not None and self._watchable is not None:
             # FIXME STORM
-            if not blip.db.AccountWatch.has_watch (res.request.account, self._ident):
+            if not blip.db.AccountWatch.has_watch (res.request.account, self._watchable):
                 res.write('<div class="watch"><a href="javascript:watch(\'%s\')"><div>%s</div></a></div>'
-                          % self.escape((self._ident, blip.utils.gettext ('Watch'))))
+                          % self.escape((self._watchable, blip.utils.gettext ('Watch'))))
         if len(self._traillinks) > 0:
             res.write('<div class="traillinks">')
             for i in range(len(self._traillinks)):
