@@ -57,9 +57,9 @@ class HomeTab (blip.html.TabProvider):
     @classmethod
     def add_tabs (cls, page, request):
         if len(request.path) != 1 or request.path[0] != 'home':
-            return None
+            return
         if request.account is None:
-            return None
+            return
         page.add_tab ('home',
                       blip.utils.gettext ('Home'),
                       blip.html.TabProvider.FIRST_TAB)
@@ -80,7 +80,7 @@ class HomeTab (blip.html.TabProvider):
 
     @classmethod
     def respond (cls, request):
-        if len(request.path) != 2 or request.path[0] != 'home':
+        if len(request.path) != 1 or request.path[0] != 'home':
             return None
         if request.account is None:
             return None
@@ -90,4 +90,46 @@ class HomeTab (blip.html.TabProvider):
         response = blip.web.WebResponse (request)
 
         response.payload = cls.get_tab (request)
+        return response
+
+class WatchesTab (blip.html.TabProvider):
+    @classmethod
+    def add_tabs (cls, page, request):
+        if len(request.path) != 1 or request.path[0] != 'home':
+            return
+        if request.account is None:
+            return
+        cnt = blip.db.AccountWatch.select (username=request.account.username)
+        cnt = cnt.count ()
+        if cnt > 0:
+            page.add_tab ('watch',
+                          blip.utils.gettext ('Watches (%i)') % cnt,
+                          blip.html.TabProvider.CORE_TAB)
+
+    @classmethod
+    def respond (cls, request):
+        if len(request.path) != 1 or request.path[0] != 'home':
+            return None
+        if request.account is None:
+            return None
+        if not blip.html.TabProvider.match_tab (request, 'watch'):
+            return None
+
+        response = blip.web.WebResponse (request)
+        tab = blip.html.ContainerBox ()
+        response.payload = tab
+
+        records = []
+        for watch in blip.db.AccountWatch.select (username=request.account.username):
+            watchreq = blip.web.WebRequest (http=False,
+                                            path_info=watch.ident,
+                                            query_string='')
+            for loc in blip.web.RecordLocator.get_extensions ():
+                if loc.locate_record (watchreq):
+                    if watchreq.record is not None:
+                        records.append (watchreq.record)
+                    break
+        for record in blinq.utils.attrsorted (records, 'title'):
+            tab.add_link_box (record)
+
         return response

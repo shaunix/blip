@@ -73,8 +73,9 @@ class BasicAccountHandler (blip.web.AccountHandler, blip.html.HeaderLinksProvide
 
         response = None
         if len(request.path) < 2:
-            pass
-        if request.path[1] == 'login':
+            if request.query.get('q') == 'watch':
+                response = cls.respond_watch (request)
+        elif request.path[1] == 'login':
             if request.query.get('q') == 'submit':
                 response = cls.respond_login_submit (request)
             else:
@@ -362,6 +363,25 @@ class BasicAccountHandler (blip.web.AccountHandler, blip.html.HeaderLinksProvide
         response.set_cookie ('blip_auth', '')
         return response
 
+    @classmethod
+    def respond_watch (cls, request):
+        response = blip.web.WebResponse (request)
+        ident = request.query.get('ident')
+        if ident is None:
+            raise blip.utils.BlipException()
+        try:
+            blip.db.AccountWatch.add_watch (request.account.username,
+                                            blip.utils.utf8dec (ident))
+            json = blinq.reqs.web.JsonPayload ()
+            json.set_data ({'watch': 'ident'})
+            response.payload = json
+            blip.db.flush (blip.db.Account)
+            blip.db.commit (blip.db.Account)
+        except Exception, err:
+            blip.db.rollback (blip.db.Account)
+            raise
+        return response
+
 
 ################################################################################
 ## Private Account Handler
@@ -383,4 +403,8 @@ class PrivateAccountHandler (BasicAccountHandler):
 
     @classmethod
     def respond_register (cls, request):
+        raise blip.web.WebException ('Open registration is not allowed.')
+
+    @classmethod
+    def respond_register_submit (cls, request):
         raise blip.web.WebException ('Open registration is not allowed.')

@@ -1227,7 +1227,7 @@ function watch (ident) {
   $.ajax ({
     type: 'GET',
     url: blip_root + 'account',
-    data: {'action': 'watch', 'ident': ident},
+    data: {'q': 'watch', 'ident': ident},
     complete: function (req, status) {
       if (status == 'success') {
         $('div.watch').fadeOut ('fast', function () { $('div.watch').remove () });

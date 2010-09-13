@@ -49,6 +49,7 @@ td.headerlogo img {
 #header td.headerlinks {
   text-align: right;
   padding-right: 0.5em;
+  font-weight: bold;
 }
 #subheader {
   width: 600px;
@@ -78,9 +79,26 @@ h1 div.desc {
 
 div.watch {
   float: right;
-  padding: 0 2.4em 0 2.4em;
+  margin: 8px 0 0 0;
+  border: solid 1px #729fcf;
+  background-color: white;
 }
-div.watch a { font-size: 0.83em; }
+div.watch a {
+  font-size: 0.83em;
+  color: #555753;
+  font-weight: bold;
+}
+div.watch a div {
+  padding: 0 1.2em 0 1.2em;
+  border: solid 1px white;
+  -webkit-transition: background-color 0.2s linear;
+  -moz-transition: background-color 0.2s linear;
+}
+div.watch a:hover {
+  text-decoration: none;
+  cursor: default;
+}
+div.watch a:hover div { background-color: #b1d5fc; }
 h1 img { vertical-align: middle; }
 .sublinks {
   margin: 0;

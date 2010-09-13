@@ -562,7 +562,7 @@ class Page (HtmlObject, ContentComponent):
         if res.request.account is not None and self._ident is not None:
             # FIXME STORM
             if not blip.db.AccountWatch.has_watch (res.request.account, self._ident):
-                res.write('<div class="watch"><a href="javascript:watch(\'%s\')">%s</a></div>'
+                res.write('<div class="watch"><a href="javascript:watch(\'%s\')"><div>%s</div></a></div>'
                           % self.escape((self._ident, blip.utils.gettext ('Watch'))))
         if len(self._traillinks) > 0:
             res.write('<div class="traillinks">')
