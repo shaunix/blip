@@ -90,6 +90,9 @@ class EntityReponder (blip.web.RecordLocator, blip.web.PageResponder):
         page = blip.html.Page (request=request)
         response.payload = page
 
+        page.add_trail_link (blinq.config.web_root_url + 'person',
+                             blip.utils.gettext ('People'))
+
         # Teams
         if request.record.type == u'Person':
             rels = blip.db.TeamMember.get_related (pred=request.record)

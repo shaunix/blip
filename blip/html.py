@@ -993,8 +993,6 @@ class LinkBox (HtmlObject, FactsComponent, ContentComponent):
             self._title = args[0].title
             self._desc = args[0].desc
             self._icon = args[0].icon_url
-            if isinstance (args[0], blip.db.Entity):
-                self._icon_size = 36
         elif len(args) > 1:
             self._url = args[0]
             self._title = args[1]
