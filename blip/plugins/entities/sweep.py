@@ -21,12 +21,19 @@
 import datetime
 import os
 
+import blinq.ext
+
 import blip.db
 import blip.graphs
 import blip.sweep
 import blip.utils
 
 import blip.plugins.queue.sweep
+
+class EntityHandler (blinq.ext.ExtensionPoint):
+    @classmethod
+    def handle_entity (cls, entity, request):
+        pass
 
 class PeopleResponder (blip.sweep.SweepResponder,
                        blip.plugins.queue.sweep.QueueHandler):
@@ -70,6 +77,10 @@ class PeopleResponder (blip.sweep.SweepResponder,
 
     @staticmethod
     def update_person (entity, request):
+        blip.utils.log ('Processing %s' % entity.ident)
+        for handler in EntityHandler.get_extensions ():
+            handler.handle_entity (entity, request)
+
         PeopleResponder.update_commit_graphs (entity, request)
 
         entity.updated = datetime.datetime.utcnow ()

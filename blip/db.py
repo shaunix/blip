@@ -416,9 +416,9 @@ class BlipRecord (BlipModel):
         if self.icon_name == None or self.icon_dir.startswith ('__icon__'):
             return None
         elif self.icon_dir == None:
-            return blinq.config.web_files_url + 'icons/' + self.icon_name + '.png'
+            return blinq.config.web_files_url + 'icons/' + self.icon_name
         else:
-            return blinq.config.web_files_url + 'icons/' + self.icon_dir + '/' + self.icon_name + '.png'
+            return blinq.config.web_files_url + 'icons/' + self.icon_dir + '/' + self.icon_name
 
     @property
     def title_default (self):
