@@ -6,12 +6,12 @@ SUBDIRS = 		\
 	cvs		\
 	doap		\
 	docs		\
+	entities	\
 	git		\
 	home		\
 	i18n		\
 	index		\
 	modules 	\
-	people		\
 	queue		\
 	sets		\
 	svn

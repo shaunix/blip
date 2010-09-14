@@ -70,8 +70,6 @@ class PeopleResponder (blip.sweep.SweepResponder,
 
     @staticmethod
     def update_person (entity, request):
-        of = blip.db.OutputFile.select_one (type=u'graphs', ident=entity.ident, filename=u'commits.png')
-
         PeopleResponder.update_commit_graphs (entity, request)
 
         entity.updated = datetime.datetime.utcnow ()

@@ -60,12 +60,12 @@ blip/plugins/commits/Makefile
 blip/plugins/cvs/Makefile
 blip/plugins/doap/Makefile
 blip/plugins/docs/Makefile
+blip/plugins/entities/Makefile
 blip/plugins/git/Makefile
 blip/plugins/home/Makefile
 blip/plugins/i18n/Makefile
 blip/plugins/index/Makefile
 blip/plugins/modules/Makefile
-blip/plugins/people/Makefile
 blip/plugins/queue/Makefile
 blip/plugins/sets/Makefile
 blip/plugins/svn/Makefile

@@ -1,4 +1,4 @@
-blipdir=${pkgpythondir}/plugins/people
+blipdir=${pkgpythondir}/plugins/entities
 
 blip_PYTHON =		\
 	sweep.py	\

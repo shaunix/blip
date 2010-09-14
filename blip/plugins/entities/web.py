@@ -66,10 +66,10 @@ class AllPeopleResponder (blip.web.RecordLocator, blip.web.PageResponder):
         return response
 
 
-class PersonReponder (blip.web.RecordLocator, blip.web.PageResponder):
+class EntityReponder (blip.web.RecordLocator, blip.web.PageResponder):
     @classmethod
     def locate_record (cls, request):
-        if len(request.path) != 2 or request.path[0] != 'person':
+        if len(request.path) != 2 or request.path[0] not in ('person', 'team'):
             return False
         ident = u'/' + request.path[0] + u'/' + request.path[1]
         request.record = blip.db.Entity.get (ident)
@@ -77,7 +77,7 @@ class PersonReponder (blip.web.RecordLocator, blip.web.PageResponder):
 
     @classmethod
     def respond (cls, request):
-        if len(request.path) != 2 or request.path[0] != 'person':
+        if len(request.path) != 2 or request.path[0] not in ('person', 'team'):
             return None
 
         response = blip.web.WebResponse (request)
@@ -91,15 +91,16 @@ class PersonReponder (blip.web.RecordLocator, blip.web.PageResponder):
         response.payload = page
 
         # Teams
-        rels = blip.db.TeamMember.get_related (pred=request.record)
-        rels = blinq.utils.attrsorted (list(rels), ('subj', 'title'))
-        if len(rels) > 0:
-            box = blip.html.SidebarBox (blip.utils.gettext ('Teams'))
-            page.add_sidebar_content (box)
-            for rel in rels:
-                lbox = box.add_link_box (rel.subj)
-                if rel.coordinator:
-                    lbox.add_badge ('coordinator')
+        if request.record.type == u'Person':
+            rels = blip.db.TeamMember.get_related (pred=request.record)
+            rels = blinq.utils.attrsorted (list(rels), ('subj', 'title'))
+            if len(rels) > 0:
+                box = blip.html.SidebarBox (blip.utils.gettext ('Teams'))
+                page.add_sidebar_content (box)
+                for rel in rels:
+                    lbox = box.add_link_box (rel.subj)
+                    if rel.coordinator:
+                        lbox.add_badge ('coordinator')
 
         # Blog
         bident = u'/blog' + request.record.ident
@@ -124,7 +125,7 @@ class PersonReponder (blip.web.RecordLocator, blip.web.PageResponder):
 class OverviewTab (blip.html.TabProvider):
     @classmethod
     def add_tabs (cls, page, request):
-        if len(request.path) != 2 or request.path[0] != 'person':
+        if len(request.path) != 2 or request.path[0] not in ('person', 'team'):
             return None
         page.add_tab ('overview',
                       blip.utils.gettext ('Overview'),
@@ -153,24 +154,25 @@ class OverviewTab (blip.html.TabProvider):
             facts.add_fact (blip.utils.gettext ('Website'),
                             blip.html.Link (request.record.web))
 
-        facts.start_fact_group ()
-        span = blip.html.Span (divider=blip.html.SPACE)
-        span.add_content (str(request.record.score))
-        lt = blip.db.Entity.select (blip.db.Entity.type == u'Person',
-                                    blip.db.Entity.score != 0,
-                                    blip.db.Entity.score <= request.record.score)
-        lt = lt.count()
-        gt = blip.db.Entity.select (blip.db.Entity.type == u'Person',
-                                    blip.db.Entity.score > request.record.score)
-        gt = gt.count()
-        span.add_content ('(%.2f%%)' % ((100.0 * lt) / (lt + gt)))
-        facts.add_fact (blip.utils.gettext ('Score'), span)
+        if request.record.type == u'Person':
+            facts.start_fact_group ()
+            span = blip.html.Span (divider=blip.html.SPACE)
+            span.add_content (str(request.record.score))
+            lt = blip.db.Entity.select (blip.db.Entity.type == u'Person',
+                                        blip.db.Entity.score != 0,
+                                        blip.db.Entity.score <= request.record.score)
+            lt = lt.count()
+            gt = blip.db.Entity.select (blip.db.Entity.type == u'Person',
+                                        blip.db.Entity.score > request.record.score)
+            gt = gt.count()
+            span.add_content ('(%.2f%%)' % ((100.0 * lt) / (lt + gt)))
+            facts.add_fact (blip.utils.gettext ('Score'), span)
 
         return tab
 
     @classmethod
     def respond (cls, request):
-        if len(request.path) != 2 or request.path[0] != 'person':
+        if len(request.path) != 2 or request.path[0] not in ('person', 'team'):
             return None
         if not blip.html.TabProvider.match_tab (request, 'overview'):
             return None
@@ -183,7 +185,7 @@ class OverviewTab (blip.html.TabProvider):
 class ModulesTab (blip.html.TabProvider):
     @classmethod
     def add_tabs (cls, page, request):
-        if len(request.path) != 2 or request.path[0] != 'person':
+        if len(request.path) != 2 or request.path[0] not in ('person', 'team'):
             return None
         cnt = blip.db.ModuleEntity.select_related (pred=request.record).count ()
         if cnt > 0:
@@ -193,7 +195,7 @@ class ModulesTab (blip.html.TabProvider):
 
     @classmethod
     def respond (cls, request):
-        if len(request.path) != 2 or request.path[0] != 'person':
+        if len(request.path) != 2 or request.path[0] not in ('person', 'team'):
             return None
         if not blip.html.TabProvider.match_tab (request, 'modules'):
             return None
@@ -214,7 +216,7 @@ class ModulesTab (blip.html.TabProvider):
 class DocumentsTab (blip.html.TabProvider):
     @classmethod
     def add_tabs (cls, page, request):
-        if len(request.path) != 2 or request.path[0] != 'person':
+        if len(request.path) != 2 or request.path[0] not in ('person', 'team'):
             return None
         cnt = blip.db.DocumentEntity.count_related (pred=request.record,
                                                     subj_type=u'Document')
@@ -225,7 +227,7 @@ class DocumentsTab (blip.html.TabProvider):
 
     @classmethod
     def respond (cls, request):
-        if len(request.path) != 2 or request.path[0] != 'person':
+        if len(request.path) != 2 or request.path[0] not in ('person', 'team'):
             return None
         if not blip.html.TabProvider.match_tab (request, 'docs'):
             return None
@@ -278,81 +280,3 @@ class PeopleIndexContentProvider (blip.plugins.index.web.IndexContentProvider):
         columns.add_to_column (1, bl)
         for person in recent[:6]:
             bl.add_link (person)
-
-################################################################################
-
-# FIXME
-def get_hacking_tab (person, **kw):
-    columns = blip.html.ColumnBox (2)
-
-    # Modules
-    rels = blip.db.ModuleEntity.get_related (pred=person)
-    rels = blinq.utils.attrsorted (list(rels),
-                                   ('subj', 'title'),
-                                   ('-', 'subj', 'is_default'),
-                                   ('-', 'subj', 'scm_branch'))
-    if len(rels) > 0:
-        brs = []
-        mods = blip.utils.odict()
-        bmaint = 0
-        for rel in rels:
-            mod = rel.subj
-            if mod.branchable in brs:
-                continue
-            brs.append (mod.branchable)
-            mods[mod] = rel
-        box = blip.html.InfoBox (blip.utils.gettext ('Modules'))
-        box.set_id ('modules')
-        columns.add_to_column (0, box)
-        for mod in mods:
-            lbox = box.add_link_box (mod)
-            if rel.maintainer:
-                lbox.add_badge ('maintainer')
-                bmaint += 1
-        if 0 < bmaint < len(mods):
-            box.add_badge_filter ('maintainer')
-
-    # Documents
-    rels = blip.db.DocumentEntity.get_related (pred=person)
-    rels = blinq.utils.attrsorted (list(rels),
-                                   ('subj', 'title'),
-                                   ('-', 'subj', 'is_default'),
-                                   ('-', 'subj', 'scm_branch'))
-    if len(rels) > 0:
-        brs = []
-        docs = blip.utils.odict()
-        bmaint = bauth = bedit = bpub = 0
-        for rel in rels:
-            doc = rel.subj
-            if doc.branchable in brs:
-                continue
-            brs.append (doc.branchable)
-            docs[doc] = rel
-        box = blip.html.InfoBox (blip.utils.gettext ('Documents'))
-        box.set_id ('documents')
-        columns.add_to_column (1, box)
-        for doc in docs:
-            lbox = box.add_link_box (doc)
-            rel = docs[doc]
-            if rel.maintainer:
-                lbox.add_badge ('maintainer')
-                bmaint += 1
-            if rel.author:
-                lbox.add_badge ('author')
-                bauth += 1
-            if rel.editor:
-                lbox.add_badge ('editor')
-                bedit += 1
-            if rel.publisher:
-                lbox.add_badge ('publisher')
-                bpub += 1
-        if 0 < bmaint < len(docs):
-            box.add_badge_filter ('maintainer')
-        if 0 < bauth < len(docs):
-            box.add_badge_filter ('author')
-        if 0 < bedit < len(docs):
-            box.add_badge_filter ('editor')
-        if 0 < bpub < len(docs):
-            box.add_badge_filter ('publisher')
-
-    return columns
