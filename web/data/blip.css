@@ -83,6 +83,7 @@ div.watch {
   margin: 6px 0 6px 0;
   border: solid 1px #729fcf;
   background-color: white;
+  border-radius: 2px;
 }
 div.watch label {
   font-size: 0.83em;
@@ -272,12 +273,12 @@ div.MeterBar {
   margin: 0;
   height: 8px;
   line-height: 8px;
-  opacity: 0.6;
+  opacity: 0.7;
   -webkit-transition: opacity 0.2s linear;
   -moz-transition: opacity 0.2s linear;
 }
 div.MeterBar:hover {
-  opacity: 0.8;
+  opacity: 0.9;
 }
 div.MeterText {
   display: none;
@@ -285,6 +286,7 @@ div.MeterText {
   padding: 2px 4px 2px 4px;
   -webkit-box-shadow: 0px 0px 3px #888a85;
   -moz-box-shadow: 0px 0px 3px #888a85;
+  border-radius: 2px;
 }
 
 div.TabBar {

@@ -1136,6 +1136,8 @@ function sort (id, tag, cls, key, asc) {
   for (var i = 0; i < things.length; i++) {
     dummies[i].replaceWith (things[i].thing);
     things[i].thing.after (things[i].extras);
+    things[i].thing.blip_init();
+    things[i].extras.blip_init();
   }
 
   var links = $('#sortlinks__' + id);
