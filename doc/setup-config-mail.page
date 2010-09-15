@@ -1,0 +1,51 @@
+<page xmlns="http://projectmallard.org/1.0/"
+      type="topic" id="setup-mail">
+<info>
+  <link type="guide" xref="setup" group="config-more"/>
+
+  <revision date="2010-09-15" status="stub"/>
+</info>
+
+<title>Configure mail server settings</title>
+
+<p>Certain functionality in Blip, such as creating new accounts,
+requires Blip to send email to users. For this to work, you have
+to configure Blip to use an SMTP server.</p>
+
+<p>Specify an SMTP server for Blip to use with the following
+command:</p>
+
+<screen>blip-admin config mail_server <var>mail.example.com</var></screen>
+
+<p>If your mail server requires authentication, you must provide
+Blip with a username and password:</p>
+
+<screen>
+blip-admin config mail_username <var>username</var>
+blip-admin config mail_password <var>password</var>
+</screen>
+
+<p>If your mail server uses encryption, tell Blip which type
+of encryption to use:</p>
+
+<screen>blip-admin config mail_encryption <var>type</var></screen>
+
+<p>Replace <var>type</var> with either <cmd>none</cmd>,
+<cmd>tls</cmd>, or <cmd>ssl</cmd>.</p>
+
+<p>Blip will automatically use the correct default port depending
+on your encryption setting. If your mail server uses a non-standard
+port, you can specify it as follows:</p>
+
+<screen>blip-admin config mail_port <var>port</var></screen>
+
+<p>Finally, you should provide an email address that Blip will use
+in the <sys>From</sys> field of all email that it sends. Specify
+an email address with the following:</p>
+
+<screen>blip-admin config mail_from <var>example@example.com</var></screen>
+
+<p>If possible, you should set up a dummy email account for
+Blip to use.</p>
+
+</page>
