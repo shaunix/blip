@@ -11,7 +11,8 @@ EXTRA_DIST =			\
 	blip-admin.in		\
 	blip-sweep		\
 	blip-sweep.in		\
-	ChangeLog
+	ChangeLog		\
+	$(srcdir)/m4/*.m4
 
 ChangeLog:
 	@if test -f $(top_srcdir)/.git/HEAD; then \

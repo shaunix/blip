@@ -44,6 +44,26 @@ AC_SUBST(BLIP_DATA_DIR)
 BLIP_PLUGINS_DIR="${BLIP_MODULES_DIR}/plugins"
 AC_SUBST(BLIP_PLUGINS_DIR)
 
+AC_CHECK_PYTHON_MODULE([blinq])
+if test x$PYTHON_blinq != x1 ; then
+  AC_MSG_ERROR([blinq not found])
+fi
+
+AC_CHECK_PYTHON_MODULE([cairo])
+if test x$PYTHON_cairo != x1 ; then
+  AC_MSG_ERROR([cairo not found])
+fi
+
+AC_CHECK_PYTHON_MODULE([libxml2])
+if test x$PYTHON_cairo != x1 ; then
+  AC_MSG_ERROR([cairo not found])
+fi
+
+AC_CHECK_PYTHON_MODULE([storm])
+if test x$PYTHON_storm != x1 ; then
+  AC_MSG_ERROR([storm not found])
+fi
+
 AC_CONFIG_FILES([
 Makefile
 blip.pc
