@@ -1,7 +1,6 @@
 html { margin: 0px; padding: 0px; }
 body {
   margin: 0; padding: 0;
-  background-color: white;
   color: #2e3436;
   font-family: sans-serif;
 }
@@ -13,9 +12,6 @@ body {
 
 #header {
   height: 36px;
-  width: 821px;
-  margin: 0;
-  padding: 0 0 0 40px;
   background-color: #5574a2;
   background: -webkit-gradient(linear, left -60, left 40, from(white), to(#204a87));
   background: -moz-linear-gradient(top, white -60px, #204a87 40px);
@@ -23,7 +19,8 @@ body {
   text-shadow: -1px 1px 0px #204a87;
 }
 #header table {
-  width: 820px;
+  width: 800px;
+  margin: 0 auto;
 }
 #header table td {
   vertical-align: middle;
@@ -48,13 +45,12 @@ td.headerlogo img {
 }
 #header td.headerlinks {
   text-align: right;
-  padding-right: 0.5em;
   font-weight: bold;
 }
 #subheader {
-  width: 600px;
+  width: 614px;
   min-height: 3.5em;
-  padding: 0 0 0 40px;
+  padding: 0 0 0 6px;
   border-bottom: solid 1px #d3d7cf;
 }
 h1 {
@@ -113,19 +109,22 @@ h1 img { vertical-align: middle; }
 /******************************************************************************/
 /** Main Content **/
 
-div#all {
-  width: 860px;
+div#page {
   background-color: #eeeeec;
-  background: -webkit-gradient(linear, left 40, left 150, from(#eeeeec), to(white));
-  background: -moz-linear-gradient(top, #eeeeec 40px, white 150px);
-  border-right: solid 1px #d3d7cf;
+  background: -webkit-gradient(linear, left 40, left 200, from(#eeeeec), to(white));
+  background: -moz-linear-gradient(top, #eeeeec 40px, white 200px);
+}
+div#all {
+  width: 800px;
+  margin: 0 auto;
 }
 #body {
-  padding: 1em 20px 0 40px;
+  padding: 1em 20px 0 20px;
   background: white;
+  border-left: solid 1px #d3d7cf;
   border-right: solid 1px #d3d7cf;
-  width: 580px;
-  min-height: 200px;
+  width: 578px;
+  min-height: 250px;
 }
 #panes {
 }
@@ -133,15 +132,13 @@ div#all {
 
 #sidebar {
   margin-top: -1px;
-  padding: 0;;
-  position: absolute;
-  left: 640px;
+  padding: 0;
+  float: right;
   width: 180px;
   min-height: 80%;
 }
 ul#tabs {
-  margin: 0 0 1.2em 0; padding: 0;
-  width: 160px;
+  margin: 0 0 1.2em -1px; padding: 0;
   list-style-type: none;
   list-style-image: none;
   background-color: #f7f7f5;

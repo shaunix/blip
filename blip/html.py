@@ -558,7 +558,7 @@ class Page (HtmlObject, ContentComponent):
                     res.write(BULLET)
         res.write('</td></tr></table></div>')
 
-        res.write('<div id="all"><div id="subheader">')
+        res.write('<div id="page"><div id="all"><div id="subheader">')
         if res.request.account is not None and self._watchable is not None:
             if blip.db.AccountWatch.has_watch (res.request.account, self._watchable):
                 res.write('<div class="watch"><label class="watch watchactive"><div>')
@@ -634,7 +634,7 @@ class Page (HtmlObject, ContentComponent):
                 res.write('<div class="pane" id="pane-%s">' % self.escape(pane))
                 self._panes[pane].output (res)
                 res.write('</div>')
-        res.write('</div></div>\n')
+        res.write('</div></div></div>\n')
         res.write('</div></body></html>\n')
         
     def output_page_content (self, res):
