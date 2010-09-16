@@ -1112,7 +1112,7 @@ function sort (id, tag, cls, key, asc) {
       if (el_key.attr('data-sort-key') != undefined)
         el_key = el_key.attr('data-sort-key');
       else
-        el_key = el_key.html();
+        el_key = el_key.text();
       el.removeClass ('nokey');
     } else {
       el_key = null;

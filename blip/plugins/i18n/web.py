@@ -360,3 +360,50 @@ class TranslationsTab (blip.html.TabProvider):
             cont.add_sort_link ('images', blip.utils.gettext ('images'))
 
         return response
+
+class DomainsTab (blip.html.TabProvider):
+    @classmethod
+    def add_tabs (cls, page, request):
+        if len(request.path) < 1:
+            return None
+        if request.record is None or request.path[0] != 'set':
+            return None
+        cnt = blip.db.Branch.select (type=u'Domain',
+                                      parent_in_set=request.record)
+        cnt = cnt.count ()
+        if cnt > 0:
+            page.add_tab ('domains',
+                          blip.utils.gettext ('Domains (%i)') % cnt,
+                          blip.html.TabProvider.CORE_TAB)
+
+    @classmethod
+    def respond (cls, request):
+        if request.record is None or request.record.type != u'Set':
+            return None
+        if not blip.html.TabProvider.match_tab (request, 'domains'):
+            return None
+
+        response = blip.web.WebResponse (request)
+        tab = blip.html.ContainerBox ()
+        tab.set_columns (2)
+        tab.add_sort_link ('title', blip.utils.gettext ('title'), 1)
+        tab.add_sort_link ('module', blip.utils.gettext ('module'))
+        tab.add_sort_link ('translations', blip.utils.gettext ('translations'))
+
+        domains = blip.db.Branch.select_with_child_count (u'Translation',
+                                                          type=u'Domain',
+                                                          parent_in_set=request.record)
+        domains = blinq.utils.attrsorted (list(domains), (0, 'title'))
+        for domain, count in domains:
+            lbox = tab.add_link_box (domain)
+            if request.record.type == u'Set':
+                lbox.add_fact (blip.utils.gettext ('module'),
+                               blip.html.Span(blip.html.Link (domain.parent.blip_url,
+                                                              domain.parent.branch_module),
+                                              html_class='module'))
+                lbox.add_fact (blip.utils.gettext ('translations'),
+                               blip.html.Span(str(count),
+                                              html_class='translations'))
+
+        response.payload = tab
+        return response

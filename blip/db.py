@@ -145,7 +145,8 @@ class BlipTracer (object):
             outtxt = re.split (' (?=WHERE|AND|GROUP BY|ORDER BY|LIMIT)', cmd)
             sel, frm = outtxt[0].split (' FROM ')
             if not sel.startswith ('SELECT COUNT'):
-                sel = 'SELECT ...'
+                pass
+                #sel = 'SELECT ...'
             outtxt[0] = sel + ' FROM ' + frm
         elif cmd.startswith ('INSERT '):
             self.__class__.insert_count += 1
@@ -565,13 +566,7 @@ class Branch (BlipRecord):
 
     @property
     def title_default (self):
-        id = self.ident.split('/')[-2]
-        if self.type == 'Domain':
-            if id == 'po':
-                return self.scm_module
-            else:
-                return blip.utils.gettext ('%s (%s)') % (self.scm_module, id)
-        return id
+        return self.ident.split('/')[-2]
 
     @property
     def branch_module (self):
@@ -673,6 +668,17 @@ class Branch (BlipRecord):
         using = store.using (cls, *useargs)
         sel = using.find (tuple(clss), *args)
         return sel
+
+    @classmethod
+    def select_with_child_count (cls, childtype, *args, **kw):
+        store = get_store (kw.pop ('__blip_store__', cls.__blip_store__))
+        args, kw = cls._select_args (*args, **kw)
+        kwarg = storm.store.get_where_for_args ([], kw, cls)
+        if kwarg != storm.store.Undef:
+            args.append (kwarg)
+        tbl = ClassAlias (Branch)
+        args.append (tbl.parent_ident == cls.ident)
+        return store.find((cls, Count(tbl.ident)), *args).group_by(cls.ident)
 
     def select_children (self, type):
         return self.__class__.select (type=type, parent=self)
