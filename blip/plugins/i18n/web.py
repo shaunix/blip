@@ -395,7 +395,8 @@ class DomainsTab (blip.html.TabProvider):
                                                           parent_in_set=request.record)
         domains = blinq.utils.attrsorted (list(domains), (0, 'title'))
         for domain, count in domains:
-            lbox = tab.add_link_box (domain)
+            url = domain.parent.blip_url + '#i18n/' + domain.ident.split('/')[-2]
+            lbox = tab.add_link_box (url, domain.title)
             if request.record.type == u'Set':
                 lbox.add_fact (blip.utils.gettext ('module'),
                                blip.html.Span(blip.html.Link (domain.parent.blip_url,
