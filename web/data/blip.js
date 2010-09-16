@@ -223,10 +223,14 @@ $.fn.blip_init = function () {
     var div = $(this);
     var total = parseInt (div.attr ('data-meter-width'));
     var scale = 1.0;
-    if (total > 320) {
+    if (total > 320)
       scale = 320 / total;
-      total = 320;
-    }
+    else if (total < 80)
+      scale = 80 / total;
+    /* Re-compute full div width from child widths, so we
+     * don't end up with an extra pixel or so of padding
+     * due to rounding errors when scaling.
+     */
     total = 0;
     var i = 0;
     div.children ('div.MeterBar').each (function () {
