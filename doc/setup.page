@@ -1,5 +1,5 @@
 <page xmlns="http://projectmallard.org/1.0/"
-      groups="#first config db web #default input advanced #last"
+      groups="#first config config-more db web #default input advanced #last"
       type="guide" id="setup">
 <info>
   <link type="guide" xref="index" group="#first"/>
