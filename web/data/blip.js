@@ -270,31 +270,6 @@ $.fn.blip_init = function () {
     div.width(total);
   });
 
-  /** Info Boxes **/
-  this.find ('div.info').each (function () {
-    var div = $(this);
-    div.children ('div.infotitle').click (function () {
-    var active = div.hasClass ('infoactive');
-    $('div.info').each (function () {
-      $this = $(this).removeClass('infoactive')
-      $this.find('div.sortmenu').hide();
-      $this.find('div.sortlinks').slideUp('fast');
-      $this.find('div.lboxdesc').slideUp('fast');
-      $this.find('div.filters').slideUp('fast');
-      $this.find('table.facts').slideUp('fast');
-      $this.find('dd').slideUp('fast');
-    });
-    if (!active) {
-      div.addClass ('infoactive');
-      div.find('div.sortlinks').slideDown('fast');
-      div.find('div.lboxdesc').slideDown('fast');
-      div.find('div.filters').slideDown('fast');
-      div.find('table.facts').slideDown('fast');
-      div.find('dd').slideDown('fast');
-    }
-    });
-  });
-
   /** PopupLink **/
   $('a.PopupLink').each (function () {
     var plink = $(this);

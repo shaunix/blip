@@ -60,7 +60,8 @@ h1 {
   margin: 0;
   padding: 0.2em 0 0.2em 0;
 }
-h1 img.icon {
+h1 img {
+  vertical-align: middle;
   margin: 2px 0.5em 0 0;
 }
 h1 div.title {
@@ -95,7 +96,6 @@ div.watch label div {
 div.watch input { vertical-align: -10%; }
 label.watchactive div { background-color: #fcf197; }
 label.watch:hover div { background-color: #b1d5fc; }
-h1 img { vertical-align: middle; }
 .sublinks {
   margin: 0;
   font-size: 0.83em;
@@ -105,6 +105,7 @@ h1 img { vertical-align: middle; }
   padding: 0.2em 0 0 0;
   font-size: 0.83em;
 }
+
 
 /******************************************************************************/
 /** Main Content **/
@@ -125,8 +126,6 @@ div#all {
   border-right: solid 1px #d3d7cf;
   width: 578px;
   min-height: 250px;
-}
-#panes {
 }
 .pane { display: none; }
 
@@ -161,7 +160,6 @@ ul#tabs div {
 ul#tabs li a {
   color: #555753;
 }
-
 ul#tabs li div {
   -webkit-transition: background-color 0.2s linear;
   -moz-transition: background-color 0.2s linear;
@@ -181,6 +179,12 @@ ul#tabs li.tabactive div {
 /******************************************************************************/
 /** Core Content **/
 
+.desc {
+  font-style: italic;
+  color: #555753;
+  max-width: 40em;
+}
+
 a { color: #204a87; text-decoration: none; }
 a:visited { color: #3465a4; }
 a:hover { text-decoration: underline; }
@@ -189,7 +193,6 @@ a img { border: none; vertical-align: middle; }
 table { margin: 0; padding: 0; border-collapse: collapse; }
 tr { margin: 0; padding: 0; }
 td { margin: 0; padding: 0; vertical-align: top; }
-
 div.table td { padding: 0 1em 0 0; overflow: hidden; }
 
 div.ul { margin: 0.2em 0 0 0; }
@@ -222,42 +225,34 @@ pre {
 .hr hr { display: none; }
 
 
-.grid-td { padding: 0 0 0 1em; }
-
-/******************************************************************************/
-/** Forms **/
-
-form td { vertical-align: middle; }
-input {
-  border: solid 1px #555753;
-  margin: 0.2em;
-}
-input.text {
-  padding: 0 0.2em 0 0.2em;
-  width: 20em;
-}
-input.submit { background-color: #eeeeec; }
-input:focus { background-color: #fcf197; }
-
-
 /******************************************************************************/
 /** ColumnBox **/
 
-table.cols { width: 100%; }
-td.col { padding: 0 0 0 1em; }
-td.col-first { padding: 0; }
-
+table.Columns { width: 100%; }
+td.Column { padding: 0 0 0 1em; }
+td.Column:first-child { padding: 0; }
 
 
 /******************************************************************************/
-/** Misc **/
+/** LinkBox **/
 
-.ajax {
-  display: none;
-  font-weight: bold;
-  color: #555753;
+table.LinkBox { margin: 0em 0 2em 0; width: 100%;}
+td.LinkBoxIcon { width: 24px; text-align: center; }
+td.LinkBoxText { padding: 0 0.5em 0 0; }
+td.LinkBoxIcon + td.LinkBoxText { padding-left: 1em; }
+div.LinkBoxTitle { font-weight: bold; }
+td.LinkBoxGraph { vertical-align: top; text-align: right; }
+table.LinkBox table.facts {
+  border-top: none;
+  border-bottom: none;
+  margin: 0 0 0 1.44em;
 }
-.ajax img { vertical-align: bottom; }
+table.LinkBox table.facts td.fact-key { padding: 0 1em 0 0; }
+table.LinkBox table.facts td.fact-val { padding: 0 1em 0 0; }
+
+
+/******************************************************************************/
+/** Meter **/
 
 div.Meter {
   height: 8px;
@@ -286,45 +281,101 @@ div.MeterText {
   border-radius: 2px;
 }
 
-div.TabBar {
-  text-align: center;
+
+/******************************************************************************/
+/** PaddingBox **/
+
+.Pad { margin-top: 1em; }
+
+
+/******************************************************************************/
+/** SectionBox **/
+
+div.Section { margin: 0.5em 0 1.2em 0; }
+div.SectionTitle {
+  color: #555753;
+  font-weight: bold;
+  border-bottom: solid 1px #888a85;
+  margin: 0 0 0.2em 0;
 }
+
+
+/******************************************************************************/
+/** SidebarBox **/
+
+.SideTitle {
+  margin: 0; padding: 0 0 0 0.5em;
+  color: #555753;
+  font-weight: bold;
+}
+.SideContent { margin: 0 0 2em 0; padding: 0 0 0 0.5em; }
+
+
+/******************************************************************************/
+/** TabBar **/
+
+div.TabBar { text-align: center; }
 span.TabBar {
-  padding: 4px 8px 4px 8px;
+  padding: 1px 8px 1px 8px;
   border: solid 1px #babdb6;
   background-color: #eeeeec;
   background: -webkit-gradient(linear, left -20, left 50, from(#eeeeec), to(white));
   background: -moz-linear-gradient(top, #eeeeec -20px, white 50px);
   border-radius: 2px;
 }
-a.TabBar:first-child {
-  border-left: solid 1px #babdb6;
-}
 a.TabBar {
-  margin: 0 6px 0 6px;
-  padding: 1px;
-  border: solid 1px #babdb6;
-  border-radius: 2px;
+  margin: 0; padding: 1px;
   background-color: white;
   color: #555753;
   font-weight: bold;
+  border-right: solid 1px #babdb6;
+  border-radius: 0;
 }
+a.TabBar:first-child { border-left: solid 1px #babdb6; }
 a.TabBar:hover {
   cursor: default;
   text-decoration: none;
 }
 a.TabBar span {
   padding: 0 6px 0 6px;
-  border-radius: 1px;
   -webkit-transition: background-color 0.2s linear;
   -moz-transition: background-color 0.2s linear;
 }
-a.TabBarActive span {
-  background-color: #fcf197;
+a.TabBarActive span { background-color: #fcf197; }
+a.TabBar:hover span { background-color: #b1d5fc; }
+
+
+
+/******************************************************************************/
+/** Forms **/
+
+form td { vertical-align: middle; }
+input {
+  border: solid 1px #555753;
+  margin: 0.2em;
 }
-a.TabBar:hover span {
-  background-color: #b1d5fc;
+input.text {
+  padding: 0 0.2em 0 0.2em;
+  width: 20em;
 }
+input.submit { background-color: #eeeeec; }
+input:focus { background-color: #fcf197; }
+
+
+
+
+
+/******************************************************************************/
+/** Misc **/
+
+.ajax {
+  display: none;
+  font-weight: bold;
+  color: #555753;
+}
+.ajax img { vertical-align: bottom; }
+
+
 
 .trentry {
   margin: 1em 0 1em 0;
@@ -349,138 +400,6 @@ a.TabBar:hover span {
 .trtrans {
   padding-top: 0.5em;
 }
-
-.sidecont {
-  margin: 0 0 2em 0;
-  padding: 0 0 0 0.5em;
-}
-.sidetitle {
-  color: #555753;
-  font-weight: bold;
-  margin: 0;
-  padding: 0 0 0 0.5em;
-}
-
-.info {
-  margin: 1em 0 2em 0;
-  border: solid 1px #d3d7cf;
-  -moz-border-radius: 4px;
-  background-color: white;
-}
-.info div.sortlinks { display: none; }
-.info table.facts { display: none; }
-.info div.lboxdesc { display: none; }
-.info div.filters { display: none; }
-.info dd { display: none; }
-.infoactive .infotitle {
-  background-color: #fcf197;
-}
-.infotitle {
-  background-color: #eeeeec;
-  color: #555753;
-  font-weight: bold;
-  border-bottom: solid 1px #d3d7cf;
-  padding: 0 0 0.2em 0.5em;
-  cursor: pointer;
-}
-.infotitle span { float: right; }
-.infotitle span img { vertical-align: bottom; }
-.infocont { padding: 0.5em; }
-
-.desc {
-  font-style: italic;
-  color: #555753;
-  max-width: 40em;
-}
-
-div.iconbox {
-  border: solid 1px #eeeeec;
-  padding: 1px;
-}
-div.iconboxtitle {
-  background-color: #f7f7f5;
-  font-weight: bold;
-  font-size: 0.83em;
-  color: #555753;
-  padding: 0 0.83em 2px 0.83em;
-  line-height: 1.2em;
-}
-div.iconboxcont {
-  padding: 0.5em;
-}
-div.iconboxclear {
-  clear: both;
-}
-a.iconboxentry {
-  display: block;
-  float: left;
-  width: 96px;
-  text-align: center;
-  vertical-align: bottom;
-  margin: 0 1.2em 1em 0;
-}
-a.iconboxentry:hover {
-  text-decoration: none;
-}
-div.iconboxicon {
-  width: 52px;
-  height: 52px;
-  margin: 0 0 0 20px;
-  color: #d3d7cf;
-  font-style: italic;
-  border: solid 1px #eeeeec;
-  padding: 1px;
-}
-div.iconboxicon img.img24 { margin-top: 10px; }
-a.iconboxentry:hover div.iconboxicon {
-  border-color: #729fcf;
-}
-div.iconboxname {
-  font-size: 0.83em;
-  line-height: 1.2em;
-  height: 2.5em;
-  overflow: hidden;
-}
-a.iconboxentry:hover div.iconboxname { overflow: visible; }
-
-table.lbox { margin: 0.2em 0 0.2em 0; width: 100%;}
-td.lboxicon { width: 24px; text-align: center; }
-td.lboxtext { padding: 0 0.5em 0 0.5em; }
-div.lboxtitle { font-weight: bold; }
-td.lboxtextonly { padding: 0 0.5em 0 0; }
-div.lboxhead {
-  font-size: 1.2em;
-  border-bottom: solid 1px #888a85;
-}
-td.lboxgraph { vertical-align: top; text-align: right; }
-
-div.section { margin: 0.5em 0 1.2em 0; }
-div.sectiontitle {
-  color: #555753;
-  font-weight: bold;
-  border-bottom: solid 1px #888a85;
-  margin: 0 0 0.2em 0;
-}
-
-div.ticker {
-  margin-bottom: 1.2em;
-}
-div.tickertitle {
-  margin: 0 0 0.2em 0;
-  font-weight: bold;
-  color: #555753;
-}
-div.tickerevent {
-  margin: 0 0 0.83em 1em;
-  clear: left;
-}
-div.tickericon {
-  float: left;
-}
-div.tickertext {
-  margin-left: 36px;
-}
-
 
 table.cont { width: 100%; }
 .contexp { cursor: pointer; }
@@ -587,6 +506,7 @@ div.sortlinks {
 span.sortlinks {
   background-color: #eeeeec;
   border: solid 1px #d3d7cf;
+  border-radius: 2px;
   padding: 0 0.5em 0 0.5em;
   cursor: pointer;
   -webkit-transition: background-color 0.2s linear;
@@ -792,13 +712,6 @@ tbody.facts + tbody.facts tr:first-child td {
 td.fact-key { margin: 0; padding: 0.1em 1em 0.1em 0; color: #555753;
 }
 td.fact-val { margin: 0; padding: 0.1em 1em 0.1em 0; }
-table.lbox table.facts {
-  border-top: none;
-  border-bottom: none;
-  margin: 0 0 0 1.44em;
-}
-table.lbox table.facts td.fact-key { padding: 0 1em 0 0; }
-table.lbox table.facts td.fact-val { padding: 0 1em 0 0; }
 
 div.screenshot { float: right; margin: 1em 0 1em 1em; }
 #sidebar div.screenshot {
@@ -836,8 +749,6 @@ div.zoom {
 .vbox-el { margin-top: 1em; }
 
 a.elliplnk { font-style: normal; cursor: pointer; }
-
-.pad { margin-top: 1em; }
 
 .po { background-color: #eeeeec; }
 .po80 { background-color: #d9ebff; }
