@@ -157,32 +157,21 @@ class CommitsTab (blip.html.TabProvider):
 
     @staticmethod
     def get_commits_div (request, revs, title):
-        div = blip.html.Div (html_id='commits')
-        div.add_content (title)
-        dl = blip.html.DefinitionList()
-        div.add_content (dl)
-        curweek = None
+        div = blip.html.ActivityContainer (html_id='commits')
+        div.set_title (title)
         for rev in revs:
-            if curweek != None and curweek != rev.weeknum:
-                dl.add_divider ()
-            curweek = rev.weeknum
-            # FIXME: i18n word order
-            span = blip.html.Span (divider=blip.html.SPACE)
             if isinstance (request.record, blip.db.Branch):
-                span.add_content (rev.display_revision (request.record))
-                span.add_content ('on')
-                span.add_content (rev.datetime.strftime('%Y-%m-%d %T'))
-                span.add_content ('by')
-                span.add_content (blip.html.Link (rev.person))
                 branch = request.record
+                act = blip.html.ActivityBox (subject=rev.person,
+                                             message=(' (%s)' % rev.display_revision (request.record)),
+                                             datetime=rev.datetime.strftime('%T'))
             else:
-                span.add_content (blip.html.Link (rev.project.blip_url, rev.project.title))
-                span.add_content ('on')
-                span.add_content (rev.datetime.strftime('%Y-%m-%d %T'))
                 branch = rev.project.default
-            dl.add_term (span)
-            # FIXME: branch=request.record or...
-            dl.add_entry (from_revision (rev, 'activity', branch=branch))
+                act = blip.html.ActivityBox (subject=rev.project,
+                                             message=(' (%s)' % rev.display_revision (branch)),
+                                             datetime=rev.datetime.strftime('%T'))
+            div.add_activity (rev.datetime.strftime('%Y-%m-%d'), act)
+            act.add_content (from_revision (rev, 'activity', branch=branch))
         return div
 
 

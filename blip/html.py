@@ -112,6 +112,9 @@ class ContentComponent (Component):
         """Get a list of all added content."""
         return self._content
 
+    def has_content (self):
+        return len(self._content) > 0
+
     def output (self, res):
         """Output the HTML."""
         for cont in self._content:
@@ -915,14 +918,23 @@ class Calendar (HtmlObject):
 class ActivityContainer (HtmlObject):
     def __init__ (self, **kw):
         self._content = []
+        self._title = None
         super (ActivityContainer, self).__init__ (**kw)
 
     def add_activity (self, group, content):
         self._content.append ((group, content))
 
+    def set_title (self, title):
+        self._title = title
+
     def output (self, res):
         """Output the HTML."""
         curgroup = None
+        wid = self.get_html_id ()
+        if wid is not None:
+            res.write('<div id="%s">' % self.escape(wid))
+        if self._title is not None:
+            res.write('<div class="ActivityContainerTitle">%s</div>' % self.escape(self._title))
         for group, content in self._content:
             if group != curgroup:
                 if curgroup is not None:
@@ -933,8 +945,10 @@ class ActivityContainer (HtmlObject):
             res.write(content)
         if curgroup is not None:
             res.write('</div>')
+        if wid is not None:
+            res.write('</div>')
 
-class ActivityBox (HtmlObject):
+class ActivityBox (HtmlObject, ContentComponent):
     def __init__ (self, **kw):
         self._subject = kw.pop ('subject', None)
         self._datetime = kw.pop ('datetime', None)
@@ -969,6 +983,10 @@ class ActivityBox (HtmlObject):
             res.write('</span>' )
         if self._message is not None:
             res.write(self._message)
+        if self.has_content ():
+            res.write('<div class="ActivityContent">')
+            ContentComponent.output (self, res)
+            res.write('</div>')
         res.write('</div>')
 
 

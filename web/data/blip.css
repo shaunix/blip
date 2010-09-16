@@ -641,7 +641,7 @@ div.ActivityBox:hover {
   border-color: #729fcf;
 }
 div.ActivityDate {
-  float: left;
+  position: absolute;
   color: #888a85;
   font-weight: bold;
   margin-right: 1.2em;
@@ -649,11 +649,18 @@ div.ActivityDate {
 span.ActivitySubject {
   font-weight: bold;
 }
-div.ActivityContainer {
-  margin: 0 0 12px 0;
+div.ActivityDate + span.ActivitySubject {
+  margin-left: 8em;
 }
+div.ActivityContent { margin: 6px 0 0 8em; }
+div.ActivityContainer { margin: 0 0 12px 0; }
 div.ActivityTitle {
-  color: #888a85;
+  color: #555753;
+  font-weight: bold;
+  margin: 0 0 6px 0;
+}
+div.ActivityContainerTitle {
+  color: #2e3436;
   font-weight: bold;
   margin: 0 0 6px 0;
 }
@@ -730,6 +737,14 @@ table.graph { margin: 0 0 12px 0; }
 table.graph div.graph { margin: 0; }
 table.graph td { line-height: 0; }
 td.graphprev, td.graphnext { padding: 4px 0 0 0; }
+td.graphprev a, td.graphnext a {
+  -webkit-transition: background-color 0.2s linear;
+  -moz-transition: background-color 0.2s linear;
+}
+td.graphprev a:hover, td.graphnext a:hover {
+  background-color: #b1d5fc;
+  cursor: default;
+}
 div.graphaway { position: absolute; overflow: hidden; }
 td.graphnext { text-align: right; }
 
