@@ -19,11 +19,11 @@ two ways:</p>
 
 <terms>
   <item>
-    <title><cmd>blip-admin <var>key</var></cmd></title>
+    <title><cmd>blip-admin config <var>key</var></cmd></title>
     <p>Get the value for the configuration key <var>key</var>.</p>
   </item>
   <item>
-    <title><cmd>blip-admin <var>key</var> <var>value</var></cmd></title>
+    <title><cmd>blip-admin config <var>key</var> <var>value</var></cmd></title>
     <p>Set the value of the configuration key <var>key</var>
     to <var>value</var>.</p>
   </item>
