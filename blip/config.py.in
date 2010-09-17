@@ -108,3 +108,12 @@ def web_files_url (config, val):
 #   web_root_url = 'http://localhost/index.cgi/'
 #   web_data_url = 'http://localhost/data/'
 #   web_files_url = 'http://localhost/files/'
+
+
+################################################################################
+## Accounts
+
+@blinq.config.option
+def account_handler (config, val):
+    """The plugin to use to handle accounts"""
+    return val or 'basic'
