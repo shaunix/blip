@@ -1,3 +1,5 @@
 #!/bin/sh
-autoreconf -i -I m4
+aclocal -I m4
+autoconf
+automake --add-missing
 ./configure $@
