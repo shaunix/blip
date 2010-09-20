@@ -518,6 +518,7 @@ class Selection (object):
         self._results = blip.utils.odict()
         self._results[None] = record
         self._wheres = list(wheres)
+        self._order_by = None
 
     def add_join (self, table, *on):
         if len(on) > 1:
@@ -539,17 +540,33 @@ class Selection (object):
     def add_where (self, where):
         self._wheres.append (where)
 
-    def get (self):
+    def order_by (self, by):
+        self._order_by = by
+
+    def _get_select (self):
         store = get_store (self._tables[0])
         using = store.using (*self._tables)
-        ret = []
         find = using.find (tuple(self._results.values()), *self._wheres)
-        for res in find:
+        if self._order_by is None:
+            find = find.order_by (self._order_by)
+        return find
+
+    def _format_results (self, results):
+        ret = []
+        for res in results:
             this = {}
             for key, i in zip (self._results.keys(), range(len(self._results))):
                 this[key] = res[i]
             ret.append (this)
         return ret
+
+    def __getitem__ (self, index):
+        find = self._get_select ()
+        return self._format_results (find.__getitem__ (index))
+
+    def get (self):
+        find = self._get_select ()
+        return self._format_results (list(find))
 
     def get_sorted (self, *args):
         return blinq.utils.attrsorted (self.get(), *args)

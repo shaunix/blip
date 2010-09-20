@@ -256,23 +256,28 @@ class SetIndexContentProvider (blip.plugins.index.web.IndexContentProvider):
         columns = blip.html.ColumnBox (2)
         box.add_content (columns)
 
-        # FIXME: should JOIN to avoid SELECTS in for loop below
-        modules = blip.db.Project.select (blip.db.Project.type == u'Module',
-                                          blip.db.Project.default != None)
-        modules = modules.order_by (blip.db.Desc (blip.db.Project.score))
+        sel = blip.db.Selection (blip.db.Project,
+                                 blip.db.Project.type == u'Module',
+                                 blip.db.Project.default != None)
+        sel.add_join (blip.db.Branch,
+                      blip.db.Branch.ident == blip.db.Project.default_ident)
+        sel.add_result ('branch', blip.db.Branch)
+        sel.order_by (blip.db.Desc (blip.db.Project.score))
         bl = blip.html.BulletList ()
         bl.set_title (blip.utils.gettext ('Active projects:'))
         columns.add_to_column (0, bl)
-        modules = modules[:6]
-        for module in modules:
-            bl.add_link (module.default.blip_url, module.default.title)
+        for res in sel[:6]:
+            bl.add_link (res['branch'].blip_url, res['branch'].title)
 
-        modules = blip.db.Project.select (blip.db.Project.type == u'Module',
-                                          blip.db.Project.default_ident != None)
-        modules = modules.order_by (blip.db.Desc (blip.db.Project.score_diff))
+        sel = blip.db.Selection (blip.db.Project,
+                                 blip.db.Project.type == u'Module',
+                                 blip.db.Project.default != None)
+        sel.add_join (blip.db.Branch,
+                      blip.db.Branch.ident == blip.db.Project.default_ident)
+        sel.add_result ('branch', blip.db.Branch)
+        sel.order_by (blip.db.Desc (blip.db.Project.score_diff))
         bl = blip.html.BulletList ()
         bl.set_title (blip.utils.gettext ('Recently active:'))
         columns.add_to_column (1, bl)
-        modules = modules[:6]
-        for module in modules:
-            bl.add_link (module.default.blip_url, module.default.title)
+        for res in sel[:6]:
+            bl.add_link (res['branch'].blip_url, res['branch'].title)
