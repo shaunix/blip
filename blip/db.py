@@ -655,12 +655,6 @@ class Branch (BlipRecord):
         return (args, kw)
 
     @classmethod
-    def select_parent (cls, selection):
-        tbl = ClassAlias (cls)
-        selection.add_join (tbl, cls.parent_ident == tbl.ident)
-        selection.add_result ('parent', tbl)
-
-    @classmethod
     def select_child_count (cls, selection, childtype):
         tbl = ClassAlias (cls)
         selection.add_result ('#' + childtype,
@@ -672,6 +666,24 @@ class Branch (BlipRecord):
                                             cls.__storm_table__,
                                             tbl.__storm_table__),
                                            (childtype,)))
+
+    @classmethod
+    def select_mod_person (cls, selection):
+        tbl = ClassAlias (Entity)
+        selection.add_left_join (tbl, tbl.ident == cls.mod_person_ident)
+        selection.add_result ('mod_person', tbl)
+
+    @classmethod
+    def select_parent (cls, selection):
+        tbl = ClassAlias (cls)
+        selection.add_join (tbl, cls.parent_ident == tbl.ident)
+        selection.add_result ('parent', tbl)
+
+    @classmethod
+    def select_project (cls, selection):
+        tbl = ClassAlias (Project)
+        selection.add_join (tbl, tbl.ident == cls.project_ident)
+        selection.add_result ('project', tbl)
 
     @classmethod
     def select (cls, *args, **kw):

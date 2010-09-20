@@ -344,11 +344,15 @@ class DocumentsTab (blip.html.TabProvider):
         if not blip.html.TabProvider.match_tab (request, 'docs'):
             return None
         if request.record.type == u'Module':
-            docs = blip.db.Branch.select (type=u'Document',
-                                          parent=request.record)
+            sel = blip.db.Selection (blip.db.Branch,
+                                     blip.db.Branch.type == u'Document',
+                                     blip.db.Branch.parent_ident == request.record.ident)
         elif request.record.type == u'Set':
-            docs = blip.db.Branch.select (type=u'Document',
-                                          parent_in_set=request.record)
+            sel = blip.db.Selection (blip.db.Branch,
+                                     blip.db.Branch.type == u'Document')
+            sel.add_join (blip.db.SetModule,
+                          blip.db.SetModule.pred_ident == blip.db.Branch.parent_ident)
+            sel.add_where (blip.db.SetModule.subj_ident == request.record.ident)
         else:
             return None
 
@@ -360,14 +364,15 @@ class DocumentsTab (blip.html.TabProvider):
             tab.add_sort_link ('module', blip.utils.gettext ('module'))
         tab.add_sort_link ('status', blip.utils.gettext ('status'))
 
-        for doc in docs.order_by ('name'):
-            lbox = tab.add_link_box (doc)
+        blip.db.Branch.select_parent (sel)
+        for res in sel.get_sorted ((None, 'name')):
+            lbox = tab.add_link_box (res[None])
             if request.record.type == u'Set':
                 lbox.add_fact (blip.utils.gettext ('module'),
-                               blip.html.Span(blip.html.Link (doc.parent.blip_url,
-                                                              doc.parent.branch_module),
+                               blip.html.Span(blip.html.Link (res['parent'].blip_url,
+                                                              res['parent'].branch_module),
                                               html_class='module'))
-            status = doc.data.get ('docstatus', '00none')
+            status = res[None].data.get ('docstatus', '00none')
             if status is None:
                 status = '00none'
             span = blip.html.Span(status[2:], html_class='status')

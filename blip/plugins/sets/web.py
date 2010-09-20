@@ -210,20 +210,22 @@ class OverviewTab (blip.html.TabProvider):
             response.payload = cont
             return response
 
-        mods = blip.db.Branch.select_with_mod_person (
-            blip.db.Branch.type == u'Module',
-            blip.db.SetModule.pred_ident == blip.db.Branch.ident,
-            blip.db.SetModule.subj == request.record,
-            using=blip.db.SetModule)
-        mods = blinq.utils.attrsorted (mods, (0, 'title'))
+        sel = blip.db.Selection (blip.db.Branch,
+                                 blip.db.Branch.type == u'Module')
+        sel.add_join (blip.db.SetModule,
+                      blip.db.SetModule.pred_ident == blip.db.Branch.ident)
+        sel.add_where (blip.db.SetModule.subj_ident == request.record.ident)
+        blip.db.Branch.select_mod_person (sel)
+        blip.db.Branch.select_project (sel)
+        mods = sel.get_sorted ((None, 'title'))
         modcnt = len(mods)
         cont = blip.html.ContainerBox (html_id='c-modules')
         cont.add_sort_link ('title', blip.utils.gettext ('title'), 1)
         cont.add_sort_link ('module', blip.utils.gettext ('module'))
         cont.add_sort_link ('mtime', blip.utils.gettext ('modified'))
         cont.add_sort_link ('score', blip.utils.gettext ('score'))
-        for i in range(modcnt):
-            mod = mods[i][0]
+        for res in mods:
+            mod = res[None]
             lbox = cont.add_link_box (mod)
             lbox.add_graph (blinq.config.web_files_url + 'graphs/' +
                             '/'.join(mod.ident.split('/')[1:] + ['commits-tight.png']),
@@ -231,17 +233,17 @@ class OverviewTab (blip.html.TabProvider):
             span = blip.html.Span (mod.branch_module)
             span.add_html_class ('module')
             lbox.add_fact (blip.utils.gettext ('module'), blip.html.Link (mod.blip_url, span))
-            if mod.mod_datetime != None:
+            if mod.mod_datetime is not None:
                 span = blip.html.Span (divider=blip.html.SPACE)
                 # FIXME: i18n, word order, but we want to link person
                 span.add_content (blip.html.Span(mod.mod_datetime.strftime('%Y-%m-%d %T')))
                 span.add_html_class ('mtime')
-                if mod.mod_person_ident != None:
+                if res['mod_person'] is not None:
                     span.add_content (blip.utils.gettext ('by'))
-                    span.add_content (blip.html.Link (mod.mod_person))
+                    span.add_content (blip.html.Link (res['mod_person']))
                 lbox.add_fact (blip.utils.gettext ('modified'), span)
-            if mod.project.score != None:
-                span = blip.html.Span(str(mod.project.score))
+            if res['project'].score != None:
+                span = blip.html.Span(str(res['project'].score))
                 span.add_html_class ('score')
                 lbox.add_fact (blip.utils.gettext ('score'), span)
         return cont
