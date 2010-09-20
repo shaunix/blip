@@ -547,7 +547,7 @@ class Selection (object):
         store = get_store (self._tables[0])
         using = store.using (*self._tables)
         find = using.find (tuple(self._results.values()), *self._wheres)
-        if self._order_by is None:
+        if self._order_by is not None:
             find = find.order_by (self._order_by)
         return find
 
