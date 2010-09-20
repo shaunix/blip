@@ -507,12 +507,21 @@ class Selection (object):
         self._results = blip.utils.odict()
         self._results[None] = record
         self._wheres = list(wheres)
+        self._group_by = None
 
     def add_join (self, table, *on):
-        self._tables.append (Join (table, *on))
+        if len(on) > 1:
+            where = And(*on)
+        else:
+            where = on[0]
+        self._tables.append (Join (table, where))
 
     def add_left_join (self, table, *on):
-        self._tables.append (LeftJoin (table, *on))
+        if len(on) > 1:
+            where = And(*on)
+        else:
+            where = on[0]
+        self._tables.append (LeftJoin (table, where))
 
     def add_result (self, key, result):
         self._results[key] = result
@@ -520,11 +529,19 @@ class Selection (object):
     def add_where (self, where):
         self._wheres.append (where)
 
+    def group_by (self, by):
+        # FIXME: exception for collision?
+        if self._group_by is None:
+            self._group_by = by
+
     def get (self):
         store = get_store (self._tables[0])
         using = store.using (*self._tables)
         ret = []
-        for res in using.find (tuple(self._results.values()), *self._wheres):
+        find = using.find (tuple(self._results.values()), *self._wheres)
+        if self._group_by is not None:
+            find = find.group_by (self._group_by)
+        for res in find:
             this = {}
             for key, i in zip (self._results.keys(), range(len(self._results))):
                 this[key] = res[i]
@@ -616,6 +633,25 @@ class Branch (BlipRecord):
             args.append (cls.parent_ident == SetModule.pred_ident)
             args.append (SetModule.subj_ident == rset.ident)
         return (args, kw)
+
+    @classmethod
+    def select_parent (cls, selection):
+        tbl = ClassAlias (cls)
+        selection.add_join (tbl, cls.parent_ident == tbl.ident)
+        selection.add_result ('parent', tbl)
+
+    @classmethod
+    def select_child_count (cls, selection, childtype):
+        tbl = ClassAlias (cls)
+        selection.add_result ('#' + childtype,
+                              blip.db.SQL (('(SELECT COUNT(*) FROM Branch as `%s`' +
+                                            ' WHERE `%s`.parent_ident = `%s`.ident' +
+                                            ' AND `%s`.type = ?)') %
+                                           (tbl.__storm_table__,
+                                            tbl.__storm_table__,
+                                            cls.__storm_table__,
+                                            tbl.__storm_table__),
+                                           (childtype,)))
 
     @classmethod
     def select (cls, *args, **kw):

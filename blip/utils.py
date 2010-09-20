@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # Copyright (c) 2006, 2010  Shaun McCance  <shaunm@gnome.org>
 #
 # This file is part of Blip, a program for displaying various statistics

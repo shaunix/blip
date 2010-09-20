@@ -390,20 +390,24 @@ class DomainsTab (blip.html.TabProvider):
         tab.add_sort_link ('module', blip.utils.gettext ('module'))
         tab.add_sort_link ('translations', blip.utils.gettext ('translations'))
 
-        domains = blip.db.Branch.select_with_child_count (u'Translation',
-                                                          type=u'Domain',
-                                                          parent_in_set=request.record)
-        domains = blinq.utils.attrsorted (list(domains), (0, 'title'))
-        for domain, count in domains:
-            url = domain.parent.blip_url + '#i18n/' + domain.ident.split('/')[-2]
-            lbox = tab.add_link_box (url, domain.title)
+        sel = blip.db.Selection (blip.db.Branch,
+                                 blip.db.Branch.type == u'Domain')
+        sel.add_join (blip.db.SetModule,
+                      blip.db.SetModule.pred_ident == blip.db.Branch.parent_ident),
+        sel.add_where (blip.db.SetModule.subj_ident == request.record.ident)
+        blip.db.Branch.select_parent (sel)
+        blip.db.Branch.select_child_count (sel, u'Translation')
+
+        for res in sel.get_sorted ((None, 'title')):
+            url = res['parent'].blip_url + '#i18n/' + res[None].ident.split('/')[-2]
+            lbox = tab.add_link_box (url, res[None].title)
             if request.record.type == u'Set':
                 lbox.add_fact (blip.utils.gettext ('module'),
-                               blip.html.Span(blip.html.Link (domain.parent.blip_url,
-                                                              domain.parent.branch_module),
+                               blip.html.Span(blip.html.Link (res['parent'].blip_url,
+                                                              res['parent'].branch_module),
                                               html_class='module'))
                 lbox.add_fact (blip.utils.gettext ('translations'),
-                               blip.html.Span(str(count),
+                               blip.html.Span(str(res['#Translation']),
                                               html_class='translations'))
 
         response.payload = tab
