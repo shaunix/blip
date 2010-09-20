@@ -136,12 +136,12 @@ class OverviewTab (blip.html.TabProvider):
             pass
 
         module = request.record.parent.parent
-        rels = blip.db.SetModule.get_related (pred=module)
+        sel = blip.db.Selection (blip.db.SetModule,
+                                 blip.db.SetModule.pred_ident == module.ident)
+        blip.db.SetModule.select_subj (sel)
+        rels = sel.get_sorted (('subj', 'title'))
         if len(rels) > 0:
-            sets = blinq.utils.attrsorted ([rel.subj for rel in rels], 'title')
-            span = blip.html.Span (*[blip.html.Link(rset.blip_url + '#docs',
-                                                    rset.title)
-                                     for rset in sets])
+            span = blip.html.Span (*[blip.html.Link(rel['subj']) for rel in rels])
             span.set_divider (blip.html.BULLET)
             facts.start_fact_group ()
             facts.add_fact (blip.utils.gettext ('Release Sets'), span)

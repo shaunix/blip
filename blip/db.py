@@ -144,10 +144,9 @@ class BlipTracer (object):
             if not self._log:
                 return
             outtxt = re.split (' (?=WHERE|AND|GROUP BY|ORDER BY|LIMIT)', cmd)
-            sel, frm = outtxt[0].split (' FROM ')
+            sel, frm = outtxt[0].split (' FROM ', 1)
             if not sel.startswith ('SELECT COUNT'):
-                pass
-                #sel = 'SELECT ...'
+                sel = 'SELECT ...'
             outtxt[0] = sel + ' FROM ' + frm
         elif cmd.startswith ('INSERT '):
             self.__class__.insert_count += 1
@@ -462,6 +461,18 @@ class BlipRelation (BlipModel):
         return cls (**kw)
 
     @classmethod
+    def select_subj (cls, selection):
+        tbl = ClassAlias (cls.subj._remote_key.cls)
+        selection.add_join (tbl, cls.subj_ident == tbl.ident)
+        selection.add_result ('subj', tbl)
+
+    @classmethod
+    def select_pred (cls, selection):
+        tbl = ClassAlias (cls.pred._remote_key.cls)
+        selection.add_join (tbl, cls.pred_ident == tbl.ident)
+        selection.add_result ('pred', tbl)
+
+    @classmethod
     def select_related (cls, subj=None, pred=None, **kw):
         store = get_store (kw.pop ('__blip_store__', cls.__blip_store__))
         subj_type = kw.pop ('subj_type', None)
@@ -507,7 +518,6 @@ class Selection (object):
         self._results = blip.utils.odict()
         self._results[None] = record
         self._wheres = list(wheres)
-        self._group_by = None
 
     def add_join (self, table, *on):
         if len(on) > 1:
@@ -529,18 +539,11 @@ class Selection (object):
     def add_where (self, where):
         self._wheres.append (where)
 
-    def group_by (self, by):
-        # FIXME: exception for collision?
-        if self._group_by is None:
-            self._group_by = by
-
     def get (self):
         store = get_store (self._tables[0])
         using = store.using (*self._tables)
         ret = []
         find = using.find (tuple(self._results.values()), *self._wheres)
-        if self._group_by is not None:
-            find = find.group_by (self._group_by)
         for res in find:
             this = {}
             for key, i in zip (self._results.keys(), range(len(self._results))):
