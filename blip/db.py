@@ -33,6 +33,7 @@ import storm.references
 import storm.store
 
 import blinq.config
+import blinq.utils
 
 import blip.utils
 import blip.scm
@@ -224,23 +225,6 @@ class WillNotDelete (Exception):
 
 ################################################################################
 ## Base Classes
-
-
-# FIXME
-def get_by_ident (ident):
-    first = ident.split('/')[1]
-    try:
-        if first == 'set':
-            cls = ReleaseSet
-        elif first in ('mod', 'doc', 'ref', 'app', 'applet', 'lib', 'ext', 'i18n', 'l10n'):
-            cls = Branch
-        elif first in ('person', 'team', 'ghost'):
-            cls = Entity
-        elif first == 'list':
-            cls = Forum
-        return cls.get (ident)
-    except:
-        return None
 
 
 class ShortText (Unicode):
@@ -512,6 +496,43 @@ class BlipRelation (BlipModel):
     def count_related (cls, subj=None, pred=None, **kw):
         sel = cls.select_related (subj=subj, pred=pred, **kw)
         return sel.count ()
+
+
+################################################################################
+## Selections
+
+class Selection (object):
+    def __init__ (self, record, *wheres):
+        self._tables = [record]
+        self._results = blip.utils.odict()
+        self._results[None] = record
+        self._wheres = list(wheres)
+
+    def add_join (self, table, *on):
+        self._tables.append (Join (table, *on))
+
+    def add_left_join (self, table, *on):
+        self._tables.append (LeftJoin (table, *on))
+
+    def add_result (self, key, result):
+        self._results[key] = result
+
+    def add_where (self, where):
+        self._wheres.append (where)
+
+    def get (self):
+        store = get_store (self._tables[0])
+        using = store.using (*self._tables)
+        ret = []
+        for res in using.find (tuple(self._results.values()), *self._wheres):
+            this = {}
+            for key, i in zip (self._results.keys(), range(len(self._results))):
+                this[key] = res[i]
+            ret.append (this)
+        return ret
+
+    def get_sorted (self, *args):
+        return blinq.utils.attrsorted (self.get(), *args)
 
 
 ################################################################################

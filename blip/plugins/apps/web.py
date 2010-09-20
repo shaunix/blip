@@ -173,12 +173,16 @@ class ApplicationsTab (blip.html.TabProvider):
             return None
         if not blip.html.TabProvider.match_tab (request, 'apps'):
             return None
+
+        sel = blip.db.Selection (blip.db.Branch,
+                                 blip.db.Branch.type == u'Application')
         if request.record.type == u'Module':
-            apps = blip.db.Branch.select (type=u'Application',
-                                          parent=request.record)
+            sel.add_where (blip.db.Branch.parent_ident == request.record.ident)
         elif request.record.type == u'Set':
-            apps = blip.db.Branch.select (type=u'Application',
-                                          parent_in_set=request.record)
+            module = blip.db.ClassAlias (blip.db.Branch)
+            sel.add_join (module, blip.db.Branch.parent_ident == module.ident)
+            sel.add_join (blip.db.SetModule, blip.db.SetModule.pred_ident == module.ident)
+            sel.add_result ('Module', module)
         else:
             return None
 
@@ -189,12 +193,12 @@ class ApplicationsTab (blip.html.TabProvider):
             tab.add_sort_link ('title', blip.utils.gettext ('title'), 1)
             tab.add_sort_link ('module', blip.utils.gettext ('module'))
 
-        for app in apps.order_by ('name'):
-            lbox = tab.add_link_box (app)
+        for res in sel.get_sorted ((None, 'title')):
+            lbox = tab.add_link_box (res[None])
             if request.record.type == u'Set':
                 lbox.add_fact (blip.utils.gettext ('module'),
-                               blip.html.Span(blip.html.Link (app.parent.blip_url,
-                                                              app.parent.branch_module),
+                               blip.html.Span(blip.html.Link (res['Module'].blip_url,
+                                                              res['Module'].branch_module),
                                               html_class='module'))
                                
 
