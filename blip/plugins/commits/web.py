@@ -136,18 +136,18 @@ class CommitsTab (blip.html.TabProvider):
             tab.add_content (graph)
 
         if isinstance (request.record, blip.db.Branch):
-            cnt = blip.db.RevisionBranch.select (branch=request.record).count ()
+            sel = blip.db.Selection (blip.db.Revision)
+            blip.db.Revision.select_on_branch (sel, request.record)
+            cnt = blip.db.Selection (blip.db.RevisionBranch,
+                                     blip.db.RevisionBranch.branch_ident == request.record.ident)
+            cnt = cnt.count ()
+            blip.db.Revision.select_person (sel)
         else:
-            cnt = blip.db.Revision.select (person=request.record).count ()
-        # FIXME: This SELECT is too slow.  Limiting it to 26 weeks to
-        # keep the time somewhat sane for now.
-        if isinstance (request.record, blip.db.Branch):
-            revs = blip.db.Revision.select_revisions (branch=request.record,
-                                                      week_range=(blip.utils.weeknum()-26,))
-        else:
-            revs = blip.db.Revision.select_revisions (person=request.record,
-                                                      week_range=(blip.utils.weeknum()-26,))
-        revs = list(revs[:10])
+            sel = blip.db.Selection (blip.db.Revision,
+                                     blip.db.Revision.person_ident == request.record.ident)
+            cnt = sel.count ()
+            blip.db.Revision.select_branch (sel)
+        revs = list(sel[:10])
         title = (blip.utils.gettext('Showing %i of %i commits:') % (len(revs), cnt))
         div = cls.get_commits_div (request, revs, title)
         tab.add_content (div)
@@ -162,11 +162,11 @@ class CommitsTab (blip.html.TabProvider):
         for rev in revs:
             if isinstance (request.record, blip.db.Branch):
                 branch = request.record
-                act = blip.html.ActivityBox (subject=rev.person,
+                act = blip.html.ActivityBox (subject=rev['person'],
                                              message=(' (%s)' % rev.display_revision (request.record)),
                                              datetime=rev.datetime.strftime('%T'))
             else:
-                branch = rev.project.default
+                branch = rev['branch']
                 act = blip.html.ActivityBox (subject=rev.project,
                                              message=(' (%s)' % rev.display_revision (branch)),
                                              datetime=rev.datetime.strftime('%T'))
@@ -223,39 +223,49 @@ class CommitsDiv (blip.web.ContentResponder):
         response = blip.web.WebResponse (request)
 
         weeknum = request.query.get('weeknum', None)
-        if weeknum != None:
-            weeknum = int(weeknum)
-            thisweek = blip.utils.weeknum ()
-            ago = thisweek - weeknum
-            if isinstance (request.record, blip.db.Branch):
-                revs = blip.db.Revision.select_revisions (branch=request.record,
-                                                          weeknum=weeknum)
-            else:
-                revs = blip.db.Revision.select_revisions (person=request.record,
-                                                          weeknum=weeknum)
-            cnt = revs.count()
-            revs = list(revs[:100])
+        weeknum = int(weeknum)
+        thisweek = blip.utils.weeknum ()
+        ago = thisweek - weeknum
+        if isinstance (request.record, blip.db.Branch):
+            sel = blip.db.Selection (blip.db.Revision,
+                                     blip.db.Revision.weeknum == weeknum)
+            blip.db.Revision.select_on_branch (sel, request.record)
+            cnt = blip.db.Selection (blip.db.RevisionBranch,
+                                     blip.db.RevisionBranch.branch_ident == request.record.ident)
+            cnt.add_join (blip.db.Revision,
+                          blip.db.Revision.ident == blip.db.RevisionBranch.revision_ident)
+            cnt.add_where (blip.db.Revision.weeknum == weeknum)
+            cnt = cnt.count ()
+            blip.db.Revision.select_person (sel)
         else:
-            if isinstance (request.record, blip.db.Branch):
-                revs = blip.db.Revision.select_revisions (branch=request.record,
-                                                          week_range=(utils.weeknum()-52,))
+            sel = blip.db.Selection (blip.db.Revision,
+                                     blip.db.Revision.weeknum == weeknum,
+                                     blip.db.Revision.person_ident == request.record.ident)
+            cnt = sel.count ()
+            blip.db.Revision.select_branch (sel)
+        revs = list(sel[:200])
+
+        if ago == 0:
+            if len(revs) == cnt:
+                title = (blip.utils.gettext('Showing all %i commits from this week:')
+                         % cnt)
             else:
-                revs = blip.db.Revision.select_revisions (person=request.record,
-                                                          week_range=(utils.weeknum()-52,))
-            cnt = revs.count()
-            revs = list(revs[:10])
-        if weeknum is None:
-            title = (blip.utils.gettext('Showing %i of %i commits:')
-                     % (len(revs), cnt))
-        elif ago == 0:
-            title = (blip.utils.gettext('Showing %i of %i commits from this week:')
-                     % (len(revs), cnt))
+                title = (blip.utils.gettext('Showing %i of %i commits from this week:')
+                         % (len(revs), cnt))
         elif ago == 1:
-            title = (blip.utils.gettext('Showing %i of %i commits from last week:')
-                     % (len(revs), cnt))
+            if len(revs) == cnt:
+                title = (blip.utils.gettext('Showing all %i commits from last week:')
+                         % cnt)
+            else:
+                title = (blip.utils.gettext('Showing %i of %i commits from last week:')
+                         % (len(revs), cnt))
         else:
-            title = (blip.utils.gettext('Showing %i of %i commits from %i weeks ago:')
-                     % (len(revs), cnt, ago))
+            if len(revs) == cnt:
+                title = (blip.utils.gettext('Showing all %i commits from %i weeks ago:')
+                         % (cnt, ago))
+            else:
+                title = (blip.utils.gettext('Showing %i of %i commits from %i weeks ago:')
+                         % (len(revs), cnt, ago))
 
         div = CommitsTab.get_commits_div (request, revs, title)
         response.payload = div

@@ -578,6 +578,10 @@ class Selection (object):
     def get_sorted (self, *args):
         return blinq.utils.attrsorted (self.get(), *args)
 
+    def count (self):
+        find = self._get_select ()
+        return find.count ()
+
 
 ################################################################################
 ## Records
@@ -665,14 +669,14 @@ class Branch (BlipRecord):
     def select_child_count (cls, selection, childtype):
         tbl = ClassAlias (cls)
         selection.add_result ('#' + childtype,
-                              blip.db.SQL (('(SELECT COUNT(*) FROM Branch as `%s`' +
-                                            ' WHERE `%s`.parent_ident = `%s`.ident' +
-                                            ' AND `%s`.type = ?)') %
-                                           (tbl.__storm_table__,
-                                            tbl.__storm_table__,
-                                            cls.__storm_table__,
-                                            tbl.__storm_table__),
-                                           (childtype,)))
+                              SQL (('(SELECT COUNT(*) FROM Branch as `%s`' +
+                                    ' WHERE `%s`.parent_ident = `%s`.ident' +
+                                    ' AND `%s`.type = ?)') %
+                                   (tbl.__storm_table__,
+                                    tbl.__storm_table__,
+                                    cls.__storm_table__,
+                                    tbl.__storm_table__),
+                                   (childtype,)))
 
     @classmethod
     def select_mod_person (cls, selection):
@@ -1321,7 +1325,36 @@ class Revision (BlipModel):
             except IndexError:
                 ret = None
         return ret
-                
+
+    @classmethod
+    def select_on_branch (cls, selection, branch):
+        tbl = ClassAlias (RevisionBranch)
+        selection.add_join (tbl, tbl.revision_ident == cls.ident)
+        if isinstance (branch, BlipModel):
+            selection.add_where (tbl.branch_ident == branch.ident)
+        else:
+            selection.add_where (tbl.branch_ident == branch)
+
+    @classmethod
+    def select_on_week_range (cls, selection, weekrange):
+        selection.add_where (cls.weeknum >= weekrange[0])
+        if len(weekrange) > 1 and weekrange[1] is not None:
+            selection.add_where (cls.weeknum <= weekrange[1])
+
+    @classmethod
+    def select_branch (cls, selection):
+        proj = ClassAlias (Project)
+        bran = ClassAlias (Branch)
+        selection.add_join (proj, cls.project_ident == proj.ident)
+        selection.add_join (bran, proj.default_ident == bran.ident)
+        selection.add_result ('branch', bran)
+
+    @classmethod
+    def select_person (cls, selection):
+        tbl = ClassAlias (Entity)
+        selection.add_join (tbl, tbl.ident == cls.person_ident)
+        selection.add_result ('person', tbl)
+
     @classmethod
     def select_revisions (cls, *args, **kw):
         store = get_store (kw.pop ('__blip_store__', cls.__blip_store__))
