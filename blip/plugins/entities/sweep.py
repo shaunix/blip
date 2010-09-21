@@ -23,6 +23,7 @@ import os
 
 import blinq.ext
 
+import blip.data
 import blip.db
 import blip.graphs
 import blip.sweep
@@ -38,7 +39,7 @@ class EntityHandler (blinq.ext.ExtensionPoint):
 class PeopleResponder (blip.sweep.SweepResponder,
                        blip.plugins.queue.sweep.QueueHandler):
     command = 'people'
-    synopsis = 'update information about people and teams'
+    synopsis = 'update information about people'
 
     @classmethod
     def set_usage (cls, request):
@@ -75,13 +76,13 @@ class PeopleResponder (blip.sweep.SweepResponder,
                 blip.db.commit ()
         return response
 
-    @staticmethod
-    def update_person (entity, request):
+    @classmethod
+    def update_person (cls, entity, request):
         blip.utils.log ('Processing %s' % entity.ident)
         for handler in EntityHandler.get_extensions ():
             handler.handle_entity (entity, request)
 
-        PeopleResponder.update_commit_graphs (entity, request)
+        cls.update_commit_graphs (entity, request)
 
         entity.updated = datetime.datetime.utcnow ()
         blip.db.Queue.pop (entity.ident)
@@ -172,6 +173,106 @@ class PeopleResponder (blip.sweep.SweepResponder,
             ent = blip.db.Entity.select_one (ident=ident)
             if ent is not None:
                 cls.update_person (ent, request)
+
+
+class TeamsResponder (blip.sweep.SweepResponder,
+                      blip.plugins.queue.sweep.QueueHandler):
+    command = 'teams'
+    synopsis = 'update information about teams'
+
+    @classmethod
+    def set_usage (cls, request):
+        request.set_usage ('%prog [common options] teams [command options] [ident]')
+
+    @classmethod
+    def add_tool_options (cls, request):
+        request.add_tool_option ('--no-timestamps',
+                                 dest='timestamps',
+                                 action='store_false',
+                                 default=True,
+                                 help='do not check timestamps before processing files')
+
+    @classmethod
+    def respond (cls, request):
+        response = blip.sweep.SweepResponse (request)
+
+        cls.update_input_file (request)
+
+        argv = request.get_tool_args ()
+        entities = []
+        if len(argv) == 0:
+            entities = blip.db.Entity.select (blip.db.Entity.type == u'Team')
+        else:
+            for arg in argv:
+                ident = blip.utils.utf8dec (arg)
+                entities += list(blip.db.Entity.select (blip.db.Entity.type == u'Team',
+                                                        blip.db.Entity.ident.like (ident)))
+        for entity in entities:
+            try:
+                cls.update_team (entity, request)
+                blip.db.flush ()
+            except:
+                blip.db.rollback ()
+                raise
+            else:
+                blip.db.commit ()
+        return response
+
+    @classmethod
+    def update_input_file (cls, request):
+        infile = os.path.join (blinq.config.input_dir, 'teams.xml')
+        if not os.path.exists (infile):
+            return response
+
+        with blip.db.Timestamp.stamped (blip.utils.utf8dec (infile), None) as stamp:
+            stamp.check (request.get_tool_option ('timestamps'))
+            stamp.log ()
+
+            def process_team_datum (datum):
+                ident = u'/team/' + blip.utils.utf8dec (datum['blip:id'])
+                team = blip.db.Entity.get_or_create (ident, u'Team')
+                if datum.has_key ('name'):
+                    team.name = blip.utils.utf8dec (datum['name'])
+
+                members = []
+                for person in datum.get ('coordinator', []):
+                    ent = blip.db.Entity.get_or_create (blip.utils.utf8dec (person),
+                                                        u'Person')
+                    rel = blip.db.TeamMember.set_related (team, ent)
+                    rel.coordinator = True
+                    members.append (rel)
+                team.set_relations (blip.db.TeamMember, members)
+
+                subteams = []
+                for subteam in datum.get ('team', {}).values ():
+                    ent = process_team_datum (subteam)
+                    ent.parent = team
+                    subteams.append (ent)
+                team.set_children (u'Team', subteams)
+
+                return team
+
+            data = blip.data.Data (infile)
+            for key in data.data.keys():
+                datum = data.data[key]
+                if datum['blip:type'] == 'team':
+                    process_team_datum (datum)
+
+    @classmethod
+    def update_team (cls, entity, request):
+        blip.utils.log ('Processing %s' % entity.ident)
+        for handler in EntityHandler.get_extensions ():
+            handler.handle_entity (entity, request)
+
+        entity.updated = datetime.datetime.utcnow ()
+        blip.db.Queue.pop (entity.ident)
+
+    @classmethod
+    def process_queued (cls, ident, request):
+        if ident.startswith (u'/team/'):
+            ent = blip.db.Entity.select_one (ident=ident)
+            if ent is not None:
+                cls.update_team (ent, request)
 
 # FIXME: move to new blogs plugin
 if False:

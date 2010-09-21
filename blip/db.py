@@ -794,6 +794,17 @@ class Entity (BlipRecord):
     def select_children (self):
         return self.__class__.select (parent=self)
 
+    def set_children (self, type, children):
+        old = list(Entity.select (type=type, parent=self))
+        olddict = {}
+        for rec in old:
+            olddict[rec.ident] = rec
+        for child in children:
+            olddict.pop (child.ident, None)
+            child.parent = self
+        for old in olddict.values():
+            old.delete ()
+
     @property
     def title_default (self):
         if self.email is not None:
@@ -1562,7 +1573,10 @@ class Timestamp (BlipModel):
         def __init__ (self, filename, repository):
             self.filename = filename
             self.repository = repository
-            self.rel_scm = blip.utils.relative_path (filename, blinq.config.scm_dir)
+            if repository is None:
+                self.rel_scm = filename
+            else:
+                self.rel_scm = blip.utils.relative_path (filename, blinq.config.scm_dir)
         def check (self, check):
             self.mtime = int(os.stat(self.filename).st_mtime)
             if check:

@@ -283,3 +283,20 @@ class PeopleIndexContentProvider (blip.plugins.index.web.IndexContentProvider):
         columns.add_to_column (1, bl)
         for person in recent[:6]:
             bl.add_link (person)
+
+class TeamsIndexContentProvider (blip.plugins.index.web.IndexContentProvider):
+    @classmethod
+    def provide_content (cls, page, response, **kw):
+        """Construct an info box for the index page"""
+        teams = blip.db.Entity.select (blip.db.Entity.type == u'Team',
+                                       blip.db.Entity.parent_ident == None)
+        teams = list(teams)
+        if len(teams) == 0:
+            return
+        box = blip.html.SidebarBox (blip.utils.gettext ('Teams'))
+        bl = blip.html.BulletList ()
+        box.add_content (bl)
+        teams = blinq.utils.attrsorted (teams, 'title')
+        for team in teams:
+            bl.add_link (team)
+        page.add_sidebar_content (box)
