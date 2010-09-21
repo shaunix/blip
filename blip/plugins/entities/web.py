@@ -65,6 +65,42 @@ class AllPeopleResponder (blip.web.RecordLocator, blip.web.PageResponder):
         response.payload = page
         return response
 
+class AllTeamsResponder (blip.web.RecordLocator, blip.web.PageResponder):
+    @classmethod
+    def locate_record (cls, request):
+        if len(request.path) == 1 and request.path[0] == 'team':
+            return True
+        return False
+
+    @classmethod
+    def respond (cls, request):
+        if len(request.path) != 1 or request.path[0] != 'team':
+            return None
+
+        response = blip.web.WebResponse (request)
+
+        page = blip.html.Page (request=request)
+        page.set_title (blip.utils.gettext ('Teams'))
+        teams = blip.db.Entity.select (blip.db.Entity.type == u'Team',
+                                       blip.db.Entity.parent_ident == None)
+        teams = blinq.utils.attrsorted (list(teams), 'title')
+
+        for team in teams:
+            lbox = blip.html.LinkBox (team)
+            lbox.set_show_icon (False)
+            page.add_content (lbox)
+            subteams = blip.db.Entity.select (blip.db.Entity.type == u'Team',
+                                              blip.db.Entity.parent_ident == team.ident)
+            subteams = blinq.utils.attrsorted (list(subteams), 'title')
+            if len(subteams) > 0:
+                bl = blip.html.BulletList ()
+                lbox.add_content (bl)
+                for subteam in subteams:
+                    bl.add_link (subteam)
+
+        response.payload = page
+        return response
+
 
 class EntityReponder (blip.web.RecordLocator, blip.web.PageResponder):
     @classmethod
@@ -90,20 +126,17 @@ class EntityReponder (blip.web.RecordLocator, blip.web.PageResponder):
         page = blip.html.Page (request=request)
         response.payload = page
 
-        page.add_trail_link (blinq.config.web_root_url + 'person',
-                             blip.utils.gettext ('People'))
-
-        # Teams
-        if request.record.type == u'Person':
-            rels = blip.db.TeamMember.get_related (pred=request.record)
-            rels = blinq.utils.attrsorted (list(rels), ('subj', 'title'))
-            if len(rels) > 0:
-                box = blip.html.SidebarBox (blip.utils.gettext ('Teams'))
-                page.add_sidebar_content (box)
-                for rel in rels:
-                    lbox = box.add_link_box (rel.subj)
-                    if rel.coordinator:
-                        lbox.add_badge ('coordinator')
+        if request.record.type == u'Team':
+            page.add_trail_link (blinq.config.web_root_url + 'team',
+                                 blip.utils.gettext ('Teams'))
+            def add_parent_link_trail (page, team):
+                if team.parent is not None:
+                    add_parent_link_trail (page, team.parent)
+                    page.add_trail_link (team.parent.blip_url, team.parent.title)
+            add_parent_link_trail (page, request.record)
+        else:
+            page.add_trail_link (blinq.config.web_root_url + 'person',
+                                 blip.utils.gettext ('People'))
 
         # Blog
         bident = u'/blog' + request.record.ident
@@ -183,6 +216,102 @@ class OverviewTab (blip.html.TabProvider):
         response = blip.web.WebResponse (request)
 
         response.payload = cls.get_tab (request)
+        return response
+
+class TeamsTab (blip.html.TabProvider):
+    @classmethod
+    def add_tabs (cls, page, request):
+        if len(request.path) != 2 or request.path[0] != 'person':
+            return None
+        cnt = blip.db.TeamMember.select_related (pred=request.record).count ()
+        if cnt > 0:
+            page.add_tab ('teams',
+                          blip.utils.gettext ('Teams (%i)') % cnt,
+                          blip.html.TabProvider.CORE_TAB)
+
+    @classmethod
+    def respond (cls, request):
+        if len(request.path) != 2 or request.path[0] != 'person':
+            return None
+        if not blip.html.TabProvider.match_tab (request, 'teams'):
+            return None
+
+        response = blip.web.WebResponse (request)
+        tab = blip.html.ContainerBox ()
+
+        sel = blip.db.Selection (blip.db.TeamMember,
+                                 blip.db.TeamMember.pred_ident == request.record.ident)
+        blip.db.TeamMember.select_subj (sel)
+        for rel in sel.get_sorted (('[subj]', 'title')):
+            lbox = tab.add_link_box (rel['subj'])
+            if rel.coordinator:
+                lbox.add_badge ('coordinator')
+
+        response.payload = tab
+        return response
+
+
+class MembersTab (blip.html.TabProvider):
+    @classmethod
+    def add_tabs (cls, page, request):
+        if len(request.path) != 2 or request.path[0] != 'team':
+            return None
+        cnt = blip.db.TeamMember.select_related (subj=request.record).count ()
+        if cnt > 0:
+            page.add_tab ('members',
+                          blip.utils.gettext ('Members (%i)') % cnt,
+                          blip.html.TabProvider.CORE_TAB)
+
+    @classmethod
+    def respond (cls, request):
+        if len(request.path) != 2 or request.path[0] != 'team':
+            return None
+        if not blip.html.TabProvider.match_tab (request, 'members'):
+            return None
+
+        response = blip.web.WebResponse (request)
+        tab = blip.html.ContainerBox ()
+
+        sel = blip.db.Selection (blip.db.TeamMember,
+                                 blip.db.TeamMember.subj_ident == request.record.ident)
+        blip.db.TeamMember.select_pred (sel)
+        for rel in sel.get_sorted (('[pred]', 'title')):
+            lbox = tab.add_link_box (rel['pred'])
+            if rel.coordinator:
+                lbox.add_badge ('coordinator')
+
+        response.payload = tab
+        return response
+
+class SubteamsTab (blip.html.TabProvider):
+    @classmethod
+    def add_tabs (cls, page, request):
+        if len(request.path) != 2 or request.path[0] != 'team':
+            return None
+        cnt = blip.db.Entity.select (blip.db.Entity.type == u'Team',
+                                     blip.db.Entity.parent_ident == request.record.ident)
+        cnt = cnt.count()
+        if cnt > 0:
+            page.add_tab ('subteams',
+                          blip.utils.gettext ('Subteams (%i)') % cnt,
+                          blip.html.TabProvider.CORE_TAB)
+
+    @classmethod
+    def respond (cls, request):
+        if len(request.path) != 2 or request.path[0] != 'team':
+            return None
+        if not blip.html.TabProvider.match_tab (request, 'subteams'):
+            return None
+
+        response = blip.web.WebResponse (request)
+        tab = blip.html.ContainerBox ()
+
+        teams = blip.db.Entity.select (blip.db.Entity.type == u'Team',
+                                       blip.db.Entity.parent_ident == request.record.ident)
+        for team in teams:
+            lbox = tab.add_link_box (team)
+
+        response.payload = tab
         return response
 
 class ModulesTab (blip.html.TabProvider):
