@@ -693,29 +693,23 @@ class Branch (BlipRecord):
         selection.add_result ('project', tbl)
 
     @classmethod
+    def select_statistic (cls, selection, stattype):
+        stat = ClassAlias (Statistic)
+        selection.add_left_join (stat,
+                                 stat.branch_ident == cls.ident,
+                                 stat.type == stattype,
+                                 stat.daynum == Select (Max (stat.daynum),
+                                                        where=And (stat.branch_ident == cls.ident,
+                                                                   stat.type == stattype),
+                                                        tables=stat)
+                                 )
+        selection.add_result (stattype, stat)
+
+    @classmethod
     def select (cls, *args, **kw):
         store = get_store (kw.pop ('__blip_store__', cls.__blip_store__))
         args, kw = cls._select_args (*args, **kw)
         return store.find (cls, *args, **kw)
-
-    @classmethod
-    def select_with_mod_person (cls, *args, **kw):
-        store = get_store (kw.pop ('__blip_store__', cls.__blip_store__))
-        join = LeftJoin (cls, Entity, cls.mod_person_ident == Entity.ident)
-        using = kw.pop ('using', None)
-        if using is not None:
-            if isinstance (using, list):
-                using = tuple (using)
-            elif isinstance (using, tuple):
-                pass
-            else:
-                using = (using,)
-            join = (join,) + using
-        args, kw = cls._select_args (*args, **kw)
-        kwarg = storm.store.get_where_for_args ([], kw, cls)
-        if kwarg != storm.store.Undef:
-            args.append (kwarg)
-        return store.using (join).find((cls, Entity), *args)
 
     @classmethod
     def select_with_output_file (cls, *args, **kw):
@@ -739,31 +733,6 @@ class Branch (BlipRecord):
         if kwarg != storm.store.Undef:
             args.append (kwarg)
         return store.using (join).find((cls, OutputFile), *args)
-
-    @classmethod
-    def select_with_statistic (cls, stattype, *args, **kw):
-        store = get_store (kw.pop ('__blip_store__', cls.__blip_store__))
-        if isinstance (stattype, basestring):
-            stattype = [stattype]
-        clss = [cls]
-        args = [arg for arg in args]
-        for key in kw.keys ():
-            args.append (getattr (cls, key) == kw[key])
-        useargs = []
-        for stype in stattype:
-            stat = ClassAlias (Statistic)
-            clss.append (stat)
-            useargs.append (LeftJoin(stat, And (
-                        cls.ident == stat.branch_ident,
-                        stat.type == stype,
-                        stat.daynum == Select (Max (stat.daynum),
-                                               where=And (stat.branch_ident == cls.ident,
-                                                          stat.type == stype),
-                                               tables=stat)
-                        )))
-        using = store.using (cls, *useargs)
-        sel = using.find (tuple(clss), *args)
-        return sel
 
     @classmethod
     def select_with_child_count (cls, childtype, *args, **kw):

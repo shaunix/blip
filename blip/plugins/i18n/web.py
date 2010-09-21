@@ -282,14 +282,17 @@ class TranslationsTab (blip.html.TabProvider):
             span.add_content (blip.utils.gettext ('on %s') % of.datetime.strftime('%Y-%m-%d %T'))
             pad.add_content (span)
 
-        translations = blip.db.Branch.select_with_statistic ([u'Messages', u'ImageMessages'],
-                                                             type=u'Translation',
-                                                             parent=domain)
+        sel = blip.db.Selection (blip.db.Branch,
+                                 blip.db.Branch.type == u'Translation',
+                                 blip.db.Branch.parent_ident == domain.ident)
+        blip.db.Branch.select_statistic (sel, u'Messages')
+        blip.db.Branch.select_statistic (sel, u'ImageMessages')
+        translations = sel.get ()
         translations = list(translations)
         for translation in translations:
-            setattr (translation[0], 'x_lang_name',
-                     blip.utils.language_name (translation[0].ident.split('/')[2]))
-        translations = blinq.utils.attrsorted (translations, (0, 'x_lang_name'))
+            setattr (translation, 'x_lang_name',
+                     blip.utils.language_name (translation.ident.split('/')[2]))
+        translations = blinq.utils.attrsorted (translations, 'x_lang_name')
         if len(translations) == 0:
             pad.add_content (blip.html.AdmonBox (blip.html.AdmonBox.warning,
                                                  blip.utils.gettext ('No translations')))
@@ -302,12 +305,14 @@ class TranslationsTab (blip.html.TabProvider):
         sort_percent = False
         sort_fuzzy = False
         sort_images = False
-        for translation, mstat, istat in translations:
+        for translation in translations:
             lbox = cont.add_link_box (translation.blip_url, translation.x_lang_name)
             lbox.add_fact (blip.utils.gettext ('language'),
                            blip.html.Span (translation.ident.split('/')[2],
                                            html_class='language'))
             percent = 0
+            mstat = translation['Messages']
+            istat = translation['ImageMessages']
             if mstat is not None:
                 sort_percent = True
                 try:
