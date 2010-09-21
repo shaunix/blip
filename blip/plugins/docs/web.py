@@ -126,7 +126,7 @@ class OverviewTab (blip.html.TabProvider):
         sel = blip.db.Selection (blip.db.SetModule,
                                  blip.db.SetModule.pred_ident == module.ident)
         blip.db.SetModule.select_subj (sel)
-        rels = sel.get_sorted (('subj', 'title'))
+        rels = sel.get_sorted (('[subj]', 'title'))
         if len(rels) > 0:
             span = blip.html.Span (*[blip.html.Link(rel['subj']) for rel in rels])
             span.set_divider (blip.html.BULLET)
@@ -365,14 +365,14 @@ class DocumentsTab (blip.html.TabProvider):
         tab.add_sort_link ('status', blip.utils.gettext ('status'))
 
         blip.db.Branch.select_parent (sel)
-        for res in sel.get_sorted ((None, 'name')):
-            lbox = tab.add_link_box (res[None])
+        for doc in sel.get_sorted ('title'):
+            lbox = tab.add_link_box (doc)
             if request.record.type == u'Set':
                 lbox.add_fact (blip.utils.gettext ('module'),
-                               blip.html.Span(blip.html.Link (res['parent'].blip_url,
-                                                              res['parent'].branch_module),
+                               blip.html.Span(blip.html.Link (doc['parent'].blip_url,
+                                                              doc['parent'].branch_module),
                                               html_class='module'))
-            status = res[None].data.get ('docstatus', '00none')
+            status = doc.data.get ('docstatus', '00none')
             if status is None:
                 status = '00none'
             span = blip.html.Span(status[2:], html_class='status')

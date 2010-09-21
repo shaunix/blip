@@ -114,7 +114,7 @@ class OverviewTab (blip.html.TabProvider):
         sel = blip.db.Selection (blip.db.SetModule,
                                  blip.db.SetModule.pred_ident == request.record.ident)
         blip.db.SetModule.select_subj (sel)
-        rels = sel.get_sorted (('subj', 'title'))
+        rels = sel.get_sorted (('[subj]', 'title'))
         if len(rels) > 0:
             span = blip.html.Span (*[blip.html.Link(rel['subj']) for rel in rels])
             span.set_divider (blip.html.BULLET)

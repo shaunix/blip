@@ -139,7 +139,7 @@ class OverviewTab (blip.html.TabProvider):
         sel = blip.db.Selection (blip.db.SetModule,
                                  blip.db.SetModule.pred_ident == module.ident)
         blip.db.SetModule.select_subj (sel)
-        rels = sel.get_sorted (('subj', 'title'))
+        rels = sel.get_sorted (('[subj]', 'title'))
         if len(rels) > 0:
             span = blip.html.Span (*[blip.html.Link(rel['subj']) for rel in rels])
             span.set_divider (blip.html.BULLET)
@@ -398,16 +398,16 @@ class DomainsTab (blip.html.TabProvider):
         blip.db.Branch.select_parent (sel)
         blip.db.Branch.select_child_count (sel, u'Translation')
 
-        for res in sel.get_sorted ((None, 'title')):
-            url = res['parent'].blip_url + '#i18n/' + res[None].ident.split('/')[-2]
-            lbox = tab.add_link_box (url, res[None].title)
+        for domain in sel.get_sorted ('title'):
+            url = domain['parent'].blip_url + '#i18n/' + domain.ident.split('/')[-2]
+            lbox = tab.add_link_box (url, domain.title)
             if request.record.type == u'Set':
                 lbox.add_fact (blip.utils.gettext ('module'),
-                               blip.html.Span(blip.html.Link (res['parent'].blip_url,
-                                                              res['parent'].branch_module),
+                               blip.html.Span(blip.html.Link (domain['parent'].blip_url,
+                                                              domain['parent'].branch_module),
                                               html_class='module'))
                 lbox.add_fact (blip.utils.gettext ('translations'),
-                               blip.html.Span(str(res['#Translation']),
+                               blip.html.Span(str(domain['#Translation']),
                                               html_class='translations'))
 
         response.payload = tab

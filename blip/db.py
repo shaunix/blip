@@ -246,16 +246,23 @@ class BlipModel (Storm):
 
     def __init__ (self, **kw):
         store = get_store (kw.pop ('__blip_store__', self.__class__.__blip_store__))
+        self._selections = {}
         self.update (**kw)
         self.log_create ()
         store.add (self)
         store.flush ()
+
+    def __storm_loaded__ (self):
+        self._selections = {}
 
     def __repr__ (self):
         if hasattr (self, 'id'):
             return '%s %s' % (self.__class__.__name__, getattr (self, 'id'))
         else:
             return self.__class__.__name__
+
+    def __getitem__ (self, key):
+        return self._selections[key]
 
     def log_create (self):
         blip.utils.log ('Creating %s' % self)
@@ -515,8 +522,8 @@ class BlipRelation (BlipModel):
 class Selection (object):
     def __init__ (self, record, *wheres):
         self._tables = [record]
+        self._record = record
         self._results = blip.utils.odict()
-        self._results[None] = record
         self._wheres = list(wheres)
         self._order_by = None
 
@@ -546,7 +553,7 @@ class Selection (object):
     def _get_select (self):
         store = get_store (self._tables[0])
         using = store.using (*self._tables)
-        find = using.find (tuple(self._results.values()), *self._wheres)
+        find = using.find ((self._record,) + tuple(self._results.values()), *self._wheres)
         if self._order_by is not None:
             find = find.order_by (self._order_by)
         return find
@@ -554,9 +561,9 @@ class Selection (object):
     def _format_results (self, results):
         ret = []
         for res in results:
-            this = {}
+            this = res[0]
             for key, i in zip (self._results.keys(), range(len(self._results))):
-                this[key] = res[i]
+                this._selections[key] = res[i + 1]
             ret.append (this)
         return ret
 

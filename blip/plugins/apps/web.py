@@ -111,7 +111,7 @@ class OverviewTab (blip.html.TabProvider):
         sel = blip.db.Selection (blip.db.SetModule,
                                  blip.db.SetModule.pred_ident == request.record.parent_ident)
         blip.db.SetModule.select_subj (sel)
-        rels = sel.get_sorted (('subj', 'title'))
+        rels = sel.get_sorted (('[subj]', 'title'))
         if len(rels) > 0:
             span = blip.html.Span (*[blip.html.Link(rel['subj']) for rel in rels])
             span.set_divider (blip.html.BULLET)
@@ -193,12 +193,12 @@ class ApplicationsTab (blip.html.TabProvider):
             tab.add_sort_link ('title', blip.utils.gettext ('title'), 1)
             tab.add_sort_link ('module', blip.utils.gettext ('module'))
 
-        for res in sel.get_sorted ((None, 'title')):
-            lbox = tab.add_link_box (res[None])
+        for app in sel.get_sorted ('title'):
+            lbox = tab.add_link_box (app)
             if request.record.type == u'Set':
                 lbox.add_fact (blip.utils.gettext ('module'),
-                               blip.html.Span(blip.html.Link (res['parent'].blip_url,
-                                                              res['parent'].branch_module),
+                               blip.html.Span(blip.html.Link (app['parent'].blip_url,
+                                                              app['parent'].branch_module),
                                               html_class='module'))
                                
 
