@@ -78,9 +78,16 @@ h1 div.desc {
 div.watch {
   float: right;
   margin: 6px 0 6px 0;
-  border: solid 1px #729fcf;
-  background-color: white;
+  border: solid 1px #babdb6;
+  background-color: #eeeeec;
+  background: -webkit-gradient(linear, left 0, left 20, from(#eeeeec), to(white));
+  background: -moz-linear-gradient(top, #eeeeec 0px, white 20px);
   border-radius: 2px;
+  -webkit-transition: border-color 0.2s linear;
+  -moz-transition: border-color 0.2s linear;
+}
+div.watch:hover {
+  border-color: #729fcf;
 }
 div.watch label {
   font-size: 0.83em;
@@ -90,12 +97,16 @@ div.watch label {
 div.watch label div {
   padding: 0 6px 0 6px;
   border: solid 1px white;
-  -webkit-transition: background-color 0.2s linear;
-  -moz-transition: background-color 0.2s linear;
+  -webkit-transition: background 0.2s linear;
+  -moz-transition: background 0.2s linear;
 }
 div.watch input { vertical-align: -10%; }
-label.watchactive div { background-color: #fcf197; }
-label.watch:hover div { background-color: #b1d5fc; }
+label.watchactive div {
+  background-color: #fcf197;
+}
+label.watch:hover div {
+  background-color: #b1fbfc;
+}
 .sublinks {
   margin: 0;
   font-size: 0.83em;
@@ -168,12 +179,8 @@ ul#tabs li a:hover {
   text-decoration: none;
   cursor: default;
 }
-ul#tabs li a:hover div {
-  background-color: #b1d5fc;
-}
-ul#tabs li.tabactive div {
-  background-color: #fcf197;
-}
+ul#tabs li a:hover div { background-color: #b1fbfc; }
+ul#tabs li.tabactive div { background-color: #fcf197; }
 
 
 /******************************************************************************/
@@ -342,7 +349,9 @@ a.TabBar span {
   -moz-transition: background-color 0.2s linear;
 }
 a.TabBarActive span { background-color: #fcf197; }
-a.TabBar:hover span { background-color: #b1d5fc; }
+a.TabBar:hover span {
+  background-color: #b1fbfc;
+}
 
 
 
@@ -505,25 +514,36 @@ div.sortlinks {
 }
 span.sortlinks {
   background-color: #eeeeec;
-  border: solid 1px #d3d7cf;
+  background: -webkit-gradient(linear, left 0, left 20, from(#eeeeec), to(white));
+  background: -moz-linear-gradient(top, #eeeeec 0px, white 20px);
+  font-weight: bold;
+  border: solid 1px #babdb6;
   border-radius: 2px;
-  padding: 0 0.5em 0 0.5em;
+  padding: 3px 0 3px 0;
   cursor: pointer;
   -webkit-transition: background-color 0.2s linear;
   -moz-transition: background-color 0.2s linear;
 }
-span.sortlinks:hover {
-  background-color: #b1d5fc;
+span.sortlinksinner {
+  border: solid 1px white;
+  border-radius: 1px;
+  padding: 2px 0.5em 2px 0.5em;
+}
+span.sortlinks:hover span.sortlinksinner {
+  background-color: #b1fbfc;
   cursor: default;
 }
-span.sortlinksactive {
+span.sortlinksactive span.sortlinksinner {
   background-color: #fcf197;
 }
 div.sortlinks a { color: #204a87; }
 div.sortmenu {
   position: absolute;
   background-color: #eeeeec;
-  border: solid 1px #d3d7cf;
+  background: -webkit-gradient(linear, left -20, left 80, from(#eeeeec), to(white));
+  background: -moz-linear-gradient(top, #eeeeec -20px, white 80px);
+  border: solid 1px white;
+  outline: solid 1px #d3d7cf;
   padding: 0 0.5em 0.2em 0.5em;
   display: none;
 }
@@ -539,10 +559,13 @@ a.sortlink, span.sortlink {
   -moz-transition: color 0.2s linear;
   -webkit-transition: background-color 0.2s linear;
   -moz-transition: background-color 0.2s linear;
+  -webkit-transition: outline 0.2s linear;
+  -moz-transition: outline 0.2s linear;
 }
 a.sortlink:hover {
   color: #555753;
-  background-color: #b1d5fc;
+  background-color: #b1fbfc;
+  outline: solid 1px #b1d5fc;
   text-decoration: none;
   cursor: default;
 }
@@ -593,7 +616,7 @@ a.PopupLink {
   -moz-transition: background-color 0.2s linear;
 }
 a.PopupLink:hover {
-  background-color: #b1d5fc;
+  background-color: #b1fbfc;
   text-decoration: none;
   cursor: default;
 }
@@ -652,7 +675,7 @@ div.graph {
   margin: 0 0 12px 0;
   padding: 0;
 }
-img.graphmap { cursor: crosshair; }
+img.graphmap { cursor: default; }
 table.graph { margin: 0 0 12px 0; }
 table.graph div.graph { margin: 0; }
 table.graph td { line-height: 0; }
@@ -660,9 +683,12 @@ td.graphprev, td.graphnext { padding: 4px 0 0 0; }
 td.graphprev a, td.graphnext a {
   -webkit-transition: background-color 0.2s linear;
   -moz-transition: background-color 0.2s linear;
+  -webkit-transition: outline 0.2s linear;
+  -moz-transition: outline 0.2s linear;
 }
 td.graphprev a:hover, td.graphnext a:hover {
-  background-color: #b1d5fc;
+  background-color: #b1fbfc;
+  outline: solid 1px #b1d5fc;
   cursor: default;
 }
 div.graphaway { position: absolute; overflow: hidden; }
@@ -671,10 +697,8 @@ td.graphnext { text-align: right; }
 a.graphtarget {
   display: none;
   position: absolute;
-  border-top: solid 1px #204a87;
-  border-left: solid 1px #204a87;
-  border-right: solid 1px #204a87;
-  cursor: crosshair;
+  border: solid 1px #729fcf;
+  cursor: default;
 }
 
 div.comments { line-height: 1; }
@@ -682,12 +706,11 @@ a.comment {
   display: none;
   position: absolute;
   text-align: center;
-  background-color: #fcf197;
-  background: -webkit-gradient(linear, left top, left 60, from(#fcf197), to(white));
-  background: -moz-linear-gradient(top, #fcf197, white 60px);
-  border-left: solid 1px #204a87;
+  background: #b1fbfc;
+  border: solid 1px #729fcf;
   padding: 2px 6px 6px 6px;
   z-index: 100;
+  cursor: default;
 }
 a.comment:hover { text-decoration: none; }
 a.comment div.label {

@@ -131,7 +131,7 @@ class ModuleScanner (object):
                 scanner = cls (self)
                 self._file_scanners.append (scanner)
             except:
-                blip.utils.warn ('Could create instance of ' + cls.__name__)
+                blip.utils.warn ('Could not create instance of ' + cls.__name__)
         self._parsed_files = {}
         self._children = {}
 

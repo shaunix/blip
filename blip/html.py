@@ -275,7 +275,7 @@ class SortableComponent (Component):
         slinktag = self._slinktag or 'table'
         slinkclass = self._slinkclass or 'LinkBox'
         res.write('<div class="sortlinks" id="sortlinks__%s">' % self.escape(slinkid))
-        res.write('<span class="sortlinks">')
+        res.write('<span class="sortlinks"><span class="sortlinksinner">')
         res.write(self.escape(blip.utils.gettext ('sort by: ')))
         for key, txt, cur in self._slinks:
             if cur == 1:
@@ -284,7 +284,7 @@ class SortableComponent (Component):
             elif cur == -1:
                 res.write('<span class="sortcur">%s ▾</span>' % self.escape(txt))
                 break
-        res.write('</span>')
+        res.write('</span></span>')
         res.write('<div class="sortmenu" id="sortmenu__%s">' % self.escape(slinkid))
         for key, txt, cur in self._slinks:
             res.write('<div class="sortlink">')

@@ -453,8 +453,8 @@ $.fn.blip_init = function () {
       var container = $('#' + id);
       var menu = container.find ('#sortmenu__' + id);
       menu.css ({
-        top: div.offset().top + div.height(),
-        right: $(document).width() - (div.offset().left + div.width())
+        top: div.offset().top + div.height() + 2,
+        right: $(document).width() - (div.offset().left + div.width() -1)
       });
       var away = function (e) {
         var e = e || window.event;
@@ -515,7 +515,7 @@ $.fn.blip_init = function () {
       if (comment.is (':hidden')) {
         div.find ('.comment').css ('display', 'none');
         comment.css ({
-          left: offset.left + i - 1,
+          left: offset.left + i - (comment.width() / 2),
           top: offset.top + graphmap.height(),
           zIndex: 20,
           display: 'block'
