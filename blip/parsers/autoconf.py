@@ -162,8 +162,8 @@ class Autoconf (object):
                 ret += el
         return ret
 
-    def get_variable (self, var):
-        return self.subvar (self._vars.get(var, '').strip())
+    def get_variable (self, var, default=''):
+        return self.subvar (self._vars.get(var, default).strip())
 
     def get_func_args (self, func):
         return self._funcargs.get(func, [])
