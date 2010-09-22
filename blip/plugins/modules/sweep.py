@@ -175,8 +175,6 @@ class ModuleScanner (object):
         for objtype in self._children.keys ():
             self.branch.set_children (objtype, self._children[objtype])
 
-        self.set_default_child ()
-
         self.branch.updated = datetime.datetime.utcnow ()
         blip.db.Queue.pop (self.branch.ident)
 
@@ -318,39 +316,3 @@ class ModuleScanner (object):
                 of.data['weeknum'] = topweek
 
             i += 1
-
-
-    def set_default_child (self):
-        default_child = None
-
-        applications = self._children.get ('Application', [])
-        applets = self._children.get ('Applet', [])
-        capplets = self._children.get ('Capplet', [])
-        if len(applications) == 1 and len(applets) == 0:
-            default_child = applications[0]
-        elif len(applets) == 1 and len(applications) == 0:
-            default_child = applets[0]
-        elif len(applications) > 0:
-            for app in applications:
-                if app.data.get ('exec', None) == self.branch.scm_module:
-                    default_child = app
-                    break
-        elif len(applets) > 0:
-            pass
-        elif len(capplets) == 1:
-            default_child = capplets[0]
-
-        if default_child is not None:
-            self.branch.name = default_child.name
-            self.branch.desc = default_child.desc
-            self.branch.icon_dir = default_child.icon_dir
-            self.branch.icon_name = default_child.icon_name
-            if default_child.data.has_key ('screenshot'):
-                self.branch.data['screenshot'] = default_child.data['screenshot']
-        else:
-            self.branch.extend({
-                    'name': self.branch.scm_module,
-                    'desc': u'',
-                    'icon_dir': None,
-                    'icon_name': None,
-                    })
