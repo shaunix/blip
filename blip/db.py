@@ -942,6 +942,16 @@ class ForumPost (BlipRecord):
         raise WillNotDelete ('Blip will not delete forum posts')
 
 
+class CacheData (BlipModel):
+    __storm_primary__ = 'ident', 'key'
+    ident = ShortText ()
+    key = ShortText ()
+    data = Pickle (default_factory=dict)
+
+    def log_create (self):
+        pass
+
+
 # FIXME
 class Component (BlipModel):
     __storm_table__ = 'Component'
@@ -992,13 +1002,6 @@ class Issue (BlipModel):
         cls = self.__class__
         query = store.find(cls, cls.bug_id == self.bug_id, cls.time < self.time)
         return query.order_by(Desc(cls.time)).first()
-
-
-# FIXME
-class Cache(BlipModel):
-    ident = ShortText (primary=True)
-    value = Pickle (default_factory=dict)
-    mtime = Int ()
 
 
 ################################################################################
@@ -1556,6 +1559,11 @@ class OutputFile (BlipModel):
             lst.insert (0, self.type)
             rootdir = blinq.config.web_files_dir
         return os.path.join(rootdir, *lst)
+
+    def makedirs (self):
+        dirname = os.path.dirname (self.get_file_path ())
+        if not os.path.exists (dirname):
+            os.makedirs (dirname)
 
 
 class Timestamp (BlipModel):
