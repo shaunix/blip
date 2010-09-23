@@ -608,7 +608,7 @@ function tab (tabid) {
         pane.html ($(req.responseText));
         pane.blip_init ();
       }
-      if (req.getResponseHeader('Content-Type').indexOf('text/plain') == 0) {
+      else if (req.getResponseHeader('Content-Type').indexOf('text/plain') == 0) {
         pane.text (req.responseText);
       }
       else {
