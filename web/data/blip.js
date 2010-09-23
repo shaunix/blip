@@ -604,8 +604,16 @@ function tab (tabid) {
     var href = blip_url + '?q=tab&tab=' + tabid;
     var func = function (req, status) {
       var pane = $('#' + paneid.replace('.', '\\.'));
-      pane.html ($(req.responseText));
-      pane.blip_init ();
+      if (req.getResponseHeader('Content-Type').indexOf('text/html') == 0) {
+        pane.html ($(req.responseText));
+        pane.blip_init ();
+      }
+      if (req.getResponseHeader('Content-Type').indexOf('text/plain') == 0) {
+        pane.text (req.responseText);
+      }
+      else {
+        pane.html (req.responseText);
+      }
       pane.removeClass ('paneloading');
       if (tabid == tabbar[0].current_tabid) {
         thr.stop ();

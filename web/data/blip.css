@@ -202,6 +202,8 @@ tr { margin: 0; padding: 0; }
 td { margin: 0; padding: 0; vertical-align: top; }
 div.table td { padding: 0 1em 0 0; overflow: hidden; }
 
+iframe { border: solid 1px #d3d7cf; }
+
 div.ul { margin: 0.2em 0 0 0; }
 ul {
   margin: 0; padding: 0;

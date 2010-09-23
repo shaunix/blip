@@ -522,8 +522,7 @@ class Page (HtmlObject, ContentComponent):
 
     def output (self, res):
         """Output the HTML."""
-        res.write('<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN"')
-        res.write(' "http://www.w3.org/TR/html4/strict.dtd">\n')
+        res.write('<!DOCTYPE html>\n')
         res.write('<html><head>\n')
         res.write('<title>%s</title>\n' % self.escape(self._title))
         res.write('<meta http-equiv="Content-type" content="text/html; charset=utf-8">\n')
