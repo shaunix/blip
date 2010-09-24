@@ -151,9 +151,10 @@ class CommitsTab (blip.html.TabProvider):
         # speed it up by restricting how long ago we search, but that
         # can lead to empty results for less active modules. So the
         # more total commits we have, the harder we clamp.
-        ago = blip.utils.weeknum() - int(30000.0/cnt)
-        if ago > 0:
-            blip.db.Revision.select_on_week_range (sel, (ago,))
+        if cnt > 0:
+            ago = blip.utils.weeknum() - int(30000.0/cnt)
+            if ago > 0:
+                blip.db.Revision.select_on_week_range (sel, (ago,))
         sel.order_by (blip.db.Desc (blip.db.Revision.datetime))
         revs = list(sel[:10])
         title = (blip.utils.gettext('Showing %i of %i commits:') % (len(revs), cnt))
