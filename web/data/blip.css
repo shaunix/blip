@@ -78,20 +78,21 @@ h1 div.desc {
 div.watch {
   float: right;
   margin: 6px 0 6px 0;
+  color: #555753;
   border: solid 1px #babdb6;
   background-color: #eeeeec;
   background: -webkit-gradient(linear, left 0, left 20, from(#eeeeec), to(white));
   background: -moz-linear-gradient(top, #eeeeec 0px, white 20px);
   border-radius: 2px;
-  -webkit-transition: border-color 0.2s linear;
-  -moz-transition: border-color 0.2s linear;
+  -webkit-transition: border-color 0.2s linear, color 0.2s linear;
+  -moz-transition: border-color 0.2s linear, color 0.2s linear;
 }
 div.watch:hover {
+  color: #2e3436;
   border-color: #729fcf;
 }
 div.watch label {
   font-size: 0.83em;
-  color: #555753;
   font-weight: bold;
 }
 div.watch label div {
@@ -170,12 +171,15 @@ ul#tabs div {
 }
 ul#tabs li a {
   color: #555753;
+  -webkit-transition: color 0.2s linear;
+  -moz-transition: color 0.2s linear;
 }
 ul#tabs li div {
   -webkit-transition: background-color 0.2s linear;
   -moz-transition: background-color 0.2s linear;
 }
 ul#tabs li a:hover {
+  color: #2e3436;
   text-decoration: none;
   cursor: default;
 }
@@ -347,11 +351,12 @@ a.TabBar:hover {
 }
 a.TabBar span {
   padding: 0 6px 0 6px;
-  -webkit-transition: background-color 0.2s linear;
-  -moz-transition: background-color 0.2s linear;
+  -webkit-transition: background-color 0.2s linear, color 0.2s linear;
+  -moz-transition: background-color 0.2s linear, color 0.2s linear;
 }
 a.TabBarActive span { background-color: #fcf197; }
 a.TabBar:hover span {
+  color: #2e3436;
   background-color: #b1fbfc;
 }
 
@@ -523,15 +528,16 @@ span.sortlinks {
   border-radius: 2px;
   padding: 3px 0 3px 0;
   cursor: pointer;
-  -webkit-transition: background-color 0.2s linear;
-  -moz-transition: background-color 0.2s linear;
 }
 span.sortlinksinner {
   border: solid 1px white;
   border-radius: 1px;
   padding: 2px 0.5em 2px 0.5em;
+  -webkit-transition: background-color 0.2s linear, color 0.2s linear;
+  -moz-transition: background-color 0.2s linear, color 0.2s linear;
 }
 span.sortlinks:hover span.sortlinksinner {
+  color: #2e3436;
   background-color: #b1fbfc;
   cursor: default;
 }
