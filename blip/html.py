@@ -705,6 +705,7 @@ class ActivityBox (HtmlObject, ContentComponent):
     def __init__ (self, **kw):
         self._subject = kw.pop ('subject', None)
         self._datetime = kw.pop ('datetime', None)
+        self._infos = []
         self._message = kw.pop ('message', None)
         super (ActivityBox, self).__init__ (**kw)
 
@@ -717,16 +718,12 @@ class ActivityBox (HtmlObject, ContentComponent):
     def set_message (self, message):
         self._message = message
 
+    def add_info (self, info):
+        self._infos.append (info)
+
     def output (self, res):
         """Output the HTML."""
         res.write('<div class="ActivityBox">')
-        if self._datetime is not None:
-            res.write('<div class="ActivityDate">')
-            if isinstance (self._datetime, datetime.datetime):
-                res.write(self._datetime.strftime('%Y-%m-%d %T'))
-            else:
-                res.write(self.escape(self._datetime))
-            res.write('</div>')
         if self._subject is not None:
             res.write('<span class="ActivitySubject">')
             if isinstance (self._subject, blip.db.BlipRecord):
@@ -739,6 +736,20 @@ class ActivityBox (HtmlObject, ContentComponent):
         if self.has_content ():
             res.write('<div class="ActivityContent">')
             ContentComponent.output (self, res)
+            res.write('</div>')
+        if self._datetime is not None or len(self._infos) > 0:
+            res.write('<div class="ActivityInfo">')
+            if self._datetime is not None:
+                if isinstance (self._datetime, datetime.datetime):
+                    res.write(self._datetime.strftime('%Y-%m-%d %T'))
+                else:
+                    res.write(self.escape(self._datetime))
+                if len(self._infos) > 0:
+                    res.write(BULLET)
+            for i in range(len(self._infos)):
+                if i != 0:
+                    res.write(BULLET)
+                res.write(self.escape(self._infos[i]))
             res.write('</div>')
         res.write('</div>')
 

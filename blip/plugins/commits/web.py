@@ -171,13 +171,12 @@ class CommitsTab (blip.html.TabProvider):
             if isinstance (request.record, blip.db.Branch):
                 branch = request.record
                 act = blip.html.ActivityBox (subject=rev['person'],
-                                             message=(' (%s)' % rev.display_revision (request.record)),
                                              datetime=rev.datetime.strftime('%T'))
             else:
                 branch = rev['branch']
                 act = blip.html.ActivityBox (subject=rev.project,
-                                             message=(' (%s)' % rev.display_revision (branch)),
                                              datetime=rev.datetime.strftime('%T'))
+            act.add_info (blip.utils.gettext('revision %s') % rev.display_revision (branch))
             div.add_activity (rev.datetime.strftime('%Y-%m-%d'), act)
             act.add_content (from_revision (rev, 'activity', branch=branch))
         return div

@@ -584,26 +584,23 @@ div.ActivityBox {
   margin: 0 0 6px 1px;
   padding: 2px 6px 2px 6px;
   background-color: white;
-  border-left: solid 1px white;
-  -webkit-transition: border 0.2s linear;
-  -moz-transition: border 0.2s linear;
+  border: solid 1px white;
 }
 div.ActivityBox:hover {
-  border-color: #729fcf;
+  background: -webkit-gradient(linear, left -20, left 80, from(#eeeeec), to(white));
+  background: -moz-linear-gradient(top, #eeeeec -20px, white 80px);
+  border-color: #eeeeec;
 }
-div.ActivityDate {
-  position: absolute;
+div.ActivityInfo {
   color: #888a85;
-  font-weight: bold;
-  margin-right: 1.2em;
+  -webkit-transition: color 0.2s linear;
+  -moz-transition: color 0.2s linear;
 }
+div.ActivityBox:hover div.ActivityInfo { color: #555753; }
 span.ActivitySubject {
   font-weight: bold;
 }
-div.ActivityDate + span.ActivitySubject {
-  margin-left: 8em;
-}
-div.ActivityContent { margin: 6px 0 0 8em; }
+div.ActivityContent { margin: 6px 0 6px 0; }
 div.ActivityContainer { margin: 0 0 12px 0; }
 div.ActivityTitle {
   color: #555753;
@@ -619,7 +616,6 @@ div.ActivityContainerTitle {
 /******************************************************************************/
 /** PopupLink *****************************************************************/
 a.PopupLink {
-  padding: 0 0.5em 0 0.5em;
   -webkit-transition: background-color 0.2s linear;
   -moz-transition: background-color 0.2s linear;
 }
