@@ -33,6 +33,7 @@ import storm.references
 import storm.store
 
 import blinq.config
+import blinq.ext
 import blinq.utils
 
 import blip.utils
@@ -88,16 +89,8 @@ def block_implicit_flushes (store='default'):
     store.block_implicit_flushes ()
 
 
-def read_tables ():
-    for cls in blip.utils.read_subclasses (blip.db.BlipModel):
-        if not hasattr (cls, '__storm_table__'):
-            continue
-        yield cls
-
-
 ################################################################################
 ## Debugging
-
 
 class BlipTracer (object):
     select_count = 0
@@ -228,6 +221,15 @@ class WillNotDelete (Exception):
 
 class ShortText (Unicode):
     pass
+
+
+# This doesn't just mean it's OK for the reference to be None.
+# There are some references which can be None that don't use
+# this class. This means it's OK to set the reference to None
+# when deleting the referenced record, preventing deletion of
+# the referencing record.
+class NullableReference (Reference):
+    pass
         
 
 class BlipModelType (storm.properties.PropertyPublisherMeta):
@@ -239,7 +241,7 @@ class BlipModelType (storm.properties.PropertyPublisherMeta):
         return cls
 
 
-class BlipModel (Storm):
+class BlipModel (Storm, blinq.ext.ExtensionPoint):
     __abstract__ = True
     __metaclass__ = BlipModelType
     __blip_store__ = get_store ('default')
@@ -294,6 +296,12 @@ class BlipModel (Storm):
             return None
 
     @classmethod
+    def get_tables (cls):
+        return [tbl
+                for tbl in cls.get_extensions()
+                if hasattr(tbl, '__storm_table__')]
+
+    @classmethod
     def get_fields (cls):
         fields = {}
         for key, prop in inspect.getmembers (cls):
@@ -303,22 +311,37 @@ class BlipModel (Storm):
             fields[key] = (prop, prop.__get__.im_class)
         return fields
 
+    @staticmethod
+    def is_reference_to (field, table):
+        if not isinstance (field, storm.references.Reference):
+            return False
+        remote = field._remote_key
+        if isinstance (remote, basestring):
+            if remote.split('.')[0] == table.__name__:
+                return True
+        elif isinstance (remote, storm.properties.PropertyColumn):
+            if remote.table.__name__ == table.__name__:
+                return True
+        elif (isinstance (remote, tuple) and len(remote) > 0 and
+              isinstance (remote[0], storm.properties.PropertyColumn)):
+            if remote[0].table.__name__ == table.__name__:
+                return True
+        return False
+
     def _update_or_extend (self, overwrite, _update_data={}, **kw):
         fields = self.__class__.get_fields ()
         for key, val in _update_data.items() + kw.items():
             field, fieldcls = fields.get (key, (None, None))
-            if fieldcls == None:
+            if fieldcls is None:
                 raise NoSuchFieldError ('Table %s has no field for %s'
                                         % (self.__class__.__name__, key))
             elif issubclass (fieldcls, Pickle):
                 dd = getattr (self, key, {})
-                if not isinstance (val, dict):
-                    val = {'C': val}
                 for subkey, subval in val.items ():
-                    if overwrite or (dd.get (subkey) == None):
+                    if overwrite or (dd.get (subkey) is None):
                         dd[subkey] = subval
             else:
-                if overwrite or (getattr (self, key) == None):
+                if overwrite or (getattr (self, key) is None):
                     if issubclass (fieldcls, Unicode) and isinstance (val, str):
                         val = blip.utils.utf8dec (val)
                     setattr (self, key, val)
@@ -334,27 +357,21 @@ class BlipModel (Storm):
         if getattr (self, '__blip_deleted__', False):
             return
         setattr (self, '__blip_deleted__', True)
-        for table in read_tables ():
+        # Find everything that refers to this thing and make sure it no longer
+        # does. If it references with a NullableReference, we just set that
+        # reference to NULL. Otherwise, we delete the referencing record.
+        for table in BlipModel.get_tables():
             fields = table.get_fields ()
             for key in fields.keys ():
-                if not isinstance (fields[key][0], storm.references.Reference):
-                    continue
-                remote = fields[key][0]._remote_key
-                if isinstance (remote, basestring):
-                    if remote.split('.')[0] != self.__class__.__name__:
-                        continue
-                elif isinstance (remote, storm.properties.PropertyColumn):
-                    if remote.table.__name__ != self.__class__.__name__:
-                        continue
-                elif (isinstance (remote, tuple) and len(remote) > 0 and
-                      isinstance (remote[0], storm.properties.PropertyColumn)):
-                    if remote[0].table.__name__ != self.__class__.__name__:
-                        continue
-                else:
+                if not BlipModel.is_reference_to (fields[key][0], self.__class__):
                     continue
                 sel = table.select (fields[key][0] == self)
-                for rec in sel:
-                    rec.delete ()
+                if fields[key][1] is NullableReference:
+                    for rec in sel:
+                        setattr (rec, key, None)
+                else:
+                    for rec in sel:
+                        rec.delete ()
         self.log_delete ()
         self.__blip_store__.remove (self)
 
@@ -599,7 +616,7 @@ class Project (BlipRecord):
     score_diff = Int ()
 
     default_ident = ShortText ()
-    default = Reference (default_ident, 'Branch.ident')
+    default = NullableReference (default_ident, 'Branch.ident')
 
 
 class Branch (BlipRecord):
@@ -624,7 +641,7 @@ class Branch (BlipRecord):
 
     mod_datetime = DateTime ()
     mod_person_ident = ShortText ()
-    mod_person = Reference (mod_person_ident, 'Entity.ident')
+    mod_person = NullableReference (mod_person_ident, 'Entity.ident')
 
     def __init__ (self, ident, type, **kw):
         kw['project_ident'] = u'/'.join (ident.split('/')[:-1])
@@ -831,79 +848,60 @@ class Alias (BlipRecord):
 
     @classmethod
     def update_alias (cls, entity, ident):
-        updated = False
-
         alias = cls.get (ident)
-        if alias == None:
-            updated = True
+        if alias is None:
             alias = Alias (ident, u'Alias')
         alias.entity = entity
 
         old = Entity.get (ident, alias=False)
-        if old == None:
-            return updated
+        if old is None:
+            return
 
         blip.utils.log ('Copying %s to %s' % (ident, entity.ident))
+
+        # Copy over any data that we don't already have in entity
         pdata = {}
         for pkey, pval in old.data.items():
             pdata[pkey] = pval
-        pdata['name'] = old.name
-        pdata['desc'] = old.desc
-        pdata['icon_dir'] = old.icon_dir
-        pdata['icon_name'] = old.icon_name
-        pdata['email'] = old.email
-        pdata['web'] = old.web
-        pdata['nick'] = old.nick
-        pdata['mod_score'] = old.mod_score
+        fields = Entity.get_fields()
+        for key in fields.keys():
+            if key == 'data':
+                continue
+            if not isinstance (fields[key][0], storm.properties.PropertyColumn):
+                continue
+            pdata[key] = getattr (old, key)
         entity.extend (pdata)
 
-        # Revision and ForumPost record historical data, so we record the
-        # alias of the entity they pointed to.
-        revs = Revision.select (person=old)
-        if not updated and revs.count() > 0:
-            updated = True
-        revs.set (person=entity, alias=alias)
+        # Fix all references to the old entity. If they have a
+        # corresponding alias, set that for historical data.
+        for table in BlipModel.get_tables():
+            fields = table.get_fields ()
+            for key in fields.keys ():
+                if not BlipModel.is_reference_to (fields[key][0], Entity):
+                    continue
+                alias_key = key + '_alias'
+                if not fields.has_key (alias_key):
+                    alias_key = None
+                elif not BlipModel.is_reference_to (fields[alias_key][0], Alias):
+                    alias_key = None
+                sel = table.select (fields[key][0] == old)
+                if alias_key is not None:
+                    sel.set (fields[key][0] == entity,
+                             fields[alias_key][0] == alias)
+                else:
+                    sel.set (fields[key][0] == entity)
 
-        posts = ForumPost.select (author=old)
-        if not updated and posts.count() > 0:
-            updated = True
-        posts.set (author=entity, alias=alias)
-
-        # The rest of these don't need the historical alias to be recorded.
-        rels = DocumentEntity.select (pred=old)
-        if not updated and rels.count() > 0:
-            updated = True
-        rels.set (pred=entity)
-
-        rels = ModuleEntity.select (pred=old)
-        if not updated and rels.count() > 0:
-            updated = True
-        rels.set (pred=entity)
-
-        rels = TeamMember.select (subj=old)
-        if not updated and rels.count() > 0:
-            updated = True
-        rels.set (subj=entity)
-
-        rels = TeamMember.select (pred=old)
-        if not updated and rels.count() > 0:
-            updated = True
-        rels.set (pred=entity)
-
-        branches = Branch.select (mod_person=old)
-        if not updated and branches.count() > 0:
-            updated = True
-        branches.set (mod_person=entity)
-
+        # There might be watches on the old person, and those don't
+        # use references. Update them.
+        # FIXME: This can create dups.
         watches = AccountWatch.select (ident=old.ident)
-        if not updated and watches.count() > 0:
-            updated = True
         watches.set (ident=entity.ident)
 
-        # FIXME STORM: we disallowed Entity.delete
-        old.delete()
+        # And there might be CacheData records. Nuke them.
+        for cache in CacheData.select (ident=old.ident):
+            cache.delete ()
 
-        return updated
+        old.delete ()
 
 
 class Forum (BlipRecord):
@@ -921,8 +919,8 @@ class ForumPost (BlipRecord):
     author_ident = ShortText ()
     author = Reference (author_ident, 'Entity.ident')
 
-    alias_ident = ShortText ()
-    alias = Reference (alias_ident, 'Alias.ident')
+    author_alias_ident = ShortText ()
+    author_alias = Reference (author_alias_ident, 'Alias.ident')
 
     parent_ident = ShortText ()
     parent = Reference (parent_ident, 'ForumPost.ident')
@@ -1219,8 +1217,8 @@ class Revision (BlipModel):
     person_ident = ShortText ()
     person = Reference (person_ident, Entity.ident)
 
-    alias_ident = ShortText ()
-    alias = Reference (alias_ident, Alias.ident)
+    person_alias_ident = ShortText ()
+    person_alias = Reference (person_alias_ident, Alias.ident)
 
     revision = ShortText ()
     datetime = DateTime ()
