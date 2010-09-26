@@ -102,7 +102,7 @@ class Autoconf (object):
                         varval = m.group(2).strip()
                         if len(varval) > 0 and varval[0] == varval[-1] == '"':
                             varval = varval[1:-1]
-                        self._vars[m.group(1)] = varval
+                        self._vars[m.group(1)] = self.subvar(varval)
             if infunc is not None:
                 rparen = line.find (')')
                 if rparen >= 0:
@@ -141,7 +141,7 @@ class Autoconf (object):
                 pkgname = initargs[3]
             else:
                 pkgname = initargs[0]
-        self._pkgname = self.subvar (pkgname)
+        self._pkgname = pkgname
         if not self._vars.has_key ('PACKAGE'):
             self._vars['PACKAGE'] = self._pkgname
 
@@ -156,14 +156,14 @@ class Autoconf (object):
         ret = ''
         for el in r1.split(var):
             m = r2.match(el)
-            if m and self._vars.has_key (m.group(1)):
+            if m and self._vars.has_key (m.group(1)) and self._vars[m.group(1)] != var:
                 ret += self.subvar (self._vars[m.group(1)])
             else:
                 ret += el
         return ret
 
     def get_variable (self, var, default=''):
-        return self.subvar (self._vars.get(var, default).strip())
+        return self._vars.get(var, default).strip()
 
     def get_func_args (self, func):
         return self._funcargs.get(func, [])
