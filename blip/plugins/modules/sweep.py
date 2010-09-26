@@ -217,7 +217,7 @@ class ModuleScanner (object):
                    'datetime': commit.datetime,
                    'comment': commit.comment }
             if person.ident != commit.author_ident:
-                rev['alias_ident'] = commit.author_ident
+                rev['person_alias_ident'] = commit.author_ident
             rev = blip.db.Revision (**rev)
             rev.decache ()
             for filename, filerev, prevrev in commit.files:
