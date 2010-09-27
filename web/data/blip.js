@@ -411,16 +411,24 @@ $.fn.blip_init = function () {
     cont.onScreenSlideToggle ();
   });
 
-  /** Ellipsized Labels **/
-  this.find ('span.elliptxt').each (function () {
-    var span = $(this);
-    var lnk = $('<a class="elliplnk">(more)</a>');
+  /** MoreLink **/
+  this.find ('.MoreContainer').each (function () {
+    var cont = $(this);
+    var lnk = cont.find ('a.More');
+    var hidden = cont.find ('.MoreHidden');
+    if (lnk.find('span.More').length == 0) {
+      hidden.before ($('<span class="More"> ... </span>'));
+    }
     lnk.click (function () {
-      lnk.remove ();
-      span.fadeIn ('fast');
+      if (lnk.find('.MoreHidden').length == 0) {
+        lnk.remove ();
+      }
+      else {
+        lnk.find('span.More').remove();
+      }
+      hidden.fadeIn ('fast');
+      return false;
     });
-    span.hide ();
-    span.before (lnk);
   });
 
   /** Graph Slides **/

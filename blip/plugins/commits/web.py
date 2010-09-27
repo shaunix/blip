@@ -26,42 +26,6 @@ import blip.html
 import blip.plugins.home.web
 
 def from_revision (rev, app, **kw):
-    branch = kw.pop ('branch', None)
-    comment = rev.comment
-    if comment.strip() == '':
-        lnk = cls (blip.html.AdmonBox (blip.html.AdmonBox.warning, blip.utils.gettext ('No comment')),
-                   '', **kw)
-    else:
-        datere = re.compile ('^\d\d\d\d-\d\d-\d\d ')
-        colonre = re.compile ('^\* [^:]*:(.*)')
-        maybe = ''
-        for line in comment.split('\n'):
-            line = line.strip()
-            if line == '':
-                pass
-            elif datere.match(line):
-                maybe = line
-            else:
-                cmatch = colonre.match(line)
-                if cmatch:
-                    line = cmatch.group(1).strip()
-                    if line != '':
-                        break
-                else:
-                    break
-        if line == '':
-            line = maybe
-        if len(line) > 80:
-            i = 60
-            while i < len(line):
-                if line[i] == ' ':
-                    break
-                i += 1
-            if i < len(comment):
-                line = line[:i] + '...'
-        lnk = blip.html.PopupLink (line, blip.html.Pre(comment), **kw)
-    if branch is None:
-        branch = rev.branch
     # if branch.scm_type == 'svn':
     #     if branch.scm_server.endswith ('/svn/'):
     #         base = branch.scm_server[:-4] + 'viewvc/'
@@ -178,8 +142,42 @@ class CommitsTab (blip.html.TabProvider):
                 act = blip.html.ActivityBox (subject=rev.project,
                                              datetime=rev.datetime.strftime('%T'))
             act.add_info (blip.utils.gettext('revision %s') % rev.display_revision (branch))
+
+            comment = rev.comment
+            if comment.strip() != '':
+                datere = re.compile ('^\d\d\d\d-\d\d-\d\d ')
+                colonre = re.compile ('^\* [^:]*:(.*)')
+                maybe = ''
+                for line in comment.split('\n'):
+                    line = line.strip()
+                    if line == '':
+                        pass
+                    elif datere.match(line):
+                        maybe = line
+                    else:
+                        cmatch = colonre.match(line)
+                        if cmatch:
+                            line = cmatch.group(1).strip()
+                            if line != '':
+                                break
+                        else:
+                            break
+                if line == '':
+                    line = maybe
+                if len(line) > 80:
+                    i = 60
+                    while i < len(line):
+                        if line[i] == ' ':
+                            break
+                        i += 1
+                    if i < len(comment):
+                        line = line[:i] + '...'
+                act.set_summary (blip.html.Span (line,
+                                                 html_class='tt'))
+                if line != comment.strip():
+                    act.set_description (blip.html.Pre(comment))
+
             div.add_activity (rev.datetime.strftime('%Y-%m-%d'), act)
-            act.add_content (from_revision (rev, 'activity', branch=branch))
         return div
 
 

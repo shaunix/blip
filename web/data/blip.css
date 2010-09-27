@@ -233,6 +233,10 @@ pre {
   margin: 0; padding: 0;
   font-size: 0.83em;
 }
+span.tt {
+  font-family: monospace;
+  font-size: 0.83em;
+}
 .hr {
   border: none;
   background-color: #d3d7cf;
@@ -610,6 +614,7 @@ div.ActivityBox {
   border: solid 1px white;
 }
 div.ActivityBox:hover {
+  background-color: #eeeeec;
   background: -webkit-gradient(linear, left -20, left 80, from(#eeeeec), to(white));
   background: -moz-linear-gradient(top, #eeeeec -20px, white 80px);
   border-color: #eeeeec;
@@ -624,6 +629,10 @@ span.ActivitySubject {
   font-weight: bold;
 }
 div.ActivityContent { margin: 6px 0 6px 0; }
+div.ActivitySummary { margin: 6px 0 6px 0; }
+div.ActivityDescription {
+  margin: 6px 0 6px 0;
+}
 div.ActivityContainer { margin: 0 0 12px 0; }
 div.ActivityTitle {
   color: #555753;
@@ -635,6 +644,31 @@ div.ActivityContainerTitle {
   font-weight: bold;
   margin: 0 0 6px 0;
 }
+
+
+/******************************************************************************/
+/** MoreLink ******************************************************************/
+.MoreContainer {
+}
+a.More {
+  color: inherit;
+  cursor: default;
+}
+a.More:hover { text-decoration: none; }
+a.More span.More {
+  padding: 0 0.5em 0 0.5em;
+  color: #204a87;
+  font-weight: bold;
+}
+a.More:hover span.More {
+  text-decoration: none;
+  background-color: #b1fbfc;
+  background: -webkit-gradient(linear, left -4, left 20, from(white), to(#b1fbfc));
+  background: -moz-linear-gradient(top, white -4px, #b1fbfc 20px);
+  outline: solid 1px #b1d5fc;
+}
+.MoreHidden { display: none; }
+
 
 /******************************************************************************/
 /** PopupLink *****************************************************************/
@@ -795,12 +829,5 @@ div.zoom {
 }
 
 .vbox-el { margin-top: 1em; }
-
-a.elliplnk { font-style: normal; cursor: pointer; }
-
-.po { background-color: #eeeeec; }
-.po80 { background-color: #d9ebff; }
-.po50 { background-color: #fff9cf; }
-.po td { padding: 0 0.5em 0 0.5em; }
 
 .nokey { background: #f7f7f5; }

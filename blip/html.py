@@ -707,6 +707,8 @@ class ActivityBox (HtmlObject, ContentComponent):
         self._datetime = kw.pop ('datetime', None)
         self._infos = []
         self._message = kw.pop ('message', None)
+        self._summary = None
+        self._description = None
         super (ActivityBox, self).__init__ (**kw)
 
     def set_subject (self, subject):
@@ -717,6 +719,12 @@ class ActivityBox (HtmlObject, ContentComponent):
 
     def set_message (self, message):
         self._message = message
+
+    def set_summary (self, summary):
+        self._summary = summary
+
+    def set_description (self, description):
+        self._description = description
 
     def add_info (self, info):
         self._infos.append (info)
@@ -733,6 +741,25 @@ class ActivityBox (HtmlObject, ContentComponent):
             res.write('</span>' )
         if self._message is not None:
             res.write(self._message)
+        if self._summary is not None:
+            if self._description is not None:
+                res.write('<div class="MoreContainer">')
+            res.write('<div class="ActivitySummary">')
+            if self._description is not None:
+                res.write('<a href="#" class="More" data-more-replace="true">')
+            res.write(self.escape(self._summary))
+            if self._description is not None:
+                res.write (' <span class="More"> ... </span>')
+                res.write('</a>')
+            res.write('</div>')
+        if self._description is not None:
+            if self._summary is not None:
+                res.write('<div class="MoreHidden">')
+            res.write('<div class="ActivityDescription">')
+            res.write(self.escape(self._description))
+            res.write('</div>')
+            if self._summary is not None:
+                res.write('</div></div>')
         if self.has_content ():
             res.write('<div class="ActivityContent">')
             ContentComponent.output (self, res)
@@ -972,7 +999,7 @@ class LinkBox (HtmlObject, FactsComponent, ContentComponent):
         res.write('</div>')
         if self._desc != None:
             res.write('<div class="LinkBoxDesc desc">')
-            EllipsizedLabel (self._desc, 130).output (res)
+            MoreLink (self._desc, 130).output (res)
             res.write('</div>')
         FactsComponent.output (self, res)
         ContentComponent.output (self, res)
@@ -1110,7 +1137,7 @@ class Calendar (HtmlObject):
             res.write('<span class="calsummary">%s</span>' % self.escape(event[2]))
             res.write('</dt>')
             res.write('<dd class="calevent">')
-            EllipsizedLabel (event[3], 130).output (res)
+            MoreLink (event[3], 130).output (res)
             res.write('</dd>')
         res.write('</dl>')
         res.write('</div>')
@@ -1387,7 +1414,7 @@ class Graph (HtmlObject):
         return graph
 
 
-class EllipsizedLabel (HtmlObject):
+class MoreLink (HtmlObject):
     """
     A text label that gets ellipsized if it exceeds a certain length.
 
@@ -1400,7 +1427,7 @@ class EllipsizedLabel (HtmlObject):
         self._label = label
         self._size = size
         self._truncate = kw.pop ('truncate', False)
-        super (EllipsizedLabel, self).__init__ (**kw)
+        super (MoreLink, self).__init__ (**kw)
 
     def output (self, res):
         """Output the HTML."""
@@ -1414,12 +1441,14 @@ class EllipsizedLabel (HtmlObject):
                 i += 1
             if i == len(self._label):
                 res.write(self.escape(self._label))
-            else:
+            elif self._truncate:
                 res.write(self.escape(self._label[:i+1]))
-                if self._truncate:
-                    res.write(self.escape(blip.utils.gettext ('...')))
-                else:
-                    res.write('<span class="elliptxt">%s</span>' % self.escape(self._label[i+1:]))
+                res.write(self.escape(blip.utils.gettext ('...')))
+            else:
+                res.write('<span class="MoreContainer"><a class="More">')
+                res.write(self.escape(self._label[:i+1]))
+                res.write('<span class="MoreHidden">%s</span>' % self.escape(self._label[i+1:]))
+                res.write('</a></span>')
         else:
             res.write(self.escape(self._label))
 
