@@ -55,12 +55,12 @@ class CommitMessageFormatter (blip.plugins.home.web.MessageFormatter):
             box = blip.html.ActivityBox (subject=record,
                                          datetime=message.datetime.strftime('%Y-%m-%d'))
             if isinstance (record, blip.db.Entity):
-                span = blip.html.Span (' made %i commits to ' % message.count)
+                span = blip.html.Span ('%i commits to ' % message.count)
                 proj = blip.db.Project.get (message.pred)
                 span.add_content (blip.html.Link (proj.default))
-                box.set_message (span)
+                box.add_info (span)
             else:
-                box.set_message (' had %i commits' % message.count)
+                box.add_info ('%i commits' % message.count)
             return box
         return None
 
