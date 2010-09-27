@@ -124,8 +124,8 @@ label.watch:hover div {
 
 div#page {
   background-color: #eeeeec;
-  background: -webkit-gradient(linear, left 40, left 200, from(#eeeeec), to(white));
-  background: -moz-linear-gradient(top, #eeeeec 40px, white 200px);
+  background: -webkit-gradient(linear, left -80, left 200, from(#d3d7cf), to(#eeeeec));
+  background: -moz-linear-gradient(top, #d3d7cf -80px, #eeeeec 200px);
 }
 div#all {
   width: 800px;
@@ -201,7 +201,7 @@ ul#tabs li.tabactive div {
 }
 
 a { color: #204a87; text-decoration: none; }
-a:visited { color: #3465a4; }
+a:visited { color: #204a87; }
 a:hover { text-decoration: underline; }
 img { border: none; }
 a img { border: none; vertical-align: middle; }
@@ -262,6 +262,7 @@ td.LinkBoxIcon { width: 24px; text-align: center; }
 td.LinkBoxText { padding: 0 0.5em 0 0; }
 td.LinkBoxIcon + td.LinkBoxText { padding-left: 1em; }
 div.LinkBoxTitle { font-weight: bold; }
+div.LinkBoxTitle a { color: #3465a4; }
 td.LinkBoxGraph { vertical-align: top; text-align: right; }
 table.LinkBox table.facts {
   border-top: none;
@@ -611,13 +612,13 @@ div.ActivityBox {
   margin: 0 0 6px 1px;
   padding: 2px 6px 2px 6px;
   background-color: white;
-  border: solid 1px white;
+  border: solid 1px #eeeeec;
 }
+div.ActivityContainer div.ActivityBox { margin-left: 6px; }
 div.ActivityBox:hover {
   background-color: #eeeeec;
   background: -webkit-gradient(linear, left -20, left 80, from(#eeeeec), to(white));
   background: -moz-linear-gradient(top, #eeeeec -20px, white 80px);
-  border-color: #eeeeec;
 }
 div.ActivityInfo {
   color: #888a85;
@@ -625,9 +626,8 @@ div.ActivityInfo {
   -moz-transition: color 0.2s linear;
 }
 div.ActivityBox:hover div.ActivityInfo { color: #555753; }
-span.ActivitySubject {
-  font-weight: bold;
-}
+span.ActivitySubject { font-weight: bold; }
+span.ActivitySubject a { color: #3465a4; }
 div.ActivityContent { margin: 6px 0 6px 0; }
 div.ActivitySummary { margin: 6px 0 6px 0; }
 div.ActivityDescription {
