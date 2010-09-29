@@ -250,6 +250,9 @@ class TeamsResponder (blip.sweep.SweepResponder,
                     subteams.append (ent)
                 team.set_children (u'Team', subteams)
 
+                for alias in datum.get ('alias', []):
+                    blip.db.Alias.update_alias (team, blip.utils.utf8dec (alias))
+
                 return team
 
             data = blip.data.Data (infile)
