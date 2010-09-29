@@ -85,6 +85,7 @@ blip/plugins/git/Makefile
 blip/plugins/home/Makefile
 blip/plugins/i18n/Makefile
 blip/plugins/index/Makefile
+blip/plugins/lists/Makefile
 blip/plugins/modules/Makefile
 blip/plugins/queue/Makefile
 blip/plugins/sets/Makefile

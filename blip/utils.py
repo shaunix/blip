@@ -34,6 +34,8 @@ import tempfile
 import urllib
 from urlparse import urlsplit
 
+import blinq.config
+
 def get_token ():
     """
     Return a random token for authentication
@@ -85,6 +87,20 @@ def parse_date (datestr):
     return dt - delta
 
 
+def http_date (datetime):
+    try:
+        tup = datetime.timetuple()
+        when = ('Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat')[tup.tm_wday]
+        when += ', %02d ' % tup.tm_mday
+        when += ('Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+                 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec')[tup.tm_mon - 1]
+        when += ' %04d %02d:%02d:%02d GMT' % (
+            tup.tm_year, tup.tm_hour, tup.tm_min, tup.tm_sec)
+        return when
+    except:
+        return None
+
+
 def daynum (when=datetime.now()):
     """
     Return the number of days since the epoch for a given date
@@ -109,13 +125,13 @@ def weeknumday (num):
     return (epoch_week + timedelta(days=7*(num-1)))
 
 
-#def tmpfile ():
-#    """
-#    Return the location of a temporary file
-#    """
-#    if not os.path.exists (pulse.config.tmp_dir):
-#        os.makedirs (pulse.config.tmp_dir)
-#    return tempfile.mkstemp (dir=pulse.config.tmp_dir)[1]
+def tmpfile ():
+    """
+    Return the location of a temporary file
+    """
+    if not os.path.exists (blinq.config.tmp_dir):
+        os.makedirs (blinq.config.tmp_dir)
+    return tempfile.mkstemp (dir=blinq.config.tmp_dir)[1]
 
 
 def score (stats):

@@ -908,9 +908,6 @@ class Forum (BlipRecord):
     score = Int ()
     score_diff = Int ()
 
-    def delete (self):
-        raise WillNotDelete ('Blip will not delete forums')
-
 
 class ForumPost (BlipRecord):
     forum_ident = ShortText ()
@@ -936,9 +933,6 @@ class ForumPost (BlipRecord):
     def log_create (self):
         pass
 
-    def delete (self):
-        raise WillNotDelete ('Blip will not delete forum posts')
-
 
 class CacheData (BlipModel):
     __storm_primary__ = 'ident', 'key'
@@ -948,6 +942,13 @@ class CacheData (BlipModel):
 
     def log_create (self):
         pass
+
+    @classmethod
+    def get_or_create (cls, ident, key):
+        record = cls.get ((ident, key))
+        if record is not None:
+            return record
+        return cls (ident=ident, key=key)
 
 
 # FIXME

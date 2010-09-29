@@ -11,6 +11,7 @@ SUBDIRS = 		\
 	home		\
 	i18n		\
 	index		\
+	lists		\
 	modules 	\
 	queue		\
 	sets		\
