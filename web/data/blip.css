@@ -31,7 +31,7 @@ body {
   -webkit-transition: color 0.2s linear;
   -moz-transition: color 0.2s linear;
 }
-#header a:hover {
+#header a:hover, #header a:focus {
   color: white;
   text-decoration: none;
 }
@@ -180,7 +180,7 @@ ul#tabs li a:hover {
   text-decoration: none;
   cursor: default;
 }
-ul#tabs li a:hover div {
+ul#tabs li a:hover div, ul#tabs li a:focus div {
   background-color: #b1fbfc;
   background: -webkit-gradient(linear, left -4, left 20, from(white), to(#b1fbfc));
   background: -moz-linear-gradient(top, white -4px, #b1fbfc 20px);
@@ -355,7 +355,7 @@ a.TabBar {
   display: inline-block;
 }
 a.TabBar:first-child { border-left: solid 1px #babdb6; }
-a.TabBar:hover {
+a.TabBar:hover, a.TabBar:focus {
   cursor: default;
   text-decoration: none;
 }
@@ -369,7 +369,7 @@ a.TabBarActive span {
   background: -webkit-gradient(linear, left -4, left 20, from(white), to(#fcf197));
   background: -moz-linear-gradient(top, white -4px, #fcf197 20px);
 }
-a.TabBar:hover span {
+a.TabBar:hover span, a.TabBar:focus span {
   color: #2e3436;
   background-color: #b1fbfc;
   background: -webkit-gradient(linear, left -4, left 20, from(white), to(#b1fbfc));
@@ -597,7 +597,7 @@ a.sortlink, span.sortlink {
   font-size: 1.2em;
   padding: 0 6px 0 6px;
 }
-a.sortlink:hover {
+a.sortlink:hover, a.sortlink:focus {
   color: #555753;
   background-color: #b1fbfc;
   background: -webkit-gradient(linear, left -4, left 20, from(white), to(#b1fbfc));
@@ -661,7 +661,7 @@ a.More span.More {
   color: #204a87;
   font-weight: bold;
 }
-a.More:hover span.More {
+a.More:hover span.More, a.More:focus span.More {
   text-decoration: none;
   background-color: #b1fbfc;
   background: -webkit-gradient(linear, left -4, left 20, from(white), to(#b1fbfc));
@@ -742,7 +742,8 @@ table.graph { margin: 0 0 12px 0; }
 table.graph div.graph { margin: 0; }
 table.graph td { line-height: 0; }
 td.graphprev, td.graphnext { padding: 4px 0 0 0; }
-td.graphprev a:hover, td.graphnext a:hover {
+td.graphprev a:hover, td.graphnext a:hover,
+td.graphprev a:focus, td.graphnext a:focus {
   background-color: #b1fbfc;
   background: -webkit-gradient(linear, left -4, left 20, from(white), to(#b1fbfc));
   background: -moz-linear-gradient(top, white -4px, #b1fbfc 20px);
