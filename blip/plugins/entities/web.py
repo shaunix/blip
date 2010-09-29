@@ -201,7 +201,8 @@ class OverviewTab (blip.html.TabProvider):
             gt = blip.db.Entity.select (blip.db.Entity.type == u'Person',
                                         blip.db.Entity.score > request.record.score)
             gt = gt.count()
-            span.add_content ('(%.2f%%)' % ((100.0 * lt) / (lt + gt)))
+            if (lt + gt) > 0:
+                span.add_content ('(%.2f%%)' % ((100.0 * lt) / (lt + gt)))
             facts.add_fact (blip.utils.gettext ('Score'), span)
 
         return tab

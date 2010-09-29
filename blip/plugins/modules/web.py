@@ -156,7 +156,8 @@ class OverviewTab (blip.html.TabProvider):
         gt = blip.db.Project.select (blip.db.Project.type == u'Module',
                                      blip.db.Project.score > request.record.project.score)
         gt = gt.count()
-        span.add_content ('(%.2f%%)' % ((100.0 * lt) / (lt + gt)))
+        if (lt + gt) > 0:
+            span.add_content ('(%.2f%%)' % ((100.0 * lt) / (lt + gt)))
         facts.add_fact (blip.utils.gettext ('Score'), span)
 
         if request.record.bug_database is not None:
