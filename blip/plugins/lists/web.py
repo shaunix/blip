@@ -35,14 +35,17 @@ class ListsIndexContentProvider (blip.plugins.index.web.IndexContentProvider):
     @classmethod
     def provide_content (cls, page, response):
         """Construct an info box for the index page"""
+        mls = blip.db.Forum.select (type=u'List')
+
+        if mls.count() == 0:
+            return
+
         box = blip.html.SidebarBox (blip.utils.gettext ('Lists'))
         page.add_sidebar_content (box)
 
         #txt = (blip.utils.gettext ('Blip is watching %i mailing lists.') %
         #       blip.db.Forum.select (type=u'List').count() )
         #box.add_content (blip.html.Div (txt))
-
-        mls = blip.db.Forum.select (type=u'List')
 
         active = mls.order_by (blip.db.Desc (blip.db.Forum.score))
         bl = blip.html.BulletList ()
