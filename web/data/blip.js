@@ -190,7 +190,7 @@ $.fn.blip_init = function () {
     var bars = graph.find ('div.Bars');
     var allbars = bars.find ('div.Bar');
     bars.css ('right', '0px');
-    bars.css ('left', -((allbars.length * 10) - 500) + 'px');
+    bars.css ('left', -((allbars.length * 8) - 520) + 'px');
     allbars.each (function () {
       var bar = $(this);
       var count = parseInt (bar.attr ('data-count'));
@@ -232,7 +232,7 @@ $.fn.blip_init = function () {
     slideset ();
     graph.find ('a.BarNext').shade ();
     slidebar = function (dir) {
-      var fullleft = -((allbars.length * 10) - 500);
+      var fullleft = -((allbars.length * 8) - 520);
       var left = parseInt (bars.css ('left'));
       if (left > 0 && dir > 0)
         return;
