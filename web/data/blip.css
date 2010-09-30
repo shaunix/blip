@@ -265,7 +265,7 @@ div.Bars {
 a.Bar {
   vertical-align: top;
   display: inline-block;
-  margin: 0 1px 0 0;
+  border-right: solid 1px white;
   height: 80px;
   line-height: 80px;
   cursor: default;
@@ -287,9 +287,9 @@ div.Bar {
   width: 7px;
   line-height: 0;
   background-color: #babdb6;
-  margin: 0 1px 0 0;
+  border-right: solid 1px white;
 }
-a.Bar div.Bar { margin-right: 0; }
+a.Bar div.Bar { border-right: none; }
 div.BarComment {
   line-height: 1em;
   position: absolute;
