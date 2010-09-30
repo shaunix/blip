@@ -313,6 +313,10 @@ div.BarControl a {
   display: inline-block;
   margin: 0;
   padding: 2px;
+  font-weight: bold;
+  color: #555753;
+  min-width: 1.2em;
+  text-align: center;
 }
 div.BarControl a:hover, div.BarControl a:focus {
   background-color: #b1fbfc;
@@ -320,8 +324,9 @@ div.BarControl a:hover, div.BarControl a:focus {
   background: -moz-linear-gradient(top, white -4px, #b1fbfc 20px);
   outline: solid 1px #b1d5fc;
   cursor: default;
+  text-decoration: none;
 }
-a.BarNext {float: right; }
+a.BarPrev, a.BarNext {float: right; }
 
 /******************************************************************************/
 /** ColumnBox **/

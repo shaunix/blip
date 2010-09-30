@@ -863,14 +863,16 @@ class BarGraph (HtmlObject):
                 res.write('</a>')
         res.write('</div>')
         res.write('<div class="BarControl">')
-        res.write('<a class="BarNext" title="%s">'
+        res.write('<a class="BarNext" title="%s">▶</a>'
                   % self.escape(blip.utils.gettext('Previous weeks')))
-        res.write('<img src="%sgo-next.png" height="12" width="12"></a>'
-                  % self.escape(blinq.config.web_data_url))
-        res.write('<a class="BarPrev" title="%s">'
+        #res.write('<img src="%sgo-next.png" height="12" width="12"></a>'
+        #          % self.escape(blinq.config.web_data_url))
+        res.write('<a class="BarPrev" title="%s">◀</a>'
                   % self.escape(blip.utils.gettext('Following weeks')))
-        res.write('<img src="%sgo-prev.png" height="12" width="12"></a>'
-                  % self.escape(blinq.config.web_data_url))
+        #res.write('<img src="%sgo-prev.png" height="12" width="12"></a>'
+        #          % self.escape(blinq.config.web_data_url))
+        res.write('<a class="BarZoomOut" href="#">-</a>')
+        res.write('<a class="BarZoomIn" href="#">+</a>')
         res.write('</div>')
         res.write('</div>')
 

@@ -189,8 +189,9 @@ $.fn.blip_init = function () {
     var max = parseInt (graph.attr ('data-max-count'));
     var bars = graph.find ('div.Bars');
     var allbars = bars.find ('div.Bar');
+    graph.attr ('data-bar-width', '8');
     bars.css ('right', '0px');
-    bars.css ('left', -((allbars.length * 8) - 520) + 'px');
+    bars.css ('left', -((allbars.length * 8) - graph.width()) + 'px');
     allbars.each (function () {
       var bar = $(this);
       var count = parseInt (bar.attr ('data-count'));
@@ -228,34 +229,38 @@ $.fn.blip_init = function () {
         }
       });
       graph.css ('overflow', 'visible');
+      var left = parseInt (bars.css ('left'));
+      var fullleft = -((allbars.length * parseInt(graph.attr('data-bar-width'))) - graph.width());
+      if (left >= 0)
+        graph.find ('a.BarPrev').css ('visibility', 'hidden');
+      else
+        graph.find ('a.BarPrev').css ('visibility', 'visible');
+      if (left <= fullleft)
+        graph.find ('a.BarNext').css ('visibility', 'hidden');
+      else
+        graph.find ('a.BarNext').css ('visibility', 'visible');
+      graph.attr ('data-animating', 'false');
     }
     slideset ();
-    graph.find ('a.BarNext').shade ();
+    graph.find ('a.BarNext').css ('visibility', 'hidden');
     slidebar = function (dir) {
-      var fullleft = -((allbars.length * 8) - 520);
+      if (graph.attr ('data-animating') == 'true')
+        return;
+      var fullleft = -((allbars.length * parseInt(graph.attr('data-bar-width'))) - graph.width());
       var left = parseInt (bars.css ('left'));
       if (left > 0 && dir > 0)
         return;
       if (left < fullleft && dir < 0)
         return;
       left = left + (dir * 400);
-      if (left > 0) {
+      if (left > 0)
         left = 0;
-        graph.find ('a.BarPrev').shade ();
-      }
-      else {
-        graph.find ('a.BarPrev').unshade ();
-      }
-      if (left <= fullleft) {
+      if (left < fullleft)
         left = fullleft;
-        graph.find ('a.BarNext').shade ();
-      }
-      else {
-        graph.find ('a.BarNext').unshade ();
-      }
       graph.css ('overflow', 'hidden');
       allbars.css ('visibility', 'visible');
       allbars.parent('a').css ('visibility', 'visible');
+      graph.attr ('data-animating', 'true');
       bars.animate({left: left}, 'slow', 'linear', slideset);
     };
     graph.find ('a.BarPrev').click (function () {
@@ -264,6 +269,60 @@ $.fn.blip_init = function () {
     });
     graph.find ('a.BarNext').click (function () {
       slidebar (-1);
+      return false;
+    });
+    slidezoom = function (dir) {
+      var curwidth = parseInt (graph.attr ('data-bar-width'));
+      if (curwidth <= 2 && dir < 0)
+        return;
+      if (curwidth >= 12 && dir > 0)
+        return;
+      var newwidth = curwidth + (dir * 2);
+      if (newwidth <= 2)
+        graph.find ('a.BarZoomOut').css ('visibility', 'hidden');
+      else
+        graph.find ('a.BarZoomOut').css ('visibility', 'visible');
+      if (newwidth >= 12)
+        graph.find ('a.BarZoomIn').css ('visibility', 'hidden');
+      else
+        graph.find ('a.BarZoomIn').css ('visibility', 'visible');
+
+      var curleft = parseInt (bars.css ('left'));
+      var newleft = curleft + (allbars.length * curwidth) - graph.width();
+      newleft = newleft * (newwidth / curwidth);
+      newleft += -(allbars.length * newwidth) + graph.width();
+
+      graph.css ('overflow', 'hidden');
+      allbars.css ('visibility', 'visible');
+      allbars.parent('a').css ('visibility', 'visible');
+      graph.attr ('data-bar-width', newwidth);
+      allbars.width (newwidth - 1);
+      bars.css ('left', newleft + 'px');
+      if (newleft > 0) {
+        var fullleft = -((allbars.length * newwidth) - graph.width());
+        var newnewleft = 0;
+        if (newnewleft < fullleft)
+          newnewleft = fullleft;
+        if ((allbars.length * newwidth) < graph.width())
+          newnewleft = fullleft;
+        if (newleft != newnewleft) {
+          graph.attr ('data-animating', 'true');
+          bars.animate({left: newnewleft}, 'slow', 'linear', slideset);
+        }
+        else {
+          slideset ();
+        }
+      } 
+      else {
+        slideset ();
+      }
+   };
+    graph.find ('a.BarZoomOut').click (function () {
+      slidezoom (-1);
+      return false;
+    });
+    graph.find ('a.BarZoomIn').click (function () {
+      slidezoom (1);
       return false;
     });
   });
