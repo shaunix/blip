@@ -90,14 +90,48 @@ class CommitsTab (blip.html.TabProvider):
             return None
 
         response = blip.web.WebResponse (request)
-        tab = blip.html.Div ()
-        of = blip.db.OutputFile.select_one (type=u'graphs',
-                                            ident=request.record.ident,
-                                            filename=u'commits-0.png')
-        if of is not None:
-            graph = blip.html.Graph.activity_graph (of, 'commits',
-                                                    blip.utils.gettext ('%i commits'))
-            tab.add_content (graph)
+        tab = blip.html.PaddingBox ()
+
+        store = blip.db.get_store (blip.db.Revision)
+        if isinstance (request.record, blip.db.Branch):
+            sel = store.using (blip.db.Revision,
+                               blip.db.Join (blip.db.RevisionBranch,
+                                             blip.db.RevisionBranch.revision_ident == blip.db.Revision.ident))
+            sel = sel.find ((blip.db.Revision.weeknum, blip.db.Count('*')),
+                            blip.db.RevisionBranch.branch_ident == request.record.ident)
+        else:
+            sel = store.find ((blip.db.Revision.weeknum, blip.db.Count('*')),
+                              blip.db.Revision.person_ident == request.record.ident)
+        sel = sel.group_by (blip.db.Revision.weeknum)
+        sel = sel.order_by (blip.db.Revision.weeknum)
+
+        graph = blip.html.BarGraph ()
+        tab.add_content (graph)
+
+        curweek = blip.utils.weeknum()
+        lastweek = None
+        for weeknum, count in sel:
+            if weeknum is None:
+                continue
+            if weeknum > curweek:
+                weeknum = lastweek
+                break
+            if lastweek is not None and weeknum > lastweek + 1:
+                for i in range(weeknum - lastweek - 1):
+                    graph.add_bar (0)
+            lastweek = weeknum
+            if weeknum == curweek:
+                label = blip.utils.gettext ('this week')
+            elif weeknum == curweek - 1:
+                label = blip.utils.gettext ('last week')
+            else:
+                label = (blip.utils.gettext ('week of %s') %
+                         blip.utils.weeknumday(weeknum).strftime('%Y-%m-%d'))
+            link = blip.utils.gettext ('%i commits') % count
+            href = "javascript:replace('commits', blip_url + '?q=commits&weeknum=%i')" % weeknum
+            graph.add_bar (count, label=label, link=link, href=href)
+        for i in range(curweek - weeknum):
+            graph.add_bar (0)
 
         if isinstance (request.record, blip.db.Branch):
             sel = blip.db.Selection (blip.db.Revision)
