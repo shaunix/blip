@@ -933,6 +933,18 @@ class ForumPost (BlipRecord):
     def log_create (self):
         pass
 
+    @classmethod
+    def select_author (cls, selection):
+        tbl = ClassAlias (Entity)
+        selection.add_join (tbl, tbl.ident == cls.author_ident)
+        selection.add_result ('author', tbl)
+
+    @classmethod
+    def select_forum (cls, selection):
+        tbl = ClassAlias (Forum)
+        selection.add_join (tbl, tbl.ident == cls.forum_ident)
+        selection.add_result ('forum', tbl)
+
 
 class CacheData (BlipModel):
     __storm_primary__ = 'ident', 'key'

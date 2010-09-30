@@ -81,22 +81,28 @@ class ListReponder (blip.web.RecordLocator, blip.web.PageResponder):
 class ListPostsTab (blip.html.TabProvider):
     @classmethod
     def add_tabs (cls, page, request):
-        if len(request.path) != 3 or request.path[0] != 'list':
-            return None
-        if not (isinstance (request.record, blip.db.Forum) and
-                request.record.type == u'List'):
-            return None
-        cnt = blip.db.ForumPost.select (forum=request.record).count ()
-        if cnt > 0:
+        if request.record is None:
+            return
+        if isinstance (request.record, blip.db.Forum) and request.record.type == u'List':
+            cnt = blip.db.ForumPost.select (forum=request.record).count ()
+        elif isinstance (request.record, blip.db.Entity):
+            cnt = blip.db.ForumPost.select (author=request.record).count ()
+        else:
+            cnt = None
+        if cnt is not None and cnt > 0:
             page.add_tab ('posts',
-                          blip.utils.gettext ('Posts (%i)') % cnt,
+                          blip.utils.gettext ('Posts'),
                           blip.html.TabProvider.CORE_TAB)
 
     @classmethod
     def respond (cls, request):
-        if len(request.path) != 3 or request.path[0] != 'list':
-            return None
         if not blip.html.TabProvider.match_tab (request, 'posts'):
+            return None
+        if isinstance (request.record, blip.db.Forum) and request.record.type == u'List':
+            sel = (blip.db.ForumPost.forum == request.record)
+        elif isinstance (request.record, blip.db.Entity):
+            sel = (blip.db.ForumPost.author == request.record)
+        else:
             return None
 
         response = blip.web.WebResponse (request)
@@ -106,8 +112,7 @@ class ListPostsTab (blip.html.TabProvider):
         tab.add_content (graph)
 
         store = blip.db.get_store (blip.db.ForumPost)
-        sel = store.find ((blip.db.ForumPost.weeknum, blip.db.Count('*')),
-                          blip.db.ForumPost.forum == request.record)
+        sel = store.find ((blip.db.ForumPost.weeknum, blip.db.Count('*')), sel)
         sel = sel.group_by (blip.db.ForumPost.weeknum)
         sel = sel.order_by (blip.db.ForumPost.weeknum)
 
@@ -136,6 +141,95 @@ class ListPostsTab (blip.html.TabProvider):
         for i in range(curweek - weeknum):
             graph.add_bar (0)
 
-        tab.add_content (blip.html.Div(html_id='posts'))
+        if isinstance (request.record, blip.db.Forum):
+            sel = blip.db.Selection (blip.db.ForumPost,
+                                     blip.db.ForumPost.forum == request.record)
+            cnt = sel.count ()
+            blip.db.ForumPost.select_author (sel)
+        else:
+            sel = blip.db.Selection (blip.db.ForumPost,
+                                     blip.db.ForumPost.author == request.record)
+            cnt = sel.count ()
+            blip.db.ForumPost.select_forum (sel)
+        sel.add_where (blip.db.ForumPost.weeknum <= blip.utils.weeknum())
+        sel.order_by (blip.db.Desc (blip.db.ForumPost.datetime))
+        posts = list(sel[:10])
+        title = (blip.utils.gettext('Showing %i of %i commits:') % (len(posts), cnt))
+        div = cls.get_posts_div (request, posts, title)
+        tab.add_content (div)
 
+        return response
+
+    @staticmethod
+    def get_posts_div (request, posts, title):
+        div = blip.html.ActivityContainer (html_id='posts')
+        div.set_title (title)
+        for post in posts:
+            if post.datetime is None:
+                continue
+            if isinstance (request.record, blip.db.Forum):
+                act = blip.html.ActivityBox (subject=post['author'],
+                                             datetime=post.datetime.strftime('%T'))
+            else:
+                act = blip.html.ActivityBox (subject=post['forum'],
+                                             datetime=post.datetime.strftime('%T'))
+            act.set_summary (post.title)
+            div.add_activity (post.datetime.strftime('%Y-%m-%d'), act)
+        return div
+
+
+class ListPostsDiv (blip.web.ContentResponder):
+    @classmethod
+    def respond (cls, request):
+        if request.query.get ('q', None) != 'posts':
+            return None
+        if request.record is None:
+            return None
+        if isinstance (request.record, blip.db.Forum) and request.record.type == u'List':
+            sel = (blip.db.ForumPost.forum == request.record)
+        elif isinstance (request.record, blip.db.Entity):
+            sel = (blip.db.ForumPost.author == request.record)
+        else:
+            return None
+
+        response = blip.web.WebResponse (request)
+
+        weeknum = request.query.get('weeknum', None)
+        weeknum = int(weeknum)
+        thisweek = blip.utils.weeknum ()
+        ago = thisweek - weeknum
+        sel = blip.db.Selection (blip.db.ForumPost, sel)
+        cnt = sel.count ()
+        if isinstance (request.record, blip.db.Forum):
+            blip.db.ForumPost.select_author (sel)
+        else:
+            blip.db.ForumPost.select_forum (sel)
+        sel.add_where (blip.db.ForumPost.weeknum == weeknum)
+        sel.order_by (blip.db.Desc (blip.db.ForumPost.datetime))
+        posts = list(sel[:200])
+
+        if ago == 0:
+            if len(posts) == cnt:
+                title = (blip.utils.gettext('Showing all %i posts from this week:')
+                         % cnt)
+            else:
+                title = (blip.utils.gettext('Showing %i of %i posts from this week:')
+                         % (len(posts), cnt))
+        elif ago == 1:
+            if len(posts) == cnt:
+                title = (blip.utils.gettext('Showing all %i posts from last week:')
+                         % cnt)
+            else:
+                title = (blip.utils.gettext('Showing %i of %i posts from last week:')
+                         % (len(posts), cnt))
+        else:
+            if len(posts) == cnt:
+                title = (blip.utils.gettext('Showing all %i posts from %i weeks ago:')
+                         % (cnt, ago))
+            else:
+                title = (blip.utils.gettext('Showing %i of %i posts from %i weeks ago:')
+                         % (len(posts), cnt, ago))
+
+        div = ListPostsTab.get_posts_div (request, posts, title)
+        response.payload = div
         return response
