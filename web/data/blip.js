@@ -192,11 +192,6 @@ $.fn.blip_init = function () {
     graph.attr ('data-bar-width', '8');
     bars.css ('right', '0px');
     bars.css ('left', -((allbars.length * 8) - graph.width()) + 'px');
-    allbars.parent('a').click (function () {
-      allbars.parent('a').removeClass ('BarActive');
-      $(this).addClass ('BarActive');
-      return True;
-    });
     allbars.each (function () {
       var bar = $(this);
       var count = parseInt (bar.attr ('data-count'));
@@ -204,24 +199,32 @@ $.fn.blip_init = function () {
       if (height < 1 && count > 0)
         height = 1;
       bar.height (height);
+    });
+    allbars.parent('a').each (function () {
+      $(this).click (function (event) {
+        allbars.parent('a').removeClass ('BarActive');
+        $(this).addClass ('BarActive');
+        if (event.clientX != 0)
+          $(this).blur ();
+        return true;
+      });
+      var bar = $(this);
       var barin = function () {
-          var comment = bar.find ('div.BarComment');
-          if (comment.length != 0) {
-            var offset = bar.parent('a').offset();
-            var unoffset = bars.offset();
-            comment.css ({
-              left: offset.left - unoffset.left - (comment.width() / 2),
-              top: offset.top - unoffset.top + bars.height(),
-              display: 'block'
-            });
-          }
-        };
-      var barout = function () {
-          bar.find ('div.BarComment').hide ();
-        };
-      bar.parent('a').hover (barin, barout);
-      bar.parent('a').focusin (barin);
-      bar.parent('a').focusout (barout);
+        var comment = bar.find ('div.BarComment');
+        if (comment.length != 0) {
+          var offset = bar.offset();
+          var unoffset = bars.offset();
+          comment.css ({
+            left: offset.left - unoffset.left - (comment.width() / 2),
+            top: offset.top - unoffset.top + bars.height(),
+            display: 'block'
+          });
+        }
+      };
+      var barout = function () { bar.find ('div.BarComment').hide(); };
+      bar.hover (barin, barout);
+      bar.focusin (barin);
+      bar.focusout (barout);
     });
     slideset = function () {
       var offset = graph.offset();
