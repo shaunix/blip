@@ -183,6 +183,91 @@ $.fn.blip_init = function () {
     });
   });
 
+  /** BarGraph **/
+  this.find ('div.BarGraph').each (function () {
+    var graph = $(this);
+    var max = parseInt (graph.attr ('data-max-count'));
+    var bars = graph.find ('div.Bars');
+    var allbars = bars.find ('div.Bar');
+    bars.css ('right', '0px');
+    bars.css ('left', -((allbars.length * 10) - 500) + 'px');
+    allbars.each (function () {
+      var bar = $(this);
+      var count = parseInt (bar.attr ('data-count'));
+      var height = parseInt(80 * count / max);
+      if (height < 1 && count > 0)
+        height = 1;
+      bar.height (height);
+      bar.parent('a').hover (
+        function () {
+          var comment = bar.find ('div.BarComment');
+          if (comment.length != 0) {
+            var offset = bar.parent('a').offset();
+            var unoffset = bars.offset();
+            comment.css ({
+              left: offset.left - unoffset.left - (comment.width() / 2),
+              top: offset.top - unoffset.top + bars.height(),
+              display: 'block'
+            });
+          }
+        },
+        function () {
+          bar.find ('div.BarComment').hide ();
+        }
+      );
+    });
+    slideset = function () {
+      var offset = graph.offset();
+      var width = graph.width();
+      allbars.each (function () {
+        var bar = $(this);
+        if ((bar.offset().left < offset.left) ||
+            (bar.offset().left >= offset.left + width)) {
+          bar.css ('visibility', 'hidden');
+          bar.parent('a').css ('visibility', 'hidden');
+        }
+      });
+      graph.css ('overflow', 'visible');
+    }
+    slideset ();
+    graph.find ('a.BarNext').shade ();
+    slidebar = function (dir) {
+      var fullleft = -((allbars.length * 10) - 500);
+      var left = parseInt (bars.css ('left'));
+      if (left > 0 && dir > 0)
+        return;
+      if (left < fullleft && dir < 0)
+        return;
+      left = left + (dir * 400);
+      if (left > 0) {
+        left = 0;
+        graph.find ('a.BarPrev').shade ();
+      }
+      else {
+        graph.find ('a.BarPrev').unshade ();
+      }
+      if (left <= fullleft) {
+        left = fullleft;
+        graph.find ('a.BarNext').shade ();
+      }
+      else {
+        graph.find ('a.BarNext').unshade ();
+      }
+      graph.css ('overflow', 'hidden');
+      allbars.css ('visibility', 'visible');
+      allbars.parent('a').css ('visibility', 'visible');
+      bars.animate({left: left}, 'slow', 'linear', slideset);
+    };
+    graph.find ('a.BarPrev').click (function () {
+      slidebar (1);
+      return false;
+    });
+    graph.find ('a.BarNext').click (function () {
+      slidebar (-1);
+      return false;
+    });
+  });
+
   /** Watches **/
   this.find ('input.watch').change (function () {
     var input = $(this);

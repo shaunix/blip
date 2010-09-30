@@ -75,3 +75,64 @@ class ListReponder (blip.web.RecordLocator, blip.web.PageResponder):
         response.payload = page
         return response
 
+class ListPostsTab (blip.html.TabProvider):
+    @classmethod
+    def add_tabs (cls, page, request):
+        if len(request.path) != 3 or request.path[0] != 'list':
+            return None
+        if not (isinstance (request.record, blip.db.Forum) and
+                request.record.type == u'List'):
+            return None
+        cnt = blip.db.ForumPost.select (forum=request.record).count ()
+        if cnt > 0:
+            page.add_tab ('posts',
+                          blip.utils.gettext ('Posts (%i)') % cnt,
+                          blip.html.TabProvider.CORE_TAB)
+
+    @classmethod
+    def respond (cls, request):
+        if len(request.path) != 3 or request.path[0] != 'list':
+            return None
+        if not blip.html.TabProvider.match_tab (request, 'posts'):
+            return None
+
+        response = blip.web.WebResponse (request)
+        tab = blip.html.PaddingBox ()
+        response.payload = tab
+        graph = blip.html.BarGraph ()
+        tab.add_content (graph)
+
+        store = blip.db.get_store (blip.db.ForumPost)
+        sel = store.find ((blip.db.ForumPost.weeknum, blip.db.Count('*')),
+                          blip.db.ForumPost.forum == request.record)
+        sel = sel.group_by (blip.db.ForumPost.weeknum)
+        sel = sel.order_by (blip.db.ForumPost.weeknum)
+
+        curweek = blip.utils.weeknum()
+        lastweek = None
+        for weeknum, count in sel:
+            if weeknum is None:
+                continue
+            if weeknum > curweek:
+                weeknum = lastweek
+                break
+            if lastweek is not None and weeknum > lastweek + 1:
+                for i in range(weeknum - lastweek - 1):
+                    graph.add_bar (0)
+            lastweek = weeknum
+            if weeknum == curweek:
+                label = blip.utils.gettext ('this week')
+            elif weeknum == curweek - 1:
+                label = blip.utils.gettext ('last week')
+            else:
+                label = (blip.utils.gettext ('week of %s') %
+                         blip.utils.weeknumday(weeknum).strftime('%Y-%m-%d'))
+            link = blip.utils.gettext ('%i posts') % count
+            href = "javascript:replace('posts', blip_url + '?q=posts&weeknum=%i')" % weeknum
+            graph.add_bar (count, label=label, link=link, href=href)
+        for i in range(curweek - weeknum):
+            graph.add_bar (0)
+
+        tab.add_content (blip.html.Div(html_id='posts'))
+
+        return response

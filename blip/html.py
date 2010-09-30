@@ -828,6 +828,53 @@ class AjaxBox (HtmlObject):
                   % self.escape((self._url, blip.utils.gettext ('Loading'))))
 
 
+class BarGraph (HtmlObject):
+    def __init__ (self, **kw):
+        super (BarGraph, self).__init__ (**kw)
+        self._bars = []
+        self._max = 0
+
+    def add_bar (self, count, label=None, link=None, href=None):
+        self._bars.append ((count, label, link, href))
+        if count > self._max:
+            self._max = count
+
+    def output (self, res):
+        """Output the HTML."""
+        res.write('<div class="BarGraph" data-max-count="%i">' % self._max)
+        res.write('<div class="Bars">')
+        for count, label, link, href in self._bars:
+            if href is not None:
+                res.write('<a class="Bar" href="%s">' % self.escape(href))
+            res.write('<div class="Bar" data-count="%i">' % count)
+            if label is not None or link is not None:
+                res.write('<div class="BarComment">')
+                if label is not None:
+                    res.write('<div class="BarLabel">')
+                    res.write(self.escape(label))
+                    res.write('</div>')
+                if link is not None:
+                    res.write('<div class="BarLink">')
+                    res.write(self.escape(link))
+                    res.write('</div>')
+                res.write('</div>')
+            res.write('</div>')
+            if href is not None:
+                res.write('</a>')
+        res.write('</div>')
+        res.write('<div class="BarControl">')
+        res.write('<a class="BarNext" title="%s">'
+                  % self.escape(blip.utils.gettext('Previous weeks')))
+        res.write('<img src="%sgo-next.png" height="12" width="12"></a>'
+                  % self.escape(blinq.config.web_data_url))
+        res.write('<a class="BarPrev" title="%s">'
+                  % self.escape(blip.utils.gettext('Following weeks')))
+        res.write('<img src="%sgo-prev.png" height="12" width="12"></a>'
+                  % self.escape(blinq.config.web_data_url))
+        res.write('</div>')
+        res.write('</div>')
+
+
 class ColumnBox (HtmlObject):
     def __init__ (self, num, **kw):
         super (ColumnBox, self).__init__ (**kw)
