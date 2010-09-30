@@ -192,6 +192,11 @@ $.fn.blip_init = function () {
     graph.attr ('data-bar-width', '8');
     bars.css ('right', '0px');
     bars.css ('left', -((allbars.length * 8) - graph.width()) + 'px');
+    allbars.parent('a').click (function () {
+      allbars.parent('a').removeClass ('BarActive');
+      $(this).addClass ('BarActive');
+      return True;
+    });
     allbars.each (function () {
       var bar = $(this);
       var count = parseInt (bar.attr ('data-count'));
@@ -199,8 +204,7 @@ $.fn.blip_init = function () {
       if (height < 1 && count > 0)
         height = 1;
       bar.height (height);
-      bar.parent('a').hover (
-        function () {
+      var barin = function () {
           var comment = bar.find ('div.BarComment');
           if (comment.length != 0) {
             var offset = bar.parent('a').offset();
@@ -211,11 +215,13 @@ $.fn.blip_init = function () {
               display: 'block'
             });
           }
-        },
-        function () {
+        };
+      var barout = function () {
           bar.find ('div.BarComment').hide ();
-        }
-      );
+        };
+      bar.parent('a').hover (barin, barout);
+      bar.parent('a').focusin (barin);
+      bar.parent('a').focusout (barout);
     });
     slideset = function () {
       var offset = graph.offset();
@@ -275,14 +281,14 @@ $.fn.blip_init = function () {
       var curwidth = parseInt (graph.attr ('data-bar-width'));
       if (curwidth <= 2 && dir < 0)
         return;
-      if (curwidth >= 12 && dir > 0)
+      if (curwidth >= 20 && dir > 0)
         return;
       var newwidth = curwidth + (dir * 2);
       if (newwidth <= 2)
         graph.find ('a.BarZoomOut').css ('visibility', 'hidden');
       else
         graph.find ('a.BarZoomOut').css ('visibility', 'visible');
-      if (newwidth >= 12)
+      if (newwidth >= 20)
         graph.find ('a.BarZoomIn').css ('visibility', 'hidden');
       else
         graph.find ('a.BarZoomIn').css ('visibility', 'visible');

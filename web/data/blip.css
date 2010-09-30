@@ -270,16 +270,18 @@ a.Bar {
   line-height: 80px;
   cursor: default;
 }
-a.Bar:hover {
+a.Bar:hover, a.Bar:focus {
   background-color: #b1fbfc;
   background: -webkit-gradient(linear, left -4, left 120, from(white), to(#b1fbfc));
   background: -moz-linear-gradient(top, white -4px, #b1fbfc 120px);
 }
-a.Bar:hover div.Bar {
-  background-color: #888a85;
-  background-color: #204a87;
-  background-color: #3465a4;
+a.Bar:hover div.Bar, a.Bar:focus div.Bar {
   background-color: #729fcf;
+}
+a.BarActive {
+  background-color: #fcf197;
+  background: -webkit-gradient(linear, left -4, left 120, from(white), to(#fcf197));
+  background: -moz-linear-gradient(top, white -4px, #fcf197 120px);
 }
 div.Bar {
   display: inline-block;
