@@ -29,6 +29,7 @@ import blip.html
 import blip.utils
 import blip.web
 
+import blip.plugins.home.web
 import blip.plugins.index.web
 
 class ListsIndexContentProvider (blip.plugins.index.web.IndexContentProvider):
@@ -233,3 +234,19 @@ class ListPostsDiv (blip.web.ContentResponder):
         div = ListPostsTab.get_posts_div (request, posts, title)
         response.payload = div
         return response
+
+
+class PostMessageFormatter (blip.plugins.home.web.MessageFormatter):
+    @classmethod
+    def format_message (cls, message, record):
+        if message.type == u'post':
+            box = blip.html.ActivityBox (subject=record,
+                                         datetime=message.datetime.strftime('%Y-%m-%d'))
+            if isinstance (record, blip.db.Entity):
+                span = blip.html.Span ('%i posts to ' % message.count)
+                span.add_content (blip.html.Link (blip.db.Forum.get (message.pred)))
+                box.add_info (span)
+            else:
+                box.add_info ('%i posts' % message.count)
+            return box
+        return None

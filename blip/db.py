@@ -929,6 +929,11 @@ class ForumPost (BlipRecord):
         if kw.has_key ('datetime'):
             kw['weeknum'] = blip.utils.weeknum (kw['datetime'])
         BlipRecord.__init__ (self, ident, type, **kw)
+        try:
+            Message.make_message (u'post', self.author_ident, self.forum_ident, self.datetime)
+            Message.make_message (u'post', self.forum_ident, None, self.datetime)
+        except:
+            pass
 
     def log_create (self):
         pass
