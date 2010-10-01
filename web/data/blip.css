@@ -710,7 +710,10 @@ div.ActivityInfo {
   -moz-transition: color 0.2s linear;
 }
 div.ActivityBox:hover div.ActivityInfo { color: #555753; }
-span.ActivitySubject { font-weight: bold; }
+span.ActivitySubject {
+  color: #555753;
+  font-weight: bold;
+}
 span.ActivitySubject a { color: #3465a4; }
 div.ActivityContent { margin: 6px 0 6px 0; }
 div.ActivitySummary { margin: 6px 0 6px 0; }
