@@ -69,14 +69,19 @@ class CommitsTab (blip.html.TabProvider):
     def add_tabs (cls, page, request):
         if request.record is None:
             return
-        if not ((isinstance (request.record, blip.db.Branch) and
-                 request.record.type == u'Module') or
-                (isinstance (request.record, blip.db.Entity) and
-                 request.record.type == u'Person') ):
-            return
-        page.add_tab ('commits',
-                      blip.utils.gettext ('Commits'),
-                      blip.html.TabProvider.CORE_TAB)
+        if isinstance (request.record, blip.db.Branch) and request.record.type == u'Module':
+            # Don't bother counting. Modules should have commits.
+            cnt = 1
+        elif isinstance (request.record, blip.db.Entity) and request.record.type == u'Person':
+            # But people could exist for all sorts of reason that
+            # don't involve having commits.
+            cnt = blip.db.Revision.select (person=request.record).count ()
+        else:
+            cnt = 0
+        if cnt > 0:
+            page.add_tab ('commits',
+                          blip.utils.gettext ('Commits'),
+                          blip.html.TabProvider.CORE_TAB)
 
     @classmethod
     def respond (cls, request):
