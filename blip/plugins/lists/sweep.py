@@ -176,6 +176,9 @@ class ListsResponder (blip.sweep.SweepResponder):
     def update_archive (cls, ml, request, cache, archive):
         mbox = mailbox.PortableUnixMailbox (open(archive, 'rb'))
         i = -1
+        # Any date outside this range is probably crap
+        clamp = (datetime.datetime(1970, 1, 1),
+                 datetime.datetime.utcnow() + datetime.timedelta (seconds=86400))
         for msg in mbox:
             i += 1
             msgfrom = msg.get ('From')
@@ -217,18 +220,27 @@ class ListsResponder (blip.sweep.SweepResponder):
             except:
                 dt = None
             # Sometimes the date is screwed up. If the reported date is before
-            # the beginning of time, try to use a date from the Recieved header.
-            if dt is None or dt < datetime.datetime(1970, 1, 1):
-                dt = None
-                received = msg.get ('Received')
-                received = re.sub ('\(.*', '', received.split(';')[-1]).strip()
-                received = email.utils.parsedate_tz (received)
-                try:
-                    dt = datetime.datetime (*received[:6])
-                    if received[-1] is not None:
-                        dt = dt + datetime.timedelta (seconds=received[-1])
-                except:
-                    pass
+            # the beginning of time or after tomorrow, try to use a date from
+            # the Recieved header.
+            if dt is None or dt < clamp[0] or dt > clamp[1]:
+                for received in msg.getallmatchingheaders ('Received'):
+                    try:
+                        received = re.sub ('\(.*', '', received.split(';')[-1]).strip()
+                        received = email.utils.parsedate_tz (received)
+                        rdt = datetime.datetime (*received[:6])
+                        if received[-1] is not None:
+                            rdt = rdt + datetime.timedelta (seconds=received[-1])
+                        if rdt is not None and rdt >= clamp[0] and rdt <= clamp[1]:
+                            dt = rdt
+                            break
+                    except:
+                        rdt = None
+            # Sometimes the Received header is just as flaky. If the year is
+            # two digits, assume fire rained from the sky on Y2K.
+            if dt is not None and dt.year < 100:
+                tup = dt.timetuple ()
+                dt = datetime.datetime (tup.tm_year + 1900, tup.tm_mon, tup.tm_mday,
+                                        tup.tm_hour, tup.tm_min, tup.tm_sec)
             post.datetime = dt
             post.weeknum = blip.utils.weeknum (dt)
 
