@@ -167,7 +167,24 @@ class ListsResponder (blip.sweep.SweepResponder):
                 pass
             cache.data['archive-datetimes'][url] = now
 
-        # FIXME: now create graphs and set the score
+        store = blip.db.get_store (blip.db.ForumPost)
+        thisweek = blip.utils.weeknum()
+        sel = store.find ((blip.db.ForumPost.weeknum, blip.db.Count('*')),
+                          blip.db.And (blip.db.ForumPost.forum == ml,
+                                       blip.db.ForumPost.weeknum > thisweek - 26,
+                                       blip.db.ForumPost.weeknum <= thisweek))
+        sel = sel.group_by (blip.db.ForumPost.weeknum)
+        sel = sel.order_by (blip.db.Desc (blip.db.ForumPost.weeknum))
+        stats = [0 for i in range(26)]
+        for week, cnt in list(sel):
+            stats[week - (thisweek - 25)] = cnt
+        ml.score = blip.utils.score (stats)
+
+        stats = stats[:-3]
+        avg = int(round(sum(stats) / (len(stats) * 1.0)))
+        stats = stats + [avg, avg, avg]
+        old = blip.utils.score (stats)
+        ml.score_diff = ml.score - old
 
         ml.updated = datetime.datetime.utcnow ()
         blip.db.Queue.pop (ml.ident)
