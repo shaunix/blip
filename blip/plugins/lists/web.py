@@ -32,13 +32,36 @@ import blip.web
 import blip.plugins.home.web
 import blip.plugins.index.web
 
+class AllListsResponder (blip.web.PageResponder):
+    @classmethod
+    def respond (cls, request, **kw):
+        if len(request.path) != 1 or request.path[0] != 'list':
+            return None
+
+        response = blip.web.WebResponse (request)
+
+        page = blip.html.Page (request=request)
+        page.set_title (blip.utils.gettext ('Mailing Lists'))
+        cont = blip.html.ContainerBox ()
+        cont.set_show_icons (False)
+        page.add_content (cont)
+
+        lists = blip.db.Forum.select (type=u'List')
+        lists = blinq.utils.attrsorted (list(lists), 'title')
+        for ml in lists:
+            lbox = cont.add_link_box (ml)
+
+        response.payload = page
+        return response
+
 class ListsIndexContentProvider (blip.plugins.index.web.IndexContentProvider):
     @classmethod
     def provide_content (cls, page, response):
         """Construct an info box for the index page"""
         mls = blip.db.Forum.select (type=u'List')
 
-        if mls.count() == 0:
+        cnt = mls.count()
+        if cnt == 0:
             return
 
         box = blip.html.SidebarBox (blip.utils.gettext ('Lists'))
@@ -53,6 +76,9 @@ class ListsIndexContentProvider (blip.plugins.index.web.IndexContentProvider):
         box.add_content (bl)
         for ml in active[:6]:
             bl.add_link (ml)
+
+        bl.add_link (blinq.config.web_root_url + 'list',
+                     blip.utils.gettext ('All %i lists...' % cnt))
 
 class ListReponder (blip.web.RecordLocator, blip.web.PageResponder):
     @classmethod
@@ -76,6 +102,8 @@ class ListReponder (blip.web.RecordLocator, blip.web.PageResponder):
             return response
 
         page = blip.html.Page (request=request)
+        page.add_trail_link (blinq.config.web_root_url + 'list',
+                             blip.utils.gettext ('Lists'))
         response.payload = page
         return response
 
