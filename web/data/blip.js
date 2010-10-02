@@ -210,6 +210,8 @@ $.fn.blip_init = function () {
       });
       var bar = $(this);
       var barin = function () {
+        if (graph.attr ('data-animating') == 'true')
+          return;
         var comment = bar.find ('div.BarComment');
         if (comment.length != 0) {
           var offset = bar.offset();
@@ -226,9 +228,12 @@ $.fn.blip_init = function () {
       bar.focusin (barin);
       bar.focusout (barout);
     });
-    slideset = function () {
+
+    slideset = function (graph) {
       var offset = graph.offset();
       var width = graph.width();
+      var bars = graph.find ('div.Bars');
+      var allbars = bars.find ('div.Bar');
       allbars.each (function () {
         var bar = $(this);
         if ((bar.offset().left < offset.left) ||
@@ -250,9 +255,12 @@ $.fn.blip_init = function () {
         graph.find ('a.BarNext').css ('visibility', 'visible');
       graph.attr ('data-animating', 'false');
     }
-    slideset ();
+    slideset (graph);
     graph.find ('a.BarNext').css ('visibility', 'hidden');
-    slidebar = function (dir) {
+
+    slidebar = function (graph, dir) {
+      var bars = graph.find ('div.Bars');
+      var allbars = bars.find ('div.Bar');
       if (graph.attr ('data-animating') == 'true')
         return;
       var fullleft = -((allbars.length * parseInt(graph.attr('data-bar-width'))) - graph.width());
@@ -270,21 +278,21 @@ $.fn.blip_init = function () {
       allbars.css ('visibility', 'visible');
       allbars.parent('a').css ('visibility', 'visible');
       graph.attr ('data-animating', 'true');
-      bars.animate({left: left}, 'slow', 'linear', slideset);
+      bars.animate({left: left}, 'slow', 'linear',
+        function () { slideset ($(this).closest ('div.BarGraph')); });
     };
     graph.find ('a.BarPrev').click (function () {
-      slidebar (1);
+      slidebar ($(this).closest ('div.BarGraph'), 1);
       return false;
     });
     graph.find ('a.BarNext').click (function () {
-      slidebar (-1);
+      slidebar ($(this).closest ('div.BarGraph'), -1);
       return false;
     });
-    slidezoom = function (dir) {
+
+    slidezoom = function (graph, dir) {
       var curwidth = parseInt (graph.attr ('data-bar-width'));
-      if (curwidth <= 2 && dir < 0)
-        return;
-      if (curwidth >= 20 && dir > 0)
+      if ((curwidth <= 2 && dir < 0) || (curwidth >= 20 && dir > 0))
         return;
       var newwidth = curwidth + (dir * 2);
       if (newwidth <= 2)
@@ -296,6 +304,8 @@ $.fn.blip_init = function () {
       else
         graph.find ('a.BarZoomIn').css ('visibility', 'visible');
 
+      var bars = graph.find ('div.Bars');
+      var allbars = bars.find ('div.Bar');
       var curleft = parseInt (bars.css ('left'));
       var newleft = curleft + (allbars.length * curwidth) - graph.width();
       newleft = newleft * (newwidth / curwidth);
@@ -316,22 +326,23 @@ $.fn.blip_init = function () {
           newnewleft = fullleft;
         if (newleft != newnewleft) {
           graph.attr ('data-animating', 'true');
-          bars.animate({left: newnewleft}, 'slow', 'linear', slideset);
+          bars.animate({left: newnewleft}, 'slow', 'linear',
+            function () { slideset ($(this).closest ('div.BarGraph')); });
         }
         else {
-          slideset ();
+          slideset (graph);
         }
       } 
       else {
-        slideset ();
+        slideset (graph);
       }
-   };
+    };
     graph.find ('a.BarZoomOut').click (function () {
-      slidezoom (-1);
+      slidezoom ($(this).closest ('div.BarGraph'), -1);
       return false;
     });
     graph.find ('a.BarZoomIn').click (function () {
-      slidezoom (1);
+      slidezoom ($(this).closest ('div.BarGraph'), 1);
       return false;
     });
   });
