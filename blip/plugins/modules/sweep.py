@@ -61,24 +61,52 @@ class ModulesResponder (blip.sweep.SweepResponder,
                                  action='store_false',
                                  default=True,
                                  help='do not update SCM repositories')
+        request.add_tool_option ('--until',
+                                 dest='until',
+                                 metavar='SECONDS',
+                                 help='only process modules older than SECONDS seconds')
 
     @classmethod
     def respond (cls, request):
         response = blip.sweep.SweepResponse (request)
         argv = request.get_tool_args ()
+
+        dbargs = []
+        until = request.get_tool_option ('until')
+        if until is not None:
+            sep = until.rfind (':')
+            tlhour = tlmin = tlsec = 0
+            if sep >= 0:
+                tlsec = int(until[sep+1:])
+                tlpre = until[:sep]
+                sep = tlpre.rfind (':')
+                if sep >= 0:
+                    tlmin = int(tlpre[sep+1:])
+                    tlhour = int(tlpre[:sep])
+                else:
+                    tlmin = int(tlpre)
+            else:
+                tlsec = int(until)
+            until = 3600 * tlhour + 60 * tlmin + tlsec
+            then = datetime.datetime.utcnow() - datetime.timedelta(seconds=int(until))
+            dbargs.append (blip.db.Branch.updated < then)
+
         branches = []
         if len(argv) == 0:
-            branches = blip.db.Branch.select (blip.db.Branch.type == u'Module')
+            branches = list(blip.db.Branch.select (blip.db.Branch.type == u'Module', *dbargs))
         else:
             for arg in argv:
                 ident = blip.utils.utf8dec (arg)
                 if ident.startswith(u'/set/'):
                     branches += list(blip.db.Branch.select (blip.db.Branch.type == u'Module',
                                                             blip.db.Branch.ident == blip.db.SetModule.pred_ident,
-                                                            blip.db.SetModule.subj_ident.like (ident)))
+                                                            blip.db.SetModule.subj_ident.like (ident),
+                                                            *dbargs))
                 else:
                     branches += list(blip.db.Branch.select (blip.db.Branch.type == u'Module',
-                                                            blip.db.Branch.ident.like (ident)))
+                                                            blip.db.Branch.ident.like (ident),
+                                                            *dbargs))
+        branches = blinq.utils.attrsorted (branches, 'updated')
         for branch in branches:
             try:
                 scanner = ModuleScanner (request, branch)
