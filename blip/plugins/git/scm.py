@@ -55,7 +55,7 @@ class GitClone (blip.scm.Repository):
             self._git_url += self.scm_path
         else:
             self._git_url += self.scm_module
-        if self._git_url[-1] != '/':
+        if self._git_url[-1] != '/' and (not self._git_url.endswith('.git')):
             self._git_url += '/'
 
         blip.scm.Repository.initialize (self, **kw)
