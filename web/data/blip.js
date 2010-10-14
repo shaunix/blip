@@ -521,10 +521,10 @@ $.fn.blip_init = function () {
       for (var i = 0; i < sparks.length; i++)
         for (var j = 0; j < sparks[i].sparkdata.length; j++)
           max = Math.max (sparks[i].sparkdata[j], max);
-      if (max >= 120 && max <= 240)
+      if (max >= 120 && max <= 20)
         return;
       for (var i = 0; i < sparks.length; i++) {
-        sparkdraw (sparks[i], sparks[i].sparkdata, max);
+        sparkdraw (sparks[i], sparks[i].sparkdata, Math.min(max, 200));
       }
     };
     $.ajax({
