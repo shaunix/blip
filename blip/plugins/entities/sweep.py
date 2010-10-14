@@ -52,19 +52,47 @@ class PeopleResponder (blip.sweep.SweepResponder,
                                  action='store_false',
                                  default=True,
                                  help='do not check timestamps before processing files')
+        request.add_tool_option ('--until',
+                                 dest='until',
+                                 metavar='SECONDS',
+                                 help='only process modules older than SECONDS seconds')
 
     @classmethod
     def respond (cls, request):
         response = blip.sweep.SweepResponse (request)
         argv = request.get_tool_args ()
+
+        dbargs = []
+        until = request.get_tool_option ('until')
+        if until is not None:
+            sep = until.rfind (':')
+            tlhour = tlmin = tlsec = 0
+            if sep >= 0:
+                tlsec = int(until[sep+1:])
+                tlpre = until[:sep]
+                sep = tlpre.rfind (':')
+                if sep >= 0:
+                    tlmin = int(tlpre[sep+1:])
+                    tlhour = int(tlpre[:sep])
+                else:
+                    tlmin = int(tlpre)
+            else:
+                tlsec = int(until)
+            until = 3600 * tlhour + 60 * tlmin + tlsec
+            then = datetime.datetime.utcnow() - datetime.timedelta(seconds=int(until))
+            dbargs.append (blip.db.Entity.updated < then)
+
         entities = []
         if len(argv) == 0:
-            entities = blip.db.Entity.select (blip.db.Entity.type == u'Person')
+            entities = list(blip.db.Entity.select (blip.db.Entity.type == u'Person', *dbargs))
         else:
             for arg in argv:
                 ident = blip.utils.utf8dec (arg)
                 entities += list(blip.db.Entity.select (blip.db.Entity.type == u'Person',
-                                                        blip.db.Entity.ident.like (ident)))
+                                                        blip.db.Entity.ident.like (ident),
+                                                        *dbargs))
+
+        entities = blinq.utils.attrsorted (entities, 'updated')
         for entity in entities:
             try:
                 cls.update_person (entity, request)
@@ -191,6 +219,10 @@ class TeamsResponder (blip.sweep.SweepResponder,
                                  action='store_false',
                                  default=True,
                                  help='do not check timestamps before processing files')
+        request.add_tool_option ('--until',
+                                 dest='until',
+                                 metavar='SECONDS',
+                                 help='only process modules older than SECONDS seconds')
 
     @classmethod
     def respond (cls, request):
@@ -198,15 +230,37 @@ class TeamsResponder (blip.sweep.SweepResponder,
 
         cls.update_input_file (request)
 
+        dbargs = []
+        until = request.get_tool_option ('until')
+        if until is not None:
+            sep = until.rfind (':')
+            tlhour = tlmin = tlsec = 0
+            if sep >= 0:
+                tlsec = int(until[sep+1:])
+                tlpre = until[:sep]
+                sep = tlpre.rfind (':')
+                if sep >= 0:
+                    tlmin = int(tlpre[sep+1:])
+                    tlhour = int(tlpre[:sep])
+                else:
+                    tlmin = int(tlpre)
+            else:
+                tlsec = int(until)
+            until = 3600 * tlhour + 60 * tlmin + tlsec
+            then = datetime.datetime.utcnow() - datetime.timedelta(seconds=int(until))
+            dbargs.append (blip.db.Entity.updated < then)
+
         argv = request.get_tool_args ()
         entities = []
         if len(argv) == 0:
-            entities = blip.db.Entity.select (blip.db.Entity.type == u'Team')
+            entities = list(blip.db.Entity.select (blip.db.Entity.type == u'Team', *dbargs))
         else:
             for arg in argv:
                 ident = blip.utils.utf8dec (arg)
                 entities += list(blip.db.Entity.select (blip.db.Entity.type == u'Team',
-                                                        blip.db.Entity.ident.like (ident)))
+                                                        blip.db.Entity.ident.like (ident),
+                                                        *dbargs))
+        entities = blinq.utils.attrsorted (entities, 'updated')
         for entity in entities:
             try:
                 cls.update_team (entity, request)
