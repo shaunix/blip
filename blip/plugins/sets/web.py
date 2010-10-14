@@ -226,9 +226,7 @@ class OverviewTab (blip.html.TabProvider):
         cont.add_sort_link ('score', blip.utils.gettext ('score'))
         for mod in mods:
             lbox = cont.add_link_box (mod)
-            lbox.add_graph (blinq.config.web_files_url + 'graphs/' +
-                            '/'.join(mod.ident.split('/')[1:] + ['commits-tight.png']),
-                            width=208, height=40)
+            lbox.add_graph (blip.html.SparkGraph (mod.blip_url, 'commits'))
             span = blip.html.Span (mod.branch_module)
             span.add_html_class ('module')
             lbox.add_fact (blip.utils.gettext ('module'), blip.html.Link (mod.blip_url, span))

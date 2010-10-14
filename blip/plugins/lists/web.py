@@ -23,6 +23,7 @@ import os
 
 import blinq.config
 import blinq.utils
+import blinq.reqs.web
 
 import blip.db
 import blip.html
@@ -50,6 +51,7 @@ class AllListsResponder (blip.web.PageResponder):
         lists = blinq.utils.attrsorted (list(lists), 'title')
         for ml in lists:
             lbox = cont.add_link_box (ml)
+            lbox.add_graph (blip.html.SparkGraph (ml.blip_url, 'posts'))
 
         response.payload = page
         return response
@@ -79,6 +81,35 @@ class ListsIndexContentProvider (blip.plugins.index.web.IndexContentProvider):
 
         bl.add_link (blinq.config.web_root_url + 'list',
                      blip.utils.gettext ('All %i lists...' % cnt))
+
+
+class ListSparkResponder (blip.web.DataResponder):
+    @classmethod
+    def respond (cls, request):
+        if request.query.get ('d', None) != 'spark':
+            return None
+        if request.record is None:
+            return None
+        if not (isinstance (request.record, blip.db.Forum) and request.record.type == u'List'):
+            return None
+
+        response = blip.web.WebResponse (request)
+        json = blinq.reqs.web.JsonPayload ()
+        response.payload = json
+
+        thisweek = blip.utils.weeknum()
+        store = blip.db.get_store (blip.db.ForumPost)
+        sel = store.find ((blip.db.ForumPost.weeknum, blip.db.Count('*')),
+                          blip.db.ForumPost.forum == request.record,
+                          blip.db.ForumPost.weeknum > (thisweek - 208))
+        sel = sel.group_by (blip.db.ForumPost.weeknum)
+        stats = [0 for i in range(208)]
+        for week, cnt in list(sel):
+            stats[week - (thisweek - 207)] = cnt
+        json.set_data (stats)
+
+        return response
+
 
 class ListReponder (blip.web.RecordLocator, blip.web.PageResponder):
     @classmethod
@@ -269,7 +300,7 @@ class ListThreadsTab (blip.html.TabProvider):
     def add_tabs (cls, page, request):
         if request.record is None:
             return
-        if not isinstance (request.record, blip.db.Forum) and request.record.type == u'List':
+        if not (isinstance (request.record, blip.db.Forum) and request.record.type == u'List'):
             return
         cnt = blip.db.ForumPost.select (forum=request.record).count ()
         if cnt > 0:
@@ -281,7 +312,7 @@ class ListThreadsTab (blip.html.TabProvider):
     def respond (cls, request):
         if not blip.html.TabProvider.match_tab (request, 'threads'):
             return None
-        if not isinstance (request.record, blip.db.Forum) and request.record.type == u'List':
+        if not (isinstance (request.record, blip.db.Forum) and request.record.type == u'List'):
             return None
         response = blip.web.WebResponse (request)
         tab = blip.html.PaddingBox ()
@@ -343,7 +374,7 @@ class ListThreadsDiv (blip.web.ContentResponder):
             return None
         if request.record is None:
             return None
-        if not isinstance (request.record, blip.db.Forum) and request.record.type == u'List':
+        if not (isinstance (request.record, blip.db.Forum) and request.record.type == u'List'):
             return None
 
         response = blip.web.WebResponse (request)
@@ -429,3 +460,4 @@ class PostMessageFormatter (blip.plugins.home.web.MessageFormatter):
                 box.add_info ('%i posts' % message.count)
             return box
         return None
+

@@ -20,6 +20,8 @@
 
 import re
 
+import blinq.reqs.web
+
 import blip.db
 import blip.html
 
@@ -317,6 +319,36 @@ class CommitsDiv (blip.web.ContentResponder):
         response.payload = div
         return response
 
+
+class ModuleSparkResponder (blip.web.DataResponder):
+    @classmethod
+    def respond (cls, request):
+        if request.query.get ('d', None) != 'spark':
+            return None
+        if request.record is None:
+            return None
+        if not (isinstance (request.record, blip.db.Branch) and request.record.type == u'Module'):
+            return None
+
+        response = blip.web.WebResponse (request)
+        json = blinq.reqs.web.JsonPayload ()
+        response.payload = json
+
+        thisweek = blip.utils.weeknum()
+        store = blip.db.get_store (blip.db.Revision)
+        sel = store.using (blip.db.Revision,
+                           blip.db.Join (blip.db.RevisionBranch,
+                                         blip.db.RevisionBranch.revision_ident == blip.db.Revision.ident))
+        sel = sel.find ((blip.db.Revision.weeknum, blip.db.Count('*')),
+                        blip.db.RevisionBranch.branch_ident == request.record.ident,
+                        blip.db.Revision.weeknum > (thisweek - 208))
+        sel = sel.group_by (blip.db.Revision.weeknum)
+        stats = [0 for i in range(208)]
+        for week, cnt in list(sel):
+            stats[week - (thisweek - 207)] = cnt
+        json.set_data (stats)
+
+        return response
 
 # def get_revfiles_action (self):
 #     module = self.handler.record

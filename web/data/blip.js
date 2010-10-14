@@ -482,6 +482,57 @@ $.fn.blip_init = function () {
     });
   });
 
+  /** SparkGraph **/
+  this.find ('canvas.SparkGraph').each (function () {
+    var spark = $(this);
+    var sparkdraw = function (obj, data, max) {
+      var ctxt = obj.getContext('2d');
+      ctxt.clearRect(0, 0, 208, 40);
+      for (var j = 0; j < data.length; j++) {
+        var height = (40 * data[j]) / max;
+        if (height > 40) {
+          var diff = Math.sqrt(height - 40);
+          ctxt.fillStyle = 'rgb(' + parseInt(186/diff) + ',' + parseInt(189/diff) + ',' + parseInt(182/diff) + ')'
+        }
+        else {
+          ctxt.fillStyle = "#babdb6";
+        }
+        ctxt.fillRect(j, 40 - height, 1, height);
+      }
+    }
+    var sparkle = function (req, status) {
+      spark[0].sparkdata = $.parseJSON (req.responseText);
+      var sparks = [];
+      $('canvas.SparkGraph').each (function () {
+        if ($(this).attr('data-group') == spark.attr('data-group'))
+          sparks.push (this);
+      });
+      sparkdraw (spark[0], spark[0].sparkdata, 120);
+      var ready = true;
+      for (var i = 0; i < sparks.length; i++) {
+        if (sparks[i].sparkdata == undefined) {
+          ready = false;
+          break;
+        }
+      }
+      if (!ready)
+        return;
+      var max = 0;
+      for (var i = 0; i < sparks.length; i++)
+        for (var j = 0; j < sparks[i].sparkdata.length; j++)
+          max = Math.max (sparks[i].sparkdata[j], max);
+      if (max >= 120 && max <= 240)
+        return;
+      for (var i = 0; i < sparks.length; i++) {
+        sparkdraw (sparks[i], sparks[i].sparkdata, max);
+      }
+    };
+    $.ajax({
+      url: $(this).attr('data-url'),
+      complete: sparkle
+    });
+  });
+
   /** Calendars **/
   this.find ('div.cal').each (function () {
     var cal = $(this);

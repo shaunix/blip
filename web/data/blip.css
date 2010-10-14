@@ -347,7 +347,7 @@ td.LinkBoxText { padding: 0 0.5em 0 0; }
 td.LinkBoxIcon + td.LinkBoxText { padding-left: 1em; }
 div.LinkBoxTitle { font-weight: bold; }
 div.LinkBoxTitle a { color: #3465a4; }
-td.LinkBoxGraph { vertical-align: top; text-align: right; }
+td.LinkBoxGraph { vertical-align: top; text-align: right; width: 208px; }
 table.LinkBox table.facts {
   border-top: none;
   border-bottom: none;

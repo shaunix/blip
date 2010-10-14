@@ -1056,7 +1056,10 @@ class LinkBox (HtmlObject, FactsComponent, ContentComponent):
         if len(self._graphs) > 0:
             res.write('<td class="LinkBoxGraph">')
             for graph in self._graphs:
-                Graph (graph[0], width=graph[1], height=graph[2]).output(res)
+                if isinstance (graph[0], HtmlObject):
+                    graph[0].output(res)
+                else:
+                    Graph (graph[0], width=graph[1], height=graph[2]).output(res)
             res.write('</td>')
         res.write('</tr></table>')
 
@@ -1122,6 +1125,23 @@ class SidebarBox (HtmlObject, ContentComponent, LinkBoxesComponent):
         ContentComponent.output (self, res)
         LinkBoxesComponent.output (self, res)
         res.write('</div>')
+
+
+class SparkGraph (HtmlObject):
+    def __init__ (self, base_url, group, **kw):
+        super (SparkGraph, self).__init__ (**kw)
+        self._url = base_url + '?d=spark'
+        self._group = group
+
+    def add_bar (self, count, label=None, link=None, href=None):
+        self._bars.append ((count, label, link, href))
+        if count > self._max:
+            self._max = count
+
+    def output (self, res):
+        """Output the HTML."""
+        res.write('<canvas class="SparkGraph" width="208" height="40"')
+        res.write(' data-group="%s" data-url="%s"></canvas>' % (self._group, self._url))
 
 
 class TabBar (HtmlObject):
