@@ -263,11 +263,9 @@ div.Bars {
   position: relative;
 }
 a.Bar {
-  vertical-align: top;
   display: inline-block;
   border-right: solid 1px white;
   height: 80px;
-  line-height: 80px;
   cursor: default;
 }
 a.Bar:hover, a.Bar:focus {
@@ -285,7 +283,6 @@ a.BarActive {
 }
 div.Bar {
   display: inline-block;
-  vertical-align: bottom;
   width: 7px;
   line-height: 0;
   background-color: #babdb6;

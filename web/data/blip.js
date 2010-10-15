@@ -199,6 +199,7 @@ $.fn.blip_init = function () {
       if (height < 1 && count > 0)
         height = 1;
       bar.height (height);
+      bar.css('margin-top', (bars.height() - height) + 'px');
     });
     allbars.parent('a').each (function () {
       $(this).click (function (event) {
