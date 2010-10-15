@@ -28,7 +28,6 @@ import os
 import blinq.ext
 
 import blip.db
-import blip.graphs
 import blip.scm
 import blip.sweep
 import blip.utils
@@ -174,7 +173,6 @@ class ModuleScanner (object):
         return self._parsed_files[(parser, filename)]
 
     def update (self):
-        #    self.branch.update (error=None)
         if self.repository.error is None:
             blip.db.Error.clear_error (self.branch)
         else:
@@ -183,7 +181,26 @@ class ModuleScanner (object):
         if self.request.get_tool_option ('read_history', True):
             self.check_history ()
 
-        self.update_commit_graphs ()
+        store = blip.db.get_store (blip.db.Revision)
+        thisweek = blip.utils.weeknum()
+        sel = store.using (blip.db.Revision,
+                           blip.db.Join (blip.db.RevisionBranch,
+                                         blip.db.RevisionBranch.revision_ident == blip.db.Revision.ident))
+        sel = sel.find ((blip.db.Revision.weeknum, blip.db.Count('*')),
+                        blip.db.And (blip.db.RevisionBranch.branch_ident == self.branch.ident,
+                                     blip.db.Revision.weeknum > thisweek - 26,
+                                     blip.db.Revision.weeknum <= thisweek))
+        sel = sel.group_by (blip.db.Revision.weeknum)
+        stats = [0 for i in range(26)]
+        for week, cnt in list(sel):
+            stats[week - (thisweek - 25)] = cnt
+        self.branch.score = blip.utils.score (stats)
+
+        stats = stats[:-3]
+        avg = int(round(sum(stats) / (len(stats) * 1.0)))
+        stats = stats + [avg, avg, avg]
+        old = blip.utils.score (stats)
+        self.branch.score_diff = self.branch.score - old
 
         def visit (arg, dirname, names):
             ignore = self.repository.ignoredir
@@ -259,88 +276,3 @@ class ModuleScanner (object):
         if revision is not None:
             self.branch.mod_datetime = revision.datetime
             self.branch.mod_person = revision.person
-
-    def update_commit_graphs (self):
-        now = datetime.datetime.utcnow ()
-        thisweek = blip.utils.weeknum ()
-        numweeks = 104
-        i = 0
-        finalrev = blip.db.Revision.select_revisions (branch=self.branch)
-        finalrev = finalrev.order_by ('datetime')
-        outpath = None
-        try:
-            finalrev = finalrev[0].ident
-            stillrev = True
-        except IndexError:
-            finalrev = None
-            stillrev = False
-        while stillrev or i < 2:
-            topweek = thisweek - (i * numweeks)
-            revstot = blip.db.Revision.count_revisions (branch=self.branch)
-            revs = blip.db.Revision.select_revisions (week_range=((topweek - numweeks + 1), topweek),
-                                                      branch=self.branch)
-            if stillrev:
-                fname = u'commits-' + str(i) + '.png'
-                of = blip.db.OutputFile.select_one (type=u'graphs', ident=self.branch.ident, filename=fname)
-                if i == 0 and of is not None:
-                    if self.request.get_tool_option ('timestamps', True):
-                        revcount = of.data.get ('revcount', 0)
-                        weeknum = of.data.get ('weeknum', None)
-                        if weeknum == thisweek:
-                            rev = None
-                            if revcount == revstot:
-                                return
-                elif of is None:
-                    of = blip.db.OutputFile (type=u'graphs', ident=self.branch.ident,
-                                             filename=fname, datetime=now)
-                outpath = of.get_file_path()
-            else:
-                of = None
-
-            if i == 0:
-                blip.utils.log ('Creating commit graphs for %s' % self.branch.ident)
-
-            stats = [0] * numweeks
-            revs = list(revs)
-            for rev in revs:
-                if rev.ident == finalrev:
-                    stillrev = False
-                idx = rev.weeknum - topweek + numweeks - 1
-                stats[idx] += 1
-
-            if i == 0:
-                scorestats = stats[numweeks - 26:]
-                score = blip.utils.score (scorestats)
-                self.branch.score = score
-
-                scorestats = scorestats[:-3]
-                avg = int(round(sum(scorestats) / (len(scorestats) * 1.0)))
-                scorestats = scorestats + [avg, avg, avg]
-                old = blip.utils.score (scorestats)
-                score_diff = score - old
-                self.branch.score_diff = score_diff
-
-                project = self.branch.project
-                if score > project.score:
-                    project.score = score
-                if score_diff > project.score_diff:
-                    project.score_diff = score_diff
-
-            if of is not None:
-                graph = blip.graphs.BarGraph (stats, 80, height=40)
-                graph.save (of.get_file_path())
-
-            if i == 0:
-                stats0 = stats
-            elif i == 1 and outpath is not None:
-                graph_t = blip.graphs.BarGraph (stats + stats0, 80, height=40, tight=True)
-                graph_t.save (os.path.join (os.path.dirname (outpath), 'commits-tight.png'))
-
-            if of is not None:
-                of.data['coords'] = zip (graph.get_coords(), stats,
-                                         range(topweek - numweeks + 1, topweek + 1))
-                if len(revs) > 0:
-                    of.data['revcount'] = revstot
-                of.data['weeknum'] = topweek
-
-            i += 1

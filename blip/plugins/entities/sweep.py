@@ -25,7 +25,6 @@ import blinq.ext
 
 import blip.data
 import blip.db
-import blip.graphs
 import blip.sweep
 import blip.utils
 
@@ -110,90 +109,26 @@ class PeopleResponder (blip.sweep.SweepResponder,
         for handler in EntityHandler.get_extensions ():
             handler.handle_entity (entity, request)
 
-        cls.update_commit_graphs (entity, request)
+        store = blip.db.get_store (blip.db.Revision)
+        thisweek = blip.utils.weeknum()
+        sel = store.find ((blip.db.Revision.weeknum, blip.db.Count('*')),
+                          blip.db.And (blip.db.Revision.person_ident == entity.ident,
+                                       blip.db.Revision.weeknum > thisweek - 26,
+                                       blip.db.Revision.weeknum <= thisweek))
+        sel = sel.group_by (blip.db.Revision.weeknum)
+        stats = [0 for i in range(26)]
+        for week, cnt in list(sel):
+            stats[week - (thisweek - 25)] = cnt
+        entity.score = blip.utils.score (stats)
+
+        stats = stats[:-3]
+        avg = int(round(sum(stats) / (len(stats) * 1.0)))
+        stats = stats + [avg, avg, avg]
+        old = blip.utils.score (stats)
+        entity.score_diff = entity.score - old
 
         entity.updated = datetime.datetime.utcnow ()
         blip.db.Queue.pop (entity.ident)
-
-    @staticmethod
-    def update_commit_graphs (entity, request):
-        now = datetime.datetime.utcnow ()
-        thisweek = blip.utils.weeknum ()
-        numweeks = 104
-        i = 0
-        finalrev = blip.db.Revision.select_revisions (person=entity)
-        finalrev = finalrev.order_by ('datetime')
-        outpath = None
-        try:
-            finalrev = finalrev[0].ident
-            stillrev = True
-        except IndexError:
-            finalrev = None
-            stillrev = False
-        while stillrev or i < 2:
-            topweek = thisweek - (i * numweeks)
-            revstot = blip.db.Revision.count_revisions (person=entity)
-            revs = blip.db.Revision.select_revisions (week_range=((topweek - numweeks + 1), topweek),
-                                                      person=entity)
-            if stillrev:
-                fname = u'commits-' + str(i) + '.png'
-                of = blip.db.OutputFile.select_one (type=u'graphs', ident=entity.ident, filename=fname)
-                if i == 0 and of is not None:
-                    if request.get_tool_option ('timestamps', True):
-                        revcount = of.data.get ('revcount', 0)
-                        weeknum = of.data.get ('weeknum', None)
-                        if weeknum == thisweek:
-                            rev = None
-                            if revcount == revstot:
-                                return
-                elif of is None:
-                    of = blip.db.OutputFile (type=u'graphs', ident=entity.ident,
-                                             filename=fname, datetime=now)
-                outpath = of.get_file_path ()
-            else:
-                of = None
-
-            if i == 0:
-                blip.utils.log ('Creating commit graphs for %s' % entity.ident)
-
-            stats = [0] * numweeks
-            revs = list(revs)
-            for rev in revs:
-                if rev.ident == finalrev:
-                    stillrev = False
-                idx = rev.weeknum - topweek + numweeks - 1
-                stats[idx] += 1
-
-            if i == 0:
-                scorestats = stats[numweeks - 26:]
-                score = blip.utils.score (scorestats)
-                entity.score = score
-
-                scorestats = scorestats[:-3]
-                avg = int(round(sum(scorestats) / (len(scorestats) * 1.0)))
-                scorestats = scorestats + [avg, avg, avg]
-                old = blip.utils.score (scorestats)
-                score_diff = score - old
-                entity.score_diff = score_diff
-
-            if of is not None:
-                graph = blip.graphs.BarGraph (stats, 80, height=40)
-                graph.save (of.get_file_path ())
-
-            if i == 0:
-                stats0 = stats
-            elif i == 1 and outpath is not None:
-                graph_t = blip.graphs.BarGraph (stats + stats0, 80, height=40, tight=True)
-                graph_t.save (os.path.join (os.path.dirname (outpath), 'commits-tight.png'))
-
-            if of is not None:
-                of.data['coords'] = zip (graph.get_coords(), stats,
-                                         range(topweek - numweeks + 1, topweek + 1))
-                if len(revs) > 0:
-                    of.data['revcount'] = revstot
-                of.data['weeknum'] = topweek
-
-            i += 1
 
     @classmethod
     def process_queued (cls, ident, request):
