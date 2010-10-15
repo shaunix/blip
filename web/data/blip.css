@@ -705,8 +705,8 @@ div.ActivityBox {
 div.ActivityContainer div.ActivityBox { margin-left: 6px; }
 div.ActivityBox:hover {
   background-color: #eeeeec;
-  background: -webkit-gradient(linear, left -20, left 80, from(#eeeeec), to(white));
-  background: -moz-linear-gradient(top, #eeeeec -20px, white 80px);
+  background: -webkit-gradient(linear, left -120, left 80, from(#b1fbfc), to(white));
+  background: -moz-linear-gradient(top, #b1fbfc -120px, white 80px);
 }
 div.ActivityInfo {
   color: #888a85;
@@ -726,9 +726,12 @@ div.ActivityDescription {
 }
 div.ActivityContainer { margin: 0 0 12px 0; }
 div.ActivityTitle {
+  background-color: #eeeeec;
   color: #555753;
   font-weight: bold;
+  text-shadow: -1px 1px 0px white;
   margin: 0 0 6px 0;
+  padding: 1px 6px 1px 8px;
 }
 div.ActivityContainerTitle {
   color: #2e3436;
