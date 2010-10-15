@@ -58,8 +58,7 @@ class AllPeopleResponder (blip.web.RecordLocator, blip.web.PageResponder):
         for person in people[:42]:
             lbox = blip.html.LinkBox (person)
             lbox.add_fact (blip.utils.gettext ('score'), str(person.score))
-            lbox.add_graph (blinq.config.web_files_url + 'graphs/' +
-                            '/'.join(person.ident.split('/')[1:] + ['commits-tight.png']))
+            lbox.add_graph (blip.html.SparkGraph (person.blip_url, 'commits'))
             page.add_content (lbox)
 
         response.payload = page

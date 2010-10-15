@@ -327,7 +327,9 @@ class ModuleSparkResponder (blip.web.DataResponder):
             return None
         if request.record is None:
             return None
-        if not (isinstance (request.record, blip.db.Branch) and request.record.type == u'Module'):
+        if not (isinstance (request.record, blip.db.Branch) or
+                (isinstance (request.record, blip.db.Entity) and
+                 request.record.type == u'Person')):
             return None
 
         response = blip.web.WebResponse (request)
@@ -336,12 +338,17 @@ class ModuleSparkResponder (blip.web.DataResponder):
 
         thisweek = blip.utils.weeknum()
         store = blip.db.get_store (blip.db.Revision)
-        sel = store.using (blip.db.Revision,
-                           blip.db.Join (blip.db.RevisionBranch,
-                                         blip.db.RevisionBranch.revision_ident == blip.db.Revision.ident))
-        sel = sel.find ((blip.db.Revision.weeknum, blip.db.Count('*')),
-                        blip.db.RevisionBranch.branch_ident == request.record.ident,
-                        blip.db.Revision.weeknum > (thisweek - 208))
+        if isinstance (request.record, blip.db.Branch):
+            sel = store.using (blip.db.Revision,
+                               blip.db.Join (blip.db.RevisionBranch,
+                                             blip.db.RevisionBranch.revision_ident == blip.db.Revision.ident))
+            sel = sel.find ((blip.db.Revision.weeknum, blip.db.Count('*')),
+                            blip.db.RevisionBranch.branch_ident == request.record.ident,
+                            blip.db.Revision.weeknum > (thisweek - 208))
+        else:
+            sel = store.find ((blip.db.Revision.weeknum, blip.db.Count('*')),
+                              blip.db.Revision.person_ident == request.record.ident,
+                              blip.db.Revision.weeknum > (thisweek - 208))
         sel = sel.group_by (blip.db.Revision.weeknum)
         stats = [0 for i in range(208)]
         for week, cnt in list(sel):
