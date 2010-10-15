@@ -45,12 +45,18 @@ class AllListsResponder (blip.web.PageResponder):
         page.set_title (blip.utils.gettext ('Mailing Lists'))
         cont = blip.html.ContainerBox ()
         cont.set_show_icons (False)
+        cont.add_sort_link ('title', blip.utils.gettext ('title'), 1)
+        cont.add_sort_link ('score', blip.utils.gettext ('score'))
         page.add_content (cont)
 
         lists = blip.db.Forum.select (type=u'List')
         lists = blinq.utils.attrsorted (list(lists), 'title')
         for ml in lists:
             lbox = cont.add_link_box (ml)
+            if ml.score is not None:
+                lbox.add_fact (blip.utils.gettext ('score'),
+                               blip.html.Span (str(ml.score),
+                                               html_class='score'))
             lbox.add_graph (blip.html.SparkGraph (ml.blip_url, 'posts'))
 
         response.payload = page
