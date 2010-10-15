@@ -274,35 +274,35 @@ class SortableComponent (Component):
         slinkid = self.get_html_id ()
         slinktag = self._slinktag or 'table'
         slinkclass = self._slinkclass or 'LinkBox'
-        res.write('<div class="sortlinks" id="sortlinks__%s">' % self.escape(slinkid))
-        res.write('<span class="sortlinks"><span class="sortlinksinner">')
+        res.write('<div class="SortLinks" id="SortLinks__%s">' % self.escape(slinkid))
+        res.write('<a class="SortLinks" href="#"><span class="SortLinks">')
         res.write(self.escape(blip.utils.gettext ('sort by: ')))
         for key, txt, cur in self._slinks:
             if cur == 1:
-                res.write('<span class="sortcur">%s ▴</span>' % self.escape(txt))
+                res.write('<span class="SortCurrent">%s ▴</span>' % self.escape(txt))
                 break
             elif cur == -1:
-                res.write('<span class="sortcur">%s ▾</span>' % self.escape(txt))
+                res.write('<span class="SortCurrent">%s ▾</span>' % self.escape(txt))
                 break
-        res.write('</span></span>')
-        res.write('<div class="sortmenu" id="sortmenu__%s">' % self.escape(slinkid))
+        res.write('</span></a>')
+        res.write('<div class="SortMenu" id="SortMenu__%s">' % self.escape(slinkid))
         for key, txt, cur in self._slinks:
-            res.write('<div class="sortlink">')
-            res.write('<span class="sortlabel" id="sortlink__%s__%s">%s</span>:'
+            res.write('<div class="SortLink">')
+            res.write('<span class="SortLabel" id="SortLink__%s__%s">%s</span>:'
                       % self.escape((slinkid, key, txt)))
             if cur == 1:
-                res.write('<span class="sortlink" id="sortlink__%s__%s__%s__%s__1">▴</span>'
+                res.write('<span class="SortLink" id="SortLink__%s__%s__%s__%s__1">▴</span>'
                           % self.escape((slinkid, slinktag, slinkclass, key)))
             else:
-                res.write(('<a class="sortlink" id="sortlink__%s__%s__%s__%s__1"' +
+                res.write(('<a class="SortLink" id="SortLink__%s__%s__%s__%s__1"' +
                            ' href="javascript:sort(\'%s\',\'%s\',\'%s\',\'%s\',1)">▴</a>')
                           % self.escape((slinkid, slinktag, slinkclass, key,
                                          slinkid, slinktag, slinkclass, key)))
             if cur == -1:
-                res.write('<span class="sortlink" id="sortlink__%s__%s__%s__%s__-1">▾</span>'
+                res.write('<span class="SortLink" id="SortLink__%s__%s__%s__%s__-1">▾</span>'
                           % self.escape((slinkid, slinktag, slinkclass, key)))
             else:
-                res.write(('<a class="sortlink" id="sortlink__%s__%s__%s__%s__-1"' +
+                res.write(('<a class="SortLink" id="SortLink__%s__%s__%s__%s__-1"' +
                            ' href="javascript:sort(\'%s\',\'%s\',\'%s\',\'%s\',-1)">▾</a>')
                           % self.escape((slinkid, slinktag, slinkclass, key,
                                          slinkid, slinktag, slinkclass, key)))

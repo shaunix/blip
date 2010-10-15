@@ -616,7 +616,7 @@ $.fn.blip_init = function () {
     else
       par.find ('td.contexp:first').html ('&#9662;');
 
-    var slinks = par.find ('div.sortlinks:first');
+    var slinks = par.find ('div.SortLinks:first');
     if (slinks.length > 0) {
       if (open)
         slinks.shade();
@@ -668,14 +668,14 @@ $.fn.blip_init = function () {
     }});
   });
 
-  /** Sort Menus **/
-  this.find ('span.sortlinks').each (function () {
+  /** SortLink **/
+  this.find ('a.SortLinks').each (function () {
     var links = $(this);
-    var div = links.parent ('div.sortlinks');
+    var div = links.parent ('div.SortLinks');
     var id = div.attr ('id').substr (11);
     links.click (function () {
       var container = $('#' + id);
-      var menu = container.find ('#sortmenu__' + id);
+      var menu = container.find ('#SortMenu__' + id);
       menu.css ({
         top: div.offset().top + div.height() + 2,
         right: $(document).width() - (div.offset().left + div.width() -1)
@@ -690,14 +690,14 @@ $.fn.blip_init = function () {
             break;
         } while (target = target.parentNode);
         if (target != menu[0]) {
-          links.removeClass ('sortlinksactive');
+          links.removeClass ('SortLinksActive');
           menu.hide ();
           $('body').unbind('click', away);
           return (target != div[0]);
         }
       }
       menu.data('awayfunc', away);
-      links.addClass ('sortlinksactive');
+      links.addClass ('SortLinksActive');
       $('body').click (away);
       menu.show ();
       return false;
@@ -1351,10 +1351,10 @@ function sort (id, tag, cls, key, asc) {
     things[i].extras.blip_init();
   }
 
-  var links = $('#sortlinks__' + id);
-  links.find('.sortlink').each(function () {
+  var links = $('#SortLinks__' + id);
+  links.find('.SortLink').each(function () {
     var slink = $(this);
-    if (slink.is('#sortlink__' + id + '__' + tag + '__' + cls + '__' + key + '__' + asc)) {
+    if (slink.is('#SortLink__' + id + '__' + tag + '__' + cls + '__' + key + '__' + asc)) {
       if (slink.is('a')) {
         var span = $('<span></span>').attr ({
           'id': slink.attr ('id'),
@@ -1377,12 +1377,12 @@ function sort (id, tag, cls, key, asc) {
       }
     }
   });
-  curtxt = $('#sortlink__' + id + '__' + key).html();
+  curtxt = $('#SortLink__' + id + '__' + key).html();
   curtxt += (asc == 1) ? ' ▴' : ' ▾';
-  links.find ('span.sortcur').html (curtxt);
-  var menu = $('#sortmenu__' + id);
+  links.find ('span.SortCurrent').html (curtxt);
+  var menu = $('#SortMenu__' + id);
   $('body').unbind('click', menu.data('awayfunc'));
-  links.children ('span.sortlinks').removeClass ('sortlinksactive');
+  links.children ('a.SortLinks').removeClass ('SortLinksActive');
   menu.hide();
 }
 

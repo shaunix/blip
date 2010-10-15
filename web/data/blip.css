@@ -415,6 +415,80 @@ div.SectionTitle {
 
 
 /******************************************************************************/
+/** SortLinks **/
+
+div.SortLinks {
+  text-align: right;
+  color: #555753;
+  font-weight: normal;
+  margin-bottom: 6px;
+}
+a.SortLinks {
+  background-color: #eeeeec;
+  background: -webkit-gradient(linear, left -4, left 20, from(white), to(#eeeeec));
+  background: -moz-linear-gradient(top, white -4px, #eeeeec 20px);
+  font-weight: bold;
+  border: solid 1px #babdb6;
+  border-radius: 2px;
+  padding: 3px 0 3px 0;
+  cursor: pointer;
+  color: #555753;
+}
+span.SortLinks {
+  border: solid 1px white;
+  border-radius: 1px;
+  padding: 2px 0.5em 2px 0.5em;
+  color: #555753;
+}
+a.SortLinks:hover, a.SortLinks:focus {
+  border-color: #729fcf;
+}
+a.SortLinks:hover span.SortLinks, a.SortLinks:focus span.SortLinks {
+  background-color: #b1fbfc;
+  background: -webkit-gradient(linear, left -4, left 20, from(white), to(#b1fbfc));
+  background: -moz-linear-gradient(top, white -4px, #b1fbfc 20px);
+  cursor: default;
+}
+a.SortLinksActive span.SortLinks {
+  background-color: #fcf197;
+  background: -webkit-gradient(linear, left -4, left 20, from(white), to(#fcf197));
+  background: -moz-linear-gradient(top, white -4px, #fcf197 20px);
+}
+div.SortLinks a { color: #204a87; }
+div.SortMenu {
+  position: absolute;
+  background-color: #eeeeec;
+  background: -webkit-gradient(linear, left -20, left 80, from(#eeeeec), to(white));
+  background: -moz-linear-gradient(top, #eeeeec -20px, white 80px);
+  border: solid 1px white;
+  outline: solid 1px #d3d7cf;
+  padding: 0 0.5em 0.2em 0.5em;
+  display: none;
+}
+div.SortLink { margin: 0.2em 0 0.2em 0; }
+span.SortLink {
+  background-color: #fcf197;
+  background: -webkit-gradient(linear, left -4, left 20, from(white), to(#fcf197));
+  background: -moz-linear-gradient(top, white -4px, #fcf197 20px);
+  outline: solid 1px #d3d7cf;
+}
+a.SortLink, span.SortLink {
+  margin-left: 1em;
+  font-size: 1.2em;
+  padding: 0 6px 0 6px;
+}
+a.SortLink:hover, a.SortLink:focus {
+  color: #555753;
+  background-color: #b1fbfc;
+  background: -webkit-gradient(linear, left -4, left 20, from(white), to(#b1fbfc));
+  background: -moz-linear-gradient(top, white -4px, #b1fbfc 20px);
+  outline: solid 1px #b1d5fc;
+  text-decoration: none;
+  cursor: default;
+}
+
+
+/******************************************************************************/
 /** TabBar **/
 
 div.TabBar { text-align: center; }
@@ -619,76 +693,9 @@ a.filteron {
   color: #555753;
 }
 
-div.sortlinks {
-  text-align: right;
-  color: #555753;
-  font-weight: normal;
-}
-span.sortlinks {
-  background-color: #eeeeec;
-  background: -webkit-gradient(linear, left -4, left 20, from(white), to(#eeeeec));
-  background: -moz-linear-gradient(top, white -4px, #eeeeec 20px);
-  font-weight: bold;
-  border: solid 1px #babdb6;
-  border-radius: 2px;
-  padding: 3px 0 3px 0;
-  cursor: pointer;
-}
-span.sortlinksinner {
-  border: solid 1px white;
-  border-radius: 1px;
-  padding: 2px 0.5em 2px 0.5em;
-}
-span.sortlinks:hover {
-  border-color: #729fcf;
-}
-span.sortlinks:hover span.sortlinksinner {
-  color: #2e3436;
-  background-color: #b1fbfc;
-  background: -webkit-gradient(linear, left -4, left 20, from(white), to(#b1fbfc));
-  background: -moz-linear-gradient(top, white -4px, #b1fbfc 20px);
-  cursor: default;
-}
-span.sortlinksactive span.sortlinksinner {
-  background-color: #fcf197;
-  background: -webkit-gradient(linear, left -4, left 20, from(white), to(#fcf197));
-  background: -moz-linear-gradient(top, white -4px, #fcf197 20px);
-}
-div.sortlinks a { color: #204a87; }
-div.sortmenu {
-  position: absolute;
-  background-color: #eeeeec;
-  background: -webkit-gradient(linear, left -20, left 80, from(#eeeeec), to(white));
-  background: -moz-linear-gradient(top, #eeeeec -20px, white 80px);
-  border: solid 1px white;
-  outline: solid 1px #d3d7cf;
-  padding: 0 0.5em 0.2em 0.5em;
-  display: none;
-}
-div.sortlink { margin: 0.2em 0 0.2em 0; }
-span.sortlink {
-  background-color: #fcf197;
-  background: -webkit-gradient(linear, left -4, left 20, from(white), to(#fcf197));
-  background: -moz-linear-gradient(top, white -4px, #fcf197 20px);
-  outline: solid 1px #d3d7cf;
-}
-a.sortlink, span.sortlink {
-  margin-left: 1em;
-  font-size: 1.2em;
-  padding: 0 6px 0 6px;
-}
-a.sortlink:hover, a.sortlink:focus {
-  color: #555753;
-  background-color: #b1fbfc;
-  background: -webkit-gradient(linear, left -4, left 20, from(white), to(#b1fbfc));
-  background: -moz-linear-gradient(top, white -4px, #b1fbfc 20px);
-  outline: solid 1px #b1d5fc;
-  text-decoration: none;
-  cursor: default;
-}
-
 /******************************************************************************/
 /** ActivityBox ***************************************************************/
+
 div.ActivityBox {
   margin: 0 0 6px 1px;
   padding: 2px 6px 2px 6px;
