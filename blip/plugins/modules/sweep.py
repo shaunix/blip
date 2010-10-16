@@ -121,18 +121,20 @@ class ModulesResponder (blip.sweep.SweepResponder,
     @classmethod
     def process_queued (cls, ident, request):
         if ident.startswith (u'/mod/'):
-            mod = blip.db.Branch.select_one (ident=ident)
-            if mod is None:
-                return
-            try:
-                scanner = ModuleScanner (request, mod)
-                scanner.update ()
-                blip.db.flush ()
-            except:
-                blip.db.rollback ()
-                raise
+            if ident.count('/') == 3:
+                mods = list(blip.db.Branch.select (project_ident=ident))
             else:
-                blip.db.commit ()
+                mods = list(blip.db.Branch.select (ident=ident))
+            for mod in mods:
+                try:
+                    scanner = ModuleScanner (request, mod)
+                    scanner.update ()
+                    blip.db.flush ()
+                except:
+                    blip.db.rollback ()
+                    raise
+                else:
+                    blip.db.commit ()
 
 
 class ModuleFileScanner (blinq.ext.ExtensionPoint):
