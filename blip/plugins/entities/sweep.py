@@ -29,6 +29,7 @@ import blip.sweep
 import blip.utils
 
 import blip.plugins.queue.sweep
+import blip.plugins.scores.sweep
 
 class EntityHandler (blinq.ext.ExtensionPoint):
     @classmethod
@@ -36,7 +37,8 @@ class EntityHandler (blinq.ext.ExtensionPoint):
         pass
 
 class PeopleResponder (blip.sweep.SweepResponder,
-                       blip.plugins.queue.sweep.QueueHandler):
+                       blip.plugins.queue.sweep.QueueHandler,
+                       blip.plugins.scores.sweep.ScoreUpdater):
     command = 'people'
     synopsis = 'update information about people'
 
@@ -114,6 +116,11 @@ class PeopleResponder (blip.sweep.SweepResponder,
         for handler in EntityHandler.get_extensions ():
             handler.handle_entity (entity, request)
 
+        entity.updated = datetime.datetime.utcnow ()
+        blip.db.Queue.pop (entity.ident)
+
+    @classmethod
+    def update_score (cls, entity):
         store = blip.db.get_store (blip.db.Revision)
         thisweek = blip.utils.weeknum()
         sel = store.find ((blip.db.Revision.weeknum, blip.db.Count('*')),
@@ -132,8 +139,19 @@ class PeopleResponder (blip.sweep.SweepResponder,
         old = blip.utils.score (stats)
         entity.score_diff = entity.score - old
 
-        entity.updated = datetime.datetime.utcnow ()
-        blip.db.Queue.pop (entity.ident)
+
+    @classmethod
+    def update_scores (cls, request, ident):
+        if ident is not None:
+            ents = list(blip.db.Entity.select (blip.db.Entity.type == u'Person',
+                                               blip.db.Entity.ident.like (ident),
+                                               blip.db.Entity.score > 0))
+        else:
+            ents = list(blip.db.Entity.select (blip.db.Entity.type == u'Person',
+                                               blip.db.Entity.score > 0))
+        for ent in ents:
+            blip.utils.log ('Updating score for ' + ent.ident)
+            cls.update_score (ent)
 
     @classmethod
     def process_queued (cls, ident, request):

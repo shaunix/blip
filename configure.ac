@@ -88,6 +88,7 @@ blip/plugins/index/Makefile
 blip/plugins/lists/Makefile
 blip/plugins/modules/Makefile
 blip/plugins/queue/Makefile
+blip/plugins/scores/Makefile
 blip/plugins/sets/Makefile
 blip/plugins/svn/Makefile
 web/Makefile

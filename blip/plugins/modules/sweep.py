@@ -33,9 +33,11 @@ import blip.sweep
 import blip.utils
 
 import blip.plugins.queue.sweep
+import blip.plugins.scores.sweep
 
 class ModulesResponder (blip.sweep.SweepResponder,
-                        blip.plugins.queue.sweep.QueueHandler):
+                        blip.plugins.queue.sweep.QueueHandler,
+                        blip.plugins.scores.sweep.ScoreUpdater):
     command = 'modules'
     synopsis = 'update information about projects and module branches'
 
@@ -119,6 +121,19 @@ class ModulesResponder (blip.sweep.SweepResponder,
         return response
 
     @classmethod
+    def update_scores (cls, request, ident):
+        if ident is not None:
+            mods = list(blip.db.Branch.select (blip.db.Branch.type == u'Module',
+                                               blip.db.Branch.ident.like (ident),
+                                               blip.db.Branch.score > 0))
+        else:
+            mods = list(blip.db.Branch.select (blip.db.Branch.type == u'Module',
+                                               blip.db.Branch.score > 0))
+        for mod in mods:
+            blip.utils.log ('Updating score for ' + mod.ident)
+            ModuleScanner.update_score (mod)
+
+    @classmethod
     def process_queued (cls, ident, request):
         if ident.startswith (u'/mod/'):
             if ident.count('/') == 3:
@@ -183,26 +198,7 @@ class ModuleScanner (object):
         if self.request.get_tool_option ('read_history', True):
             self.check_history ()
 
-        store = blip.db.get_store (blip.db.Revision)
-        thisweek = blip.utils.weeknum()
-        sel = store.using (blip.db.Revision,
-                           blip.db.Join (blip.db.RevisionBranch,
-                                         blip.db.RevisionBranch.revision_ident == blip.db.Revision.ident))
-        sel = sel.find ((blip.db.Revision.weeknum, blip.db.Count('*')),
-                        blip.db.And (blip.db.RevisionBranch.branch_ident == self.branch.ident,
-                                     blip.db.Revision.weeknum > thisweek - 26,
-                                     blip.db.Revision.weeknum <= thisweek))
-        sel = sel.group_by (blip.db.Revision.weeknum)
-        stats = [0 for i in range(26)]
-        for week, cnt in list(sel):
-            stats[week - (thisweek - 25)] = cnt
-        self.branch.score = blip.utils.score (stats)
-
-        stats = stats[:-3]
-        avg = int(round(sum(stats) / (len(stats) * 1.0)))
-        stats = stats + [avg, avg, avg]
-        old = blip.utils.score (stats)
-        self.branch.score_diff = self.branch.score - old
+        ModuleScanner.update_score (self.branch)
 
         def visit (arg, dirname, names):
             ignore = self.repository.ignoredir
@@ -224,6 +220,29 @@ class ModuleScanner (object):
 
         self.branch.updated = datetime.datetime.utcnow ()
         blip.db.Queue.pop (self.branch.ident)
+
+    @classmethod
+    def update_score (cls, branch):
+        store = blip.db.get_store (blip.db.Revision)
+        thisweek = blip.utils.weeknum()
+        sel = store.using (blip.db.Revision,
+                           blip.db.Join (blip.db.RevisionBranch,
+                                         blip.db.RevisionBranch.revision_ident == blip.db.Revision.ident))
+        sel = sel.find ((blip.db.Revision.weeknum, blip.db.Count('*')),
+                        blip.db.And (blip.db.RevisionBranch.branch_ident == branch.ident,
+                                     blip.db.Revision.weeknum > thisweek - 26,
+                                     blip.db.Revision.weeknum <= thisweek))
+        sel = sel.group_by (blip.db.Revision.weeknum)
+        stats = [0 for i in range(26)]
+        for week, cnt in list(sel):
+            stats[week - (thisweek - 25)] = cnt
+        branch.score = blip.utils.score (stats)
+
+        stats = stats[:-3]
+        avg = int(round(sum(stats) / (len(stats) * 1.0)))
+        stats = stats + [avg, avg, avg]
+        old = blip.utils.score (stats)
+        branch.score_diff = branch.score - old
 
     def check_history (self):
         since = blip.db.Revision.get_last_revision (branch=self.branch)

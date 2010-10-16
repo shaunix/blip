@@ -14,6 +14,7 @@ SUBDIRS = 		\
 	lists		\
 	modules 	\
 	queue		\
+	scores		\
 	sets		\
 	svn
 

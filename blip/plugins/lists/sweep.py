@@ -39,7 +39,10 @@ import blip.db
 import blip.sweep
 import blip.utils
 
-class ListsResponder (blip.sweep.SweepResponder):
+import blip.plugins.scores.sweep
+
+class ListsResponder (blip.sweep.SweepResponder,
+                      blip.plugins.scores.sweep.ScoreUpdater):
     command = 'lists'
     synopsis = 'update information about mailing lists'
 
@@ -167,6 +170,11 @@ class ListsResponder (blip.sweep.SweepResponder):
                 pass
             cache.data['archive-datetimes'][url] = now
 
+        ml.updated = datetime.datetime.utcnow ()
+        blip.db.Queue.pop (ml.ident)
+
+    @classmethod
+    def update_score (cls, ml):
         store = blip.db.get_store (blip.db.ForumPost)
         thisweek = blip.utils.weeknum()
         sel = store.find ((blip.db.ForumPost.weeknum, blip.db.Count('*')),
@@ -186,8 +194,18 @@ class ListsResponder (blip.sweep.SweepResponder):
         old = blip.utils.score (stats)
         ml.score_diff = ml.score - old
 
-        ml.updated = datetime.datetime.utcnow ()
-        blip.db.Queue.pop (ml.ident)
+    @classmethod
+    def update_scores (cls, request, ident):
+        if ident is not None:
+            mls = list(blip.db.Forum.select (blip.db.Forum.type == u'List',
+                                             blip.db.Forum.ident.like (ident),
+                                             blip.db.Forum.score > 0))
+        else:
+            mls = list(blip.db.Forum.select (blip.db.Forum.type == u'List',
+                                             blip.db.Forum.score > 0))
+        for ml in mls:
+            blip.utils.log ('Updating score for ' + ml.ident)
+            cls.update_score (ml)
 
     @classmethod
     def update_archive (cls, ml, request, cache, archive):
