@@ -92,7 +92,9 @@ class PeopleResponder (blip.sweep.SweepResponder,
                                                         *dbargs))
 
         entities = blinq.utils.attrsorted (entities, 'updated')
+        i = 0
         for entity in entities:
+            i = i + 1
             try:
                 cls.update_person (entity, request)
                 blip.db.flush ()
@@ -100,7 +102,10 @@ class PeopleResponder (blip.sweep.SweepResponder,
                 blip.db.rollback ()
                 raise
             else:
-                blip.db.commit ()
+                if i % 10 == 0:
+                    blip.db.commit ()
+        if i % 10 != 0:
+            blip.db.commit ()
         return response
 
     @classmethod
