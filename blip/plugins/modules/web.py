@@ -177,6 +177,20 @@ class OverviewTab (blip.html.TabProvider):
                             blip.html.Link ( request.record.bug_database,
                                              request.record.bug_database))
 
+        facts.start_fact_group ()
+        span = blip.html.Span (divider=blip.html.BULLET)
+        store = blip.db.get_store (blip.db.Entity)
+        using = store.using (blip.db.Entity,
+                             blip.db.Join (blip.db.Revision,
+                                           blip.db.Revision.person_ident == blip.db.Entity.ident))
+        cnt = blip.db.Count (blip.db.Revision.ident)
+        sel = using.find (blip.db.Entity, blip.db.Revision.project_ident == request.record.project_ident)
+        sel = sel.group_by (blip.db.Entity.ident)
+        sel = sel.order_by (blip.db.Desc (cnt))
+        for ent in sel[:10]:
+            span.add_content (blip.html.Link (ent))
+        facts.add_fact (blip.utils.gettext ('Top Committers'), span)
+
         if request.record.updated is not None:
             facts.start_fact_group ()
             facts.add_fact (blip.utils.gettext ('Last Updated'),

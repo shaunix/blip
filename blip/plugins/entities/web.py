@@ -191,6 +191,42 @@ class OverviewTab (blip.html.TabProvider):
 
         if request.record.type == u'Person':
             facts.start_fact_group ()
+            span = blip.html.Span (divider=blip.html.BULLET)
+            store = blip.db.get_store (blip.db.Project)
+            using = store.using (blip.db.Project,
+                                 blip.db.Join (blip.db.Revision,
+                                               blip.db.Revision.project_ident == blip.db.Project.ident))
+            cnt = blip.db.Count (blip.db.Revision.ident)
+            sel = using.find (blip.db.Project,
+                              blip.db.Revision.person_ident == request.record.ident)
+            sel = sel.group_by (blip.db.Project.ident)
+            sel = sel.order_by (blip.db.Desc (cnt))
+            add = False
+            for ent in sel[:10]:
+                add = True
+                span.add_content (blip.html.Link (ent))
+            if add:
+                facts.add_fact (blip.utils.gettext ('Top Projects'), span)
+
+            span = blip.html.Span (divider=blip.html.BULLET)
+            store = blip.db.get_store (blip.db.Forum)
+            using = store.using (blip.db.Forum,
+                                 blip.db.Join (blip.db.ForumPost,
+                                               blip.db.ForumPost.forum_ident == blip.db.Forum.ident))
+            cnt = blip.db.Count (blip.db.ForumPost.ident)
+            sel = using.find (blip.db.Forum,
+                              blip.db.And (blip.db.ForumPost.author_ident == request.record.ident,
+                                           blip.db.Forum.type == u'List'))
+            sel = sel.group_by (blip.db.Forum.ident)
+            sel = sel.order_by (blip.db.Desc (cnt))
+            add = False
+            for ent in sel[:10]:
+                add = True
+                span.add_content (blip.html.Link (ent))
+            if add:
+                facts.add_fact (blip.utils.gettext ('Top Lists'), span)
+
+            facts.start_fact_group ()
             span = blip.html.Span (divider=blip.html.SPACE)
             span.add_content (str(request.record.score))
             lt = blip.db.Entity.select (blip.db.Entity.type == u'Person',

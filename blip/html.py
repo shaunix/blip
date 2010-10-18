@@ -39,8 +39,8 @@ import blip.utils
 import blip.web
 
 SPACE = ' '
-BULLET = u' • '
-TRIANGLE = u' ‣ '
+BULLET = u'\u00a0• '
+TRIANGLE = u'\u00a0‣ '
 
 
 class HtmlObject (blinq.reqs.web.HtmlPayload):
@@ -139,7 +139,8 @@ class FactsComponent (Component):
         self._facts.append (fact)
 
     def start_fact_group (self):
-        self._facts.append (None)
+        if len(self._facts) == 0 or self._facts[-1] is not None:
+            self._facts.append (None)
 
     def has_facts (self):
         return len(self._facts) > 0

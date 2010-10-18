@@ -175,6 +175,25 @@ class OverviewTab (blip.html.TabProvider):
             facts.add_fact (blip.utils.gettext ('Archives'),
                             blip.html.Link (request.record.data['archive']))
 
+        if request.record.updated is not None:
+            facts.start_fact_group ()
+            facts.add_fact (blip.utils.gettext ('Last Updated'),
+                            request.record.updated.strftime('%Y-%m-%d %T'))
+
+        facts.start_fact_group ()
+        span = blip.html.Span (divider=blip.html.BULLET)
+        store = blip.db.get_store (blip.db.Entity)
+        using = store.using (blip.db.Entity,
+                             blip.db.Join (blip.db.ForumPost,
+                                           blip.db.ForumPost.author_ident == blip.db.Entity.ident))
+        cnt = blip.db.Count (blip.db.ForumPost.ident)
+        sel = using.find (blip.db.Entity, blip.db.ForumPost.forum_ident == request.record.ident)
+        sel = sel.group_by (blip.db.Entity.ident)
+        sel = sel.order_by (blip.db.Desc (cnt))
+        for ent in sel[:6]:
+            span.add_content (blip.html.Link (ent))
+        facts.add_fact (blip.utils.gettext ('Top Posters'), span)
+
         return tab
 
     @classmethod
