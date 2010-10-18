@@ -190,7 +190,7 @@ class OverviewTab (blip.html.TabProvider):
         sel = using.find (blip.db.Entity, blip.db.ForumPost.forum_ident == request.record.ident)
         sel = sel.group_by (blip.db.Entity.ident)
         sel = sel.order_by (blip.db.Desc (cnt))
-        for ent in sel[:6]:
+        for ent in sel[:10]:
             span.add_content (blip.html.Link (ent))
         facts.add_fact (blip.utils.gettext ('Top Posters'), span)
 
