@@ -90,7 +90,7 @@ class ModulesResponder (blip.sweep.SweepResponder,
                 tlsec = int(until)
             until = 3600 * tlhour + 60 * tlmin + tlsec
             then = datetime.datetime.utcnow() - datetime.timedelta(seconds=int(until))
-            dbargs.append (blip.db.Branch.updated < then)
+            dbargs.append (blip.db.Or (blip.db.Branch.updated < then, blip.db.Branch.updated == None))
 
         branches = []
         if len(argv) == 0:

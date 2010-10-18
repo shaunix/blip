@@ -81,7 +81,7 @@ class PeopleResponder (blip.sweep.SweepResponder,
                 tlsec = int(until)
             until = 3600 * tlhour + 60 * tlmin + tlsec
             then = datetime.datetime.utcnow() - datetime.timedelta(seconds=int(until))
-            dbargs.append (blip.db.Entity.updated < then)
+            dbargs.append (blip.db.Or (blip.db.Entity.updated < then, blip.db.Entity.updated == None))
 
         entities = []
         if len(argv) == 0:
