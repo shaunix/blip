@@ -144,6 +144,51 @@ class ListReponder (blip.web.RecordLocator, blip.web.PageResponder):
         response.payload = page
         return response
 
+class OverviewTab (blip.html.TabProvider):
+    @classmethod
+    def add_tabs (cls, page, request):
+        if len(request.path) != 3 or request.path[0] != 'list':
+            return None
+        page.add_tab ('overview',
+                      blip.utils.gettext ('Overview'),
+                      blip.html.TabProvider.FIRST_TAB)
+        page.add_to_tab ('overview', cls.get_tab (request))
+
+    @classmethod
+    def get_tab (cls, request):
+        tab = blip.html.PaddingBox()
+
+        for err in blip.db.Error.select (ident=request.record.ident):
+            tab.add_content (blip.html.AdmonBox (blip.html.AdmonBox.error, err.message))
+
+        facts = blip.html.FactsTable()
+        tab.add_content (facts)
+
+        facts.start_fact_group ()
+        facts.add_fact (blip.utils.gettext ('Mailing List'), request.record.title)
+
+        facts.start_fact_group ()
+        if request.record.data.get('listinfo') is not None:
+            facts.add_fact (blip.utils.gettext ('List Info'),
+                            blip.html.Link (request.record.data['listinfo']))
+        if request.record.data.get('archive') is not None:
+            facts.add_fact (blip.utils.gettext ('Archives'),
+                            blip.html.Link (request.record.data['archive']))
+
+        return tab
+
+    @classmethod
+    def respond (cls, request, **kw):
+        if len(request.path) != 3 or request.path[0] != 'list':
+            return None
+        if not blip.html.TabProvider.match_tab (request, 'overview'):
+            return None
+
+        response = blip.web.WebResponse (request)
+
+        response.payload = cls.get_tab (request)
+        return response
+
 class ListPostsTab (blip.html.TabProvider):
     @classmethod
     def add_tabs (cls, page, request):
