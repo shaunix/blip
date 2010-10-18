@@ -160,6 +160,17 @@ class OverviewTab (blip.html.TabProvider):
             span.add_content ('(%.2f%%)' % ((100.0 * lt) / (lt + gt)))
         facts.add_fact (blip.utils.gettext ('Score'), span)
 
+        sel = blip.db.Selection (blip.db.BranchForum,
+                                 blip.db.BranchForum.subj_ident == request.record.ident)
+        blip.db.BranchForum.select_pred (sel)
+        sel = sel.get_sorted (('pred', 'title'))
+        if len(sel) > 0:
+            facts.start_fact_group()
+            div = blip.html.Div()
+            for rel in sel:
+                div.add_content (blip.html.Div (blip.html.Link (rel['pred'])))
+            facts.add_fact (blip.utils.gettext ('Mailing Lists'), div)
+
         if request.record.bug_database is not None:
             facts.start_fact_group ()
             facts.add_fact (blip.utils.gettext ('Bug Tracker'), 

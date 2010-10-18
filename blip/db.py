@@ -1065,6 +1065,13 @@ class ModuleEntity (BlipRelation):
     maintainer = Bool (default=False)
 
 
+class BranchForum (BlipRelation):
+    subj_ident = ShortText ()
+    pred_ident = ShortText ()
+    subj = Reference (subj_ident, Branch.ident)
+    pred = Reference (pred_ident, Forum.ident)
+
+
 class SetModule (BlipRelation):
     subj_ident = ShortText ()
     pred_ident = ShortText ()

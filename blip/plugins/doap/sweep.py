@@ -23,63 +23,84 @@ import urllib
 
 import RDF
 
+import blinq.ext
+
 import blip.db
 import blip.utils
 import blip.plugins.modules.sweep
 
+class DoapHandler (blinq.ext.ExtensionPoint):
+    def __init__ (self, scanner):
+        self.scanner = scanner
+
+    def process_model (self, model):
+        pass
+
+
+class DefaultDoapHandler (DoapHandler):
+    def process_model (self, model):
+        query = RDF.SPARQLQuery(' PREFIX doap: <http://usefulinc.com/ns/doap#>'
+                                ' SELECT ?name ?desc'
+                                ' WHERE {'
+                                '  ?project a doap:Project ;'
+                                '    doap:name ?name ;'
+                                '    doap:shortdesc ?desc .'
+                                ' FILTER('
+                                '  langMatches(lang(?name), "en") &&'
+                                '  langMatches(lang(?desc), "en")'
+                                ' )} LIMIT 1')
+        for defs in query.execute (model):
+            self.scanner.branch.update ({
+                    'name': defs['name'].literal_value['string'],
+                    'desc': defs['desc'].literal_value['string']
+                    })
+            break
+        query = RDF.SPARQLQuery(' PREFIX doap: <http://usefulinc.com/ns/doap#>'
+                                ' PREFIX foaf: <http://xmlns.com/foaf/0.1/>'
+                                ' SELECT ?name ?mbox'
+                                ' WHERE {'
+                                '  ?project a doap:Project .'
+                                '  ?project doap:maintainer ?person .'
+                                '  ?person a foaf:Person ;'
+                                '    foaf:name ?name ;'
+                                '    foaf:mbox ?mbox .'
+                                ' }')
+        maints = []
+        for defs in query.execute (model):
+            mbox = defs['mbox'].uri
+            if mbox is not None:
+                mbox = unicode (mbox)
+            if mbox.startswith ('mailto:'):
+                mbox = mbox[7:]
+                ent = blip.db.Entity.get_or_create_email (mbox)
+                maints.append (blip.db.ModuleEntity.set_related (self.scanner.branch,
+                                                                 ent, maintainer=True))
+        self.scanner.branch.set_relations (blip.db.ModuleEntity, maints)
+
+
 class DoapScanner (blip.plugins.modules.sweep.ModuleFileScanner):
+    def __init__ (self, scanner):
+        blip.plugins.modules.sweep.ModuleFileScanner.__init__ (self, scanner)
+        self.doap_handlers = [handler(self.scanner) for handler in DoapHandler.get_extensions()]
+
     def process_file (self, dirname, basename):
         if (dirname == self.scanner.repository.directory
             and (basename == self.scanner.branch.scm_module + '.doap' or
                  (self.scanner.branch.scm_path is not None and
                   basename == self.scanner.branch.scm_path + '.doap'))):
-
             filename = os.path.join (dirname, basename)
             with blip.db.Error.catch (self.scanner.branch, 'Invalid DOAP file'):
                 with blip.db.Timestamp.stamped (filename, self.scanner.repository) as stamp:
                     stamp.check (self.scanner.request.get_tool_option ('timestamps'))
                     stamp.log ()
-
                     model = RDF.Model()
                     if not model.load ('file://' + urllib.pathname2url(filename)):
                         return
-                    query = RDF.SPARQLQuery(' PREFIX doap: <http://usefulinc.com/ns/doap#>'
-                                            ' SELECT ?name ?desc'
-                                            ' WHERE {'
-                                            '  ?project a doap:Project ;'
-                                            '    doap:name ?name ;'
-                                            '    doap:shortdesc ?desc .'
-                                            ' FILTER('
-                                            '  langMatches(lang(?name), "en") &&'
-                                            '  langMatches(lang(?desc), "en")'
-                                            ' )} LIMIT 1')
-                    for defs in query.execute (model):
-                        self.scanner.branch.update ({
-                                'name': defs['name'].literal_value['string'],
-                                'desc': defs['desc'].literal_value['string']
-                                })
-                        break
-                    query = RDF.SPARQLQuery(' PREFIX doap: <http://usefulinc.com/ns/doap#>'
-                                            ' PREFIX foaf: <http://xmlns.com/foaf/0.1/>'
-                                            ' SELECT ?name ?mbox'
-                                            ' WHERE {'
-                                            '  ?project a doap:Project .'
-                                            '  ?project doap:maintainer ?person .'
-                                            '  ?person a foaf:Person ;'
-                                            '    foaf:name ?name ;'
-                                            '    foaf:mbox ?mbox .'
-                                            ' }')
-                    maints = []
-                    for defs in query.execute (model):
-                        mbox = defs['mbox'].uri
-                        if mbox is not None:
-                            mbox = unicode (mbox)
-                        if mbox.startswith ('mailto:'):
-                            mbox = mbox[7:]
-                            ent = blip.db.Entity.get_or_create_email (mbox)
-                            maints.append (blip.db.ModuleEntity.set_related (self.scanner.branch,
-                                                                             ent, maintainer=True))
-                    self.scanner.branch.set_relations (blip.db.ModuleEntity, maints)
+                    for handler in self.doap_handlers:
+                        try:
+                            handler.process_model (model)
+                        except:
+                            pass
 
     def post_process (self):
         pass

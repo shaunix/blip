@@ -28,6 +28,7 @@ import gzip
 import HTMLParser
 import mailbox
 import os
+import RDF
 import re
 import StringIO
 import urllib2
@@ -39,6 +40,7 @@ import blip.db
 import blip.sweep
 import blip.utils
 
+import blip.plugins.doap.sweep
 import blip.plugins.scores.sweep
 
 class ListsResponder (blip.sweep.SweepResponder,
@@ -120,10 +122,13 @@ class ListsResponder (blip.sweep.SweepResponder,
         archive = ml.data.get ('archive')
         mboxes = []
         if archive is not None:
-            links = LinkExtractor (archive).get_links ()
-            for link in links:
-                if link.endswith ('.txt.gz'):
-                    mboxes.append (urlparse.urljoin (archive, link))
+            try:
+                links = LinkExtractor (archive).get_links ()
+                for link in links:
+                    if link.endswith ('.txt.gz'):
+                        mboxes.append (urlparse.urljoin (archive, link))
+            except:
+                pass
 
         cache = blip.db.CacheData.get_or_create (ml.ident, u'archives')
         now = datetime.datetime.utcnow ()
@@ -140,6 +145,7 @@ class ListsResponder (blip.sweep.SweepResponder,
                 title = CrappyMailmanTitleExtractor (ml.ident.split('/')[-1])
                 title.feed(httpres.read())
                 title.close ()
+                httpres.close ()
                 ml.desc = blip.utils.utf8dec (title.title)
                 cache.data['listinfo-datetime'] = now
             except urllib2.HTTPError:
@@ -161,6 +167,7 @@ class ListsResponder (blip.sweep.SweepResponder,
                 fd = open (tmp, 'w')
                 fd.write (gzip.GzipFile (fileobj=StringIO.StringIO (httpres.read ())).read ())
                 fd.close ()
+                httpres.close ()
                 cls.update_archive (ml, request, cache, tmp)
                 try:
                     os.remove (tmp)
@@ -169,6 +176,8 @@ class ListsResponder (blip.sweep.SweepResponder,
             except urllib2.HTTPError:
                 pass
             cache.data['archive-datetimes'][url] = now
+
+        cls.update_score (ml)
 
         ml.updated = datetime.datetime.utcnow ()
         blip.db.Queue.pop (ml.ident)
@@ -209,7 +218,8 @@ class ListsResponder (blip.sweep.SweepResponder,
 
     @classmethod
     def update_archive (cls, ml, request, cache, archive):
-        mbox = mailbox.PortableUnixMailbox (open(archive, 'rb'))
+        fd = open(archive, 'rb')
+        mbox = mailbox.PortableUnixMailbox (fd)
         i = -1
         # Any date outside this range is probably crap
         clamp = (datetime.datetime(1970, 1, 1),
@@ -281,6 +291,7 @@ class ListsResponder (blip.sweep.SweepResponder,
 
             # FIXME
             #post.web = urlbase + 'msg%05i.html' % i
+        fd.close()
 
 
 class LinkExtractor (HTMLParser.HTMLParser):
@@ -307,6 +318,60 @@ class CrappyMailmanTitleExtractor (HTMLParser.HTMLParser):
         HTMLParser.HTMLParser.__init__ (self)
 
     def handle_data (self, data):
+        data = blip.utils.utf8dec (data)
         data = re.sub ('[\n\s]+', ' ', data).strip ()
         if data.startswith (self._listname + ' -- '):
             self.title = data[len(self._listname) + 4:]
+
+
+class HeadRequest (urllib2.Request):
+    # FIXME: redirects do a GET, and redirects pretty much
+    # always happen the way we're constructing URLs below.
+    def get_method (self):
+        return 'HEAD'
+
+
+class ListsDoapHandler (blip.plugins.doap.sweep.DoapHandler):
+    def process_model (self, model):
+        rels = []
+        query = RDF.SPARQLQuery(' PREFIX doap: <http://usefulinc.com/ns/doap#>'
+                                ' SELECT ?ml'
+                                ' WHERE {'
+                                '  ?project a doap:Project ;'
+                                '    doap:mailing-list ?ml .'
+                                ' } LIMIT 1')
+        for defs in query.execute (model):
+            uri = unicode(defs['ml'].uri)
+            split = uri.split('/')
+            if len(split) != 6:
+                return
+            if split[3] != 'mailman' or split[4] != 'listinfo':
+                return
+            domain = blip.utils.utf8dec(split[2])
+            if domain.startswith(u'mail.'):
+                domain = domain[5:]
+            elif domain.startswith(u'lists.'):
+                domain = domain[6:]
+            mlid = blip.utils.utf8dec(split[5])
+            ident = u'/' + u'/'.join(['list', domain, mlid])
+            ml = blip.db.Forum.get_or_create (ident, u'List')
+            ml.extend ({'name': mlid})
+            ml.data['listinfo'] = uri
+            if ml.data.get('archive') is None:
+                try:
+                    archive = uri.replace('mailman/listinfo', 'archives')
+                    httpres = urllib2.urlopen(HeadRequest(archive))
+                    ml.data['archive'] = httpres.geturl()
+                    httpres.close ()
+                except urllib2.HTTPError:
+                    pass
+            if ml.data.get('archive') is None:
+                try:
+                    archive = uri.replace('mailman/listinfo', 'pipermail')
+                    httpres = urllib2.urlopen(HeadRequest(archive))
+                    ml.data['archive'] = httpres.geturl()
+                    httpres.close ()
+                except urllib2.HTTPError:
+                    pass
+            rels.append(blip.db.BranchForum.set_related (self.scanner.branch, ml))
+        self.scanner.branch.set_relations (blip.db.BranchForum, rels)

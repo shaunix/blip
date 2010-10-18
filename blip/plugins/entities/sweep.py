@@ -115,7 +115,7 @@ class PeopleResponder (blip.sweep.SweepResponder,
         blip.utils.log ('Processing %s' % entity.ident)
         for handler in EntityHandler.get_extensions ():
             handler.handle_entity (entity, request)
-
+        cls.update_score (entity)
         entity.updated = datetime.datetime.utcnow ()
         blip.db.Queue.pop (entity.ident)
 
