@@ -292,11 +292,20 @@ $.fn.blip_init = function () {
     });
 
     slidezoom = function (graph, dir) {
+      var bars = graph.find ('div.Bars');
+      var allbars = bars.find ('div.Bar');
       var curwidth = parseInt (graph.attr ('data-bar-width'));
-      if ((curwidth <= 2 && dir < 0) || (curwidth >= 20 && dir > 0))
+      if ((curwidth <= 1 && dir < 0) || (curwidth >= 20 && dir > 0))
         return;
-      var newwidth = curwidth + (dir * 2);
-      if (newwidth <= 2)
+      if (curwidth == 2 && dir == -1)
+        var newwidth = 1;
+      else if (curwidth == 1 && dir == 1)
+        var newwidth = 2;
+      else
+        var newwidth = curwidth + (dir * 2);
+      if (newwidth <= 1)
+        graph.find ('a.BarZoomOut').css ('visibility', 'hidden');
+      else if (newwidth == 2 && (allbars.length * newwidth) <= graph.width())
         graph.find ('a.BarZoomOut').css ('visibility', 'hidden');
       else
         graph.find ('a.BarZoomOut').css ('visibility', 'visible');
@@ -305,8 +314,6 @@ $.fn.blip_init = function () {
       else
         graph.find ('a.BarZoomIn').css ('visibility', 'visible');
 
-      var bars = graph.find ('div.Bars');
-      var allbars = bars.find ('div.Bar');
       var curleft = parseInt (bars.css ('left'));
       var newleft = curleft + (allbars.length * curwidth) - graph.width();
       newleft = newleft * (newwidth / curwidth);
@@ -316,7 +323,14 @@ $.fn.blip_init = function () {
       allbars.css ('visibility', 'visible');
       allbars.parent('a').css ('visibility', 'visible');
       graph.attr ('data-bar-width', newwidth);
-      allbars.width (newwidth - 1);
+      if (newwidth == 1) {
+        allbars.parent('a').css('border-right', '0px');
+        allbars.width (newwidth);
+      }
+      else {
+        allbars.parent('a').css('border-right', 'solid 1px white');
+        allbars.width (newwidth - 1);
+      }
       bars.css ('left', newleft + 'px');
       if (newleft > 0) {
         var fullleft = -((allbars.length * newwidth) - graph.width());
