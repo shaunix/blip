@@ -132,7 +132,7 @@ class DbResponder (AdminResponder):
             }
         store = blip.db.get_store ('default')
 
-        for cls in blip.db.read_tables ():
+        for cls in blip.db.BlipModel.get_tables ():
             fields = []
             indexes = []
             for key, field in cls.get_fields ().items ():
