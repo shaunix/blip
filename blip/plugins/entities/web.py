@@ -195,16 +195,21 @@ class OverviewTab (blip.html.TabProvider):
             store = blip.db.get_store (blip.db.Project)
             using = store.using (blip.db.Project,
                                  blip.db.Join (blip.db.Revision,
-                                               blip.db.Revision.project_ident == blip.db.Project.ident))
+                                               blip.db.Revision.project_ident == blip.db.Project.ident),
+                                 blip.db.LeftJoin (blip.db.Branch,
+                                                   blip.db.Project.default_ident == blip.db.Branch.ident))
             cnt = blip.db.Count (blip.db.Revision.ident)
-            sel = using.find (blip.db.Project,
+            sel = using.find ((blip.db.Project, blip.db.Branch),
                               blip.db.Revision.person_ident == request.record.ident)
             sel = sel.group_by (blip.db.Project.ident)
             sel = sel.order_by (blip.db.Desc (cnt))
             add = False
-            for ent in sel[:10]:
+            for mod, default in sel[:10]:
                 add = True
-                span.add_content (blip.html.Link (ent))
+                if default is not None:
+                    span.add_content (blip.html.Link (default))
+                else:
+                    span.add_content (blip.html.Link (mod))
             if add:
                 facts.add_fact (blip.utils.gettext ('Top Projects'), span)
 
@@ -220,9 +225,9 @@ class OverviewTab (blip.html.TabProvider):
             sel = sel.group_by (blip.db.Forum.ident)
             sel = sel.order_by (blip.db.Desc (cnt))
             add = False
-            for ent in sel[:10]:
+            for ml in sel[:10]:
                 add = True
-                span.add_content (blip.html.Link (ent))
+                span.add_content (blip.html.Link (ml))
             if add:
                 facts.add_fact (blip.utils.gettext ('Top Lists'), span)
 
