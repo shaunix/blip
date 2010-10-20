@@ -90,7 +90,7 @@ class ListsResponder (blip.sweep.SweepResponder,
     def update_input_file (cls, request):
         infile = os.path.join (blinq.config.input_dir, 'lists.xml')
         if not os.path.exists (infile):
-            return response
+            return
 
         with blip.db.Timestamp.stamped (blip.utils.utf8dec (infile), None) as stamp:
             stamp.check (request.get_tool_option ('timestamps'))
