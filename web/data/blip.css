@@ -317,6 +317,7 @@ div.BarControl a {
   min-width: 1.2em;
   text-align: center;
 }
+div.BarControl a.BarPrev { margin-left: 12px; }
 div.BarControl a:hover, div.BarControl a:focus {
   background-color: #b1fbfc;
   background: -webkit-gradient(linear, left -4, left 20, from(white), to(#b1fbfc));
@@ -325,7 +326,23 @@ div.BarControl a:hover, div.BarControl a:focus {
   cursor: default;
   text-decoration: none;
 }
-a.BarPrev, a.BarNext {float: right; }
+div.BarSlide {
+  display: inline-block;
+  position: relative;
+  top: 2px;
+  margin: 0 4px 0 4px;
+  outline: solid 1px #eeeeec;
+  overflow: hidden;
+}
+span.BarSlide {
+  display: inline-block;
+  position: relative;
+  background-color: #888a85;
+  cursor: move;
+  border: solid 1px white;
+  -webkit-transition: background-color 0.2s linear;
+  -moz-transition: background-color 0.2s linear;
+}
 
 /******************************************************************************/
 /** ColumnBox **/

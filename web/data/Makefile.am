@@ -21,6 +21,7 @@ web_DATA =				\
 	blip.css			\
 	blip.js				\
 	jquery.js			\
-	jquery.cookie.js
+	jquery.cookie.js		\
+	jquery.ui.js
 
 EXTRA_DIST = $(web_DATA)

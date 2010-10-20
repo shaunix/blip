@@ -230,7 +230,7 @@ $.fn.blip_init = function () {
       bar.focusout (barout);
     });
 
-    slideset = function (graph) {
+    var slideset = function (graph) {
       var offset = graph.offset();
       var width = graph.width();
       var bars = graph.find ('div.Bars');
@@ -259,7 +259,7 @@ $.fn.blip_init = function () {
     slideset (graph);
     graph.find ('a.BarNext').css ('visibility', 'hidden');
 
-    slidebar = function (graph, dir) {
+    var slidebar = function (graph, dir) {
       var bars = graph.find ('div.Bars');
       var allbars = bars.find ('div.Bar');
       if (graph.attr ('data-animating') == 'true')
@@ -281,6 +281,12 @@ $.fn.blip_init = function () {
       graph.attr ('data-animating', 'true');
       bars.animate({left: left}, 'slow', 'linear',
         function () { slideset ($(this).closest ('div.BarGraph')); });
+
+      var slider = graph.find('div.BarSlide');
+      var spslider = slider.children('span.BarSlide');
+      var sliderleft = parseInt((left / fullleft) * (slider.width() - slider.children('span.BarSlide').width()));
+      sliderleft = Math.min(sliderleft, slider.width() - spslider.width() - 2);
+      spslider.animate({left: sliderleft}, 'slow', 'linear');
     };
     graph.find ('a.BarPrev').click (function () {
       slidebar ($(this).closest ('div.BarGraph'), 1);
@@ -289,6 +295,83 @@ $.fn.blip_init = function () {
     graph.find ('a.BarNext').click (function () {
       slidebar ($(this).closest ('div.BarGraph'), -1);
       return false;
+    });
+
+    var slideslot = function (graph) {
+      var bars = graph.find ('div.Bars');
+      var allbars = bars.find ('div.Bar');
+      graph.find ('div.BarSlide').each (function () {
+        var width = 0;
+        var height = 0;
+        graph.find('div.BarControl').children('a').each( function () {
+          width = width + $(this).outerWidth();
+          height = Math.max (height, $(this).innerHeight());
+        });
+        height = height - 8;
+        width = graph.width() - width - 24;
+        $(this).css ({
+          height: (height) + 'px',
+          lineHeight: (height) + 'px',
+          width: width + 'px'
+        });
+        var fullwidth = allbars.length * parseInt(graph.attr('data-bar-width'));
+        var spwidth = parseInt($(this).width() / (fullwidth / graph.width()));
+        var spcolor = '#888a85'
+        if (spwidth >= width - 2) {
+          spwidth = width - 2;
+          spcolor = '#eeeeec';
+        }
+        var fullleft = -(fullwidth - graph.width());
+        var slideleft = (width - spwidth - 2) * (parseInt(bars.css('left')) / fullleft);
+        $(this).children('span.BarSlide').css ({
+          height: (height - 2) + 'px',
+          lineHeight: (height - 2) + 'px',
+          width: spwidth + 'px',
+          left: slideleft + 'px',
+          backgroundColor: spcolor
+        });
+        if (slideleft < 0)
+          $(this).children('span.BarSlide').animate({left: 0}, 'slow', 'linear');
+      });
+    }
+    slideslot (graph);
+
+    graph.find ('div.BarSlide').each (function () {
+      $(this).children('span.BarSlide').draggable({
+        axis: 'x',
+        containment: 'parent',
+        start: function () {
+          graph.css ('overflow', 'hidden');
+          allbars.css ('visibility', 'visible');
+          allbars.parent('a').css ('visibility', 'visible');
+          graph.attr ('data-animating', 'true');
+          $(this).css('background-color', '#729fcf');
+        },
+        stop: function () {
+          slideset (graph);
+          if ($(this).width() >= $(this).parent('div').width() - 2)
+            $(this).css('background-color', '#eeeeec');
+          else
+            $(this).css('background-color', '#888a85');
+        },
+        drag: function () {
+          var pct = ($(this).offset().left - $(this).parent('div').offset().left) /
+                    ($(this).parent('div').width() - $(this).width() - 2);
+          var bars = graph.find ('div.Bars');
+          var allbars = bars.find ('div.Bar');
+          var fullleft = -((allbars.length * parseInt(graph.attr('data-bar-width'))) - graph.width());
+          var newleft = fullleft * pct;
+          if (newleft == 0)
+            graph.find ('a.BarPrev').css ('visibility', 'hidden');
+          else
+            graph.find ('a.BarPrev').css ('visibility', 'visible');
+          if (newleft == fullleft)
+            graph.find ('a.BarNext').css ('visibility', 'hidden');
+          else
+            graph.find ('a.BarNext').css ('visibility', 'visible');
+          bars.css('left', newleft);
+        }
+      });
     });
 
     slidezoom = function (graph, dir) {
@@ -351,6 +434,7 @@ $.fn.blip_init = function () {
       else {
         slideset (graph);
       }
+      slideslot (graph);
     };
     graph.find ('a.BarZoomOut').click (function () {
       slidezoom ($(this).closest ('div.BarGraph'), -1);
