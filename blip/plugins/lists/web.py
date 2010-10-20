@@ -175,10 +175,22 @@ class OverviewTab (blip.html.TabProvider):
             facts.add_fact (blip.utils.gettext ('Archives'),
                             blip.html.Link (request.record.data['archive']))
 
-        if request.record.updated is not None:
-            facts.start_fact_group ()
-            facts.add_fact (blip.utils.gettext ('Last Updated'),
-                            request.record.updated.strftime('%Y-%m-%d %T'))
+        sel = blip.db.Selection (blip.db.BranchForum,
+                                 blip.db.BranchForum.pred_ident == request.record.ident)
+        blip.db.BranchForum.select_subj (sel)
+        sel = sel.get_sorted (('subj', 'title'),
+                              ('subj', 'project_ident'),
+                              ('-', 'subj', 'is_default'),
+                              ('-', 'subj', 'scm_branch'))
+        seen = {}
+        if len(sel) > 0:
+            facts.start_fact_group()
+            span = blip.html.Span (divider=blip.html.BULLET)
+            for rel in sel:
+                if not seen.get(rel['subj'].project_ident, False):
+                    seen[rel['subj'].project_ident] = True
+                    span.add_content (blip.html.Link (rel['subj']))
+            facts.add_fact (blip.utils.gettext ('Projects'), span)
 
         facts.start_fact_group ()
         span = blip.html.Span (divider=blip.html.BULLET)
@@ -193,6 +205,11 @@ class OverviewTab (blip.html.TabProvider):
         for ent in sel[:10]:
             span.add_content (blip.html.Link (ent))
         facts.add_fact (blip.utils.gettext ('Top Posters'), span)
+
+        if request.record.updated is not None:
+            facts.start_fact_group ()
+            facts.add_fact (blip.utils.gettext ('Last Updated'),
+                            request.record.updated.strftime('%Y-%m-%d %T'))
 
         return tab
 
