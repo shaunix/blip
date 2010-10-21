@@ -249,8 +249,8 @@ class ListsResponder (blip.sweep.SweepResponder,
                 post.parent_ident = parent.ident
 
             msgfrom = email.utils.parseaddr (msgfrom)
-            personident = u'/person/' + blip.utils.utf8dec (msgfrom[1])
-            person = blip.db.Entity.get_or_create (personident, u'Person')
+            personident = blip.utils.utf8dec (msgfrom[1])
+            person = blip.db.Entity.get_or_create_email (personident)
             person.extend (name=msgfrom[0])
             post.author_ident = person.ident
             if person.ident != personident:
