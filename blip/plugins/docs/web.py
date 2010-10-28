@@ -163,6 +163,8 @@ class OverviewTab (blip.html.TabProvider):
         if docdate is not None:
             span.add_content ('(%s)' % docdate)
         facts.add_fact (blip.utils.gettext ('Status'), span)
+        if request.record.subtype is not None:
+            facts.add_fact (blip.utils.gettext ('Type'), request.record.subtype)
 
         if request.record.mod_datetime is not None:
             facts.start_fact_group ()
@@ -363,6 +365,7 @@ class DocumentsTab (blip.html.TabProvider):
         if request.record.type == u'Set':
             tab.add_sort_link ('module', blip.utils.gettext ('module'))
         tab.add_sort_link ('status', blip.utils.gettext ('status'))
+        tab.add_sort_link ('type', blip.utils.gettext ('type'))
 
         blip.db.Branch.select_parent (sel)
         for doc in sel.get_sorted ('title'):
@@ -378,6 +381,9 @@ class DocumentsTab (blip.html.TabProvider):
             span = blip.html.Span(status[2:], html_class='status')
             span.add_data_attribute ('sort-key', status[:2])
             lbox.add_fact (blip.utils.gettext ('status'), span)
+            if doc.subtype is not None:
+                lbox.add_fact (blip.utils.gettext ('type'),
+                               blip.html.Span(doc.subtype, html_class='type'))
 
         response.payload = tab
         return response
