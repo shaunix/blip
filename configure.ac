@@ -55,8 +55,8 @@ if test x$PYTHON_cairo != x1 ; then
 fi
 
 AC_CHECK_PYTHON_MODULE([libxml2])
-if test x$PYTHON_cairo != x1 ; then
-  AC_MSG_ERROR([cairo not found])
+if test x$PYTHON_libxml2 != x1 ; then
+  AC_MSG_ERROR([libxml2 not found])
 fi
 
 AC_CHECK_PYTHON_MODULE([storm])
