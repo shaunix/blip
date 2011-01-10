@@ -574,7 +574,7 @@ class Page (HtmlObject, ContentComponent):
                 res.write('<input data-watch-ident="%s" class="watch" type="checkbox">' %
                           self._watchable)
             res.write(self.escape(blip.utils.gettext ('Watch')))
-            res.write('</label></div>')
+            res.write('</div></label></div>')
         if len(self._traillinks) > 0:
             res.write('<div class="traillinks">')
             for i in range(len(self._traillinks)):
