@@ -90,21 +90,20 @@ div.watch:hover {
   color: #2e3436;
   border-color: #729fcf;
 }
-div.watch label {
+label.watch {
+  display: block;
+  padding: 0 6px 0 6px;
+  border: solid 1px white;
   font-size: 0.83em;
   font-weight: bold;
 }
-div.watch label div {
-  padding: 0 6px 0 6px;
-  border: solid 1px white;
-}
-div.watch input { vertical-align: -10%; }
-label.watchactive div {
+div.watch input { vertical-align: -20%; }
+label.watchactive {
   background-color: #fcf197;
   background: -webkit-gradient(linear, left -4, left 20, from(white), to(#fcf197));
   background: -moz-linear-gradient(top, white -4px, #fcf197 20px);
 }
-label.watch:hover div {
+label.watch:hover {
   background-color: #b1fbfc;
   background: -webkit-gradient(linear, left -4, left 20, from(white), to(#b1fbfc));
   background: -moz-linear-gradient(top, white -4px, #b1fbfc 20px);
