@@ -1717,7 +1717,7 @@ class Error (BlipModel):
                     err.delete ()
             else:
                 if self.message is None:
-                    self.message = blinq.utils.utf8dec (value)
+                    self.message = blinq.utils.utf8dec (str(value))
                 obj = Error.select (ident=self.ident, sourcefunc=self.sfunc)
                 try:
                     obj = obj[0]
