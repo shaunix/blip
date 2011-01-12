@@ -244,6 +244,12 @@ class ModuleScanner (object):
         old = blip.utils.score (stats)
         branch.score_diff = branch.score - old
 
+        scores = store.find ((blip.db.Branch.score, blip.db.Branch.score_diff),
+                             blip.db.Branch.project_ident == branch.project_ident)
+        scores = max (scores, key=lambda x: x[0])
+        branch.project.score = scores[0]
+        branch.project.score_diff = scores[1]
+
     def check_history (self):
         since = blip.db.Revision.get_last_revision (branch=self.branch)
         if since is not None:
@@ -274,21 +280,21 @@ class ModuleScanner (object):
             # branch_ident and person_ident, Storm would keep referencess to
             # the Revision object.  That would eat your computer.
             revident = self.branch.project.ident + u'/' + commit.id
-            if blip.db.Revision.select(ident=revident).count() > 0:
-                continue
-            rev = {'ident': revident,
-                   'project_ident': self.branch.project.ident,
-                   'person_ident': person.ident,
-                   'revision': commit.id,
-                   'datetime': commit.datetime,
-                   'comment': commit.comment }
-            if person.ident != commit.author_ident:
-                rev['person_alias_ident'] = commit.author_ident
-            rev = blip.db.Revision (**rev)
-            rev.decache ()
-            for filename, filerev, prevrev in commit.files:
-                revfile = rev.add_file (filename, filerev, prevrev)
-                revfile.decache ()
+            rev = blip.db.Revision.select_one(ident=revident)
+            if rev is None:
+                rev = {'ident': revident,
+                       'project_ident': self.branch.project.ident,
+                       'person_ident': person.ident,
+                       'revision': commit.id,
+                       'datetime': commit.datetime,
+                       'comment': commit.comment }
+                if person.ident != commit.author_ident:
+                    rev['person_alias_ident'] = commit.author_ident
+                rev = blip.db.Revision (**rev)
+                rev.decache ()
+                for filename, filerev, prevrev in commit.files:
+                    revfile = rev.add_file (filename, filerev, prevrev)
+                    revfile.decache ()
             rev.add_branch (self.branch)
             blip.db.flush()
 
