@@ -47,6 +47,10 @@ class ModulesResponder (blip.sweep.SweepResponder,
 
     @classmethod
     def add_tool_options (cls, request):
+        request.add_tool_option ('--time-limit',
+                                 dest='time_limit',
+                                 metavar='SECONDS',
+                                 help='process the queue for at most SECONDS seconds')
         request.add_tool_option ('--no-history',
                                  dest='read_history',
                                  action='store_false',
@@ -92,6 +96,24 @@ class ModulesResponder (blip.sweep.SweepResponder,
             then = datetime.datetime.utcnow() - datetime.timedelta(seconds=int(until))
             dbargs.append (blip.db.Or (blip.db.Branch.updated < then, blip.db.Branch.updated == None))
 
+        timelimit = request.get_tool_option ('time_limit')
+        if timelimit is not None:
+            sep = timelimit.rfind (':')
+            tlhour = tlmin = tlsec = 0
+            if sep >= 0:
+                tlsec = int(timelimit[sep+1:])
+                tlpre = timelimit[:sep]
+                sep = tlpre.rfind (':')
+                if sep >= 0:
+                    tlmin = int(tlpre[sep+1:])
+                    tlhour = int(tlpre[:sep])
+                else:
+                    tlmin = int(tlpre)
+            else:
+                tlsec = int(timelimit)
+            timelimit = 3600 * tlhour + 60 * tlmin + tlsec
+        timestart = datetime.datetime.now()
+
         branches = []
         if len(argv) == 0:
             branches = list(blip.db.Branch.select (blip.db.Branch.type == u'Module', *dbargs))
@@ -108,16 +130,28 @@ class ModulesResponder (blip.sweep.SweepResponder,
                                                             blip.db.Branch.ident.like (ident),
                                                             *dbargs))
         branches = blinq.utils.attrsorted (branches, 'updated')
+        ident_i = 0
         for branch in branches:
             try:
                 scanner = ModuleScanner (request, branch)
                 scanner.update ()
                 blip.db.flush ()
+                ident_i += 1
             except:
                 blip.db.rollback ()
                 raise
             else:
                 blip.db.commit ()
+
+            if (timelimit is not None and
+                (datetime.datetime.now() - timestart).seconds > timelimit):
+                break;
+
+        if timelimit is not None:
+            diff = datetime.datetime.now () - timestart
+            diff = datetime.timedelta (days=diff.days, seconds=diff.seconds)
+            blip.utils.log ('Processed %i records in %s' % (ident_i, diff))
+
         return response
 
     @classmethod
