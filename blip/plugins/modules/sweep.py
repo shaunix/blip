@@ -234,23 +234,42 @@ class ModuleScanner (object):
 
         ModuleScanner.update_score (self.branch)
 
-        def visit (arg, dirname, names):
-            ignore = self.repository.ignoredir
-            if ignore in names:
-                names.remove (ignore)
-            for basename in names:
-                filename = os.path.join (dirname, basename)
-                if not os.path.isfile (filename):
-                    continue
-                for scanner in self._file_scanners:
-                    scanner.process_file (dirname, basename)
-        os.path.walk (self.repository.directory, visit, None)
+        # Don't even bother walking files if the repository has the same
+        # revision as last time. This cuts down on disk I/O. Note that
+        # some repositories don't implement get_revision, so we wrap it
+        # in a try/except.
+        dovisit = True
+        try:
+            reprev = self.repository.get_revision()[0]
+        except:
+            reprev = None
+        if reprev is not None and self.request.get_tool_option ('timestamps'):
+            currev = self.branch.data.get ('current_revision')
+            if currev == reprev:
+                dovisit = False
 
-        for scanner in self._file_scanners:
-            scanner.post_process ()
+        if dovisit:
+            def visit (arg, dirname, names):
+                ignore = self.repository.ignoredir
+                if ignore in names:
+                    names.remove (ignore)
+                for basename in names:
+                    filename = os.path.join (dirname, basename)
+                    if not os.path.isfile (filename):
+                        continue
+                    for scanner in self._file_scanners:
+                        scanner.process_file (dirname, basename)
+            os.path.walk (self.repository.directory, visit, None)
 
-        for objtype in self._children.keys ():
-            self.branch.set_children (objtype, self._children[objtype])
+            for scanner in self._file_scanners:
+                scanner.post_process ()
+
+            for objtype in self._children.keys ():
+                self.branch.set_children (objtype, self._children[objtype])
+
+            self.branch.data['current_revision'] = reprev
+        else:
+            blip.utils.log ('Skipping file scanning for %s' % self.branch.ident)
 
         self.branch.updated = datetime.datetime.utcnow ()
         blip.db.Queue.pop (self.branch.ident)
