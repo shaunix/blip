@@ -117,3 +117,11 @@ def web_files_url (config, val):
 def account_handler (config, val):
     """The plugin to use to handle accounts"""
     return val or 'basic'
+
+
+################################################################################
+## Let extensions provide config options
+
+import blinq.ext
+import blip.plugins
+blinq.ext.import_extensions (blip.plugins, 'config')
