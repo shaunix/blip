@@ -20,6 +20,7 @@
 
 import re
 
+import blinq.ext
 import blinq.reqs.web
 
 import blip.db
@@ -27,28 +28,29 @@ import blip.html
 
 import blip.plugins.home.web
 
-def from_revision (rev, app, **kw):
-    # if branch.scm_type == 'svn':
-    #     if branch.scm_server.endswith ('/svn/'):
-    #         base = branch.scm_server[:-4] + 'viewvc/'
-    #         colon = base.find (':')
-    #         if colon < 0:
-    #             return lnk
-    #         if base[:colon] != 'http':
-    #             base = 'http' + base[colon:]
-    #         if branch.scm_path != None:
-    #             base += branch.scm_path
-    #         elif branch.scm_branch == 'trunk':
-    #             base += branch.scm_module + '/trunk'
-    #         else:
-    #             base += branch.scm_module + '/branches/' + branch.scm_branch
-    #         mlink = blip.html.MenuLink (rev.revision, 'files')
-    #         mlink.set_menu_url ('%s?application=%s&action=revfiles&revid=%s'
-    #                             % (branch.blip_url, app, str(rev.ident)))
-    #         lnk.add_link (mlink)
-    #         infourl = base + '?view=revision&revision=' + rev.revision
-    #         lnk.add_link (infourl, blip.utils.gettext ('info'))
-    return lnk
+class CommitInfoProvider (blinq.ext.ExtensionPoint):
+    @classmethod
+    def provide_commit_info (cls, box, commit, branch):
+        pass
+
+class CgitCommitLinkProvider (CommitInfoProvider):
+    @classmethod
+    def get_cgit_root (cls, branch):
+        return None
+
+    @classmethod
+    def provide_commit_info (cls, box, commit, branch):
+        root = cls.get_cgit_root (branch)
+        if root is not None:
+            if branch.scm_path is not None:
+                scm_path = branch.scm_path
+            else:
+                scm_path = branch.scm_module
+            if not root.endswith('/'):
+                root = root + '/'
+            lnk = blip.html.Link (root + scm_path + '/commit?id=' + commit.revision,
+                                  blip.utils.gettext ('view'))
+            box.add_info (lnk)
 
 class CommitMessageFormatter (blip.plugins.home.web.MessageFormatter):
     @classmethod
@@ -183,6 +185,11 @@ class CommitsTab (blip.html.TabProvider):
                 act = blip.html.ActivityBox (subject=rev.project,
                                              datetime=rev.datetime.strftime('%T'))
             act.add_info (blip.utils.gettext('revision %s') % rev.display_revision (branch))
+            for provider in CommitInfoProvider.get_extensions ():
+                try:
+                    provider.provide_commit_info (act, rev, branch)
+                except:
+                    pass
 
             comment = rev.comment
             if comment.strip() != '':
