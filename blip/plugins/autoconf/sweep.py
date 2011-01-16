@@ -60,9 +60,13 @@ class AutoconfHandler (blip.plugins.modules.sweep.ModuleFileScanner):
             series = version.split('.')[:2]
             try:
                 minor = int (series[1])
-                if minor % 2 == 1:
-                    minor += 1
-                series[1] = str (minor)
+                if minor >= 90:
+                    series[0] = str(int(series[0]) + 1)
+                    series[1] = '0'
+                else:
+                    if minor % 2 == 1:
+                        minor += 1
+                    series[1] = str (minor)
             except:
                 pass
             series = '.'.join (series)
