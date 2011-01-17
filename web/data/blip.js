@@ -501,12 +501,7 @@ $.fn.blip_init = function () {
       var width = parseInt(parseInt (bar.attr ('data-meter-width')) * scale);
       total = total + width;
       var color;
-      if (i % 3 == 0)
-        color = '#729fcf'
-      else if (i % 3 == 1)
-        color = '#8ae234';
-      else
-        color = '#ef2929';
+      bar.addClass('MeterBar' + (i % 10))
       i++;
       bar.css ({
         width: width + 'px',

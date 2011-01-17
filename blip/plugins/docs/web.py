@@ -294,26 +294,39 @@ class PagesTab (blip.html.TabProvider):
 
         response = blip.web.WebResponse (request)
 
-        tab = blip.html.ContainerBox ()
-        tab.set_columns (2)
-        tab.add_sort_link ('title', blip.utils.gettext ('title'), 1)
-        tab.add_sort_link ('pageid', blip.utils.gettext ('page'))
-        tab.add_sort_link ('status', blip.utils.gettext ('status'))
+        tab = blip.html.PaddingBox ()
+
+        meter = blip.html.Meter ()
+        tab.add_content (meter)
+
+        cont = blip.html.ContainerBox ()
+        tab.add_content (cont)
+        cont.add_sort_link ('title', blip.utils.gettext ('title'), 1)
+        cont.add_sort_link ('pageid', blip.utils.gettext ('page'))
+        cont.add_sort_link ('status', blip.utils.gettext ('status'))
 
         pages = blinq.utils.attrsorted (list (request.record.select_children (u'DocumentPage')),
                                         'title')
+        stats = {}
         for page in pages:
-            lbox = tab.add_link_box (page)
+            lbox = cont.add_link_box (page)
             lbox.add_fact (blip.utils.gettext ('page'),
                            blip.html.Span(page.ident.split('/')[2],
                                           html_class='pageid'))
             status = page.data.get ('docstatus', '00none')
             if status is None:
                 status = '00none'
+            stats.setdefault (status, 0)
+            stats[status] = stats[status] + 1
             span = blip.html.Span(status[2:], html_class='status')
             span.add_data_attribute ('sort-key', status[:2])
             lbox.add_fact (blip.utils.gettext ('status'), span)
             docdate = page.data.get ('docdate', None)
+
+        for status in sorted (stats.keys(), reverse=True):
+            # Scale up by 10, because numbers are usually low.
+            meter.add_bar (10 * stats[status],
+                           blip.utils.gettext ('%s (%i)') % (status[2:], stats[status]))
 
         response.payload = tab
         return response
@@ -359,17 +372,22 @@ class DocumentsTab (blip.html.TabProvider):
             return None
 
         response = blip.web.WebResponse (request)
-        tab = blip.html.ContainerBox ()
-        tab.set_columns (2)
-        tab.add_sort_link ('title', blip.utils.gettext ('title'), 1)
+        tab = blip.html.PaddingBox ()
+        meter = blip.html.Meter ()
+        tab.add_content (meter)
+
+        cont = blip.html.ContainerBox ()
+        tab.add_content (cont)
+        cont.add_sort_link ('title', blip.utils.gettext ('title'), 1)
         if request.record.type == u'Set':
-            tab.add_sort_link ('module', blip.utils.gettext ('module'))
-        tab.add_sort_link ('status', blip.utils.gettext ('status'))
-        tab.add_sort_link ('type', blip.utils.gettext ('type'))
+            cont.add_sort_link ('module', blip.utils.gettext ('module'))
+        cont.add_sort_link ('status', blip.utils.gettext ('status'))
+        cont.add_sort_link ('type', blip.utils.gettext ('type'))
 
         blip.db.Branch.select_parent (sel)
+        stats = {}
         for doc in sel.get_sorted ('title'):
-            lbox = tab.add_link_box (doc)
+            lbox = cont.add_link_box (doc)
             if request.record.type == u'Set':
                 lbox.add_fact (blip.utils.gettext ('module'),
                                blip.html.Span(blip.html.Link (doc['parent'].blip_url,
@@ -378,12 +396,19 @@ class DocumentsTab (blip.html.TabProvider):
             status = doc.data.get ('docstatus', '00none')
             if status is None:
                 status = '00none'
+            stats.setdefault (status, 0)
+            stats[status] = stats[status] + 1
             span = blip.html.Span(status[2:], html_class='status')
             span.add_data_attribute ('sort-key', status[:2])
             lbox.add_fact (blip.utils.gettext ('status'), span)
             if doc.subtype is not None:
                 lbox.add_fact (blip.utils.gettext ('type'),
                                blip.html.Span(doc.subtype, html_class='type'))
+
+        for status in sorted (stats.keys(), reverse=True):
+            # Scale up by 10, because numbers are usually low.
+            meter.add_bar (10 * stats[status],
+                           blip.utils.gettext ('%s (%i)') % (status[2:], stats[status]))
 
         response.payload = tab
         return response

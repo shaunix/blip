@@ -388,6 +388,16 @@ div.MeterBar {
   -webkit-transition: opacity 0.2s linear;
   -moz-transition: opacity 0.2s linear;
 }
+div.MeterBar0 { background-color: #3455a4; }
+div.MeterBar1 { background-color: #729fcf; }
+div.MeterBar2 { background-color: #cc0000; }
+div.MeterBar3 { background-color: #ef2929; }
+div.MeterBar4 { background-color: #75507b; }
+div.MeterBar5 { background-color: #ad7fa8; }
+div.MeterBar6 { background-color: #73d216; }
+div.MeterBar7 { background-color: #8ae234; }
+div.MeterBar8 { background-color: #f57900; }
+div.MeterBar9 { background-color: #fcaf3e; }
 div.MeterBar:hover {
   opacity: 0.9;
 }
@@ -471,6 +481,7 @@ a.SortLinksActive span.SortLinks {
   background: -moz-linear-gradient(top, white -4px, #fcf197 20px);
 }
 div.SortLinks a { color: #204a87; }
+div.SortLinks a:hover, div.SortLinks a:focus { text-decoration: none; }
 div.SortMenu {
   position: absolute;
   background-color: #eeeeec;
