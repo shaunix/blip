@@ -343,7 +343,8 @@ class ListPostsTab (blip.html.TabProvider):
 
         response = blip.web.WebResponse (request)
 
-        msgid = score_decode (request.query.get('tab').split('/')[-1])
+        msgname = request.query.get('tab').split('/')[-1]
+        msgid = score_decode (msgname)
         ident = request.record.ident + u'/' + msgid
         post = blip.db.ForumPost.get(ident)
         tab = blip.html.SectionBox (post.title)
@@ -352,7 +353,7 @@ class ListPostsTab (blip.html.TabProvider):
 
         import email.parser
         parser = email.parser.Parser()
-        msg = parser.parse (open (os.path.join (*([blinq.config.web_files_dir] + post.ident.split('/')))))
+        msg = parser.parse (open (os.path.join (*([blinq.config.web_files_dir] + post.forum.ident.split('/') + [msgname]))))
 
         facts = blip.html.FactsTable()
         pad.add_content (facts)

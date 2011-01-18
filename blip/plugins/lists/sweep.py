@@ -43,6 +43,16 @@ import blip.utils
 import blip.plugins.doap.sweep
 import blip.plugins.scores.sweep
 
+def score_encode (s):
+    out = ''
+    pat = re.compile('[A-Za-z0-9-]')
+    for c in s:
+        if pat.match(c):
+            out += c
+        else:
+            out += '_' + str(ord(c))
+    return out
+
 class ListsResponder (blip.sweep.SweepResponder,
                       blip.plugins.scores.sweep.ScoreUpdater):
     command = 'lists'
@@ -290,7 +300,7 @@ class ListsResponder (blip.sweep.SweepResponder,
             post.datetime = dt
             post.weeknum = blip.utils.weeknum (dt)
 
-            outfile = open (os.path.join(outdir, msgid), 'w')
+            outfile = open (os.path.join(outdir, score_encode (msgid)), 'w')
             outfile.write (msg.as_string())
             outfile.close()
 
