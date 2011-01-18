@@ -20,6 +20,7 @@
 
 import datetime
 import os
+import re
 
 import blinq.config
 import blinq.utils
@@ -32,6 +33,28 @@ import blip.web
 
 import blip.plugins.home.web
 import blip.plugins.index.web
+
+def score_encode (s):
+    out = ''
+    pat = re.compile('[A-Za-z0-9-]')
+    for c in s:
+        if pat.match(c):
+            out += c
+        else:
+            out += '_' + str(ord(c))
+    return out
+
+def score_decode (s):
+    out = ''
+    i = 0
+    while i < len(s):
+        if s[i] == '_' and i + 2 < len(s):
+            out += chr(int(s[i+1:i+3]))
+            i += 3
+        else:
+            out += s[i]
+            i += 1
+    return out
 
 class AllListsResponder (blip.web.PageResponder):
     @classmethod
@@ -243,6 +266,8 @@ class ListPostsTab (blip.html.TabProvider):
 
     @classmethod
     def respond (cls, request):
+        if blip.html.TabProvider.match_tab (request, 'posts/*'):
+            return cls.respond_post (request)
         if not blip.html.TabProvider.match_tab (request, 'posts'):
             return None
         if isinstance (request.record, blip.db.Forum) and request.record.type == u'List':
@@ -307,6 +332,60 @@ class ListPostsTab (blip.html.TabProvider):
 
         return response
 
+    @classmethod
+    def respond_post (cls, request):
+        if isinstance (request.record, blip.db.Forum) and request.record.type == u'List':
+            sel = (blip.db.ForumPost.forum == request.record)
+        elif isinstance (request.record, blip.db.Entity):
+            sel = (blip.db.ForumPost.author == request.record)
+        else:
+            return None
+
+        response = blip.web.WebResponse (request)
+
+        msgid = score_decode (request.query.get('tab').split('/')[-1])
+        ident = request.record.ident + u'/' + msgid
+        post = blip.db.ForumPost.get(ident)
+        tab = blip.html.SectionBox (post.title)
+        pad = blip.html.PaddingBox ()
+        tab.add_content (pad)
+
+        import email.parser
+        parser = email.parser.Parser()
+        msg = parser.parse (open (os.path.join (*([blinq.config.web_files_dir] + post.ident.split('/')))))
+
+        facts = blip.html.FactsTable()
+        pad.add_content (facts)
+        facts.add_fact ('From', msg.get('From'))
+        facts.add_fact ('To', msg.get('To'))
+        if msg.get('Cc') is not None:
+            facts.add_fact ('Cc', msg.get('Cc'))
+        facts.add_fact ('Date', post.datetime.strftime('%Y-%m-%d %T'))
+
+        added = False
+        for msgpart in msg.walk():
+            if msgpart.get_content_type() == 'text/plain':
+                pad.add_content (blip.html.Pre(msgpart.get_payload()))
+                added = True
+                break
+
+        if not added:
+            admon = blip.html.AdmonBox (blip.html.AdmonBox.error,
+                                        blip.utils.gettext ('No text part found'))
+            pad.add_content (admon)
+
+        children = blip.db.ForumPost.select (parent_ident=post.ident)
+        children = blinq.utils.attrsorted (list(children), 'datetime')
+        if len(children) > 0:
+            clist = blip.html.BulletList()
+            pad.add_content (clist)
+            for child in children:
+                clist.add_link (post.forum.blip_url + '#posts/' +
+                                score_encode(child.ident.split('/')[-1]),
+                                child.title)
+
+        response.payload = tab
+        return response
 
 class ListPostsDiv (blip.web.ContentResponder):
     @classmethod
@@ -371,13 +450,20 @@ class ListPostsDiv (blip.web.ContentResponder):
         for post in posts:
             if post.datetime is None:
                 continue
+            lnk = blip.html.Link(post.forum.blip_url + '#posts/' +
+                                 score_encode(post.ident.split('/')[-1]),
+                                 post.title)
+            act = blip.html.ActivityBox (subject=lnk)
+            act.add_info (post.datetime.strftime('%T'))
             if isinstance (request.record, blip.db.Forum):
-                act = blip.html.ActivityBox (subject=post['author'],
-                                             datetime=post.datetime.strftime('%T'))
+                act.add_info (blip.html.Link(post['author']))
+                #act = blip.html.ActivityBox (subject=post['author'],
+                #datetime=post.datetime.strftime('%T'))
             else:
-                act = blip.html.ActivityBox (subject=post['forum'],
-                                             datetime=post.datetime.strftime('%T'))
-            act.set_summary (post.title)
+                act.add_info (blip.html.Link(post['forum']))
+                #act = blip.html.ActivityBox (subject=post['forum'],
+                #datetime=post.datetime.strftime('%T'))
+            #act.set_summary (post.title)
             div.add_activity (post.datetime.strftime('%Y-%m-%d'), act)
         return div
 
@@ -512,7 +598,10 @@ class ListThreadsDiv (blip.web.ContentResponder):
         for thread in threads:
             if thread.datetime is None:
                 continue
-            act = blip.html.ActivityBox (subject=thread.title,
+            lnk = blip.html.Link(thread.forum.blip_url + '#posts/' +
+                                 score_encode(thread.ident.split('/')[-1]),
+                                 thread.title)
+            act = blip.html.ActivityBox (subject=lnk,
                                          datetime=thread.datetime.strftime('%T'))
             store = blip.db.get_store (blip.db.ForumPost)
             idents = [thread.ident]

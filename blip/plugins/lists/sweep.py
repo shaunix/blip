@@ -218,14 +218,14 @@ class ListsResponder (blip.sweep.SweepResponder,
 
     @classmethod
     def update_archive (cls, ml, request, cache, archive):
-        fd = open(archive, 'rb')
-        mbox = mailbox.PortableUnixMailbox (fd)
-        i = -1
+        mbox = mailbox.mbox (archive)
         # Any date outside this range is probably crap
         clamp = (datetime.datetime(1970, 1, 1),
                  datetime.datetime.utcnow() + datetime.timedelta (seconds=86400))
+        outdir = os.path.join (*([blinq.config.web_files_dir] + ml.ident.split('/')))
+        if not os.path.exists (outdir):
+            os.makedirs (outdir)
         for msg in mbox:
-            i += 1
             msgfrom = msg.get ('From')
             msgdate = msg.get ('Date')
             msgsubject = msg.get ('Subject')
@@ -260,7 +260,7 @@ class ListsResponder (blip.sweep.SweepResponder,
             # The Date header is screwed up way too often. We'll get the
             # date from the Received header, if at all possible.
             dt = None
-            for received in msg.getallmatchingheaders ('Received'):
+            for received in msg.get_all ('Received'):
                 try:
                     received = re.sub ('\(.*', '', received.split(';')[-1]).strip()
                     received = email.utils.parsedate_tz (received)
@@ -290,9 +290,9 @@ class ListsResponder (blip.sweep.SweepResponder,
             post.datetime = dt
             post.weeknum = blip.utils.weeknum (dt)
 
-            # FIXME
-            #post.web = urlbase + 'msg%05i.html' % i
-        fd.close()
+            outfile = open (os.path.join(outdir, msgid), 'w')
+            outfile.write (msg.as_string())
+            outfile.close()
 
 
 class LinkExtractor (HTMLParser.HTMLParser):
