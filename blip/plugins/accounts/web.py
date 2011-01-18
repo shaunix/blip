@@ -88,7 +88,10 @@ class BasicAccountHandler (blip.web.AccountHandler, blip.html.HeaderLinksProvide
             else:
                 response = cls.respond_register (request)
         elif request.path[1] == 'auth':
-            response = cls.respond_auth (request)
+            if request.query.get('q') == 'resend':
+                response = cls.respond_auth_resend (request)
+            else:
+                response = cls.respond_auth (request)
         elif request.path[1] == 'logout':
             response = cls.respond_logout (request)
 
@@ -148,8 +151,14 @@ class BasicAccountHandler (blip.web.AccountHandler, blip.html.HeaderLinksProvide
             if account is None:
                 raise blip.utils.BlipException('No account found')
             if account.check_type == 'new':
-                admon = blip.html.AdmonBox (blip.html.AdmonBox.error,
-                                            blip.utils.gettext('You have not yet verified your email address.'))
+                span = blip.html.Span(divider=blip.html.SPACE)
+                span.add_content (blip.utils.gettext('You have not yet verified your email address.'))
+                lnk = blinq.config.web_root_url + 'account/auth?q=resend&email=' + account.email
+                lnk = 'javascript:replace("accountform", "%s")' % lnk
+                lnk = blip.html.Link (lnk,
+                                      blip.utils.gettext('Request new authorization token.'))
+                span.add_content (lnk)
+                admon = blip.html.AdmonBox (blip.html.AdmonBox.error, span)
                 raise blip.utils.BlipException()
             if account.password != crypt.crypt (password, 'pu'):
                 raise blip.utils.BlipException()
@@ -164,7 +173,7 @@ class BasicAccountHandler (blip.web.AccountHandler, blip.html.HeaderLinksProvide
             blip.db.rollback (blip.db.Account)
             if admon is None:
                 admon = blip.html.AdmonBox (blip.html.AdmonBox.error,
-                                            blip.utils.gettext('Invalid username or password %s.') % err.message)
+                                            blip.utils.gettext('Invalid username or password.'))
             response.payload = admon
             return response
         else:
@@ -214,6 +223,30 @@ class BasicAccountHandler (blip.web.AccountHandler, blip.html.HeaderLinksProvide
         table.add_row ('', span)
 
         return response
+
+    @classmethod
+    def send_authorization_token (cls, user, request):
+        # Uncomment *ONLY* for testing on non-production systems without
+        # a mail server. Do not do this on a production server. Ever.
+        #div = blip.html.Div('%saccount/auth/%s' % (blinq.config.web_root_url, user.check_hash))
+        #blip.db.flush (blip.db.Account)
+        #blip.db.commit (blip.db.Account)
+        #return div
+
+        from blip.mail import Mail
+        mail = Mail (blip.utils.gettext ('Confirm New Blip Account'))
+        mail.add_recipient (user.email)
+        mail.add_content (blip.utils.gettext ('Hello %s') % user.data.get('realname', user.email))
+        mail.add_content (blip.utils.gettext (
+                'You have registered a Blip account. To complete your account registration,\n' +
+                'you need to verify your email address. Please visit the URL below.'))
+        mail.add_content ('%saccount/auth/%s' % (blinq.config.web_root_url, user.check_hash))
+        mail.send ()
+        div = blip.html.Div (blip.utils.gettext (
+                'Blip has sent you a confirmation email.  Please visit the link' +
+                ' in that email to complete your registration.'
+                ))
+        return div
 
     @classmethod
     def respond_register_submit (cls, request):
@@ -275,29 +308,29 @@ class BasicAccountHandler (blip.web.AccountHandler, blip.html.HeaderLinksProvide
                                     check_type='new',
                                     check_hash=token)
             user.data['realname'] = realname
+            response.payload = cls.send_authorization_token (user, request)
+        except Exception, err:
+            blip.db.rollback (blip.db.Account)
+            admon = blip.html.AdmonBox (blip.html.AdmonBox.error,
+                                        blip.utils.gettext('There was a problem processing the request.'))
+            response.payload = admon
+            return response
+        else:
+            blip.db.flush (blip.db.Account)
+            blip.db.commit (blip.db.Account)
+        return response
 
-            # Uncomment *ONLY* for testing on non-production systems without
-            # a mail server. Do not do this on a production server. Ever.
-            #div = blip.html.Div('%saccount/auth/%s' % (blinq.config.web_root_url, token))
-            #response.payload = div
-            #blip.db.flush (blip.db.Account)
-            #blip.db.commit (blip.db.Account)
-            #return response
-
-            from blip.mail import Mail
-            mail = Mail (blip.utils.gettext ('Confirm New Blip Account'))
-            mail.add_recipient (email)
-            mail.add_content (blip.utils.gettext ('Hello %s') % realname)
-            mail.add_content (blip.utils.gettext (
-                    'You have registered a Blip account. To complete your account registration,\n' +
-                    'you need to verify your email address. Please visit the URL below.'))
-            mail.add_content ('%saccount/auth/%s' % (blinq.config.web_root_url, token))
-            mail.send ()
-            div = blip.html.Div (blip.utils.gettext (
-                    'Blip has sent you a confirmation email.  Please visit the link' +
-                    ' in that email to complete your registration.'
-                    ))
-            response.payload = div
+    @classmethod
+    def respond_auth_resend (cls, request):
+        response = blip.web.WebResponse (request)
+        try:
+            email = blip.utils.utf8dec (request.query.get('email'))
+            user = blip.db.Account.select_one (email=email)
+            if user is None or user.check_type != u'new':
+                raise blip.utils.BlipException()
+            user.check_time = datetime.datetime.utcnow()
+            user.check_hash = blip.utils.get_token()
+            response.payload = cls.send_authorization_token (user, request)
         except Exception, err:
             blip.db.rollback (blip.db.Account)
             admon = blip.html.AdmonBox (blip.html.AdmonBox.error,
