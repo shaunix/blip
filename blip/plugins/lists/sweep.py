@@ -270,18 +270,20 @@ class ListsResponder (blip.sweep.SweepResponder,
             # The Date header is screwed up way too often. We'll get the
             # date from the Received header, if at all possible.
             dt = None
-            for received in msg.get_all ('Received'):
-                try:
-                    received = re.sub ('\(.*', '', received.split(';')[-1]).strip()
-                    received = email.utils.parsedate_tz (received)
-                    rdt = datetime.datetime (*received[:6])
-                    if received[-1] is not None:
-                        rdt = rdt + datetime.timedelta (seconds=received[-1])
-                    if rdt is not None and rdt >= clamp[0] and rdt <= clamp[1]:
-                        dt = rdt
-                        break
-                except:
-                    rdt = None
+            msgreceived = msg.get_all ('Received')
+            if msgreceived is not None:
+                for received in msgreceived:
+                    try:
+                        received = re.sub ('\(.*', '', received.split(';')[-1]).strip()
+                        received = email.utils.parsedate_tz (received)
+                        rdt = datetime.datetime (*received[:6])
+                        if received[-1] is not None:
+                            rdt = rdt + datetime.timedelta (seconds=received[-1])
+                        if rdt is not None and rdt >= clamp[0] and rdt <= clamp[1]:
+                            dt = rdt
+                            break
+                    except:
+                        rdt = None
             # Sometimes the Received header is just as flaky. If the year is
             # two digits, assume fire rained from the sky on Y2K.
             if dt is not None and dt.year < 100:
