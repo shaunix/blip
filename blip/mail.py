@@ -45,7 +45,7 @@ class Mail (object):
             raise MailException ('No recipients')
         if len(self._content) == 0:
             raise MailException ('No content')
-        message = MIMEText ('\n\n'.join (self._content))
+        message = MIMEText ('\n\n'.join (self._content), _charset='UTF-8')
         message['Subject'] = self._subject
         message['From'] = blinq.config.mail_from
         message['To'] = ','.join (self._recipients)
