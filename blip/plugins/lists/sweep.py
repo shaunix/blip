@@ -248,7 +248,7 @@ class ListsResponder (blip.sweep.SweepResponder,
             msgid = blip.utils.utf8dec (email.utils.parseaddr (msgid)[1])
             ident = ml.ident + u'/' + msgid
             post = blip.db.ForumPost.get_or_create (ident, u'ListPost')
-            post.forum = ml
+            post.forum_ident = ml.ident
             post.name = blip.utils.utf8dec (msgsubject)
 
             if msgparent is not None:
@@ -301,6 +301,9 @@ class ListsResponder (blip.sweep.SweepResponder,
                     dt = None
             post.datetime = dt
             post.weeknum = blip.utils.weeknum (dt)
+
+            blip.db.flush()
+            post.decache()
 
             outfile = open (os.path.join(outdir, score_encode (msgid)), 'w')
             outfile.write (msg.as_string())
