@@ -302,6 +302,28 @@ class ListsResponder (blip.sweep.SweepResponder,
             post.datetime = dt
             post.weeknum = blip.utils.weeknum (dt)
 
+            msgdesc = ''
+            for msgpart in msg.walk():
+                if msgpart.get_content_type() == 'text/plain':
+                    msgtext = msgpart.get_payload()
+                    seencmt = False
+                    deldesc = True
+                    for msgline in msgtext.split('\n'):
+                        if len(msgdesc) > 250:
+                            break
+                        if msgline.startswith('>'):
+                            if not seencmt and len(msgdesc) < 80:
+                                deldesc = True
+                            seencmt = True
+                            continue
+                        if len(msgline) > 0:
+                            if deldesc:
+                                msgdesc = ''
+                                deldesc = False
+                            msgdesc += msgline + ' '
+                    post.desc = blip.utils.utf8dec (msgdesc)
+                    break
+
             blip.db.flush()
             post.decache()
 

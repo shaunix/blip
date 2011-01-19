@@ -378,12 +378,18 @@ class ListPostsTab (blip.html.TabProvider):
         children = blip.db.ForumPost.select (parent_ident=post.ident)
         children = blinq.utils.attrsorted (list(children), 'datetime')
         if len(children) > 0:
-            clist = blip.html.BulletList()
+            clist = blip.html.SectionBox (blip.utils.gettext ('Replies'))
             pad.add_content (clist)
             for child in children:
-                clist.add_link (post.forum.blip_url + '#posts/' +
-                                score_encode(child.ident.split('/')[-1]),
-                                child.title)
+                lnk = blip.html.Link(post.forum.blip_url + '#posts/' +
+                                     score_encode(child.ident.split('/')[-1]),
+                                     child.title)
+                act = blip.html.ActivityBox (subject=lnk)
+                act.add_info (child.datetime.strftime('%Y-%d-%m %T'))
+                act.add_info (blip.html.Link(child.author))
+                if child.desc is not None:
+                    act.set_summary (blip.html.MoreLink (child.desc, 100))
+                clist.add_content (act)
 
         response.payload = tab
         return response
@@ -458,13 +464,10 @@ class ListPostsDiv (blip.web.ContentResponder):
             act.add_info (post.datetime.strftime('%T'))
             if isinstance (request.record, blip.db.Forum):
                 act.add_info (blip.html.Link(post['author']))
-                #act = blip.html.ActivityBox (subject=post['author'],
-                #datetime=post.datetime.strftime('%T'))
             else:
                 act.add_info (blip.html.Link(post['forum']))
-                #act = blip.html.ActivityBox (subject=post['forum'],
-                #datetime=post.datetime.strftime('%T'))
-            #act.set_summary (post.title)
+            if post.desc is not None:
+                act.set_summary (blip.html.MoreLink (post.desc, 100))
             div.add_activity (post.datetime.strftime('%Y-%m-%d'), act)
         return div
 
@@ -604,6 +607,8 @@ class ListThreadsDiv (blip.web.ContentResponder):
                                  thread.title)
             act = blip.html.ActivityBox (subject=lnk,
                                          datetime=thread.datetime.strftime('%T'))
+            if thread.desc is not None:
+                act.set_summary (blip.html.MoreLink (thread.desc, 100))
             store = blip.db.get_store (blip.db.ForumPost)
             idents = [thread.ident]
             children = 1
