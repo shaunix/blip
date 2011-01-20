@@ -135,7 +135,7 @@ class ListsResponder (blip.sweep.SweepResponder,
             try:
                 links = LinkExtractor (archive).get_links ()
                 for link in links:
-                    if link.endswith ('.txt.gz'):
+                    if link.endswith ('.txt.gz') or link.endswith ('.txt'):
                         mboxes.append (urlparse.urljoin (archive, link))
             except:
                 pass
@@ -175,7 +175,10 @@ class ListsResponder (blip.sweep.SweepResponder,
                 blip.utils.log ('Processing archive %s' % url)
                 tmp = blip.utils.tmpfile()
                 fd = open (tmp, 'w')
-                fd.write (gzip.GzipFile (fileobj=StringIO.StringIO (httpres.read ())).read ())
+                if url.endswith ('.txt.gz'):
+                    fd.write (gzip.GzipFile (fileobj=StringIO.StringIO (httpres.read ())).read ())
+                else:
+                    fd.write (httpres.read())
                 fd.close ()
                 httpres.close ()
                 cls.update_archive (ml, request, cache, tmp)
