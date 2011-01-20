@@ -229,6 +229,20 @@ class OverviewTab (blip.html.TabProvider):
             span.add_content (blip.html.Link (ent))
         facts.add_fact (blip.utils.gettext ('Top Posters'), span)
 
+        facts.start_fact_group ()
+        span = blip.html.Span (divider=blip.html.BULLET)
+        sel = blip.db.Selection (blip.db.ForumPost,
+                                 blip.db.And (blip.db.ForumPost.forum == request.record,
+                                              blip.db.ForumPost.parent == None))
+        sel.add_where (blip.db.ForumPost.weeknum <= blip.utils.weeknum())
+        sel.order_by (blip.db.Desc (blip.db.ForumPost.datetime))
+        for post in sel[:10]:
+            lnk = blip.html.Link(request.record.blip_url + '#posts/' +
+                                 score_encode(post.ident.split('/')[-1]),
+                                 post.title)
+            span.add_content (lnk)
+        facts.add_fact (blip.utils.gettext ('Recent Threads'), span)
+
         if request.record.updated is not None:
             facts.start_fact_group ()
             facts.add_fact (blip.utils.gettext ('Last Updated'),
