@@ -66,9 +66,9 @@ class ListPostMessageFormatter (blip.plugins.home.web.MessageFormatter):
                 span = blip.html.Span ('%i posts to ' % message.count)
                 ml = blip.db.Forum.get (message.pred)
                 span.add_content (blip.html.Link (ml))
-                box.add_info (span)
+                box.set_summary (span)
             else:
-                box.add_info ('%i posts' % message.count)
+                box.set_summary ('%i posts' % message.count)
             return box
         return None
 
@@ -656,20 +656,3 @@ class ListThreadsDiv (blip.web.ContentResponder):
             act.add_info (span)
             div.add_activity (thread.datetime.strftime('%Y-%m-%d'), act)
         return div
-
-
-class PostMessageFormatter (blip.plugins.home.web.MessageFormatter):
-    @classmethod
-    def format_message (cls, message, record):
-        if message.type == u'post':
-            box = blip.html.ActivityBox (subject=record,
-                                         datetime=message.datetime.strftime('%Y-%m-%d'))
-            if isinstance (record, blip.db.Entity):
-                span = blip.html.Span ('%i posts to ' % message.count)
-                span.add_content (blip.html.Link (blip.db.Forum.get (message.pred)))
-                box.add_info (span)
-            else:
-                box.add_info ('%i posts' % message.count)
-            return box
-        return None
-

@@ -62,9 +62,9 @@ class CommitMessageFormatter (blip.plugins.home.web.MessageFormatter):
                 span = blip.html.Span ('%i commits to ' % message.count)
                 proj = blip.db.Project.get (message.pred)
                 span.add_content (blip.html.Link (proj.default))
-                box.add_info (span)
+                box.set_summary (span)
             else:
-                box.add_info ('%i commits' % message.count)
+                box.set_summary ('%i commits' % message.count)
             return box
         return None
 
@@ -220,8 +220,7 @@ class CommitsTab (blip.html.TabProvider):
                         i += 1
                     if i < len(comment):
                         line = line[:i] + '...'
-                act.set_summary (blip.html.Span (line,
-                                                 html_class='tt'))
+                act.set_summary (blip.html.Span (line))
                 if line != comment.strip():
                     act.set_description (blip.html.Pre(comment))
 

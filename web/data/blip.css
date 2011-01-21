@@ -16,7 +16,6 @@ body {
   background: -webkit-gradient(linear, left -60, left 40, from(white), to(#204a87));
   background: -moz-linear-gradient(top, white -60px, #204a87 40px);
   color: #fcf197;
-  text-shadow: -1px 1px 0px #204a87;
 }
 #header table {
   width: 800px;
@@ -67,7 +66,6 @@ h1 img {
 h1 div.title {
   font-size: 1.44em;
   font-weight: bold;
-  text-shadow: -1px 1px 0px white;
 }
 h1 div.desc {
   font-style: italic;
@@ -725,22 +723,15 @@ a.filteron {
 /** ActivityBox ***************************************************************/
 
 div.ActivityBox {
-  margin: 0 0 6px 1px;
-  padding: 2px 6px 2px 6px;
+  margin: 0 0 12px 0;
   background-color: white;
-  border: solid 1px #eeeeec;
 }
 div.ActivityContainer div.ActivityBox { margin-left: 6px; }
-div.ActivityBox:hover {
-  background-color: #eeeeec;
-  background: -webkit-gradient(linear, left -120, left 80, from(#b1fbfc), to(white));
-  background: -moz-linear-gradient(top, #b1fbfc -120px, white 80px);
-}
 div.ActivityInfo {
   color: #888a85;
   -webkit-transition: color 0.2s linear;
   -moz-transition: color 0.2s linear;
-  margin: 6px 0 0 0;
+  margin: 0 0 0 1.44em;
 }
 div.ActivityBox:hover div.ActivityInfo { color: #555753; }
 span.ActivitySubject {
@@ -748,19 +739,19 @@ span.ActivitySubject {
   font-weight: bold;
 }
 span.ActivitySubject a { color: #3465a4; }
-div.ActivityContent { margin: 6px 0 0 0; }
-div.ActivitySummary { margin: 6px 0 0 0; }
-div.ActivityDescription {
-  margin: 6px 0 6px 0;
+div.ActivityContent { margin: 0; }
+div.ActivitySummary {
+  margin: 0;
+  color: #555753;
 }
+div.ActivityDescription { margin: 0; }
 div.ActivityContainer { margin: 0 0 12px 0; }
 div.ActivityTitle {
   background-color: #eeeeec;
   color: #555753;
   font-weight: bold;
-  text-shadow: -1px 1px 0px white;
   margin: 0 0 6px 0;
-  padding: 1px 6px 1px 8px;
+  padding: 1px 6px 1px 6px;
 }
 div.ActivityContainerTitle {
   color: #2e3436;
