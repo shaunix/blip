@@ -372,12 +372,8 @@ class DocumentsTab (blip.html.TabProvider):
             return None
 
         response = blip.web.WebResponse (request)
-        tab = blip.html.PaddingBox ()
-        meter = blip.html.Meter ()
-        tab.add_content (meter)
 
         cont = blip.html.ContainerBox ()
-        tab.add_content (cont)
         cont.add_sort_link ('title', blip.utils.gettext ('title'), 1)
         if request.record.type == u'Set':
             cont.add_sort_link ('module', blip.utils.gettext ('module'))
@@ -405,10 +401,17 @@ class DocumentsTab (blip.html.TabProvider):
                 lbox.add_fact (blip.utils.gettext ('type'),
                                blip.html.Span(doc.subtype, html_class='type'))
 
-        for status in sorted (stats.keys(), reverse=True):
-            # Scale up by 10, because numbers are usually low.
-            meter.add_bar (10 * stats[status],
-                           blip.utils.gettext ('%s (%i)') % (status[2:], stats[status]))
+        if len(stats.keys()) > 1:
+            tab = blip.html.PaddingBox ()
+            meter = blip.html.Meter ()
+            tab.add_content (meter)
+            tab.add_content (cont)
+            for status in sorted (stats.keys(), reverse=True):
+                # Scale up by 10, because numbers are usually low.
+                meter.add_bar (10 * stats[status],
+                               blip.utils.gettext ('%s (%i)') % (status[2:], stats[status]))
+        else:
+            tab = cont
 
         response.payload = tab
         return response
