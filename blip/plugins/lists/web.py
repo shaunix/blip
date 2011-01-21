@@ -56,6 +56,22 @@ def score_decode (s):
             i += 1
     return out
 
+class ListPostMessageFormatter (blip.plugins.home.web.MessageFormatter):
+    @classmethod
+    def format_message (cls, message, record):
+        if message.type == u'post':
+            box = blip.html.ActivityBox (subject=record,
+                                         datetime=message.datetime.strftime('%Y-%m-%d'))
+            if isinstance (record, blip.db.Entity):
+                span = blip.html.Span ('%i posts to ' % message.count)
+                ml = blip.db.Forum.get (message.pred)
+                span.add_content (blip.html.Link (ml))
+                box.add_info (span)
+            else:
+                box.add_info ('%i posts' % message.count)
+            return box
+        return None
+
 class AllListsResponder (blip.web.PageResponder):
     @classmethod
     def respond (cls, request, **kw):

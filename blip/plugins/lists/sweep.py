@@ -304,6 +304,7 @@ class ListsResponder (blip.sweep.SweepResponder,
                     dt = None
             post.datetime = dt
             post.weeknum = blip.utils.weeknum (dt)
+            post.make_messages ()
 
             msgdesc = ''
             for msgpart in msg.walk():

@@ -908,6 +908,10 @@ class Forum (BlipRecord):
     score = Int ()
     score_diff = Int ()
 
+    @property
+    def watchable (self):
+        return self.ident
+
 
 class ForumPost (BlipRecord):
     forum_ident = ShortText ()
@@ -929,6 +933,8 @@ class ForumPost (BlipRecord):
         if kw.has_key ('datetime'):
             kw['weeknum'] = blip.utils.weeknum (kw['datetime'])
         BlipRecord.__init__ (self, ident, type, **kw)
+
+    def make_messages (self):
         try:
             Message.make_message (u'post', self.author_ident, self.forum_ident, self.datetime)
             Message.make_message (u'post', self.forum_ident, None, self.datetime)
