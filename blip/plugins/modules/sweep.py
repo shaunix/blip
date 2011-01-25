@@ -137,9 +137,9 @@ class ModulesResponder (blip.sweep.SweepResponder,
                 scanner.update ()
                 blip.db.flush ()
                 ident_i += 1
-            except:
+            except Exception, err:
                 blip.db.rollback ()
-                raise
+                blip.utils.warn (str(err))
             else:
                 blip.db.commit ()
 
