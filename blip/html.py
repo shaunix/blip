@@ -639,7 +639,7 @@ class Page (HtmlObject, ContentComponent):
                 res.write('<div class="pane" id="pane-%s">' % self.escape(pane))
                 self._panes[pane].output (res)
                 res.write('</div>')
-        res.write('</div></div></div>\n')
+        res.write('</div><div style="clear:both"></div></div></div>\n')
         res.write('</div></body></html>\n')
         
     def output_page_content (self, res):

@@ -136,7 +136,6 @@ div#all {
   border-left: solid 1px #d3d7cf;
   border-right: solid 1px #d3d7cf;
   width: 578px;
-  min-height: 250px;
 }
 .pane { display: none; }
 
@@ -145,7 +144,6 @@ div#all {
   padding: 0;
   float: right;
   width: 180px;
-  min-height: 80%;
 }
 ul#tabs {
   margin: 0 0 1.2em -1px; padding: 0;
