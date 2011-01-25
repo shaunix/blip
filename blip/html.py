@@ -1735,9 +1735,13 @@ class Pre (HtmlObject, ContentComponent):
         """Output the HTML."""
         wid = self.get_html_id ()
         if wid is not None:
-            res.write('<pre id="%s">' % self.escape(wid))
+            res.write('<pre id="%s"' % self.escape(wid))
         else:
-            res.write('<pre>')
+            res.write('<pre')
+        wcls = self.get_html_class ()
+        if wcls != None:
+            res.write(' class="%s"' % self.escape(wcls))
+        res.write('>')
         ContentComponent.output (self, res)
         res.write('</pre>')
 

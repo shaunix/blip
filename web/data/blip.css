@@ -231,6 +231,7 @@ pre {
   font-size: 0.83em;
   overflow: auto;
 }
+pre.sans { font-family: sans-serif; }
 span.tt {
   font-family: monospace;
   font-size: 0.83em;

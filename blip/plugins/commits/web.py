@@ -222,7 +222,7 @@ class CommitsTab (blip.html.TabProvider):
                         line = line[:i] + '...'
                 act.set_summary (blip.html.Span (line))
                 if line != comment.strip():
-                    act.set_description (blip.html.Pre(comment))
+                    act.set_description (blip.html.Pre(comment, html_class='sans'))
 
             div.add_activity (rev.datetime.strftime('%Y-%m-%d'), act)
         return div
