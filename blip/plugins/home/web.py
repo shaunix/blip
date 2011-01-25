@@ -208,8 +208,10 @@ class MessageIndexContentProvider (blip.plugins.index.web.IndexContentProvider):
             diff = datetime.datetime.utcnow() - lastdt
             if diff.days > 0:
                 box = blip.html.SidebarBox (blip.utils.gettext ('Last %i days') % diff.days)
+            elif diff.seconds > 3600:
+                box = blip.html.SidebarBox (blip.utils.gettext ('Last %i hours') % (diff.seconds // 3600 + 1))
             elif diff.seconds > 60:
-                box = blip.html.SidebarBox (blip.utils.gettext ('Last %i minutes') % (diff.seconds // 60))
+                box = blip.html.SidebarBox (blip.utils.gettext ('Last %i minutes') % (diff.seconds // 60 + 1))
             else:
                 box = blip.html.SidebarBox (blip.utils.gettext ('Last %i seconds') % diff.seconds)
         else:
