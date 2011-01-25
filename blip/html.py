@@ -525,7 +525,10 @@ class Page (HtmlObject, ContentComponent):
         """Output the HTML."""
         res.write('<!DOCTYPE html>\n')
         res.write('<html><head>\n')
-        res.write('<title>%s</title>\n' % self.escape(self._title))
+        page_title = self._title
+        if page_title is None or page_title == '':
+            page_title = blinq.config.web_site_name
+        res.write('<title>%s</title>\n' % self.escape(page_title))
         res.write('<meta http-equiv="Content-type" content="text/html; charset=utf-8">\n')
         res.write('<link rel="stylesheet" href="%sblip.css">\n'
                   % self.escape(blinq.config.web_data_url))
