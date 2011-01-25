@@ -18,6 +18,8 @@
 # Suite 330, Boston, MA  0211-1307  USA.
 #
 
+import datetime
+
 import blinq.config
 import blinq.utils
 
@@ -27,6 +29,8 @@ import blip.db
 import blip.html
 import blip.utils
 import blip.web
+
+import blip.plugins.index.web
 
 class MessageFormatter (blinq.ext.ExtensionPoint):
     @classmethod
@@ -174,3 +178,41 @@ class WatchesTab (blip.html.TabProvider):
         response = blip.web.WebResponse (request)
         response.payload = tab
         return response
+
+class MessageIndexContentProvider (blip.plugins.index.web.IndexContentProvider):
+    @classmethod
+    def provide_content (cls, page, response, **kw):
+        """Construct an info box for the index page"""
+        bl = blip.html.BulletList ()
+        messages = blip.db.Message.select ()
+        messages = messages.order_by (blip.db.Desc (blip.db.Message.datetime))
+        idents = []
+        lastdt = None
+        for message in messages[:12]:
+            if message.subj in idents:
+                continue
+            idents.append (message.subj)
+            record = None
+            req = blip.web.WebRequest (http=False,
+                                       path_info=message.subj,
+                                       query_string='')
+            for loc in blip.web.RecordLocator.get_extensions ():
+                if loc.locate_record (req):
+                    if req.record is not None:
+                        record = req.record
+                    break
+            if record is not None:
+                bl.add_link (record)
+                lastdt = message.datetime
+        if lastdt is not None:
+            diff = datetime.datetime.utcnow() - lastdt
+            if diff.days > 0:
+                box = blip.html.SidebarBox (blip.utils.gettext ('Last %i days') % diff.days)
+            elif diff.seconds > 60:
+                box = blip.html.SidebarBox (blip.utils.gettext ('Last %i minutes') % (diff.seconds // 60))
+            else:
+                box = blip.html.SidebarBox (blip.utils.gettext ('Last %i seconds') % diff.seconds)
+        else:
+            box = blip.html.SidebarBox (blip.utils.gettext ('Recent'))
+        box.add_content (bl)
+        page.add_sidebar_content (box)
