@@ -190,18 +190,26 @@ class WebResponder (AdminResponder):
 
     @classmethod
     def add_tool_options (cls, request):
-        pass
+        request.add_tool_option ('--wsgi',
+                                 dest='wsgi',
+                                 action='store_true',
+                                 default=False,
+                                 help='use WSGI instead of CGI')
 
     @classmethod
     def respond (cls, request):
         import shutil
         import stat
 
-        cgi = os.path.join (blinq.config.web_dir, 'index.cgi')
+        if request.get_tool_option ('wsgi', False):
+            fext = '.wsgi'
+        else:
+            fext = '.cgi'
+        cgi = os.path.join (blinq.config.web_dir, 'index' + fext)
         if not os.path.exists (cgi):
             site = request.get_common_option ('site')
             outfp = open(cgi, 'w')
-            infp = open(os.path.join (BLIP_DATA_DIR, 'web', 'index.cgi'))
+            infp = open(os.path.join (BLIP_DATA_DIR, 'web', 'index' + fext))
             for line in infp:
                 outfp.write(line.replace('@BLIP_SITE@', site))
             os.chmod (cgi,
@@ -211,7 +219,7 @@ class WebResponder (AdminResponder):
 
         htaccess = os.path.join (blinq.config.web_dir, '.htaccess')
         if not os.path.exists (htaccess):
-            shutil.copyfile (os.path.join (BLIP_DATA_DIR, 'web', 'htaccess'), htaccess)
+            shutil.copyfile (os.path.join (BLIP_DATA_DIR, 'web', 'htaccess' + fext), htaccess)
                          
         data = os.path.join (blinq.config.web_dir, 'data')
         # FIXME: descend into directory, in case there's new stuff
