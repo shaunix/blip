@@ -43,15 +43,7 @@ import blip.utils
 import blip.plugins.doap.sweep
 import blip.plugins.scores.sweep
 
-def score_encode (s):
-    out = ''
-    pat = re.compile('[A-Za-z0-9-]')
-    for c in s:
-        if pat.match(c):
-            out += c
-        else:
-            out += '_' + str(ord(c))
-    return out
+from blip.plugins.lists.utils import *
 
 class ListsResponder (blip.sweep.SweepResponder,
                       blip.plugins.scores.sweep.ScoreUpdater):
@@ -252,7 +244,7 @@ class ListsResponder (blip.sweep.SweepResponder,
             ident = ml.ident + u'/' + msgid
             post = blip.db.ForumPost.get_or_create (ident, u'ListPost')
             post.forum_ident = ml.ident
-            post.name = blip.utils.utf8dec (msgsubject)
+            post.name = decode_header (msgsubject)
 
             if msgparent is not None:
                 msgparent = blip.utils.utf8dec (email.utils.parseaddr (msgparent)[1])
@@ -264,7 +256,7 @@ class ListsResponder (blip.sweep.SweepResponder,
             msgfrom = email.utils.parseaddr (msgfrom)
             personident = blip.utils.utf8dec (msgfrom[1])
             person = blip.db.Entity.get_or_create_email (personident)
-            person.extend (name=msgfrom[0])
+            person.extend (name=decode_header(msgfrom[0]))
             post.author_ident = person.ident
             if person.ident != personident:
                 post.person_alias_ident = personident

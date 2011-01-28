@@ -34,27 +34,7 @@ import blip.web
 import blip.plugins.home.web
 import blip.plugins.index.web
 
-def score_encode (s):
-    out = ''
-    pat = re.compile('[A-Za-z0-9-]')
-    for c in s:
-        if pat.match(c):
-            out += c
-        else:
-            out += '_' + str(ord(c))
-    return out
-
-def score_decode (s):
-    out = ''
-    i = 0
-    while i < len(s):
-        if s[i] == '_' and i + 2 < len(s):
-            out += chr(int(s[i+1:i+3]))
-            i += 3
-        else:
-            out += s[i]
-            i += 1
-    return out
+from blip.plugins.lists.utils import *
 
 class ListPostMessageFormatter (blip.plugins.home.web.MessageFormatter):
     @classmethod
@@ -382,15 +362,25 @@ class ListPostsTab (blip.html.TabProvider):
         tab.add_content (pad)
 
         import email.parser
+        import email.utils
         parser = email.parser.Parser()
         msg = parser.parse (open (os.path.join (*([blinq.config.web_files_dir] + post.forum.ident.split('/') + [msgname]))))
 
         facts = blip.html.FactsTable()
         pad.add_content (facts)
-        facts.add_fact ('From', msg.get('From'))
-        facts.add_fact ('To', msg.get('To'))
+        def format_address_field (val):
+            ret = val.split(',')
+            for i in range(len(ret)):
+                name, addy = email.utils.parseaddr (ret[i])
+                if len(name) == 0:
+                    ret[i] = addy
+                else:
+                    ret[i] = '%s <%s>' % (decode_header(name), addy)
+            return ', '.join (ret)
+        facts.add_fact ('From', format_address_field(msg.get('From')))
+        facts.add_fact ('To', format_address_field(msg.get('To')))
         if msg.get('Cc') is not None:
-            facts.add_fact ('Cc', msg.get('Cc'))
+            facts.add_fact ('Cc', format_address_field(msg.get('Cc')))
         facts.add_fact ('Date', post.datetime.strftime('%Y-%m-%d %T'))
 
         added = False
