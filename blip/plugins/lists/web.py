@@ -369,6 +369,8 @@ class ListPostsTab (blip.html.TabProvider):
         facts = blip.html.FactsTable()
         pad.add_content (facts)
         def format_address_field (val):
+            if val is None:
+                return ''
             ret = val.split(',')
             for i in range(len(ret)):
                 name, addy = email.utils.parseaddr (ret[i])
