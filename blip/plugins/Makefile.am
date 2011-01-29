@@ -7,6 +7,7 @@ SUBDIRS = 		\
 	doap		\
 	docs		\
 	entities	\
+	error		\
 	git		\
 	home		\
 	i18n		\
