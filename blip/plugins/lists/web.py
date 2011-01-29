@@ -371,14 +371,23 @@ class ListPostsTab (blip.html.TabProvider):
         def format_address_field (val):
             if val is None:
                 return ''
-            ret = val.split(',')
-            for i in range(len(ret)):
-                name, addy = email.utils.parseaddr (ret[i])
+            span = blip.html.Span(divider=', ')
+            vals = val.split(',')
+            for i in range(len(vals)):
+                name, addy = email.utils.parseaddr (vals[i])
                 if len(name) == 0:
-                    ret[i] = addy
+                    show = addy
                 else:
-                    ret[i] = '%s <%s>' % (decode_header(name), addy)
-            return ', '.join (ret)
+                    show = '%s <%s>' % (decode_header(name), addy)
+                ent = blip.db.Entity.get (u'/person/' + addy)
+                if ent is None and '@' in addy:
+                    listname, domain = addy.split ('@')
+                    ent = blip.db.Forum.get (u'/list/%s/%s' % (domain, listname))
+                if ent is not None:
+                    span.add_content (blip.html.Link (ent.blip_url, show))
+                else:
+                    span.add_content (show)
+            return span
         facts.add_fact ('From', format_address_field(msg.get('From')))
         facts.add_fact ('To', format_address_field(msg.get('To')))
         if msg.get('Cc') is not None:
