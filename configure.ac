@@ -76,6 +76,7 @@ blip/plugins/Makefile
 blip/plugins/accounts/Makefile
 blip/plugins/autoconf/Makefile
 blip/plugins/apps/Makefile
+blip/plugins/bzr/Makefile
 blip/plugins/commits/Makefile
 blip/plugins/cvs/Makefile
 blip/plugins/doap/Makefile

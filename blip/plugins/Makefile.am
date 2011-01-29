@@ -2,6 +2,7 @@ SUBDIRS = 		\
 	accounts	\
 	autoconf	\
 	apps		\
+	bzr		\
 	commits		\
 	cvs		\
 	doap		\
