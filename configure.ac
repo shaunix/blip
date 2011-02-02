@@ -95,6 +95,7 @@ blip/plugins/sets/Makefile
 blip/plugins/svn/Makefile
 web/Makefile
 web/index.cgi
+web/index.wsgi
 web/data/Makefile
 ])
 

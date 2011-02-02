@@ -16,5 +16,6 @@ missing
 py-compile
 blip/config.py
 web/index.cgi
+web/index.wsgi
 web/files/
 scratch/
