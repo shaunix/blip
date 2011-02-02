@@ -38,7 +38,7 @@ blip.db.block_implicit_flushes ()
 blip.utils.set_log_level (None)
 
 def application (environ, start_response):
-    request = blip.web.WebRequest (environ=environ)
+    request = blip.web.WebRequest (environ=environ, stdin=environ['wsgi.input'])
     response = blip.web.WebResponder.respond (request)
     start_response (*response.get_response())
     blip.db.rollback ()

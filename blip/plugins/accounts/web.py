@@ -21,7 +21,6 @@
 import cgi
 import crypt
 import datetime
-import os
 import random
 import re
 
@@ -163,11 +162,12 @@ class BasicAccountHandler (blip.web.AccountHandler, blip.html.HeaderLinksProvide
             if account.password != crypt.crypt (password, 'pu'):
                 raise blip.utils.BlipException()
             token = blip.utils.get_token ()
-            login = blip.db.Login.set_login (account, token, os.getenv ('REMOTE_ADDR'))
+            login = blip.db.Login.set_login (account, token, request.getenv ('REMOTE_ADDR'))
             json = blinq.reqs.web.JsonPayload ()
             json.set_data ({'location': blinq.config.web_root_url + 'home',
                             'token': token
                             })
+            response.set_cookie ('blip_auth', token)
             response.payload = json
         except Exception, err:
             blip.db.rollback (blip.db.Account)
@@ -364,7 +364,7 @@ class BasicAccountHandler (blip.web.AccountHandler, blip.html.HeaderLinksProvide
             account.check_type = None
             account.check_hash = None
             token = blip.utils.get_token ()
-            login = blip.db.Login.set_login (account, token, os.getenv ('REMOTE_ADDR'))
+            login = blip.db.Login.set_login (account, token, request.getenv ('REMOTE_ADDR'))
             realname = account.data.pop ('realname', None)
             if realname is not None:
                 account.person.update (name=realname)
