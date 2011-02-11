@@ -54,6 +54,6 @@ def decode_header (s):
                 strs[i] = blip.utils.utf8dec (strs[i][0])
             else:
                 strs[i] = codecs.getdecoder(strs[i][1])(strs[i][0], 'replace')[0]
-        return ''.join (strs)
+        return u''.join (strs)
     except:
-        return s
+        return blip.utils.gettext (s)
