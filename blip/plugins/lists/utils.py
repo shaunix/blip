@@ -47,13 +47,13 @@ def score_decode (s):
     return out
 
 def decode_header (s):
-    try:
-        strs = email.header.decode_header (s)
-        for i in range(len(strs)):
-            if strs[i][1] is None:
-                strs[i] = blip.utils.utf8dec (strs[i][0])
-            else:
+    strs = email.header.decode_header (s)
+    for i in range(len(strs)):
+        if strs[i][1] is None:
+            strs[i] = blip.utils.utf8dec (strs[i][0])
+        else:
+            try:
                 strs[i] = codecs.getdecoder(strs[i][1])(strs[i][0], 'replace')[0]
-        return u''.join (strs)
-    except:
-        return blip.utils.gettext (s)
+            except:
+                strs[i] = blip.utils.utf8dec(strs[i][0])
+    return u''.join (strs)
