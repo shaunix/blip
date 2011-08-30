@@ -64,7 +64,7 @@ class Po (object):
             return
 
         if line.startswith ('msgid "'):
-            if self._inkey.startswith ('msg'):
+            if self._inkey.startswith('msg') and self._inkey != 'msgctxt':
                 self.finish ()
             self._inkey = 'msgid'
             line = line[6:]
@@ -72,6 +72,8 @@ class Po (object):
             self._inkey = 'msgid_plural'
             line = line[13:]
         elif line.startswith ('msgctxt "'):
+            if self._inkey.startswith('msg'):
+                self.finish ()
             self._inkey = 'msgctxt'
             line = line[8:]
         elif line.startswith ('msgstr "'):
@@ -120,15 +122,26 @@ class Po (object):
                     else:
                         break
             # Get stats for xml2po's @@image messages
-            img = self._msg['msgid'].startswith ('@@image: ')
+            img = self._msg['msgid'].startswith('@@image: ')
             imgname = None
             if img:
-                self._num_images += 1
-                imgname = re.match('@@image: \'([^\']*)\';', self._msg['msgid'])
-                if imgname:
-                    imgname = imgname.group(1)
-                else:
-                    imgname = None
+                if img:
+                    self._num_images += 1
+                    imgname = re.match('@@image: \'([^\']*)\';', self._msg['msgid'])
+                    if imgname:
+                        imgname = imgname.group(1)
+                    else:
+                        imgname = None
+            # Or get them for itstool's external ref messages
+            elif self._msg.get('msgctxt', None) == '_':
+                img = self._msg['msgid'].startswith('external ref=')
+                if img:
+                    self._num_images += 1
+                    imgname = re.match('external ref=\'([^\']*)\'', self._msg['msgid'])
+                    if imgname:
+                        imgname = imgname.group(1)
+                    else:
+                        imgname = None
             # Safe to use msgstr, because these are never pluralized
             if self._msg.get('msgstr', '') == '':
                 self._num_untranslated += 1
