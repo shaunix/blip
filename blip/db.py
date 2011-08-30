@@ -1707,6 +1707,17 @@ class Error (BlipModel):
         for err in cls.select (ident=ident, sourcefunc=sfunc):
             err.delete ()
 
+    @classmethod
+    def clear_all(cls, ident):
+        if isinstance(ident, basestring):
+            ident = blinq.utils.utf8dec(ident)
+        else:
+            ident = ident.ident
+        sfunc = cls._get_sourcefunc(None)
+        sfunc = sfunc + u'#%'
+        for err in cls.select(Error.ident == ident, Error.sourcefunc.like(sfunc)):
+            err.delete()
+
     class catch:
         def __init__ (self, ident, message=None, ctxt=None):
             if isinstance (ident, basestring):
